@@ -1,0 +1,214 @@
+/* ============================================================
+   Dataside Design System — Colors & Type
+   ============================================================
+   Source: dataside.com.br + brand guidelines
+   Primary brand: #0074FF (Azul Dataside) on #FFFFFF
+   Typeface: Poppins (Light / Regular / SemiBold + italics)
+   ============================================================ */
+
+/* ---------- 1. Fonts ---------- */
+@font-face {
+  font-family: 'Poppins';
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('fonts/poppins-v24-latin-300.woff2') format('woff2'),
+       url('fonts/Poppins-Light.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+  src: url('fonts/Poppins-LightItalic.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('fonts/poppins-v24-latin-regular.woff2') format('woff2'),
+       url('fonts/Poppins-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  src: url('fonts/Poppins-Italic.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('fonts/poppins-v24-latin-600.woff2') format('woff2'),
+       url('fonts/Poppins-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+  src: url('fonts/Poppins-SemiBoldItalic.ttf') format('truetype');
+}
+
+/* ---------- 2. Tokens ---------- */
+:root {
+  /* ---- Brand palette ---- */
+  --ds-blue:           #0074FF;   /* Azul Dataside — primary */
+  --ds-blue-700:       #005FD1;   /* Hover / pressed */
+  --ds-blue-500:       #338FFF;   /* Hover on dark */
+  --ds-blue-200:       #B3D6FF;   /* Tints, borders, fills */
+  --ds-blue-100:       #E6F1FF;   /* Soft surface, hover bg on light */
+  --ds-blue-50:        #F2F8FF;   /* Page-level accent surface */
+
+  --ds-white:          #FFFFFF;   /* Branco — primary */
+  --ds-black:          #0A0A0A;   /* Near-black for headings on light */
+  --ds-ink:            #11151C;   /* Deep navy-ink, dark backgrounds */
+  --ds-ink-2:          #1B2230;   /* Elevated dark surface */
+
+  /* ---- Neutral scale (cool gray) ---- */
+  --ds-n-900:          #121826;
+  --ds-n-800:          #1F2735;
+  --ds-n-700:          #2E3949;
+  --ds-n-600:          #4A5668;
+  --ds-n-500:          #6B7689;
+  --ds-n-400:          #97A0B0;
+  --ds-n-300:          #C6CCD6;
+  --ds-n-200:          #E2E5EC;
+  --ds-n-100:          #F2F4F8;
+  --ds-n-50:           #F8FAFC;
+
+  /* ---- Semantic ---- */
+  --ds-success:        #00B070;
+  --ds-warning:        #F2A900;
+  --ds-danger:         #E54848;
+  --ds-info:           var(--ds-blue);
+
+  /* ---- Foreground / background (light mode) ---- */
+  --bg-1:              var(--ds-white);
+  --bg-2:              var(--ds-n-50);
+  --bg-3:              var(--ds-n-100);
+  --bg-inverse:        var(--ds-ink);
+  --bg-accent:         var(--ds-blue);
+  --bg-accent-soft:    var(--ds-blue-50);
+
+  --fg-1:              var(--ds-black);   /* Strongest text */
+  --fg-2:              var(--ds-n-700);   /* Body */
+  --fg-3:              var(--ds-n-500);   /* Muted, captions */
+  --fg-4:              var(--ds-n-400);   /* Disabled, placeholders */
+  --fg-on-accent:      var(--ds-white);
+  --fg-on-inverse:     var(--ds-white);
+  --fg-link:           var(--ds-blue);
+
+  --border-1:          var(--ds-n-200);
+  --border-2:          var(--ds-n-300);
+  --border-accent:     var(--ds-blue);
+
+  /* ---- Typography ---- */
+  --font-sans:         'Poppins', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  /* Mono is used only for code/token labels — Dataside's brand is Poppins-only,
+     so this relies on the OS monospace font rather than shipping a webfont. */
+  --font-mono:         ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Weights actually shipped from the brand */
+  --fw-light:          300;   /* @kind font */
+  --fw-regular:        400;   /* @kind font */
+  --fw-semibold:       600;   /* @kind font */
+
+  /* Type scale (rem-based, 16px root) */
+  --fs-display-xl:     5rem;     /* 80 — marketing hero */
+  --fs-display-l:      4rem;     /* 64 */
+  --fs-display-m:      3rem;     /* 48 */
+  --fs-h1:             2.5rem;   /* 40 */
+  --fs-h2:             2rem;     /* 32 */
+  --fs-h3:             1.5rem;   /* 24 */
+  --fs-h4:             1.25rem;  /* 20 */
+  --fs-h5:             1.125rem; /* 18 */
+  --fs-body-l:         1.125rem; /* 18 */
+  --fs-body:           1rem;     /* 16 */
+  --fs-body-s:         0.875rem; /* 14 */
+  --fs-caption:        0.75rem;  /* 12 */
+
+  --lh-tight:          1.05;  /* @kind other */
+  --lh-snug:           1.2;   /* @kind other */
+  --lh-base:           1.5;   /* @kind other */
+  --lh-loose:          1.65;  /* @kind other */
+
+  --ls-tight:          -0.02em;  /* @kind spacing */
+  --ls-snug:           -0.01em;  /* @kind spacing */
+  --ls-base:           0;        /* @kind spacing */
+  --ls-wide:           0.04em;   /* @kind spacing */
+
+  /* ---- Spacing scale (4-pt grid) ---- */
+  --sp-0:              0;     /* @kind spacing */
+  --sp-1:              4px;
+  --sp-2:              8px;
+  --sp-3:              12px;
+  --sp-4:              16px;
+  --sp-5:              20px;
+  --sp-6:              24px;
+  --sp-7:              32px;
+  --sp-8:              40px;
+  --sp-9:              48px;
+  --sp-10:             64px;
+  --sp-11:             80px;
+  --sp-12:             96px;
+  --sp-13:             128px;
+
+  /* ---- Radii ---- */
+  --r-xs:              4px;
+  --r-sm:              8px;
+  --r-md:              12px;
+  --r-lg:              20px;
+  --r-xl:              32px;
+  --r-pill:            999px;
+
+  /* ---- Shadows / elevation ---- */
+  --shadow-1:          0 1px 2px rgba(17, 21, 28, 0.06);
+  --shadow-2:          0 4px 14px rgba(17, 21, 28, 0.08);
+  --shadow-3:          0 12px 32px rgba(17, 21, 28, 0.10);
+  --shadow-4:          0 24px 60px rgba(17, 21, 28, 0.16);
+  --shadow-accent:     0 12px 32px rgba(0, 116, 255, 0.25);
+
+  /* ---- Motion ---- */
+  --ease-out:          cubic-bezier(0.22, 1, 0.36, 1);   /* @kind other */
+  --ease-in-out:       cubic-bezier(0.65, 0, 0.35, 1);   /* @kind other */
+  --dur-fast:          120ms;   /* @kind other */
+  --dur-base:          200ms;   /* @kind other */
+  --dur-slow:          400ms;   /* @kind other */
+
+  /* ---- Layout ---- */
+  --container-max:     1280px;
+  --container-pad:     clamp(20px, 4vw, 56px);
+}
+
+/* ---------- 3. Semantic type styles ---------- */
+html { font-family: var(--font-sans); color: var(--fg-1); background: var(--bg-1); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { font-family: var(--font-sans); font-weight: var(--fw-regular); font-size: var(--fs-body); line-height: var(--lh-base); color: var(--fg-2); }
+
+.ds-display-xl, h1.display-xl { font-weight: var(--fw-light); font-size: var(--fs-display-xl); line-height: var(--lh-tight); letter-spacing: var(--ls-tight); color: var(--fg-1); }
+.ds-display-l { font-weight: var(--fw-light); font-size: var(--fs-display-l); line-height: var(--lh-tight); letter-spacing: var(--ls-tight); color: var(--fg-1); }
+.ds-display-m { font-weight: var(--fw-light); font-size: var(--fs-display-m); line-height: var(--lh-snug); letter-spacing: var(--ls-tight); color: var(--fg-1); }
+.ds-h1, h1 { font-weight: var(--fw-light); font-size: var(--fs-h1); line-height: var(--lh-snug); letter-spacing: var(--ls-snug); color: var(--fg-1); }
+.ds-h2, h2 { font-weight: var(--fw-light); font-size: var(--fs-h2); line-height: var(--lh-snug); letter-spacing: var(--ls-snug); color: var(--fg-1); }
+.ds-h3, h3 { font-weight: var(--fw-semibold); font-size: var(--fs-h3); line-height: var(--lh-snug); color: var(--fg-1); }
+.ds-h4, h4 { font-weight: var(--fw-semibold); font-size: var(--fs-h4); line-height: var(--lh-snug); color: var(--fg-1); }
+.ds-h5, h5 { font-weight: var(--fw-semibold); font-size: var(--fs-h5); line-height: var(--lh-snug); color: var(--fg-1); }
+
+/* Light "headline" inside H elements — used in marketing for the secondary half of a heading */
+.ds-headline-light { font-weight: var(--fw-light); }
+/* Strong word inside a light heading */
+.ds-headline-strong { font-weight: var(--fw-semibold); color: var(--ds-blue); }
+
+.ds-body-l, p.lead { font-weight: var(--fw-regular); font-size: var(--fs-body-l); line-height: var(--lh-loose); color: var(--fg-2); }
+.ds-body, p { font-weight: var(--fw-regular); font-size: var(--fs-body); line-height: var(--lh-base); color: var(--fg-2); }
+.ds-body-s, small { font-weight: var(--fw-regular); font-size: var(--fs-body-s); line-height: var(--lh-base); color: var(--fg-3); }
+.ds-caption { font-weight: var(--fw-regular); font-size: var(--fs-caption); line-height: var(--lh-base); color: var(--fg-3); }
+
+.ds-eyebrow { font-weight: var(--fw-semibold); font-size: var(--fs-caption); line-height: 1; letter-spacing: var(--ls-wide); text-transform: uppercase; color: var(--ds-blue); }
+
+.ds-quote, blockquote { font-weight: var(--fw-light); font-size: var(--fs-body-l); line-height: var(--lh-loose); color: var(--fg-1); font-style: italic; }
+
+code, .ds-code { font-family: var(--font-mono); font-size: 0.95em; background: var(--ds-n-100); padding: 0.1em 0.4em; border-radius: var(--r-xs); color: var(--fg-1); }

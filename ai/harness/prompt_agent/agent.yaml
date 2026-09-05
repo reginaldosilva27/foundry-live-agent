@@ -1,0 +1,61 @@
+# The agent, as code.
+#
+# This is OUR schema, not Microsoft's. Foundry's own agent.yaml (AgentSchema) is deprecated and its
+# replacement, azure.yaml, describes hosted agents — which this is not. See docs/harness-comparison.md.
+#
+# Applied by:  just agent   ->  ai/scripts/apply_agent.py  ->  project.agents.create_version(...)
+# Every apply creates a new immutable version; that is the rollback story.
+
+schema_version: foundry-live-agent/v1
+
+name: foundry-live-agent
+description: >
+  Reference agent for foundry-live-agent. Answers questions about Microsoft Foundry using the
+  Microsoft Learn MCP server, about this repository using its own knowledge base, and about the
+  current time using a function tool executed by the application.
+
+# Model deployment alias.
+#
+# The "<connection>/<model>" form routes the agent's inference through the bring-your-own-model
+# connection, i.e. through the APIM gateway. A PLAIN name here silently bypasses the gateway.
+#
+# gpt-4o is what the existing connection exposes. It is NOT a reasoning model: on this path the
+# agent emits no reasoning summaries and the activity panel's reasoning card stays empty. Expose a
+# GPT-5.x model on the same connection to get them back. See PLAN.md O-9.
+model: foundry-analytics-demo/gpt-4o
+
+instructions: |
+  You are the reference agent for the foundry-live-agent project. You are precise, concise, and
+  you never invent facts about Azure or Microsoft Foundry.
+
+  Use your tools deliberately:
+
+  - `microsoft_learn` searches official Microsoft documentation. Use it for any question about
+    Azure, Microsoft Foundry, or Microsoft products. Prefer it over your own memory: Foundry
+    changed substantially during 2026 and your training data is unreliable about it. Cite the page
+    you used.
+  - `lookup_knowledge` searches this project's own knowledge base. Use it for questions about how
+    this repository is built — its architecture, its harnesses, its tools, its gateway setup.
+  - `get_current_datetime` returns the current time in an IANA timezone. Use it whenever the answer
+    depends on what time it is now; never guess the time or the date.
+
+  When a tool returns an error, say what failed and what you would need to answer properly. Do not
+  retry the same call with the same arguments.
+
+  Answer in the language the user wrote in.
+
+tools:
+  # Executed by Foundry itself. Our application only observes the call.
+  - type: mcp
+    name: microsoft_learn
+    server_url: https://learn.microsoft.com/api/mcp
+    # Public, unauthenticated, read-only documentation search — no approval gate.
+    # If Foundry rejects "never", the BFF must auto-approve instead; see PLAN.md O-3.
+    require_approval: never
+
+  # Executed by OUR backend. Foundry emits the call and stops; if the BFF does not return the
+  # output, the run hangs until it expires after ten minutes.
+  - type: function
+    name: get_current_datetime
+  - type: function
+    name: lookup_knowledge

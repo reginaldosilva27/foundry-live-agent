@@ -1,0 +1,149 @@
+# References
+
+Every Microsoft Learn page actually read while planning this repository, with the API versions,
+package versions and identifiers taken from each one.
+
+**All pages read on 2026-09-04.** Foundry moves fast: re-verify before relying on anything here.
+Where a page's own `ms.date` / last-updated is known it is noted, because that is a better staleness
+signal than the date I read it.
+
+---
+
+## Foundry Agent Service — concepts
+
+| Page | URL | Taken from it |
+|---|---|---|
+| What is Foundry Agent Service? | https://learn.microsoft.com/en-us/azure/foundry/agents/overview | Prompt vs. hosted agent comparison table; agent types; toolboxes; publishing (M365 Copilot, Teams, Entra Agent Registry); OpenResponses / Activity / Invocations / A2A protocols. Updated 2026-08-27. |
+| What is Microsoft Foundry? | https://learn.microsoft.com/en-us/azure/foundry/what-is-foundry | **The migration table**: Assistants API (v0.5/v1) → **Responses API (Agents v2)**; Threads/Messages/Runs/Assistants → **Conversations/Items/Responses/Agent Versions**; monthly `api-version` → **v1 stable routes** (`/openai/v1/`); multiple SDKs → **`azure-ai-projects` 2.x**. Updated 2026-08-27. |
+| Hosted agents | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents | Container contract; Responses / Invocations / Invocations-WS / Activity / A2A protocols; per-session VM-isolated sandbox; `$HOME` + `/files` persistence; **idle timeout 5–60 min, default 15**; session deleted after 30 days; immutable versions; sandbox sizes (0.5/1/2 vCPU); LangGraph named as a supported framework; region list incl. Brazil South. Updated 2026-08-27. |
+| Toolbox overview | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/toolbox-overview | Toolbox = curated tools behind one MCP-compatible endpoint. **Supported-tools table: Function calling is ❌ in Toolbox — "client-side execution" — ✅ direct only.** Tool search and Skills (preview). Updated 2026-07-31. |
+| agent.yaml schema reference | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/agent-yaml-reference | **`agent.manifest.yaml` and `agent.yaml` are DEPRECATED**; superseded by a single `azure.yaml` as of Foundry `azd` extensions **`azure.ai.agents` 1.0.0-beta.1**. AgentDefinition kinds: `prompt`, `hosted`, `workflow`. Retained for reference only. Updated 2026-07-07. |
+| Agent tracing overview | https://learn.microsoft.com/en-us/azure/foundry/observability/concepts/trace-agent-concept | Tracing **GA for prompt and hosted agents**; stored in Application Insights; OpenTelemetry GenAI semantic conventions. Span names: `invoke_agent`, `invoke_workflow`, `plan`, `execute_tool`, memory ops. Attributes: `gen_ai.tool.definitions`, `gen_ai.tool.call.arguments`, `gen_ai.tool.call.result`. Requires Log Analytics reader. Updated 2026-08-28. |
+
+## Foundry Agent Service — quickstarts and how-tos
+
+| Page | URL | Taken from it |
+|---|---|---|
+| Quickstart: create a prompt agent | https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/prompt-agent | **`pip install "azure-ai-projects>=2.3.0" azure-identity`** (2.x, *incompatible with 1.x*). `AIProjectClient(endpoint, credential=DefaultAzureCredential())`; `project.agents.create_version(agent_name=…, definition=PromptAgentDefinition(model=…, instructions=…))`; `project.get_openai_client(agent_name=…)`; `openai.conversations.create()`; `openai.responses.create(conversation=…, input=…)`. Project endpoint format `https://<resource>.services.ai.azure.com/api/projects/<project>`. REST: `…/agents/{name}/endpoint/protocols/openai/responses?api-version=v1`. Token scope **`https://ai.azure.com/.default`**. Updated 2026-09-04. |
+| Quickstart: Responses API | https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/responses-api | Ephemeral-agent pattern; project endpoint Responses route **`{project_endpoint}/openai/v1/responses`**; what the project endpoint adds over plain OpenAI (project-scoped data, Foundry models, OBO auth, project observability). `agent-framework-foundry` / `FoundryChatClient` as the recommended non-prompt path. Updated 2026-07-07. |
+| Function calling | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/function-calling | **The round trip.** `FunctionTool(name, parameters, description, strict)` from `azure.ai.projects.models`; output item `type: "function_call"` with `call_id`/`name`/`arguments`; submit `FunctionCallOutput(type="function_call_output", call_id, output)`; `extra_body={"agent_reference": {"name": …, "type": "agent_reference"}}`. **Runs expire 10 minutes after creation.** Portal cannot add/update function definitions — SDK/REST only. Updated 2026-07-16. |
+| Connect agents to MCP servers | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol | `MCPTool(server_label=…, server_url=…, require_approval=…)` from `azure.ai.projects.models`; `allowed_tools` allow-list; `MCPToolboxTool` for the toolbox variant; approval flow via `McpToolCallApprovalRequestItem`. Examples consistently use `require_approval="always"`. Updated 2026-09-01. |
+
+## AI Gateway
+
+| Page | URL | Taken from it |
+|---|---|---|
+| Configure AI Gateway in your Foundry resources | https://learn.microsoft.com/en-us/azure/foundry/configuration/enable-ai-api-management-gateway-portal | Portal flow **Manage → AI Gateway**; APIM **v2 tiers only**; "Create new" = **Basic v2**; enabled at resource level, **new projects on by default, existing added manually**; per-project TPM/quota; **429** on TPM, **403** on quota; verify with `ApiManagementGatewayLogs` KQL. **No Bicep/azd path documented** → Open Question O-4. Updated 2026-08-13. |
+| Enforce token limits for models | https://learn.microsoft.com/en-us/azure/foundry/control-plane/how-to-enforce-limits-models | Per-project token limits (referenced, not read in full). |
+| Govern MCP tools with an AI gateway (preview) | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/governance | MCP traffic governance is a **separate preview** from model-traffic gateway (referenced, not read in full). |
+| **Bring your own model to Foundry Agent Service** | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/ai-gateway | **The page that corrected our architecture.** How to make *agent* inference route through your own APIM: create an **Admin-connected model** connection (Manage → Resource details → Admin-connected models → Add → Azure API Management), give the gateway **Base URL** (base path only — Foundry appends `chat/completions`), auth by APIM **subscription key** or **Managed Identity** (with `validate-azure-ad-token` policy in APIM). The agent's model name then becomes **`<connection-name>/<model-name>`**. Roles: **Foundry User** on the project, **Contributor** on the resource group. SDK **`azure-ai-projects` ≥ 2.0.0**. **Limits: "Only prompt agents in the Agent SDK support this feature. The Response API isn't supported at present."** Supported tools include Functions and MCP. Bicep connection templates in `foundry-samples/infrastructure/infrastructure-setup-bicep/01-connections/`. Updated 2026-08-28. |
+| Import a Microsoft Foundry API (APIM) | https://learn.microsoft.com/en-us/azure/api-management/azure-ai-foundry-api | Client-compatibility modes when importing Foundry into APIM: **Azure OpenAI** (`/openai/deployments/<dep>/chat/completions`), **Azure AI** (`/models` — deployment in the body), **Azure OpenAI v1** (`openai/v1/<model>/chat/completions`). APIM auto-creates a system-assigned identity, a backend and `set-backend-service`. Test console injects **`Ocp-Apim-Subscription-Key`**. Updated 2026-06-25. |
+| Enforce token limits for models | https://learn.microsoft.com/en-us/azure/foundry/control-plane/how-to-enforce-limits-models | Per-project TPM + total-token quota; **429** over TPM, **403** over quota; set in Manage → AI Gateway → Token management. Says to test "by using the project's gateway URL and key". Updated 2026-08-13. |
+
+## Voice Live
+
+| Page | URL | Taken from it |
+|---|---|---|
+| How to use the Voice Live API | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-how-to | WebSocket endpoint **`wss://<resource>.services.ai.azure.com/voice-live/realtime?api-version=2026-04-10`** (older resources: `.cognitiveservices.azure.com`); agent mode uses `agent_id`/`project_id` query params in place of `model`. Entra scope **`https://ai.azure.com/.default`** (legacy `https://cognitiveservices.azure.com/.default`); roles **Cognitive Services User** + **Foundry User** (renamed from Azure AI User). `session.update` shape; `azure_semantic_vad` / `azure_semantic_vad_multilingual`; `interrupt_response` (barge-in, default true); `remove_filler_words`; `input_audio_echo_cancellation`; **Live-Reference AEC requires api-version `2026-07-15`**. **`instructions` is NOT supported with a custom agent.** Tip: prefer WebRTC for browser clients. Updated 2026-08-18. |
+| Voice Live with WebRTC | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-webrtc | **Public preview.** Control-channel endpoint **`/voice-live/realtime/calls`**, sample uses `api-version=2026-01-01-preview`. Three channels: WS control, WebRTC RTP media, data channel `voice-live-events`. `rtc.call.sdp.create` → `rtc.call.sdp.created`; `rtc.call.error`. **"Function and tool call events are routed to the control WebSocket so they can reach your backend for processing"** — the basis for the §3.4 design. Updated 2026-06-28. |
+| Quickstart: Voice Agent with Foundry Agent Service (new) | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-agents-quickstart | Agent attachment via **`agent_name` + `project_name`** (+ optional `agent_version`, `conversation_id`, `foundry_resource_override`, `authentication_identity_client_id`) on `azure.ai.voicelive.aio.connect(...)`; sample `api_version="2026-01-01-preview"`. **Entra only — key auth unsupported in agent mode.** |
+| Voice Live API overview | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live | Supported models incl. `gpt-5.4`, `gpt-5.2`, `gpt-5`, `gpt-realtime-1.5`, `azure-realtime`; pricing tiers pro/basic/lite; token estimates (~10 tok/s input audio, ~20 tok/s output). Updated 2026-08-26. |
+| Voice Live API reference 2026-06-01-preview | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-api-reference-2026-06-01-preview | Located but not read in full; noted because it is a **third** api-version alongside `2026-04-10` and `2026-01-01-preview`. |
+
+> **⚠ Correction recorded (2026-09-04).** An earlier draft of `PLAN.md` claimed that *all* agent and
+> model traffic routes through the project AI Gateway. That is **wrong**. The project-level AI Gateway
+> governs **direct model calls**; Foundry Agent Service does **not** send its internal inference through
+> it. Routing *agent* inference through your own APIM requires the **bring-your-own-model** connection
+> above. Corroborating Q&A (a Microsoft moderator answer, not normative docs, so treated as a signal
+> rather than a citation): https://learn.microsoft.com/en-za/answers/questions/5777255/ — verify against
+> live behaviour in spec 002 and record the result here.
+
+> **Observed in the reference environment (2026-09-04, from the Foundry portal).** Resource
+> `foundry-analytics-demo`, project `proj-default`, region `eastus`. Project AI Gateway
+> `ai-gateway-foundry-analytics-demo` (Basic v2) is enabled for the project — this is the gateway
+> that governs *direct model calls*. Separately, an Admin-connected model connection named
+> **`foundry-analytics-demo`** of type *Azure API Management* exposes one model, **`gpt-4o`** — this
+> is the BYOM path that governs *agent* inference. Agent model name therefore
+> `foundry-analytics-demo/gpt-4o`. Portal observation, not documentation; re-verify before relying
+> on it.
+
+> ### Spike findings — observed 2026-09-04 against `proj-default`
+>
+> Run: `ai/scripts/spike.py`, agent `spike-byom` v1, model `foundry-analytics-demo/gpt-4o`.
+>
+> **O-3 — ANSWERED: `require_approval: "never"` is accepted.** The Microsoft Learn MCP server was
+> declared with `require_approval: never` and Foundry listed its tools with **no approval round
+> trip** — no `mcp_approval_request` event of any kind. The docs' consistent use of `"always"` is a
+> convention, not a requirement. The BFF does not need auto-approval logic for a public,
+> unauthenticated, read-only MCP server.
+>
+> **O-1 — PARTIAL.** Event types observed before the run failed, in arrival order:
+> `response.created` → `response.in_progress` → `response.output_item.added` →
+> `response.mcp_list_tools.in_progress` → `response.mcp_list_tools.completed`.
+> Text, reasoning and function-call event names are still unobserved; the run died at the model call.
+>
+> **O-8 — STILL INCONCLUSIVE, but not for the reason we feared.** The stream started normally and the
+> MCP tool ran; the failure came at the model call:
+> `APIError: Resource not found ModelGateway response: {'error': {'code': '404'}}`.
+> That is a *configuration* fault in the reference environment, not evidence that the Responses API
+> cannot drive a BYOM agent. Two stacked causes, both confirmed via ARM:
+>
+> 1. **The Foundry resource has zero model deployments** (`.../deployments` returns `[]`). The BYOM
+>    connection *declares* a model called `gpt-4o`, but APIM's backend is
+>    `https://foundry-analytics-demo.services.ai.azure.com/` — the same resource — so the request
+>    lands on a deployment that does not exist. The 404 is honest.
+> 2. **The connection's Base URL stops one segment short.** It is
+>    `https://ai-gateway-foundry-analytics-demo.azure-api.net/foundry-analytics-demo`, and Foundry
+>    appends `chat/completions`, producing `…/foundry-analytics-demo/chat/completions`. APIM proxies
+>    `/*` straight through, so the backend receives `/chat/completions` — not a valid Azure OpenAI
+>    route. It should end at `/openai/v1`.
+>
+> The APIM API also has `subscriptionRequired: true`, and the connection's `authType` is `ApiKey`,
+> so the subscription key must be the one on that API's product.
+>
+> **O-9 — untestable here.** No reasoning model is reachable, so there is nothing to summarise.
+
+> **Voice Live api-version status (unresolved):** three values appear across current pages —
+> `2026-04-10` (WebSocket how-to), `2026-01-01-preview` (WebRTC + agent quickstart samples),
+> `2026-06-01-preview` (a reference page), plus `2026-07-15` gating Live-Reference AEC. The docs do
+> not state which is latest/GA. **Pin explicitly in `.env.example` and re-verify in Phase 3.**
+
+## Models
+
+| Page | URL | Taken from it |
+|---|---|---|
+| Azure OpenAI reasoning models — GPT-6 Astra and GPT-5 | https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/reasoning | Reasoning summaries via **`reasoning={"effort": …, "summary": "auto"}`** — `auto`/`concise`/`detailed`, **GPT-5 series do not support `concise`**. `reasoning_effort`: `none`/`minimal`/`low`/`medium`/`high`/`xhigh`/`max`. Current families: `gpt-6-astra`, `gpt-5.6-{sol,terra,luna}`, `gpt-5.5`, `gpt-5.4`(+mini/nano/pro), `gpt-5.3-codex`, `gpt-5.2`, `gpt-5.1`, `gpt-5`. **`gpt-5.4` and `gpt-5.5` support interleaved thinking on the Responses API.** **Use the Responses API for tool calling with reasoning models** — Chat Completions requires `reasoning_effort="none"` alongside `tools` on GPT-5.6+. Updated 2026-09-04. |
+
+## Provisioning (azd / Bicep)
+
+| Page | URL | Taken from it |
+|---|---|---|
+| azure.yaml reference for hosted agents | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/azure-yaml-reference | The `azure.ai.project` + `azure.ai.agent` service model that replaces `agent.yaml` (located; to be read in full for Phase 4). |
+| Microsoft Foundry agent extension for azd | https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/extensions/azure-ai-foundry-extension | `azd ai agent init` / `azd up` / `azd down`; Bicep is **generated from `azure.yaml`** and can be **ejected to `./infra/`**; Terraform via `infra.provider: terraform`. |
+| Quickstart: deploy a Foundry resource by using Bicep | https://learn.microsoft.com/en-us/azure/foundry/how-to/create-resource-template | Located for `infra/main.bicep`; to be read in full during Phase 1. |
+
+## External
+
+| Resource | URL | Notes |
+|---|---|---|
+| Microsoft Learn MCP Server | https://learn.microsoft.com/en-us/training/support/mcp | Public remote MCP endpoint **`https://learn.microsoft.com/api/mcp`**, Streamable HTTP, **no API key or account required**, free. Used as the repo's remote MCP tool. |
+| AgentSchema specification | https://microsoft.github.io/AgentSchema/ | Open standard behind the now-deprecated `agent.yaml`. Context for the §3.1 decision. |
+| foundry-samples — hosted agents | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents | Agent Framework / LangGraph / custom-code hosted agent samples, for the Phase 4 LangGraph harness. |
+| voicelive-samples | https://github.com/microsoft-foundry/voicelive-samples | JS samples incl. Live-Reference AEC and avatar. |
+
+---
+
+## Versions this repo pins
+
+| Thing | Value | Source |
+|---|---|---|
+| Python SDK | `azure-ai-projects>=2.3.0` | prompt-agent quickstart |
+| Agents REST api-version | `v1` | prompt-agent quickstart |
+| Responses route | `{project_endpoint}/openai/v1/responses` | Responses API quickstart |
+| Entra token scope | `https://ai.azure.com/.default` | prompt-agent quickstart + Voice Live how-to |
+| Model deployment | `gpt-5.4` (configurable) | reasoning models page |
+| Model name via BYOM gateway | `<connection-name>/<model-name>` | bring-your-own-model page |
+| APIM gateway base URL | base path only — Foundry appends `chat/completions` | bring-your-own-model page |
+| Voice Live api-version | **unresolved — see box above**; default `2026-04-10` | Voice Live how-to |
+| Learn MCP server | `https://learn.microsoft.com/api/mcp` | Microsoft Learn MCP docs |
+| Python | 3.12 | project decision |

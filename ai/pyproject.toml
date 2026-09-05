@@ -1,0 +1,24 @@
+[project]
+name = "foundry-live-agent-ai"
+version = "0.1.0"
+description = "Agent harnesses, agent definitions and client-side tools for foundry-live-agent"
+requires-python = ">=3.12"
+dependencies = ["PyYAML>=6"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.6"]
+# Only needed to RUN apply_agent.py / spike.py against Azure. Tests replay fixtures and
+# never import these, which keeps CI free of credentials.
+azure = ["azure-ai-projects>=2.3.0", "azure-identity>=1.19", "openai>=1.60"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
