@@ -69,3 +69,29 @@ describe('the call reader', () => {
     expect(onClose).toHaveBeenCalledTimes(3)
   })
 })
+
+/**
+ * `aria-modal="true"` is a promise to assistive technology: nothing behind this element is
+ * reachable. The reader used to declare it without keeping it — focus stayed on whatever tool row
+ * opened the dialog, Tab walked straight out into the chat behind the scrim, and closing left the
+ * focus wherever it had wandered to.
+ */
+describe('the reader as a modal', () => {
+  it('moves focus into the dialog when it opens', () => {
+    render(<LogViewer activity={mcpCall} onClose={() => {}} />)
+
+    expect(screen.getByTestId('log-viewer').contains(document.activeElement)).toBe(true)
+  })
+
+  it('gives focus back to whatever opened it', () => {
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+
+    const { unmount } = render(<LogViewer activity={mcpCall} onClose={() => {}} />)
+    expect(document.activeElement).not.toBe(opener)
+
+    unmount()
+    expect(document.activeElement).toBe(opener)
+  })
+})

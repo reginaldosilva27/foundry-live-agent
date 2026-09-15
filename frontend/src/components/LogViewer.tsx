@@ -8,8 +8,9 @@
  * The scrim and the tokens are the voice overlay's, so this is the app's second modal and not its
  * second modal *style*.
  */
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useT } from '../i18n/context'
+import { useModalFocus } from '../hooks/useModalFocus'
 import type { Activity } from '../state/turn'
 import { formatPayload } from '../state/payload'
 import { formatMs } from './format'
@@ -23,6 +24,8 @@ interface Props {
 
 export function LogViewer({ activity, onClose }: Props) {
   const s = useT()
+  const scrim = useRef<HTMLDivElement>(null)
+  useModalFocus(scrim)
   const executor = activity.kind === 'tool' ? activity.executor : 'foundry'
   const tag = activity.kind === 'mcp' ? activity.serverLabel : EXECUTOR_TAG[executor]
 
@@ -39,7 +42,14 @@ export function LogViewer({ activity, onClose }: Props) {
   }, [onClose])
 
   return (
-    <div className="log-scrim" role="dialog" aria-modal="true" aria-label={s('log.title')}>
+    <div
+      className="log-scrim"
+      role="dialog"
+      aria-modal="true"
+      aria-label={s('log.title')}
+      ref={scrim}
+      tabIndex={-1}
+    >
       <div className="log-backdrop" data-testid="log-backdrop" onClick={onClose} />
 
       <section className="log" data-testid="log-viewer" data-executor={executor}>

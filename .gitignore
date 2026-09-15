@@ -34,3 +34,7 @@ ai/tests/fixtures/**/*.raw.jsonl
 
 # Browser-automation scratch (screenshots, snapshots, console logs)
 .playwright-mcp/
+
+# Finder/iCloud conflict copies ("file 2.ts"). One of these was collected
+# by pytest for three specs, running a stale copy of the suite alongside the real one.
+*\ [0-9].*

@@ -4,7 +4,7 @@
  * Both failures were reported from real sessions — a tool call pushed `End session` off the
  * bottom of the screen, and the newest line of the conversation sat below the fold.
  */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { VoiceOverlay } from './VoiceOverlay'
 import { emptyTurn } from '../state/turn'
@@ -95,5 +95,45 @@ describe('the voice card', () => {
     expect(body).not.toBeNull()
     expect(body!.querySelector('.voice-card__actions')).toBeNull()
     expect(container.querySelector('.voice-card > .voice-card__actions')).not.toBeNull()
+  })
+})
+
+/**
+ * The card declares `aria-modal="true"`, which promises that nothing behind it is reachable. It is
+ * the only thing on screen during a live session, and it has two controls — so Tab off the last
+ * one has to come back to the first rather than walking into the chat behind the scrim.
+ */
+describe('the voice card as a modal', () => {
+  it('moves focus into the card when the session opens', () => {
+    render(<VoiceOverlay voice={voice()} elapsed={0} onEnd={() => {}} />)
+
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true)
+  })
+
+  it('wraps Tab from the last control back to the first', () => {
+    render(<VoiceOverlay voice={voice()} elapsed={0} onEnd={() => {}} />)
+    const controls = screen.getAllByRole('button')
+    const [first, last] = [controls[0], controls[controls.length - 1]]
+    expect(controls.length).toBeGreaterThan(1)
+
+    last.focus()
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab' })
+    expect(document.activeElement).toBe(first)
+
+    first.focus()
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(last)
+  })
+
+  it('gives focus back to whatever started the session', () => {
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+
+    const { unmount } = render(<VoiceOverlay voice={voice()} elapsed={0} onEnd={() => {}} />)
+    expect(document.activeElement).not.toBe(opener)
+
+    unmount()
+    expect(document.activeElement).toBe(opener)
   })
 })

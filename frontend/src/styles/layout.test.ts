@@ -52,3 +52,48 @@ describe('app.css', () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })
 })
+
+/**
+ * Regressions in the stylesheet itself.
+ *
+ * Both of these are failure modes CSS has no compiler for: a misspelled custom property is not an
+ * error, it is a declaration the browser drops silently, and a missing focus ring is invisible to
+ * everyone who reaches the control with a mouse.
+ */
+describe('app.css regressions', () => {
+  it('names only custom properties the design system actually defines', () => {
+    // `--dur-2` sat in `.tool-row`'s transition for three specs. The token set is
+    // `--dur-fast|base|slow`, so the declaration parsed, resolved to nothing, and the hover
+    // transition never ran.
+    const tokens = readFileSync(
+      join(import.meta.dirname, '..', '..', 'public', 'ds', 'colors_and_type.css'),
+      'utf8',
+    )
+    const defined = new Set(tokens.match(/^\s*(--[a-z0-9-]+)/gm)?.map((m) => m.trim()) ?? [])
+    const declared = new Set(css.match(/^\s*(--[a-z0-9-]+):/gm)?.map((m) => m.trim().slice(0, -1)) ?? [])
+    const used = new Set(css.match(/var\((--[a-z0-9-]+)/g)?.map((m) => m.slice(4)) ?? [])
+
+    expect([...used].filter((name) => !defined.has(name) && !declared.has(name))).toEqual([])
+  })
+
+  it('draws a focus ring on every control a keyboard can reach', () => {
+    // The app's controls carry their own backgrounds — Dataside blue, ink, transparent-on-ink —
+    // and the user-agent ring is all but invisible against them. Without these rules, tabbing
+    // through the app shows nothing at all.
+    const focusable = [
+      '.pill-button',
+      '.tool-row',
+      '.chip',
+      '.sidebar__new',
+      '.sidebar__lang-option',
+      '.trace__close',
+      '.log__close',
+      '.meta-line__link',
+      '.reasoning-card__toggle',
+      '.composer__send',
+    ]
+    const ringed = css.match(/^[^{}]*:focus-visible[^{}]*\{/gm)?.join('\n') ?? ''
+
+    expect(focusable.filter((selector) => !ringed.includes(selector))).toEqual([])
+  })
+})

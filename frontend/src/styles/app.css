@@ -96,6 +96,47 @@ button:disabled {
   }
 }
 
+/* ---------- Focus (keyboard) ---------- */
+/* Every control in this app carries its own background — Dataside blue, ink, transparent-on-ink —
+   and the user-agent ring is all but invisible against several of them. One rule, stated once, so
+   a control added later inherits a visible ring by belonging to the list rather than by remembering
+   to style it. `:focus-visible` and not `:focus`: a mouse press should not draw a ring.
+
+   The offset ring is drawn with `outline`, which follows `border-radius` and, unlike a box-shadow,
+   survives forced-colours mode. */
+.pill-button:focus-visible,
+.tool-row:focus-visible,
+.chip:focus-visible,
+.sidebar__new:focus-visible,
+.sidebar__lang-option:focus-visible,
+.trace__close:focus-visible,
+.trace__portal:focus-visible,
+.log__close:focus-visible,
+.meta-line__link:focus-visible,
+.reasoning-card__toggle:focus-visible,
+.composer__mic:focus-visible,
+.composer__send:focus-visible {
+  outline: 2px solid var(--ds-blue);
+  outline-offset: 2px;
+}
+
+/* On ink the accent blue is the same hue as the ground's neighbours; the lighter step separates. */
+.sidebar__new:focus-visible,
+.sidebar__lang-option:focus-visible,
+.trace__close:focus-visible,
+.trace__portal:focus-visible,
+.log__close:focus-visible,
+.trace .tool-row:focus-visible {
+  outline-color: var(--ds-blue-500);
+}
+
+/* The modals take focus on open (`useModalFocus`). The container is a focus target of last resort,
+   not a control, so it says so by not drawing a ring. */
+.log-scrim:focus,
+.voice-scrim:focus {
+  outline: none;
+}
+
 /* ---------- Layout (AC1) ---------- */
 .app {
   display: grid;
@@ -714,7 +755,7 @@ button:disabled {
   border-radius: var(--r-md);
   background: var(--bg-1);
   text-align: left;
-  transition: background var(--dur-2) var(--ease-out);
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
 .tool-row:hover {

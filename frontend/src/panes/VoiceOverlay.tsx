@@ -12,10 +12,12 @@
  * The head and the controls sit outside the scrolling region. A single tool result used to grow
  * the card until `End session` was off the bottom of the screen.
  */
+import { useRef } from 'react'
 import { formatClock } from '../components/format'
 import { MicIcon } from '../components/Icon'
 import { ToolRow } from '../components/ToolRow'
 import { useT } from '../i18n/context'
+import { useModalFocus } from '../hooks/useModalFocus'
 import type { VoiceState } from '../hooks/useVoiceSession'
 
 const BARS = 10
@@ -29,10 +31,19 @@ interface Props {
 
 export function VoiceOverlay({ voice, elapsed, onEnd }: Props) {
   const s = useT()
+  const scrim = useRef<HTMLDivElement>(null)
+  useModalFocus(scrim)
   const starting = voice.status === 'starting'
 
   return (
-    <div className="voice-scrim" role="dialog" aria-modal="true" aria-label={s('voice.title')}>
+    <div
+      className="voice-scrim"
+      role="dialog"
+      aria-modal="true"
+      aria-label={s('voice.title')}
+      ref={scrim}
+      tabIndex={-1}
+    >
       <section className="voice-card">
         <header className="voice-card__head">
           <h2 className="voice-card__title">{s('voice.title')}</h2>
