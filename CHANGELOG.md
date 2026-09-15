@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Spec 013 — the agent can search the live web.** A third function tool, `search_web`, backed by
+  Tavily's `/search` endpoint and executed by the BFF like the other two. It is the first tool here
+  that depends on a third-party network service, which is the point: it is where the repo shows what
+  a client-side tool does when the provider is slow, rate limited, out of credits, or not configured
+  at all. Every one of those becomes a **result the agent can read aloud** — never an exception, so
+  never a function call left unanswered and a run that expires ten minutes later.
+  - The backend sits behind a `SearchBackend` Protocol, the same seam the knowledge tool already has,
+    so a second provider is one class and no change to the tool, its schema or its registration.
+  - **`TAVILY_API_KEY` is the one API key in this project.** The "no keys" rule is about Azure —
+    every Azure service here authenticates with Entra ID — and Tavily has no Entra path. It is read
+    by the BFF process only, never reaches the browser, and `.env.example` states the exception and
+    its reason rather than leaving a reader to think the rule was forgotten. Unset, the tool answers
+    `search_unavailable` and the app runs normally.
+  - No new user-facing strings: the chat renders any tool call generically, so a fourth tool ships
+    without touching the UI or `strings.ts` (§7 n/a — verified, not assumed).
+  - No `AgentEvent` change (§9); no fixture re-recorded. The Tavily endpoint, auth header, request
+    fields, response shape and 432/433 status codes are cited in `docs/REFERENCES.md`, read
+    2026-09-15.
+
+- **The voice overlay names who spoke.** Each line carries a badge — a microphone for you, the
+  agent's mark for the agent — with the speaker's name in its title, because colour alone is not a
+  label. The card is also wider (720px): it holds a conversation now, not a status readout.
+
 - **Spec 000 — project scaffold.** Inherited the
   [agentic-coding-template](https://github.com/reginaldosilva27/agentic-coding-template):
   constitution, SDD workflow under `specs/`, `CLAUDE.md`/`AGENTS.md` twins, `.claude` skills and
@@ -125,6 +148,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Without speech configuration the toggle is disabled with the reason on it and `POST /speech`
   answers `503`, the same shape voice already uses.
 
+- **Spec 012 — the voice session is configured.** Until now the app negotiated a voice session and
+  left everything to service defaults: an `en-US` voice read the Portuguese answers, turn detection
+  ran on `server_vad`, and noise suppression was off. The voice, the semantic turn detector and the
+  input-audio options now travel **inside** `rtc.call.sdp.create` — the shape the WebRTC doc shows —
+  so the session is configured before a word is spoken. Defaults suit this project
+  (`pt-BR-ThalitaMultilingualNeural`, `azure_semantic_vad_multilingual`); blanking every
+  `VOICELIVE_*` variable sends the frame exactly as before.
+- `interrupt_response` — the barge-in spec 006 listed as a goal — **exists only on the azure
+  semantic detectors**, so until this it was never actually configured. It is now.
+- `instructions` is never sent: documented as unsupported with a custom agent, and asserted absent
+  by a test rather than left to the author's memory.
 - **Spec 011 — the turn says what is happening right now.** While a turn streams, one line states
   which of three things is going on: the agent has not started, it is thinking, or it is running a
   named tool (*Calling* `lookup_knowledge`). It is a pure projection of the turn — `turnStatus` in
@@ -145,7 +179,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   beside a voice session.
 - The trace panel follows the turn you opened it from, defaulting to the newest.
 
+### Changed
+- **A less synthetic Portuguese voice.** The default was the *standard* neural tier, which sounds
+  robotic in Portuguese; it is now `pt-BR-Luana:MAI-Voice-2-Flash`, documented as optimized for
+  real-time responsiveness in Voice Live. Seven pt-BR voices were probed against the reference
+  project and all were accepted — `.env.example` lists them, so switching is one line and a
+  restart. Accepted is not the same as good; which sounds best is a listening test.
+
 ### Fixed
+- **The agent audio element now lives in the page.** It was a detached `new Audio()`: the element
+  existed, `srcObject` was set, and nothing was heard — the exact shape of a session with a filling
+  transcript and no sound. The documented WebRTC sample appends the element to the document before
+  assigning the stream; ours now does too, and removes it when the session ends.
+- **The voice overlay shows that a tool ran, not its payload.** One `lookup_knowledge` result is a
+  page of JSON, and in a 460px card over a live conversation it buried what you were listening to.
+  The overlay now renders the same compact row the chat uses — no arguments, no result. This
+  supersedes a non-goal of spec 009, annotated there.
+- **The BFF logs what each voice session negotiated** — modalities, voice, turn detection — because
+  *the agent did not speak* and *the browser did not play* are indistinguishable from the outside,
+  and a session that comes back `modalities: ["text"]` is silent by design.
+- **The voice session now says it wants audio.** `modalities` was never declared, and the service's
+  default is not always the one that speaks: the committed fixtures show one recorded session
+  reporting `"modalities": ["text"]` and another `["audio", "text"]`. A text-only session produces
+  a transcript and no sound, with nothing on screen to explain the silence. The session object now
+  states `["audio", "text"]`.
+- **A tool call could push `End session` off the screen.** The voice card grew with its content;
+  one `lookup_knowledge` result was enough to put the controls out of reach. The head, the level
+  bars and the controls are now outside the one scrolling region.
+- **The voice conversation reads newest-first.** In a spoken session the line that matters is the
+  one that just arrived, and scrolling for it mid-call is the wrong ask — so the overlay reverses
+  both the transcript and the activity. The chat keeps the ordinary order: a thread is read from
+  the top.
+- **The agent could be inaudible with nothing on screen to say why.** Two silent failures on the
+  playback path: `ontrack` read `event.streams[0]`, which is `undefined` whenever the remote SDP
+  carries no msid (the track still arrives — it is now wrapped in a `MediaStream`), and a rejected
+  `play()` — blocked autoplay, a codec the browser will not decode — was swallowed by an empty
+  `catch`. A blocked playback is now a visible error in both languages; the session keeps running.
 - **Thinking phases no longer run together.** Foundry sends the reasoning summary in *parts*, each
   opening with its own `**Title**`, and marks each one with `response.reasoning_summary_part.added`
   — which the normaliser dropped. Two phases arrived as `…spot-on!**Researching project

@@ -52,9 +52,9 @@ your container does (a *hosted agent* running LangGraph). Both sit behind one co
 | | |
 |---|---|
 | 🔌 **One contract, two harnesses** | `HarnessAdapter` + a typed `AgentEvent` stream. `prompt-agent` ships; `langgraph` is scaffolded. |
-| 🛠️ **Three tools, two owners** | Microsoft Learn MCP runs *in Foundry*; two function tools run *in the BFF* — because Foundry asks and stops. One line per call in the chat, the payload in the trace panel. |
+| 🛠️ **Four tools, two owners** | Microsoft Learn MCP runs *in Foundry*; three function tools — the clock, the project's own knowledge base and live web search — run *in the BFF*, because Foundry asks and stops. One line per call in the chat, the payload in the trace panel. |
 | 🔍 **Traces you can see** | An Application Insights span tree in a drawer: agent run › model calls › tool calls, with durations and tokens. |
-| 🗣️ **Voice on the same agent** | Voice Live attaches to the *same* definition — one agent, one tool set, one trace store, two modalities. |
+| 🗣️ **Voice on the same agent** | Voice Live attaches to the *same* definition — one agent, one tool set, one trace store, two modalities.  The voice, the turn detector and noise suppression are configured per deployment. |
 | 🔊 **Answers you can hear** | A toggle reads the chat's answers aloud, sentence by sentence as they stream, synthesised by the BFF so the browser still holds no credential. |
 | 🔐 **Zero secrets** | Entra ID via `DefaultAzureCredential` everywhere. The browser never holds an Azure credential. |
 
@@ -69,7 +69,7 @@ flowchart LR
     subgraph app["📦 This repository"]
         BFF["FastAPI BFF<br/>identity · SSE · tool execution<br/><b>no agent loop</b>"]
         H["Harness<br/>prompt-agent | langgraph"]
-        T["Function tools<br/>get_current_datetime<br/>lookup_knowledge"]
+        T["Function tools<br/>get_current_datetime<br/>lookup_knowledge<br/>search_web"]
     end
 
     subgraph foundry["☁️ Microsoft Foundry"]
@@ -130,7 +130,7 @@ git clone https://github.com/reginaldosilva27/foundry-live-agent
 cd foundry-live-agent
 
 just env            # 1. create .env from the template
-just login          # 2. az login — Entra ID, no API keys anywhere
+just login          # 2. az login — Entra ID; no key for any Azure service
 just infra          # 3. azd up: Foundry resource, project, model, App Insights (~5 min)
 just agent          # 4. apply the agent definition from ai/harness/prompt-agent/agent.yaml
 just backend        # 5. the BFF on :8000
@@ -143,6 +143,10 @@ Then ask something that forces both tool paths at once:
 
 `get_current_datetime` runs **in the BFF**; the docs lookup runs **in Foundry** via the Learn MCP
 server. Watch both land in the Agent activity panel, then open the trace drawer.
+
+Web search is the third function tool and the one exception to "no keys": Tavily is a third-party
+service with no Entra path, so set `TAVILY_API_KEY` in `.env` to enable `search_web`. Leave it empty
+and the app runs fine — the agent simply says web search is not configured.
 
 Optional — the AI Gateway is a portal flow with no IaC path: `just gateway` prints the steps.
 

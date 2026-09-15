@@ -16,6 +16,7 @@ from harness._shared.voice_events import (
     is_function_call,
     normalise_voice,
     unmapped_voice_types,
+    voice_session_config,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "recorded"
@@ -129,3 +130,69 @@ def test_the_fixtures_are_recordings_not_inventions(path: Path):
     """A guard on the evidence itself: every frame carries the service's own envelope."""
     for frame in frames(path):
         assert "type" in frame
+
+
+# --- spec 012: the session configuration carried on the SDP frame ----------
+
+
+def test_the_voice_is_named_and_typed_azure_standard():
+    """AC1. `azure-realtime-native` names belong to the `azure-realtime` model; this session
+    attaches to an agent on a normal deployment, so the type is `azure-standard` — which also
+    covers the HD voices (`pt-BR-Thalita:DragonHDLatestNeural`)."""
+    config = voice_session_config(voice="pt-BR-ThalitaMultilingualNeural")
+
+    assert config["voice"] == {"name": "pt-BR-ThalitaMultilingualNeural", "type": "azure-standard"}
+
+
+def test_semantic_turn_detection_is_what_makes_barge_in_configurable():
+    """AC2. `interrupt_response` exists only on the azure semantic detectors; on the default
+    `server_vad` the barge-in spec 006 promised is whatever the service happens to do."""
+    config = voice_session_config(vad="azure_semantic_vad_multilingual")
+
+    assert config["turn_detection"]["type"] == "azure_semantic_vad_multilingual"
+    assert config["turn_detection"]["interrupt_response"] is True
+    assert config["turn_detection"]["remove_filler_words"] is True
+
+
+def test_input_audio_gets_noise_suppression_whenever_anything_is_configured():
+    """AC3."""
+    assert voice_session_config(voice="x")["input_audio_noise_reduction"] == {
+        "type": "azure_deep_noise_suppression"
+    }
+
+
+def test_the_transcription_language_is_sent_only_when_it_is_configured():
+    """AC4. Pinning a language makes the other half of a bilingual app worse, so it is opt-in."""
+    with_language = voice_session_config(voice="x", input_language="pt")
+    assert with_language["input_audio_transcription"] == {"model": "azure-speech", "language": "pt"}
+
+    assert "input_audio_transcription" not in voice_session_config(voice="x")
+
+
+def test_instructions_are_never_sent():
+    """AC5. Documented as unsupported with a custom agent — and it would override the agent this
+    whole repository is about."""
+    config = voice_session_config(
+        voice="pt-BR-ThalitaMultilingualNeural",
+        vad="azure_semantic_vad_multilingual",
+        input_language="pt",
+    )
+
+    assert "instructions" not in config
+
+
+def test_the_session_asks_for_audio_out_loud():
+    """The one field that decides whether the agent speaks at all.
+
+    Observed in the committed fixtures: one recorded session reports `"modalities": ["text"]` and
+    another `["audio", "text"]`. The service picks a default and it is not always the one that
+    talks — so a voice session says what it wants rather than hoping."""
+    config = voice_session_config(voice="pt-BR-ThalitaMultilingualNeural")
+
+    assert config["modalities"] == ["audio", "text"]
+
+
+def test_a_blank_configuration_produces_nothing_at_all():
+    """AC6. An operator who sets none of the variables gets the frame this app sent before."""
+    assert voice_session_config() == {}
+    assert voice_session_config(voice="", vad="", input_language="") == {}

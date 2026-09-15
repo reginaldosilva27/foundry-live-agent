@@ -154,8 +154,12 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
 - **Bilingual (§7)** — user-facing strings ship `{ en, pt }` in `frontend/src/i18n/strings.ts`;
   `README.md` ↔ `README.pt-BR.md` move together.
 - **Code and comments in English.** Docs in English; the README is mirrored in Portuguese.
-- **Zero secrets.** Entra ID via `DefaultAzureCredential` everywhere; `.env.example` holds
-  placeholders only; the browser never holds an Azure credential.
+- **Zero secrets for Azure.** Entra ID via `DefaultAzureCredential` for every Azure service;
+  `.env.example` holds placeholders only; the browser never holds a credential of any kind.
+  **One documented exception:** `TAVILY_API_KEY`, behind the `search_web` tool — a third-party
+  service with no Entra path, read by the BFF process only (spec 013). A key for an **Azure**
+  service is still a design smell; adding a second third-party one means saying why, where the
+  reader will hit it, as `.env.example` does.
 
 ## Docs
 

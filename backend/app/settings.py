@@ -32,6 +32,14 @@ class Settings:
     # four. One shared value would silently break whichever path it was not chosen for.
     voice_webrtc_api_version: str = "2026-01-01-preview"
     voice_ws_api_version: str = "2026-04-10"
+    # How the voice session sounds and listens (spec 012). The voice is the MAI-Voice-2-Flash
+    # one the documentation calls optimized for real-time responsiveness in Voice Live — the
+    # standard neural voice it replaced was audibly robotic in Portuguese. The semantic detector is
+    # what makes barge-in configurable. Blank any of them to fall back to the service.
+    voicelive_voice: str = "pt-BR-Luana:MAI-Voice-2-Flash"
+    voicelive_vad: str = "azure_semantic_vad_multilingual"
+    # Pinning a language would make the other half of a bilingual app worse, so it is opt-in.
+    voicelive_input_language: str = ""
     # Text to speech for the chat's spoken answers (spec 008). The endpoint is the Speech
     # resource's **custom subdomain** host, and the resource id is not optional decoration: Entra
     # auth for this API carries it inside the Authorization header. Both are read from the
@@ -50,6 +58,17 @@ class Settings:
         """The control-channel endpoint. Voice Live never goes through the AI Gateway."""
         host = self.voice_endpoint.split("://", 1)[-1].split("/", 1)[0]
         return f"wss://{host}/voice-live/realtime/calls"
+
+    @property
+    def voice_session_config(self) -> dict:
+        """What to send with the SDP offer. Built here so the router stays a router."""
+        from harness._shared.voice_events import voice_session_config
+
+        return voice_session_config(
+            voice=self.voicelive_voice,
+            vad=self.voicelive_vad,
+            input_language=self.voicelive_input_language,
+        )
 
     @property
     def speech_enabled(self) -> bool:
@@ -86,6 +105,9 @@ def load_settings(**overrides: object) -> Settings:
             "VOICELIVE_WEBRTC_API_VERSION", "2026-01-01-preview"
         ),
         "voice_ws_api_version": os.environ.get("VOICELIVE_WS_API_VERSION", "2026-04-10"),
+        "voicelive_voice": os.environ.get("VOICELIVE_VOICE", "pt-BR-Luana:MAI-Voice-2-Flash"),
+        "voicelive_vad": os.environ.get("VOICELIVE_VAD", "azure_semantic_vad_multilingual"),
+        "voicelive_input_language": os.environ.get("VOICELIVE_INPUT_LANGUAGE", ""),
         "speech_endpoint": os.environ.get("SPEECH_ENDPOINT", ""),
         "speech_resource_id": os.environ.get("SPEECH_RESOURCE_ID", ""),
         "speech_voice_en": os.environ.get("SPEECH_VOICE_EN", "en-US-AvaMultilingualNeural"),

@@ -36,10 +36,12 @@ describe('app.css', () => {
     expect(breakpoint).toContain('position: fixed')
   })
 
-  it('scrolls the voice transcript inside the card, not the card itself (spec 007, AC6)', () => {
-    // A long answer used to scroll the whole card, carrying Mute and End session off the bottom.
-    const transcript = css.split('.voice-transcript {')[1].split('}')[0]
-    expect(transcript).toContain('overflow-y: auto')
+  it('scrolls the voice conversation inside the card, not the card itself (spec 007, AC6)', () => {
+    // A long answer — or one tool result — used to scroll the whole card, carrying Mute and End
+    // session off the bottom. The scrolling region is the body, so the controls stay put.
+    const body = css.split('.voice-card__body {')[1].split('}')[0]
+    expect(body).toContain('overflow-y: auto')
+    expect(body).toContain('min-height: 0')
 
     const card = css.split('.voice-card {')[1].split('}')[0]
     expect(card).not.toContain('overflow-y: auto')

@@ -17,7 +17,8 @@ import { EXECUTOR_TAG } from './labels'
 
 interface Props {
   activity: Activity
-  onOpen: () => void
+  /** Omitted where there is nothing to open — the voice overlay has no trace panel beside it. */
+  onOpen?: () => void
 }
 
 export function ToolRow({ activity, onOpen }: Props) {
@@ -31,14 +32,18 @@ export function ToolRow({ activity, onOpen }: Props) {
         ? s('tool.executedHere')
         : s('tool.executedInFoundry')
 
+  // A button only where pressing it does something. In the voice overlay it is a statement, not
+  // a control, and a button that opens nothing is a lie told with the cursor.
+  const Element = onOpen ? 'button' : 'div'
+
   return (
-    <button
-      type="button"
+    <Element
+      type={onOpen ? 'button' : undefined}
       className="tool-row"
       data-testid="tool-row"
       data-executor={executor}
       data-status={activity.status}
-      title={s('tool.openInTrace')}
+      title={onOpen ? s('tool.openInTrace') : undefined}
       onClick={onOpen}
     >
       <span className="tool-row__status" aria-hidden="true">
@@ -63,6 +68,6 @@ export function ToolRow({ activity, onOpen }: Props) {
               ? formatMs(activity.durationMs)
               : ''}
       </span>
-    </button>
+    </Element>
   )
 }

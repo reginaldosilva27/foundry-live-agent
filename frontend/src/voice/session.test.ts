@@ -125,6 +125,37 @@ describe('starting a voice session', () => {
 
     expect(onRemoteStream).toHaveBeenCalledWith(remote)
   })
+
+  it('still plays the agent when the track arrives without a stream', async () => {
+    // jsdom implements no WebRTC types at all, `MediaStream` included — the browser's own
+    // constructor is what the fix uses, so the test has to supply one.
+    vi.stubGlobal(
+      'MediaStream',
+      class {
+        tracks: MediaStreamTrack[]
+        constructor(tracks: MediaStreamTrack[] = []) {
+          this.tracks = tracks
+        }
+        getTracks() {
+          return this.tracks
+        }
+      },
+    )
+
+    // `event.streams` is empty whenever the remote SDP carries no msid, and then
+    // `event.streams[0]` is `undefined`: the audio element gets no source and the agent is
+    // silent, with nothing on screen to say why.
+    const onRemoteStream = vi.fn()
+    const track = fakeTrack()
+    const { options } = harness()
+
+    await startVoice({ ...options, onRemoteStream })
+    FakePeer.last!.ontrack!({ streams: [], track } as never)
+
+    const stream = onRemoteStream.mock.calls[0][0] as MediaStream
+    expect(stream).toBeDefined()
+    expect(stream.getTracks()).toContain(track)
+  })
 })
 
 describe('controlling a live session', () => {

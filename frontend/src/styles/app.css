@@ -1216,7 +1216,9 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-  width: min(460px, 100%);
+  /* Wide enough to read a conversation in. It was 460px when it showed a status and a couple of
+     lines; it now holds the exchange itself. */
+  width: min(720px, 100%);
   max-height: calc(100vh - var(--sp-6));
   padding: var(--sp-5);
   border-radius: var(--r-lg); /* the design's 20px spotlight radius */
@@ -1293,15 +1295,22 @@ button:disabled {
   }
 }
 
+/* The only scrolling region in the card: the head, the level bars and the controls stay put, so a
+   long answer or a tool result can never carry `End session` off the bottom of the screen. */
+.voice-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .voice-transcript {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  flex: 1 1 auto;
   min-height: 64px;
-  /* The transcript is the only thing in the card that scrolls. Before this the whole card did,
-     which carried the controls off the bottom of a long answer (spec 007, AC6). */
-  overflow-y: auto;
   font-size: var(--fs-body-s);
 }
 
@@ -1315,10 +1324,30 @@ button:disabled {
 }
 
 .voice-transcript__line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
   margin: 0;
   padding-left: var(--sp-3);
   border-left: 2px solid var(--ds-n-700);
   color: var(--ds-n-300);
+}
+
+.voice-transcript__who {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: var(--r-pill);
+  background: var(--ds-n-800);
+  color: var(--ds-n-300);
+}
+
+.voice-transcript__line[data-speaker='agent'] .voice-transcript__who {
+  background: var(--ds-blue);
+  color: var(--ds-white);
 }
 
 .voice-transcript__line[data-speaker='agent'] {
@@ -1332,6 +1361,19 @@ button:disabled {
   gap: var(--sp-2);
   padding-top: var(--sp-3);
   border-top: 1px solid var(--ds-n-800);
+}
+
+.voice-activity .tool-row {
+  border-color: var(--ds-n-800);
+  background: var(--ds-n-900);
+}
+
+.voice-activity .tool-row__name {
+  color: var(--ds-n-100);
+}
+
+.voice-activity .tool-row__meta {
+  color: var(--ds-n-500);
 }
 
 .voice-activity__title {

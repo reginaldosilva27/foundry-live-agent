@@ -34,7 +34,9 @@ So: the chat keeps the fact, the trace panel gets the evidence.
 - No change to the `AgentEvent` contract, the BFF, or any harness. This is a rendering change.
 - No span tree, no Application Insights query — that is still spec 005, and the panel still says so.
 - No change to the **voice overlay**, which has no trace panel beside it: there the full card stays,
-  because it is the only place the detail can be read.
+  because it is the only place the detail can be read. **Superseded on 2026-09-15**: in a live
+  session that full card buries the conversation you are listening to, so the overlay shows the
+  compact row too and the payload is simply not offered during a call.
 - No truncation, no "show more" inside the chat. A shortened payload in two places is worse than a
   whole one in the right place.
 

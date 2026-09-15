@@ -18,6 +18,7 @@ import { useAgentStream } from './hooks/useAgentStream'
 import { useConfig } from './hooks/useConfig'
 import { useSpokenAnswers } from './hooks/useSpokenAnswers'
 import { useVoiceSession } from './hooks/useVoiceSession'
+import type { VoiceErrorCode } from './voice/session'
 import { voiceMessages } from './state/voiceLog'
 import { ErrorCard } from './components/ErrorCard'
 import { LogViewer } from './components/LogViewer'
@@ -155,13 +156,14 @@ function useElapsed(running: boolean): number {
 }
 
 /** Why voice did not start, in the language the app is in. */
-function VoiceFailure({ code }: { code: 'unsupported' | 'mic-denied' | 'disabled' | 'failed' }) {
+function VoiceFailure({ code }: { code: VoiceErrorCode }) {
   const s = useT()
   const key = {
     'mic-denied': 'voice.errorMicDenied',
     unsupported: 'voice.errorUnsupported',
     disabled: 'voice.errorDisabled',
     failed: 'voice.errorFailed',
+    'audio-blocked': 'voice.errorAudioBlocked',
   } as const
 
   return <ErrorCard error={{ message: s(key[code]) }} />

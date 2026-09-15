@@ -52,7 +52,7 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
             version=settings.agent_version,
         )
     )
-    session = VoiceSession(uuid.uuid4().hex, socket)
+    session = VoiceSession(uuid.uuid4().hex, socket, session_config=settings.voice_session_config)
 
     try:
         answer = await session.negotiate(body.sdp)

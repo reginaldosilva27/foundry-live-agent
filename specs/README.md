@@ -65,6 +65,8 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 009 | [Tool payloads move to the trace panel](009-tool-detail-in-trace/spec.md) | 3 | ✅ done |
 | 010 | [The trace panel groups its calls, and opens one in a reader](010-log-reader/spec.md) | 3 | ✅ done |
 | 011 | [The turn says what is happening right now](011-live-status/spec.md) | 3 | ✅ done |
+| 012 | [The voice session is configured — voice, turn detection, input audio](012-voice-session-config/spec.md) | 3 | ✅ done |
+| 013 | [The agent can search the live web](013-web-search-tool/spec.md) | 3 | ✅ done |
 
 The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
 screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),

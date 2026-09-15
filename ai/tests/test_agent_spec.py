@@ -86,8 +86,18 @@ def test_the_shipped_agent_yaml_is_valid():
     shipped = Path(__file__).resolve().parent.parent / "harness" / "prompt_agent" / "agent.yaml"
     spec = load_agent_spec(shipped)
     assert spec.name
-    assert len(spec.function_tools) == 2
+    assert len(spec.function_tools) == 3
     assert len(spec.mcp_tools) == 1
+
+
+def test_the_shipped_agent_declares_web_search():
+    """spec 013 AC10 — declared *and* cross-checked against the registry by the loader."""
+    from pathlib import Path
+
+    shipped = Path(__file__).resolve().parent.parent / "harness" / "prompt_agent" / "agent.yaml"
+    spec = load_agent_spec(shipped)
+    tool = next(t for t in spec.function_tools if t.name == "search_web")
+    assert tool.schema["required"] == ["query"]
 
 
 # --- reasoning summaries (spec 002, observed 2026-09-15) -------------------

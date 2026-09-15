@@ -16,8 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from harness._shared.tools import datetime_tool, knowledge_tool
+from harness._shared.tools import datetime_tool, knowledge_tool, web_search_tool
 from harness._shared.tools.knowledge_tool import KnowledgeSource, LocalMarkdownKnowledge
+from harness._shared.tools.web_search_tool import SearchBackend, TavilySearch
 
 __all__ = ["ToolSpec", "UnknownToolError", "get", "specs", "tool_names"]
 
@@ -47,6 +48,20 @@ def _lookup_knowledge(query: str) -> dict[str, Any]:
     return knowledge_tool.lookup_knowledge(query, source=_knowledge_source())
 
 
+def _search_backend() -> SearchBackend:
+    """The web search provider. Swap this line for another backend; nothing else changes.
+
+    A missing key is read here and reported by the backend rather than refusing to register the
+    tool: the agent definition declares it unconditionally, so a registry that dropped it would
+    make `load_agent_spec` reject a perfectly good definition on any machine without a key.
+    """
+    return TavilySearch(os.environ.get("TAVILY_API_KEY", ""))
+
+
+def _search_web(query: str) -> dict[str, Any]:
+    return web_search_tool.search_web(query, backend=_search_backend())
+
+
 _REGISTRY: dict[str, ToolSpec] = {
     "get_current_datetime": ToolSpec(
         name="get_current_datetime",
@@ -65,6 +80,16 @@ _REGISTRY: dict[str, ToolSpec] = {
         ),
         schema=knowledge_tool.SCHEMA,
         call=_lookup_knowledge,
+    ),
+    "search_web": ToolSpec(
+        name="search_web",
+        description=(
+            "Search the live web and return ranked results with their URLs. "
+            "Use for current events, third-party products, and anything that may have changed "
+            "since training. Not for Microsoft documentation, which has its own tool."
+        ),
+        schema=web_search_tool.SCHEMA,
+        call=_search_web,
     ),
 }
 

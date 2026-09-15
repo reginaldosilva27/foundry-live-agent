@@ -74,6 +74,10 @@ export const strings = {
     en: 'Voice is not configured on this server.',
     pt: 'A voz não está configurada neste servidor.',
   },
+  'voice.errorAudioBlocked': {
+    en: 'The browser blocked the agent\u2019s audio. Allow sound for this site and start again.',
+    pt: 'O navegador bloqueou o áudio do agente. Libere o som para este site e comece de novo.',
+  },
   'voice.errorFailed': {
     en: 'The voice session could not be established. Try again.',
     pt: 'Não foi possível estabelecer a sessão de voz. Tente de novo.',

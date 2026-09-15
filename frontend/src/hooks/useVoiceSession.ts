@@ -60,6 +60,7 @@ export function useVoiceSession(): VoiceState {
     await session.current?.stop()
     session.current = null
     audio.current?.pause()
+    audio.current?.remove()
     audio.current = null
     setStatus('idle')
     setMuted(false)
@@ -76,11 +77,21 @@ export function useVoiceSession(): VoiceState {
     try {
       const live = await startVoice({
         onRemoteStream: (stream) => {
-          const element = new Audio()
-          element.srcObject = stream
+          // **Attached to the document, like the documented sample does.** A detached `new Audio()`
+          // is the shape of failure that leaves a filling transcript and no sound: the element
+          // exists, `srcObject` is set, nothing is heard and nothing is reported.
+          const element = document.createElement('audio')
+          element.dataset.testid = 'voice-audio'
           element.autoplay = true
-          void element.play().catch(() => {})
+          element.srcObject = stream
+          document.body.appendChild(element)
           audio.current = element
+
+          // A rejected `play()` — autoplay blocked, a codec the browser will not decode — used to
+          // be swallowed, and the session then ran with a filling transcript and an inaudible
+          // agent. It is reported instead; the session itself is fine and keeps going (§5).
+          const started = element.play?.()
+          if (started?.catch) started.catch(() => setError('audio-blocked'))
         },
         onServerEvent: (event) => appendTranscript(event, record),
         onClosed: () => setStatus('idle'),

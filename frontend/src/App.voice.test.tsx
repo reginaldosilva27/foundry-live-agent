@@ -13,13 +13,19 @@ import { asSseStream } from './test/fixtures'
 
 const voice = vi.hoisted(() => ({
   onServerEvent: undefined as ((event: unknown) => void) | undefined,
+  onRemoteStream: undefined as ((stream: MediaStream) => void) | undefined,
   stopped: false,
 }))
 
 vi.mock('./voice/session', () => ({
   VoiceError: class extends Error {},
-  startVoice: vi.fn(async (options: { onServerEvent?: (event: unknown) => void }) => {
+  startVoice: vi.fn(
+    async (options: {
+      onServerEvent?: (event: unknown) => void
+      onRemoteStream?: (stream: MediaStream) => void
+    }) => {
     voice.onServerEvent = options.onServerEvent
+    voice.onRemoteStream = options.onRemoteStream
     return {
       sessionId: 'sess_1',
       setMuted: () => {},
@@ -27,7 +33,8 @@ vi.mock('./voice/session', () => ({
         voice.stopped = true
       },
     }
-  }),
+    },
+  ),
 }))
 
 const CONFIG = {
@@ -105,5 +112,56 @@ describe('a voice session that ends', () => {
       'são 13:53',
       'typed answer',
     ])
+  })
+})
+
+
+describe('the agent audio', () => {
+  it('says so when the browser refuses to play it, instead of going quiet', async () => {
+    // Autoplay can be blocked, or a codec can fail. The failure used to be swallowed: the session
+    // ran, the transcript filled in, and the agent was simply inaudible with nothing on screen to
+    // explain why (§5).
+    fakeBff([])
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(new Error('NotAllowedError'))
+    const user = userEvent.setup()
+    render(<App />)
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /voice|voz/i })[0]).toBeEnabled(),
+    )
+    await user.click(screen.getAllByRole('button', { name: /voice|voz/i })[0])
+
+    await act(async () => {
+      voice.onRemoteStream?.({} as MediaStream)
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /blocked the agent.s audio|bloqueou o áudio/i,
+    )
+  })
+})
+
+
+describe('the audio element', () => {
+  it('lives in the document, where the browser will play it', async () => {
+    // The documented WebRTC sample appends the element to the page before assigning `srcObject`;
+    // ours never did. A detached element is exactly the shape of failure that produces a filling
+    // transcript and no sound.
+    fakeBff([])
+    const user = userEvent.setup()
+    render(<App />)
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /voice|voz/i })[0]).toBeEnabled(),
+    )
+    await user.click(screen.getAllByRole('button', { name: /voice|voz/i })[0])
+
+    await act(async () => {
+      voice.onRemoteStream?.({} as MediaStream)
+    })
+
+    const element = document.querySelector('audio[data-testid="voice-audio"]')
+    expect(element).not.toBeNull()
+    expect(element!.isConnected).toBe(true)
   })
 })

@@ -13,9 +13,10 @@ contains the definition that puts them there and the adapter that streams the re
 | `microsoft_learn` (MCP) | ✅ | — |
 | `get_current_datetime` | — | ✅ |
 | `lookup_knowledge` | — | ✅ |
+| `search_web` | — | ✅ |
 | Turning the stream into `AgentEvent`s | — | ✅ |
 
-The two function tools are the interesting row. Foundry emits a `function_call` item and **stops**.
+The three function tools are the interesting rows. Foundry emits a `function_call` item and **stops**.
 Our backend looks the name up in the registry, runs it, and posts a `function_call_output` back on
 the same conversation. If it doesn't, the run hangs until it expires ten minutes later — and from the
 browser that looks like the stream simply stopped.

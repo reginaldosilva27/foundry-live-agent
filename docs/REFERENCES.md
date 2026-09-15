@@ -52,6 +52,27 @@ signal than the date I read it.
 | Text to speech REST API | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech | **`POST {endpoint}/cognitiveservices/v1`**, body is **SSML**. Required headers: `Authorization`, `Content-Type: application/ssml+xml`, **`X-Microsoft-OutputFormat`**, `User-Agent`. Streaming format used here: **`audio-24khz-48kbitrate-mono-mp3`**. Audio is truncated at 10 minutes. `415` means the content type was wrong. Doc dated 2026-05-21, read 2026-09-15 (spec 008). |
 | Speech: Microsoft Entra authentication | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/how-to-configure-azure-ad-auth | **The token is not a plain bearer token**: the header value is **`Bearer aad#{resourceId}#{entraToken}`**, with the `aad#` prefix and `#` separator. Scope **`https://cognitiveservices.azure.com/.default`** (note: *not* the `https://ai.azure.com/.default` Voice Live uses). Requires a **custom subdomain** host `https://{name}.cognitiveservices.azure.com`, which cannot be changed once set. Role: **Cognitive Services Speech User** (or Speech Contributor). Doc dated 2026-06-06, read 2026-09-15 (spec 008). |
 | Language and voice support (TTS) | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts | Voice short names used as defaults: **`en-US-AvaMultilingualNeural`**, **`pt-BR-ThalitaMultilingualNeural`**. Read 2026-09-15 (spec 008). |
+| Voice Live session configuration (spec 012) | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-webrtc | **The session object rides inside `rtc.call.sdp.create`**, alongside `sdp_offer` — the sample sends `session: { modalities, instructions, voice, turn_detection }` with the offer. After negotiation the control channel stays open for `session.update`. Read 2026-09-15. |
+| Voice Live session properties | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-how-to | `voice` = `{ name, type: azure-standard \| azure-custom, temperature?, rate? }`; `turn_detection.type` `azure_semantic_vad` / `azure_semantic_vad_multilingual`, and **`interrupt_response` (barge-in) exists only on those types** — the default is `server_vad`; `input_audio_noise_reduction: { type: azure_deep_noise_suppression }`; `input_audio_transcription: { model: azure-speech, language }`; **`instructions` is not supported with a custom agent**; HD voices are region-limited to a list that includes `eastus`. Read 2026-09-15. |
+
+> **Verified on the wire, 2026-09-15.** A probe against the reference project's own resource, over
+> `/voice-live/realtime` with the app's attachment parameters, answered:
+> `session.created` → `modalities ['audio','text']`, `voice en-US-AvaNeural`,
+> `turn_detection server_vad`; and after sending the app's session object,
+> `session.updated` → `voice pt-BR-ThalitaMultilingualNeural`,
+> `turn_detection azure_semantic_vad_multilingual`. **An agent attachment does negotiate audio, and
+> the configuration is accepted as sent.**
+
+> **pt-BR voices accepted by the reference project (probed 2026-09-15).** Every one of
+> `pt-BR-Luana:MAI-Voice-2-Flash`, `pt-BR-Caio:MAI-Voice-2-Flash`,
+> `pt-BR-Thalita:DragonHDLatestNeural`, `pt-BR-Macerio:DragonHDLatestNeural`,
+> `pt-BR-Pedro:MAI-Voice-2`, `pt-BR-FranciscaNeural` and `pt-BR-ThalitaMultilingualNeural` came
+> back echoed in `session.updated`. **Accepted is not the same as good**: which one sounds least
+> synthetic is a listening test, and this repository does not claim to have run one.
+
+> **The session configuration is doc-shaped, not wire-verified.** The two rows above describe what
+> the documentation says. The committed voice fixtures were recorded *before* this configuration
+> existed, so the replay proves this repository's end of it and not Foundry's acceptance (§5).
 
 > **Not verified against a live resource.** The three rows above are what the documentation says.
 > No request has been made from this repository to a real Speech resource, so nothing here claims
@@ -221,6 +242,7 @@ signal than the date I read it.
 | AgentSchema specification | https://microsoft.github.io/AgentSchema/ | Open standard behind the now-deprecated `agent.yaml`. Context for the §3.1 decision. |
 | foundry-samples — hosted agents | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents | Agent Framework / LangGraph / custom-code hosted agent samples, for the Phase 4 LangGraph harness. |
 | voicelive-samples | https://github.com/microsoft-foundry/voicelive-samples | JS samples incl. Live-Reference AEC and avatar. |
+| **Tavily Search API — `POST /search`** | https://docs.tavily.com/documentation/api-reference/endpoint/search | The `search_web` tool (spec 013). Endpoint **`https://api.tavily.com/search`**; auth header **`Authorization: Bearer tvly-…`** (a plain bearer, unlike Speech's `aad#` form). Request fields used: `query`, `max_results` (0–20, default 10), `search_depth` (`basic` = 1 credit, `advanced` = 2). Response: `{query, results: [{title, url, content, score, published_date?, raw_content?}], response_time, request_id}`. Status codes: **401** unauthorized, **429** rate limited (with `Retry-After`), **432** plan limit, **433** pay-as-you-go limit, 400/422 bad request, 500 server error. `include_answer` exists and is deliberately **not** used — see the spec. Read 2026-09-15. |
 
 ---
 
@@ -239,4 +261,5 @@ signal than the date I read it.
 | Voice Live api-version (plain WebSocket) | `2026-04-10` | observed 2026-09-15 |
 | Voice Live agent attachment | `agent_name` + **`agent_project_name`** (not `project_name`) | observed 2026-09-15 |
 | Learn MCP server | `https://learn.microsoft.com/api/mcp` | Microsoft Learn MCP docs |
+| Web search endpoint | `https://api.tavily.com/search`, `search_depth: basic`, `max_results: 5`, 10s timeout | Tavily `/search` reference |
 | Python | 3.12 | project decision |

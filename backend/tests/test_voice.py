@@ -340,3 +340,66 @@ def test_voice_executes_tools_through_the_same_module_as_chat():
     import app.voice_session as voice_path
 
     assert voice_path.execute is chat_path.execute
+
+
+# --- spec 012: the session configuration rides on the SDP frame -------------
+
+
+async def test_the_sdp_frame_carries_the_session_configuration():
+    """AC1-AC3, AC5. The WebRTC doc carries the session object inside `rtc.call.sdp.create`, so the
+    voice is set before a single word is spoken rather than one round trip later."""
+    socket = FakeSocket(RECORDED)
+    session = VoiceSession(
+        "s-config",
+        socket,
+        session_config={
+            "voice": {"name": "pt-BR-ThalitaMultilingualNeural", "type": "azure-standard"},
+            "turn_detection": {"type": "azure_semantic_vad_multilingual"},
+        },
+    )
+
+    await session.negotiate(SDP_OFFER)
+    await session.close()
+
+    frame = next(f for f in socket.sent if f["type"] == "rtc.call.sdp.create")
+    assert frame["session"]["voice"]["name"] == "pt-BR-ThalitaMultilingualNeural"
+    assert frame["session"]["turn_detection"]["type"] == "azure_semantic_vad_multilingual"
+    assert "instructions" not in frame["session"]
+    assert frame["sdp_offer"] == SDP_OFFER
+
+
+async def test_an_unconfigured_session_sends_exactly_what_it_sent_before():
+    """AC6. Configuration that cannot be turned off is a trap, and the recorded fixtures were
+    captured without it."""
+    socket = FakeSocket(RECORDED)
+    session = VoiceSession("s-plain", socket)
+
+    await session.negotiate(SDP_OFFER)
+    await session.close()
+
+    frame = next(f for f in socket.sent if f["type"] == "rtc.call.sdp.create")
+    assert frame == {"type": "rtc.call.sdp.create", "sdp_offer": SDP_OFFER}
+
+
+async def test_the_session_reports_what_it_negotiated(caplog):
+    """A session that comes back `modalities: ["text"]` is a session with no sound, and until now
+    the only symptom was silence. What the service agreed to is logged, so the difference between
+    "the agent did not speak" and "the browser did not play" is one line away."""
+    negotiated = {
+        "type": "session.updated",
+        "session": {
+            "modalities": ["text"],
+            "voice": {"name": "en-US-AvaNeural", "type": "azure-standard"},
+        },
+    }
+    socket = FakeSocket([negotiated, *RECORDED])
+    session = VoiceSession("s-log", socket)
+
+    with caplog.at_level("INFO"):
+        await session.negotiate(SDP_OFFER)
+        await asyncio.sleep(0)
+        await session.close()
+
+    logged = " ".join(record.message for record in caplog.records)
+    assert "modalities" in logged and "text" in logged
+    assert "en-US-AvaNeural" in logged

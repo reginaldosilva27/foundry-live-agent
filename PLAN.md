@@ -105,6 +105,7 @@ foundry-live-agent/
 │   │   │   └── tools/           The client-side function tools, implemented ONCE
 │   │   │       ├── datetime_tool.py     get_current_datetime(timezone)
 │   │   │       ├── knowledge_tool.py    lookup_knowledge(query) — swappable for Foundry IQ
+│   │   │       ├── web_search_tool.py   search_web(query) — swappable search backend
 │   │   │       ├── registry.py          name -> (schema, callable)
 │   │   │       └── knowledge/           local markdown corpus
 │   │   ├── prompt-agent/        ← IMPLEMENTED THIS PASS
@@ -160,13 +161,14 @@ obvious that swapping the harness does not change the tools.
 ### 4.1 Foundry side, as code
 
 A **prompt agent** created via `project.agents.create_version(...)` with a
-`PromptAgentDefinition(model=…, instructions=…, tools=[…])`, carrying three tools:
+`PromptAgentDefinition(model=…, instructions=…, tools=[…])`, carrying four tools:
 
 | Tool | Type | Who executes it |
 |---|---|---|
 | `microsoft_learn` | Remote MCP (`https://learn.microsoft.com/api/mcp`, no auth) | **Foundry** |
 | `get_current_datetime(timezone)` | Function | **Our BFF** |
 | `lookup_knowledge(query)` | Function | **Our BFF** |
+| `search_web(query)` | Function (Tavily — the one API key in the project) | **Our BFF** |
 
 The function tools are the teaching moment: **Foundry emits the call and stops. If the BFF does not
 return the output, the run hangs and expires after 10 minutes.**

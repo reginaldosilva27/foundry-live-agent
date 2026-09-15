@@ -137,6 +137,52 @@ same `ToolCard` the chat uses. The `AgentEvent` set did not grow for voice, and 
 goal rather than a happy accident: transcripts, which would have needed new event types, arrive at
 the browser directly on the data channel instead of being relayed.
 
+## How the session is configured
+
+The voice, the turn detector and the input-audio options travel **inside** `rtc.call.sdp.create`,
+next to the SDP offer — the shape the WebRTC documentation shows — so the session is configured
+before a word is spoken rather than one round trip later:
+
+```json
+{ "type": "rtc.call.sdp.create", "sdp_offer": "v=0…",
+  "session": {
+    "voice": { "name": "pt-BR-Luana:MAI-Voice-2-Flash", "type": "azure-standard" },
+    "turn_detection": { "type": "azure_semantic_vad_multilingual",
+                        "interrupt_response": true, "remove_filler_words": true },
+    "input_audio_noise_reduction": { "type": "azure_deep_noise_suppression" } } }
+```
+
+Three things about that block are worth knowing (spec 012):
+
+- **Barge-in is only configurable on the azure semantic detectors.** `interrupt_response` does not
+  exist on the default `server_vad`, so until this the interruption spec 006 promised was whatever
+  the service happened to do.
+- **`instructions` is never sent.** It is documented as unsupported with a custom agent, and it is
+  the one field that would quietly replace the agent this project is built around.
+- **`modalities` is stated, not assumed.** The service's default varies — the committed fixtures
+  show `["text"]` in one session and `["audio", "text"]` in another — and a text-only session is a
+  transcript with no sound.
+- **Blank configuration sends nothing.** With every `VOICELIVE_*` variable empty the frame is just
+  `type` and `sdp_offer`, exactly as the recorded fixtures captured it.
+
+## What the overlay shows, and what it does not
+
+During a session the card shows the conversation newest-first and **one line per tool call** — the
+name, who executed it, how long it took. The arguments and the result are not shown: a
+`lookup_knowledge` result is a page of JSON, and inside a 460px card over a live conversation it
+buries the thing you are listening to. There is no trace panel beside a voice session, so that
+detail is simply not offered during one; it reaches the chat when the session ends (spec 007).
+
+The BFF logs what each session actually negotiated:
+
+```
+voice session negotiated: modalities=['audio', 'text'] voice=pt-BR-Luana:MAI-Voice-2-Flash turn_detection=azure_semantic_vad_multilingual
+```
+
+That line is the difference between *the agent did not speak* and *the browser did not play* — the
+two failures look identical from the outside, and a session that comes back `modalities=['text']`
+is silent by design.
+
 ## Ending, and where the conversation goes
 
 Two streams arrive during a session — what was said, on the data channel, and what the agent did,

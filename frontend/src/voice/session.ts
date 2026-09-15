@@ -13,7 +13,7 @@
  */
 import { BFF_URL } from '../config'
 
-export type VoiceErrorCode = 'unsupported' | 'mic-denied' | 'disabled' | 'failed'
+export type VoiceErrorCode = 'unsupported' | 'mic-denied' | 'disabled' | 'failed' | 'audio-blocked'
 
 export class VoiceError extends Error {
   readonly code: VoiceErrorCode
@@ -72,7 +72,11 @@ export async function startVoice(options: StartVoiceOptions = {}): Promise<Voice
     events.onmessage = (message: MessageEvent) => onServerEvent?.(parse(message.data))
 
     for (const track of microphone.getTracks()) peer.addTrack(track, microphone)
-    peer.ontrack = (event) => onRemoteStream?.(event.streams[0])
+    // `event.streams` is empty when the remote SDP carries no msid — the track still arrives, but
+    // `streams[0]` is `undefined` and the audio element would get no source at all. Wrapping the
+    // track is the difference between hearing the agent and silence with nothing to explain it.
+    peer.ontrack = (event) =>
+      onRemoteStream?.(event.streams[0] ?? new MediaStream([event.track]))
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === 'failed' || peer.connectionState === 'closed') onClosed?.()
     }

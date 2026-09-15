@@ -37,6 +37,7 @@ __all__ = [
     "normalise_voice",
     "tool_output_frame",
     "unmapped_voice_types",
+    "voice_session_config",
 ]
 
 FUNCTION_CALL_FRAME = "response.function_call_arguments.done"
@@ -87,6 +88,58 @@ def attachment_query(*, agent: str, project: str, version: str | None = None) ->
     if version:
         query["agent_version"] = version
     return query
+
+
+def voice_session_config(
+    *, voice: str = "", vad: str = "", input_language: str = ""
+) -> dict[str, Any]:
+    """The `session` object that configures a Voice Live session.
+
+    It travels **inside** `rtc.call.sdp.create`, alongside `sdp_offer` — the WebRTC doc shows it
+    there, and sending it with the offer costs no round trip and leaves no window in which the
+    session runs with the wrong voice. (The control channel stays open afterwards, so a later
+    `session.update` is how a voice would be changed mid-call.)
+
+    Two rules, both deliberate:
+
+    - **Everything blank produces `{}`**, and the caller then sends the frame exactly as this app
+      sent it before this existed. Configuration that cannot be turned off is a trap.
+    - **`instructions` is never included.** The documentation is explicit that it is unsupported
+      with a custom agent, and it is the one field whose accidental presence would quietly replace
+      the agent this repository exists to demonstrate.
+
+    Shapes from the two docs recorded in `docs/REFERENCES.md`, read 2026-09-15.
+    """
+    config: dict[str, Any] = {}
+
+    if voice:
+        # `azure-standard` covers both the neural voices and the HD ones
+        # (`pt-BR-Thalita:DragonHDLatestNeural`). `azure-realtime-native` names belong to the
+        # `azure-realtime` model, which is not what an agent attachment runs on.
+        config["voice"] = {"name": voice, "type": "azure-standard"}
+
+    if vad:
+        # `interrupt_response` — barge-in — exists only on the azure semantic detectors. On the
+        # default `server_vad` there is nothing to set, which is why spec 006's barge-in goal was
+        # never actually configured.
+        config["turn_detection"] = {
+            "type": vad,
+            "interrupt_response": True,
+            "remove_filler_words": True,
+        }
+
+    if config:
+        # **The field that decides whether the agent speaks at all.** Observed in the committed
+        # fixtures: one recorded session reports `"modalities": ["text"]` and another
+        # `["audio", "text"]`. The service picks, and a text-only session produces a transcript and
+        # no sound — with nothing on screen to explain the silence. So it is stated, not hoped for.
+        config["modalities"] = ["audio", "text"]
+        config["input_audio_noise_reduction"] = {"type": "azure_deep_noise_suppression"}
+
+    if input_language:
+        config["input_audio_transcription"] = {"model": "azure-speech", "language": input_language}
+
+    return config
 
 
 def is_function_call(frame: Mapping[str, Any]) -> bool:

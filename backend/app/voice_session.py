@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Protocol
 
@@ -28,6 +29,8 @@ from harness._shared.voice_events import is_function_call, normalise_voice, tool
 from app.tool_executor import execute
 
 __all__ = ["VoiceSession", "VoiceSocket", "NegotiationError"]
+
+_log = logging.getLogger(__name__)
 
 NEGOTIATION_TIMEOUT = 30.0
 
@@ -55,10 +58,19 @@ Connect = Callable[[dict[str, str]], Awaitable[VoiceSocket]]
 class VoiceSession:
     """A live voice conversation: the SDP handshake, then the tool round trip."""
 
-    def __init__(self, session_id: str, socket: VoiceSocket, executor: Executor = execute) -> None:
+    def __init__(
+        self,
+        session_id: str,
+        socket: VoiceSocket,
+        executor: Executor = execute,
+        session_config: dict[str, Any] | None = None,
+    ) -> None:
         self.id = session_id
         self._socket = socket
         self._executor = executor
+        # The voice, the turn detector and the input audio options, or `{}` for a deployment that
+        # configures none of them — see `voice_session_config` (spec 012).
+        self._session_config = session_config or {}
         self._events: asyncio.Queue[AgentEvent | None] = asyncio.Queue()
         self._pump: asyncio.Task[None] | None = None
         self._closed = False
@@ -69,7 +81,12 @@ class VoiceSession:
         Frames that arrive before the answer are not discarded — the session is already live by
         then, and a tool call landing in that window would otherwise be dropped.
         """
-        await self._socket.send(json.dumps({"type": "rtc.call.sdp.create", "sdp_offer": sdp_offer}))
+        frame: dict[str, Any] = {"type": "rtc.call.sdp.create", "sdp_offer": sdp_offer}
+        if self._session_config:
+            # Carried with the offer rather than as a later `session.update`: documented shape, no
+            # extra round trip, and no window in which the session runs with the wrong voice.
+            frame["session"] = self._session_config
+        await self._socket.send(json.dumps(frame))
 
         try:
             async with asyncio.timeout(NEGOTIATION_TIMEOUT):
@@ -123,6 +140,20 @@ class VoiceSession:
             await self._events.put(None)
 
     async def _handle(self, frame: dict[str, Any]) -> None:
+        if frame.get("type") in {"session.created", "session.updated"}:
+            # What the service actually agreed to — not what we asked for. A session that comes
+            # back `modalities: ["text"]` produces a transcript and no sound, and the only symptom
+            # is silence; a wrong voice is equally invisible. Logged so that "the agent did not
+            # speak" and "the browser did not play" are one line apart (§5).
+            negotiated = frame.get("session") or {}
+            voice = negotiated.get("voice") or {}
+            _log.info(
+                "voice session negotiated: modalities=%s voice=%s turn_detection=%s",
+                negotiated.get("modalities"),
+                voice.get("name"),
+                (negotiated.get("turn_detection") or {}).get("type"),
+            )
+
         for event in normalise_voice([frame]):
             await self._events.put(event)
 

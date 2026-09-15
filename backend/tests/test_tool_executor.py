@@ -65,3 +65,41 @@ def test_output_is_always_a_json_string():
     ]:
         assert isinstance(execute(name, args).output, str)
         json.loads(execute(name, args).output)
+
+
+# --- spec 013 AC11: a third tool costs the executor nothing ----------------
+
+
+def test_executes_search_web_without_a_key_and_still_answers(monkeypatch):
+    """The executor gained no branch for the web tool -- that is the point (§8).
+
+    An unconfigured provider is the failure most likely to hit a fresh clone, so it is the one
+    worth asserting: it comes back as an answered call carrying an error, not as a hung run.
+    """
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    result = execute("search_web", '{"query": "what shipped in Foundry this week"}')
+    assert result.ok, "a provider that is not configured is a result, not a tool failure"
+    assert json.loads(result.output)["error"] == "search_unavailable"
+
+
+def test_search_web_output_is_a_json_string_the_agent_can_receive(monkeypatch):
+    from harness._shared.tools import registry
+
+    monkeypatch.setitem(
+        registry._REGISTRY,
+        "search_web",
+        registry.ToolSpec(
+            name="search_web",
+            description="stub",
+            schema=registry.get("search_web").schema,
+            call=lambda query: {
+                "query": query,
+                "results": [
+                    {"title": "t", "url": "https://example.test", "content": "c", "score": 0.5}
+                ],
+            },
+        ),
+    )
+    result = execute("search_web", '{"query": "foundry"}')
+    assert result.ok
+    assert json.loads(result.output)["results"][0]["url"] == "https://example.test"

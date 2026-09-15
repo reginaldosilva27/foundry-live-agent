@@ -52,9 +52,9 @@ contêiner roda (*hosted agent* com LangGraph). Os dois ficam atrás de um únic
 | | |
 |---|---|
 | 🔌 **Um contrato, dois harnesses** | `HarnessAdapter` + um stream tipado de `AgentEvent`. O `prompt-agent` está pronto; o `langgraph` é scaffold. |
-| 🛠️ **Três ferramentas, dois donos** | O MCP do Microsoft Learn roda *no Foundry*; duas function tools rodam *no BFF* — porque o Foundry pede e para. Uma linha por chamada no chat, o payload no painel de rastros. |
+| 🛠️ **Quatro ferramentas, dois donos** | O MCP do Microsoft Learn roda *no Foundry*; três function tools — o relógio, a base de conhecimento do próprio projeto e a busca na internet — rodam *no BFF*, porque o Foundry pede e para. Uma linha por chamada no chat, o payload no painel de rastros. |
 | 🔍 **Traces visíveis** | Uma árvore de spans do Application Insights numa gaveta: execução do agente › chamadas de modelo › chamadas de ferramenta, com durações e tokens. |
-| 🗣️ **Voz no mesmo agente** | O Voice Live se conecta à *mesma* definição — um agente, um conjunto de ferramentas, um repositório de traces, duas modalidades. |
+| 🗣️ **Voz no mesmo agente** | O Voice Live se conecta à *mesma* definição — um agente, um conjunto de ferramentas, um repositório de traces, duas modalidades.  A voz, o detector de turno e a supressão de ruído são configurados por implantação. |
 | 🔊 **Respostas que dá para ouvir** | Um botão lê as respostas do chat em voz alta, frase a frase conforme elas chegam, sintetizadas pelo BFF — o navegador continua sem credencial. |
 | 🔐 **Zero segredos** | Entra ID via `DefaultAzureCredential` em tudo. O navegador nunca guarda credencial do Azure. |
 
@@ -69,7 +69,7 @@ flowchart LR
     subgraph app["📦 Este repositório"]
         BFF["BFF FastAPI<br/>identidade · SSE · execução de ferramentas<br/><b>sem loop de agente</b>"]
         H["Harness<br/>prompt-agent | langgraph"]
-        T["Function tools<br/>get_current_datetime<br/>lookup_knowledge"]
+        T["Function tools<br/>get_current_datetime<br/>lookup_knowledge<br/>search_web"]
     end
 
     subgraph foundry["☁️ Microsoft Foundry"]
@@ -130,7 +130,7 @@ git clone https://github.com/reginaldosilva27/foundry-live-agent
 cd foundry-live-agent
 
 just env            # 1. cria o .env a partir do template
-just login          # 2. az login — Entra ID, sem API key em lugar nenhum
+just login          # 2. az login — Entra ID; nenhum serviço Azure usa key
 just infra          # 3. azd up: recurso Foundry, projeto, modelo, App Insights (~5 min)
 just agent          # 4. aplica a definição do agente de ai/harness/prompt-agent/agent.yaml
 just backend        # 5. o BFF na :8000
@@ -143,6 +143,11 @@ Depois pergunte algo que force os dois caminhos de ferramenta ao mesmo tempo:
 
 O `get_current_datetime` roda **no BFF**; a busca na documentação roda **no Foundry** via o servidor
 MCP do Learn. Veja os dois aparecerem no painel de atividade e depois abra a gaveta de traces.
+
+A busca na internet é a terceira function tool e a única exceção ao "sem keys": a Tavily é um serviço
+de terceiros sem caminho pelo Entra, então defina `TAVILY_API_KEY` no `.env` para habilitar o
+`search_web`. Deixe vazio e a aplicação roda normalmente — o agente apenas avisa que a busca na
+internet não está configurada.
 
 Opcional — o AI Gateway é um fluxo de portal sem caminho de IaC: `just gateway` imprime os passos.
 

@@ -35,7 +35,10 @@ arrives with its own spec. This is that spec.
 ## Non-goals
 
 - No avatar, no custom voice, no Live-Reference echo cancellation (they exist; they are not the
-  lesson).
+  lesson). **The "no custom voice" half is superseded by
+  [spec 012](../012-voice-session-config/spec.md) (2026-09-15)**: the attachment was the lesson
+  and it works, and an `en-US` voice reading Portuguese answers is not a demo anyone here wants
+  to show.
 - No voice-specific agent instructions. The agent is the agent; `instructions` is not supported
   alongside a custom agent anyway.
 - No transcript persistence. Nothing in this release persists a conversation (see spec 004, M9).
