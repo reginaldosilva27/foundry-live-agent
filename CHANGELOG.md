@@ -126,6 +126,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   answers `503`, the same shape voice already uses.
 
 ### Fixed
+- **`typescript` held at `~6.0.3`** — the merged bump to `~7.0.2` (PR #5) turned `npm test` and
+  `npm run build` red on `main`. TypeScript 7 is the native port, and the package no longer exports
+  the compiler API at all (`"." → "./lib/version.cjs"`); the i18n gate in
+  `frontend/src/i18n/strings.test.ts` parses each component's TSX to find prose written directly
+  into a component, and `ts.createSourceFile` is simply gone. The replacement lives under
+  `typescript/unstable/*` with a different shape, and the word *unstable* is in its path. Revisit
+  deliberately when dependabot reopens it — porting that test is the real work, not the bump.
 - **A turn that has produced nothing now says so.** Between `POST /chat` and the first event the
   turn rendered an avatar and blank space — every card in the stack draws only once it has content
   — which reads as a frozen app rather than as waiting. It now says the agent is working, in both
