@@ -15,6 +15,9 @@ export interface BffConfig {
   model: string
   uses_gateway: boolean
   project_name: string
+  speech: {
+    enabled: boolean
+  }
   voice: {
     enabled: boolean
     webrtc_api_version: string

@@ -15,8 +15,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.harness_factory import build_harness
-from app.routers import chat, config, health, voice
+from app.routers import chat, config, health, speech, voice
 from app.settings import load_settings
+from app.speech import build_synthesizer
 from app.voice_connect import build_connect
 
 __all__ = ["create_app"]
@@ -25,13 +26,14 @@ __all__ = ["create_app"]
 def create_app(
     stream_factory: Callable[..., Any] | None = None,
     voice_connect: Callable[..., Any] | None = None,
+    synthesize: Callable[..., Any] | None = None,
     **settings_overrides: object,
 ) -> FastAPI:
     """Build the app.
 
-    ``stream_factory`` injects a raw Foundry stream and ``voice_connect`` injects a Voice Live
-    control channel. Production leaves both unset; tests pass a replay, which exercises the
-    identical code path with no credential.
+    ``stream_factory`` injects a raw Foundry stream, ``voice_connect`` a Voice Live control
+    channel, and ``synthesize`` a text-to-speech call. Production leaves all three unset; tests
+    pass a replay, which exercises the identical code path with no credential.
 
     The harness is resolved **here, at startup**, so a bad ``AGENT_HARNESS`` stops the process
     with an explanation instead of failing on someone's first message.
@@ -55,6 +57,9 @@ def create_app(
     app.state.settings = settings
     app.state.harness = build_harness(settings, stream_factory=stream_factory)
     app.state.voice_connect = voice_connect or build_connect(settings)
+    # `None` when the BFF has no speech configuration — the routers turn that into an answer that
+    # says so, rather than into a failure on the first sentence (spec 008, AC9).
+    app.state.synthesize = synthesize or build_synthesizer(settings)
     # Voice sessions live in this process, so the BFF is single-replica for voice. Said out loud
     # in docs/how-it-works/voice-live-lifecycle.md rather than solved: a session store is a
     # different feature, and pretending otherwise would be the kind of drawing-of-a-feature §5
@@ -70,7 +75,7 @@ def create_app(
         allow_headers=["*"],
     )
 
-    for router in (chat.router, config.router, health.router, voice.router):
+    for router in (chat.router, config.router, health.router, speech.router, voice.router):
         app.include_router(router)
     return app
 

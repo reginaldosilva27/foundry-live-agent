@@ -32,6 +32,14 @@ class Settings:
     # four. One shared value would silently break whichever path it was not chosen for.
     voice_webrtc_api_version: str = "2026-01-01-preview"
     voice_ws_api_version: str = "2026-04-10"
+    # Text to speech for the chat's spoken answers (spec 008). The endpoint is the Speech
+    # resource's **custom subdomain** host, and the resource id is not optional decoration: Entra
+    # auth for this API carries it inside the Authorization header. Both are read from the
+    # resource, never derived from the project endpoint — see app/speech.py (§10).
+    speech_endpoint: str = ""
+    speech_resource_id: str = ""
+    speech_voice_en: str = "en-US-AvaMultilingualNeural"
+    speech_voice_pt: str = "pt-BR-ThalitaMultilingualNeural"
 
     @property
     def voice_enabled(self) -> bool:
@@ -42,6 +50,16 @@ class Settings:
         """The control-channel endpoint. Voice Live never goes through the AI Gateway."""
         host = self.voice_endpoint.split("://", 1)[-1].split("/", 1)[0]
         return f"wss://{host}/voice-live/realtime/calls"
+
+    @property
+    def speech_enabled(self) -> bool:
+        """Both halves or neither: the resource id alone cannot address a host, and the host alone
+        cannot build the `aad#` token."""
+        return bool(self.speech_endpoint and self.speech_resource_id)
+
+    def voice_for(self, lang: str) -> str:
+        """The voice that reads in the reader's language."""
+        return self.speech_voice_pt if lang == "pt" else self.speech_voice_en
 
     @property
     def uses_gateway(self) -> bool:
@@ -68,6 +86,10 @@ def load_settings(**overrides: object) -> Settings:
             "VOICELIVE_WEBRTC_API_VERSION", "2026-01-01-preview"
         ),
         "voice_ws_api_version": os.environ.get("VOICELIVE_WS_API_VERSION", "2026-04-10"),
+        "speech_endpoint": os.environ.get("SPEECH_ENDPOINT", ""),
+        "speech_resource_id": os.environ.get("SPEECH_RESOURCE_ID", ""),
+        "speech_voice_en": os.environ.get("SPEECH_VOICE_EN", "en-US-AvaMultilingualNeural"),
+        "speech_voice_pt": os.environ.get("SPEECH_VOICE_PT", "pt-BR-ThalitaMultilingualNeural"),
     }
     values.update({k: v for k, v in overrides.items() if v is not None})
     return Settings(**values)  # type: ignore[arg-type]

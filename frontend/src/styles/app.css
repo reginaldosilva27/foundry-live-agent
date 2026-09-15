@@ -397,6 +397,37 @@ button:disabled {
   color: var(--fg-1);
 }
 
+.turn__pending {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+/* The line that opens a replayed voice session (spec 007). */
+.turn__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  grid-column: 1 / -1;
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.turn__divider::after {
+  flex: 1;
+  height: 1px;
+  content: '';
+  background: var(--border-1);
+}
+
+.turn__divider-clock {
+  font-family: var(--font-mono);
+  text-transform: none;
+}
+
 /* ---------- Empty state ---------- */
 .empty {
   max-width: 620px;
@@ -907,7 +938,6 @@ button:disabled {
   gap: var(--sp-4);
   width: min(460px, 100%);
   max-height: calc(100vh - var(--sp-6));
-  overflow-y: auto;
   padding: var(--sp-5);
   border-radius: var(--r-lg); /* the design's 20px spotlight radius */
   background: var(--ds-ink);
@@ -987,7 +1017,11 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  flex: 1 1 auto;
   min-height: 64px;
+  /* The transcript is the only thing in the card that scrolls. Before this the whole card did,
+     which carried the controls off the bottom of a long answer (spec 007, AC6). */
+  overflow-y: auto;
   font-size: var(--fs-body-s);
 }
 

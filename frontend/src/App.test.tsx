@@ -4,7 +4,7 @@
  * The fake answers `/config` and streams `/chat` as real SSE frames, so the path under test is the
  * production one: `fetch` -> `ReadableStream` -> frame parser -> reducer -> DOM.
  */
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -75,6 +75,18 @@ describe('App', () => {
     )
   })
 
+  it('names the model in the sidebar without printing the Foundry project name', async () => {
+    // The project id is a deployment detail nobody reads from a screenshot, and `model` arrives
+    // from the BFF as `<connection>/<model>` — in a real project both carry the project's name.
+    fakeBff([])
+    render(<App />)
+
+    const sidebar = screen.getByRole('complementary')
+    await waitFor(() => expect(within(sidebar).getByTestId('sidebar-model')).toHaveTextContent('gpt-4o'))
+    expect(sidebar.textContent).not.toContain('proj-default')
+    expect(sidebar.textContent).not.toContain('foundry-analytics-demo')
+  })
+
   it('says so when the BFF is not answering rather than claiming a harness', async () => {
     fakeBff([], null)
     render(<App />)
@@ -99,6 +111,45 @@ describe('App', () => {
     expect(within(foundryCard).getByTestId('executor-tag')).toHaveTextContent('microsoft_learn')
 
     expect(screen.getByTestId('meta-line')).toHaveTextContent('154')
+  })
+
+  it('says the agent is working while the turn has produced nothing yet', async () => {
+    // The gap between POST /chat and the first event is not instant — a reasoning model with a
+    // tool round trip can sit there for seconds. Until this, the turn drew an avatar and blank
+    // space, which reads as a frozen app rather than as waiting (§5).
+    let push: (event: AgentEvent) => void = () => {}
+    let close: () => void = () => {}
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (String(url).endsWith('/config')) {
+          return new Response(JSON.stringify(CONFIG), { status: 200 })
+        }
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            push = (event) =>
+              controller.enqueue(new TextEncoder().encode(asSseStream([event])))
+            close = () => controller.close()
+          },
+        })
+        return new Response(body, { status: 200 })
+      }),
+    )
+    render(<App />)
+    await ask()
+
+    expect(await screen.findByTestId('turn-pending')).toBeInTheDocument()
+
+    await act(async () => {
+      push({ type: 'text_delta', text: '13:53' })
+    })
+    await waitFor(() => expect(screen.getByTestId('answer')).toHaveTextContent('13:53'))
+    expect(screen.queryByTestId('turn-pending')).toBeNull()
+
+    await act(async () => {
+      push({ type: 'done', response_id: 'resp_1' })
+      close()
+    })
   })
 
   it('renders a terminal error as an error, not as a stream that stopped', async () => {

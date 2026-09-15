@@ -8,10 +8,12 @@
  *
  * Like `useAgentStream`, this hook decides nothing. It projects events.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BFF_URL } from '../config'
 import { createFrameParser } from '../state/sse'
 import { emptyTurn, reduceTurn, type Turn } from '../state/turn'
+import type { VoiceLogEntry } from '../state/voiceLog'
+import { isKnownEvent } from '../types/events'
 import { startVoice, VoiceError, type VoiceErrorCode, type VoiceSession } from '../voice/session'
 
 export type VoiceStatus = 'idle' | 'starting' | 'live' | 'error'
@@ -25,7 +27,8 @@ export interface VoiceState {
   /** Tool calls and results, in the same shape the chat's activity panel renders. */
   turn: Turn
   start: () => Promise<void>
-  stop: () => Promise<void>
+  /** Ends the session and hands back what it produced, in the order it happened (spec 007). */
+  stop: () => Promise<VoiceLogEntry[]>
   toggleMute: () => void
 }
 
@@ -33,8 +36,19 @@ export function useVoiceSession(): VoiceState {
   const [status, setStatus] = useState<VoiceStatus>('idle')
   const [error, setError] = useState<VoiceErrorCode | null>(null)
   const [muted, setMuted] = useState(false)
-  const [transcript, setTranscript] = useState<VoiceState['transcript']>([])
-  const [turn, setTurn] = useState<Turn>(emptyTurn)
+  // One ordered log, not two piles. Which answer a tool call belonged to is an ordering fact, and
+  // two independent lists throw it away (spec 007).
+  //
+  // The ref is the log; the state is its mirror, there to re-render the overlay. `stop` is called
+  // from an event handler and from unmount cleanup, and must hand back the log as it stands at
+  // that moment rather than as it stood when the callback was created.
+  const entries = useRef<VoiceLogEntry[]>([])
+  const [log, setLog] = useState<VoiceLogEntry[]>([])
+
+  const record = useCallback((entry: VoiceLogEntry) => {
+    entries.current = [...entries.current, entry]
+    setLog(entries.current)
+  }, [])
 
   const session = useRef<VoiceSession | null>(null)
   const audio = useRef<HTMLAudioElement | null>(null)
@@ -49,14 +63,15 @@ export function useVoiceSession(): VoiceState {
     audio.current = null
     setStatus('idle')
     setMuted(false)
+    return entries.current
   }, [])
 
   const start = useCallback(async () => {
     if (session.current) return
     setStatus('starting')
     setError(null)
-    setTranscript([])
-    setTurn(emptyTurn())
+    entries.current = []
+    setLog([])
 
     try {
       const live = await startVoice({
@@ -67,17 +82,17 @@ export function useVoiceSession(): VoiceState {
           void element.play().catch(() => {})
           audio.current = element
         },
-        onServerEvent: (event) => appendTranscript(event, setTranscript),
+        onServerEvent: (event) => appendTranscript(event, record),
         onClosed: () => setStatus('idle'),
       })
       session.current = live
       setStatus('live')
-      activity.current = followActivity(live.sessionId, setTurn)
+      activity.current = followActivity(live.sessionId, record)
     } catch (cause) {
       setError(cause instanceof VoiceError ? cause.code : 'failed')
       setStatus('error')
     }
-  }, [])
+  }, [record])
 
   const toggleMute = useCallback(() => {
     setMuted((wasMuted) => {
@@ -89,13 +104,26 @@ export function useVoiceSession(): VoiceState {
   // A tab closed mid-conversation must not leave a control channel open on the server.
   useEffect(() => () => void stop(), [stop])
 
+  const transcript = useMemo(
+    () => log.filter((entry) => entry.kind === 'said').map(({ speaker, text }) => ({ speaker, text })),
+    [log],
+  )
+  const turn = useMemo(
+    () =>
+      log.reduce(
+        (current, entry) => (entry.kind === 'event' ? reduceTurn(current, entry.event) : current),
+        emptyTurn(),
+      ),
+    [log],
+  )
+
   return { status, error, muted, transcript, turn, start, stop, toggleMute }
 }
 
 /** Subscribe to the session's tool activity — the same `AgentEvent`s the chat renders. */
 function followActivity(
   sessionId: string,
-  setTurn: (update: (turn: Turn) => Turn) => void,
+  record: (entry: VoiceLogEntry) => void,
 ): AbortController {
   const controller = new AbortController()
 
@@ -114,7 +142,9 @@ function followActivity(
         const { done, value } = await reader.read()
         if (done) break
         for (const event of parse(decoder.decode(value, { stream: true }))) {
-          setTurn((current) => reduceTurn(current, event))
+          // Unknown types are dropped here rather than logged: the log is replayed into the chat,
+          // and `reduceTurn` counts them when the overlay derives its turn from it.
+          if (isKnownEvent(event)) record({ kind: 'event', event })
         }
       }
     } catch {
@@ -132,17 +162,16 @@ function followActivity(
  * Only the two transcript events are read. The rest — VAD edges, response lifecycle — are the
  * service's business, and inventing UI for them would be inventing behaviour.
  */
-function appendTranscript(
-  event: unknown,
-  setTranscript: (update: (lines: VoiceState['transcript']) => VoiceState['transcript']) => void,
-): void {
+function appendTranscript(event: unknown, record: (entry: VoiceLogEntry) => void): void {
   const frame = event as { type?: string; transcript?: string; delta?: string }
-  if (!frame?.type) return
+  if (!frame?.type || !frame.transcript) return
 
-  if (frame.type === 'conversation.item.input_audio_transcription.completed' && frame.transcript) {
-    setTranscript((lines) => [...lines, { speaker: 'user', text: frame.transcript! }])
-  }
-  if (frame.type === 'response.audio_transcript.done' && frame.transcript) {
-    setTranscript((lines) => [...lines, { speaker: 'agent', text: frame.transcript! }])
-  }
+  const speaker =
+    frame.type === 'conversation.item.input_audio_transcription.completed'
+      ? 'user'
+      : frame.type === 'response.audio_transcript.done'
+        ? 'agent'
+        : null
+
+  if (speaker) record({ kind: 'said', speaker, text: frame.transcript })
 }

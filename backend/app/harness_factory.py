@@ -7,7 +7,7 @@ explanation, not surface as a confusing failure on the first user message.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, MutableMapping
 from typing import Any
 
 from harness._shared.contract import HarnessAdapter
@@ -51,34 +51,67 @@ def build_harness(settings: Settings, stream_factory: Callable[..., Any] | None 
     )
 
 
+def _openai_client(settings: Settings):
+    """The OpenAI-shaped client for the Foundry project. Built lazily, so importing this module
+    needs no Azure SDK and no credential — which is what lets the whole loop be tested with an
+    injected stream."""
+    from azure.ai.projects import AIProjectClient
+    from azure.identity import DefaultAzureCredential
+
+    from app.settings import require_live_settings
+
+    require_live_settings(settings)
+    project = AIProjectClient(
+        endpoint=settings.project_endpoint, credential=DefaultAzureCredential()
+    )
+    return project.get_openai_client()
+
+
 def _foundry_stream_factory(settings: Settings) -> Callable[..., Any]:
     """The real stream: Responses API against the Foundry project endpoint.
 
-    Built lazily so importing this module needs no Azure SDK and no credential — which is what lets
-    the whole loop be tested with an injected stream.
+    **Every leg of a turn must name the same conversation.** The second leg carries only
+    `function_call_output` items; with no conversation binding it to the leg that emitted the call,
+    Foundry has no record of what is being answered and rejects the request:
+
+        400 — No tool call found for function call output with call_id call_…
+
+    Observed 2026-09-15; the recorded turn in `ai/tests/fixtures/recorded/` was produced with both
+    legs bound to one conversation (`ai/scripts/spike.py`). So a turn that arrives without one —
+    every first message — gets a conversation created here, written back into `conversation_state`,
+    which the adapter hands unchanged to each leg. The id also leaves on `trace_ids`, so the
+    browser sends it with the next turn and the thread continues.
+
+    Creating the conversation is not agent-loop logic (§8): it is Foundry's state, named, not
+    duplicated here.
     """
 
-    def factory(inputs, conversation_state):
-        from azure.ai.projects import AIProjectClient
-        from azure.identity import DefaultAzureCredential
+    cached: list[Any] = []
 
-        from app.settings import require_live_settings
+    def client() -> Any:
+        # Built once. Every build is a fresh `DefaultAzureCredential`, and acquiring a token costs
+        # seconds — paid before the first byte of the turn, and again on the leg that answers a
+        # tool call. The browser sees that as a turn that sits there doing nothing.
+        if not cached:
+            cached.append(_openai_client(settings))
+        return cached[0]
 
-        require_live_settings(settings)
-        project = AIProjectClient(
-            endpoint=settings.project_endpoint, credential=DefaultAzureCredential()
-        )
-        openai = project.get_openai_client()
+    def factory(inputs, conversation_state: MutableMapping[str, Any]):
+        openai = client()
+
+        conversation_id = conversation_state.get("conversation_id")
+        if not conversation_id:
+            conversation_id = openai.conversations.create().id
+            conversation_state["conversation_id"] = conversation_id
 
         request: dict[str, Any] = {
             "input": inputs,
+            "conversation": conversation_id,
             "stream": True,
             "extra_body": {
                 "agent_reference": {"name": settings.agent_name, "type": "agent_reference"}
             },
         }
-        if conversation_id := conversation_state.get("conversation_id"):
-            request["conversation"] = conversation_id
 
         for event in openai.responses.create(**request):
             yield event.model_dump() if hasattr(event, "model_dump") else dict(event)

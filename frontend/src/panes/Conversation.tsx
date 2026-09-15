@@ -1,11 +1,13 @@
 /** The centre column: the empty state, then the turns, scrolled to the newest. */
 import { useEffect, useRef } from 'react'
 import { ErrorCard } from '../components/ErrorCard'
+import { formatClock } from '../components/format'
 import { Markdown } from '../components/Markdown'
 import { MessageBubble } from '../components/MessageBubble'
 import { MetaLine } from '../components/MetaLine'
 import { useT } from '../i18n/context'
 import type { Message } from '../hooks/useAgentStream'
+import type { Turn } from '../state/turn'
 import { ActivityPanel } from './ActivityPanel'
 import { EmptyState } from './EmptyState'
 
@@ -14,6 +16,22 @@ interface Props {
   model?: string
   onSuggestion: (text: string) => void
   onOpenTrace: () => void
+}
+
+/**
+ * A turn that is streaming and has produced nothing yet: no reasoning, no tool, no token.
+ *
+ * Everything else in the stack renders only once it has content, so without this the turn is an
+ * avatar and blank space for as long as the model takes to start — which reads as a frozen app
+ * rather than as waiting (constitution §5).
+ */
+function pending(turn: Turn): boolean {
+  return (
+    turn.status === 'streaming' &&
+    !turn.text &&
+    !turn.reasoning &&
+    turn.activities.length === 0
+  )
 }
 
 export function Conversation({ messages, model, onSuggestion, onOpenTrace }: Props) {
@@ -36,7 +54,12 @@ export function Conversation({ messages, model, onSuggestion, onOpenTrace }: Pro
     <div className="conversation">
       <div className="conversation__inner">
         {messages.map((message) =>
-          message.role === 'user' ? (
+          message.role === 'voice-session' ? (
+            <p key={message.id} className="turn__divider" data-testid="voice-divider">
+              {s('voice.title')}
+              <span className="turn__divider-clock">{formatClock(message.seconds)}</span>
+            </p>
+          ) : message.role === 'user' ? (
             <MessageBubble key={message.id} text={message.text} />
           ) : (
             <section key={message.id} className="turn" aria-label={s('turn.agent')}>
@@ -46,6 +69,13 @@ export function Conversation({ messages, model, onSuggestion, onOpenTrace }: Pro
 
               <div className="turn__stack">
                 <ActivityPanel turn={message.turn} />
+
+                {pending(message.turn) && (
+                  <p className="turn__pending" data-testid="turn-pending">
+                    {s('turn.pending')}
+                    <span className="caret" aria-hidden="true" />
+                  </p>
+                )}
 
                 {message.turn.text && (
                   <div className="turn__answer" data-testid="answer">

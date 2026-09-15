@@ -27,12 +27,21 @@ export interface AgentMessage {
   endedAt?: number
 }
 
-export type Message = UserMessage | AgentMessage
+/** The line that opens a replayed voice session in the chat (spec 007). */
+export interface VoiceSessionMessage {
+  role: 'voice-session'
+  id: string
+  seconds: number
+}
+
+export type Message = UserMessage | AgentMessage | VoiceSessionMessage
 
 export interface AgentStream {
   messages: Message[]
   streaming: boolean
   send: (text: string) => Promise<void>
+  /** Drop finished messages into the conversation — how a voice session lands here (spec 007). */
+  append: (messages: Message[]) => void
   reset: () => void
 }
 
@@ -111,7 +120,11 @@ export function useAgentStream(): AgentStream {
     }
   }, [])
 
-  return { messages, streaming, send, reset }
+  const append = useCallback((incoming: Message[]) => {
+    if (incoming.length > 0) setMessages((prev) => [...prev, ...incoming])
+  }, [])
+
+  return { messages, streaming, send, append, reset }
 }
 
 function isTerminal(event: unknown): boolean {

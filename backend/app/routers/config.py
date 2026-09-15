@@ -25,6 +25,7 @@ async def config(request: Request) -> dict:
         "model": settings.model,
         "uses_gateway": settings.uses_gateway,
         "project_name": settings.project_name,
+        "speech": {"enabled": request.app.state.synthesize is not None},
         "voice": {
             "enabled": request.app.state.voice_connect is not None,
             # Two endpoints, two api-versions — observed 2026-09-15. Reported rather than hidden:

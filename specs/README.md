@@ -60,6 +60,8 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 004 | [Frontend shell — three panes, streaming, and the two kinds of tool](004-frontend-shell/spec.md) | 1 | ✅ done |
 | 005 | Trace drawer — Application Insights span tree, gateway correlation, usage/cost | 2 | ✏️ draft |
 | 006 | [Voice mode — Voice Live attached to the same prompt agent](006-voice-mode/spec.md) | 3 | ✅ done |
+| 007 | [The voice conversation lands in the chat](007-voice-transcript-in-chat/spec.md) | 3 | ✅ done |
+| 008 | [Spoken answers in the text chat](008-spoken-answers/spec.md) | 3 | ✅ done |
 
 The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
 screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),

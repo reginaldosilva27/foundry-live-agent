@@ -92,5 +92,15 @@ export const ExternalIcon = (p: IconProps) =>
     p,
   )
 
+export const SpeakerIcon = (p: IconProps) =>
+  svg(
+    <>
+      <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" />
+      <path d="M16 9a4 4 0 0 1 0 6" />
+      <path d="M18.5 6.5a7.5 7.5 0 0 1 0 11" />
+    </>,
+    p,
+  )
+
 export const ActivityIcon = (p: IconProps) =>
   svg(<polyline points="2.5 12 7 12 10 4.5 14 19.5 17 12 21.5 12" />, p)

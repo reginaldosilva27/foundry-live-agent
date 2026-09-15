@@ -5,7 +5,7 @@
  * `AgentEvent` stream. There is no state here that Foundry also holds, which is the frontend half
  * of constitution §8.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Composer } from './panes/Composer'
 import { Conversation } from './panes/Conversation'
 import { Header } from './panes/Header'
@@ -16,7 +16,9 @@ import { LangContext } from './i18n/context'
 import { detectLang, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
 import { useConfig } from './hooks/useConfig'
+import { useSpokenAnswers } from './hooks/useSpokenAnswers'
 import { useVoiceSession } from './hooks/useVoiceSession'
+import { voiceMessages } from './state/voiceLog'
 import { ErrorCard } from './components/ErrorCard'
 import { useT } from './i18n/context'
 
@@ -25,10 +27,20 @@ export default function App() {
     detectLang(typeof navigator === 'undefined' ? [] : navigator.languages),
   )
   const [tracesOpen, setTracesOpen] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
   const { config, failed } = useConfig()
-  const { messages, streaming, send, reset } = useAgentStream()
+  const { messages, streaming, send, append, reset } = useAgentStream()
   const voice = useVoiceSession()
   const elapsed = useElapsed(voice.status === 'live')
+
+  // A session that ends hands back what it produced; the chat is where it becomes readable, and
+  // where it sits next to the typed turns it is meant to be compared with (spec 007).
+  const endVoice = useCallback(async () => {
+    const seconds = elapsed
+    append(voiceMessages(await voice.stop(), seconds))
+  }, [append, elapsed, voice])
+
+  const spoken = useSpokenAnswers(messages, lang, speaking)
 
   const lastTurn = useMemo(
     () => [...messages].reverse().find((m) => m.role === 'agent'),
@@ -55,8 +67,11 @@ export default function App() {
             streaming={streaming}
             tracesOpen={tracesOpen}
             voiceLive={voice.status === 'live'}
+            speaking={speaking}
             onToggleTraces={() => setTracesOpen((v) => !v)}
             onVoice={() => void voice.start()}
+            onToggleSpeaking={() => setSpeaking((v) => !v)}
+            onStopSpeaking={spoken.stop}
           />
           <Conversation
             messages={messages}
@@ -75,7 +90,7 @@ export default function App() {
         </main>
 
         {(voice.status === 'live' || voice.status === 'starting') && (
-          <VoiceOverlay voice={voice} elapsed={elapsed} />
+          <VoiceOverlay voice={voice} elapsed={elapsed} onEnd={endVoice} />
         )}
 
         <TraceDrawer

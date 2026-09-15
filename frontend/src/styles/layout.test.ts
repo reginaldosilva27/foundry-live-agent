@@ -23,6 +23,16 @@ describe('app.css', () => {
     expect(breakpoint).toContain('position: fixed')
   })
 
+  it('scrolls the voice transcript inside the card, not the card itself (spec 007, AC6)', () => {
+    // A long answer used to scroll the whole card, carrying Mute and End session off the bottom.
+    const transcript = css.split('.voice-transcript {')[1].split('}')[0]
+    expect(transcript).toContain('overflow-y: auto')
+
+    const card = css.split('.voice-card {')[1].split('}')[0]
+    expect(card).not.toContain('overflow-y: auto')
+    expect(card).toContain('max-height')
+  })
+
   it('writes no colour of its own — every value comes from a design-system token', () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })

@@ -39,6 +39,8 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
         terminated = False
         try:
             messages = [{"role": "user", "content": body.message}]
+            # Mutable on purpose: the first turn of a session has no conversation yet, and the
+            # stream factory writes the one it creates back here so every leg names it.
             state = {"conversation_id": body.conversation_id} if body.conversation_id else {}
             async for event in harness.stream_response(messages, state):
                 if event["type"] in {"done", "error"}:

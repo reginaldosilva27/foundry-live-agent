@@ -96,7 +96,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Real screenshots in `docs/assets/`, and an honest table of the three that are still missing and
   what each waits on.
 
+### Added
+- **Spec 007 — the voice conversation lands in the chat.** A session used to be readable only
+  through the overlay and then evaporate. The browser now keeps one **ordered log** of a session —
+  what was said and what the agent did, interleaved — and replays it into the chat when the session
+  ends: user utterances as messages, agent utterances as turns carrying the calls that produced
+  them, under a divider naming the session and its length. The turns are the chat's own components,
+  which is the point: a turn spoken and a turn typed are the same turn.
+- Calls that arrive after the agent's last utterance land in a turn of their own rather than being
+  glued to an answer they did not produce (§5).
+- The voice overlay's transcript now scrolls inside the card. It used to scroll the whole card,
+  carrying `Mute` and `End session` off the bottom of a long answer.
+- A spoken sentence whose playback cannot start — autoplay blocked, or a decode failure — advances
+  the queue instead of stalling it, so one unplayable sentence never costs the rest of the answer.
+
+- **Spec 008 — spoken answers in the text chat.** A `Speak` toggle in the header reads the agent's
+  answers aloud, **sentence by sentence while they stream**, so the first sentence is heard while
+  the last is still being written. Synthesis is Azure AI Speech through a new `POST /speech` on the
+  BFF: the browser gets MP3 bytes and still holds no Azure credential.
+- The Speech REST call is written from the docs, not from memory (§10, recorded in
+  `docs/REFERENCES.md`): the Entra header is `Bearer aad#{resourceId}#{token}` — not a plain bearer
+  token — on the resource's custom-subdomain host, scope `https://cognitiveservices.azure.com/.default`,
+  role *Cognitive Services Speech User*. `SPEECH_ENDPOINT` and `SPEECH_RESOURCE_ID` are
+  configuration, and **no claim is made that the reference project's resource answers there** until
+  someone runs it (§5).
+- Markdown is flattened before it is spoken — a fenced code block is skipped rather than read out as
+  backticks, and `get_current_datetime` keeps its underscores.
+- Without speech configuration the toggle is disabled with the reason on it and `POST /speech`
+  answers `503`, the same shape voice already uses.
+
 ### Fixed
+- **A turn that has produced nothing now says so.** Between `POST /chat` and the first event the
+  turn rendered an avatar and blank space — every card in the stack draws only once it has content
+  — which reads as a frozen app rather than as waiting. It now says the agent is working, in both
+  languages, and the line disappears the moment anything arrives (§5).
+- **The Foundry client is built once, not per leg.** Each build was a fresh
+  `DefaultAzureCredential`, and acquiring a token costs seconds — paid before the first byte of a
+  turn and again on the leg that answers a tool call.
+- **A tool round trip no longer fails with `No tool call found for function call output`.** The
+  production stream factory named a conversation only when the browser already had one, so the
+  *first* message of a session ran both legs unbound: Foundry had no record of the call the second
+  leg was answering and rejected it with a 400, after the tool card had already rendered green.
+  A turn that arrives without a conversation now gets one created, and every leg names it — which
+  is how the recorded fixture was produced in the first place (`ai/scripts/spike.py`). Multi-turn
+  memory comes with it: the id leaves on `trace_ids` and comes back on the next `POST /chat`.
 - **Corrected the AI Gateway architecture.** The plan claimed all agent and model traffic routes
   through the project AI Gateway. It does not: the project-level gateway governs **direct model
   calls**, and Agent Service does not send its inference through it. Routing the *agent* through your

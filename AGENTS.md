@@ -114,6 +114,9 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
   Versions. SDK `azure-ai-projects>=2.3.0` (2.x, **incompatible with 1.x**), `api-version=v1`.
 - **Function calling cannot live in a Toolbox** — it is client-side execution by definition.
 - **A function call Foundry emits must be answered or the run hangs and expires after 10 minutes.**
+- **Both legs of that round trip must name the same `conversation`.** The output leg carries only
+  `function_call_output` items; unbound, Foundry answers `400 — No tool call found for function
+  call output with call_id …`.
 - Foundry's own `agent.yaml` is **deprecated**; ours (`ai/harness/*/agent.yaml`) is our schema,
   labelled as such.
 - **Voice Live never passes through the AI Gateway**, and the gateway does not log tool traces.

@@ -1,6 +1,11 @@
 /**
  * The dark left column: brand, session, and a mono footer describing what we are connected to.
  *
+ * The footer names the model and nothing else. The Foundry project id is a deployment detail no
+ * reader acts on, and `model` arrives as `<connection>/<model>` — where the connection is usually
+ * the project again. Whether that connection routes through the gateway is the part worth showing,
+ * and the line below already says it.
+ *
  * The mock's list of past sessions is gone (design-system note M9). There is nowhere to persist a
  * conversation to in this release, so a list of them would be a drawing of a feature rather than a
  * feature — the shell stays, with one honest entry that says so (constitution §5).
@@ -14,6 +19,12 @@ interface Props {
   lang: Lang
   onLang: (lang: Lang) => void
   onNewSession: () => void
+}
+
+/** The model half of a `<connection>/<model>` deployment name; a plain name is returned as is. */
+function modelName(config: BffConfig | null): string {
+  const model = config?.model ?? ''
+  return model.slice(model.lastIndexOf('/') + 1)
 }
 
 export function Sidebar({ config, lang, onLang, onNewSession }: Props) {
@@ -53,13 +64,9 @@ export function Sidebar({ config, lang, onLang, onNewSession }: Props) {
       </div>
 
       <footer className="sidebar__footer">
-        <p>
-          <span className="sidebar__key">{s('sidebar.endpointLabel')}</span>
-          {config?.project_name ?? ''}
-        </p>
-        <p>
+        <p data-testid="sidebar-model">
           <span className="sidebar__key">{s('sidebar.modelLabel')}</span>
-          {config?.model ?? ''}
+          {modelName(config)}
         </p>
         {config && (
           <p className="sidebar__gateway">

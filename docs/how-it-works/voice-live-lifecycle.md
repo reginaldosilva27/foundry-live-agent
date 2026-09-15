@@ -137,7 +137,21 @@ same `ToolCard` the chat uses. The `AgentEvent` set did not grow for voice, and 
 goal rather than a happy accident: transcripts, which would have needed new event types, arrive at
 the browser directly on the data channel instead of being relayed.
 
-## Ending, and what is not solved
+## Ending, and where the conversation goes
+
+Two streams arrive during a session — what was said, on the data channel, and what the agent did,
+as `AgentEvent`s over SSE — and the browser keeps them in **one ordered log**
+(`frontend/src/state/voiceLog.ts`). Order is the only thing that says which answer a tool call
+belonged to, so two separate lists would throw that away.
+
+When the session ends, the log is replayed into the chat: user utterances as user messages, agent
+utterances as turns carrying the calls that arrived since the previous utterance, under a divider
+naming the session and its length. The turns are the chat's own components, unchanged — which is
+the argument stated out loud: a turn spoken and a turn typed are the same turn (spec 007).
+
+Calls that arrive after the agent's last utterance belong to no answer, so they land in a turn of
+their own rather than being attached to one they did not produce (§5). Nothing survives a reload:
+this release still persists no conversation anywhere.
 
 `DELETE /voice/session/{id}` closes the control channel. A closed browser tab sends no `DELETE`, so
 the server also caps concurrent sessions and closes everything on shutdown rather than trusting the

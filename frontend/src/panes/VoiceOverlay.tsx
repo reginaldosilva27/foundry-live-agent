@@ -5,6 +5,7 @@
  * is the argument made visible — the agent calling `get_current_datetime` mid-sentence is not a
  * different kind of event because you happened to ask out loud.
  */
+import { formatClock } from '../components/format'
 import { ToolCard } from '../components/ToolCard'
 import { useT } from '../i18n/context'
 import type { VoiceState } from '../hooks/useVoiceSession'
@@ -14,9 +15,11 @@ const BARS = 10
 interface Props {
   voice: VoiceState
   elapsed: number
+  /** Ends the session. The app decides what becomes of what it produced, not this card. */
+  onEnd: () => void
 }
 
-export function VoiceOverlay({ voice, elapsed }: Props) {
+export function VoiceOverlay({ voice, elapsed, onEnd }: Props) {
   const s = useT()
   const starting = voice.status === 'starting'
 
@@ -32,7 +35,7 @@ export function VoiceOverlay({ voice, elapsed }: Props) {
               : voice.muted
                 ? s('voice.muted')
                 : s('voice.listening')}
-            <span className="voice-card__clock">{clock(elapsed)}</span>
+            <span className="voice-card__clock">{formatClock(elapsed)}</span>
           </span>
         </header>
 
@@ -73,17 +76,11 @@ export function VoiceOverlay({ voice, elapsed }: Props) {
           >
             {voice.muted ? s('voice.unmute') : s('voice.mute')}
           </button>
-          <button type="button" className="pill-button pill-button--end" onClick={voice.stop}>
+          <button type="button" className="pill-button pill-button--end" onClick={onEnd}>
             {s('voice.end')}
           </button>
         </footer>
       </section>
     </div>
   )
-}
-
-/** mm:ss — mono, like every other number on this screen. */
-function clock(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 }

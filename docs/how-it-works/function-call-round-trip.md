@@ -23,6 +23,27 @@ The BFF looks the name up in a registry and runs it. It does not decide *which* 
 what order, or whether to call one at all — that is Foundry's job, and keeping it there is
 [constitution §8](../../.specify/constitution.md).
 
+## Both legs name one conversation
+
+The second leg carries **only** `function_call_output` items. What ties it to the leg that emitted
+the call is the conversation:
+
+```python
+# backend/app/harness_factory.py
+openai.responses.create(input=inputs, conversation=conversation_id, stream=True, extra_body=agent_ref)
+```
+
+Leave it out and Foundry has nothing to match the output against:
+
+```
+400 — No tool call found for function call output with call_id call_2BQ8UX8kLM9iJk4TfRSflRyj
+```
+
+Observed 2026-09-15, and it surfaces *after* the tool card has rendered green — the call ran here,
+it was the answer that had nowhere to land. A turn that arrives without a conversation gets one
+created before the first leg; the id travels out on `trace_ids`, and the browser sends it with the
+next turn, which is also how the conversation remembers anything.
+
 ## The event pair the UI sees
 
 One call produces two contract events:

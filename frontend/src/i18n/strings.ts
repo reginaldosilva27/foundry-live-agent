@@ -27,7 +27,6 @@ export const strings = {
     en: 'Nothing is stored. This release has nowhere to persist a conversation to.',
     pt: 'Nada é armazenado. Esta versão não tem onde persistir uma conversa.',
   },
-  'sidebar.endpointLabel': { en: 'project', pt: 'projeto' },
   'sidebar.modelLabel': { en: 'model', pt: 'modelo' },
   'sidebar.transport': { en: 'streaming over SSE', pt: 'streaming via SSE' },
   'sidebar.gatewayOn': { en: 'through the AI Gateway', pt: 'através do AI Gateway' },
@@ -42,6 +41,12 @@ export const strings = {
     en: 'Voice is not configured on this server.',
     pt: 'A voz não está configurada neste servidor.',
   },
+  'header.speak': { en: 'Speak', pt: 'Falar' },
+  'header.speakUnavailable': {
+    en: 'Speech is not configured on this server.',
+    pt: 'A fala não está configurada neste servidor.',
+  },
+  'speech.stop': { en: 'Stop speaking', pt: 'Parar de falar' },
   'header.traces': { en: 'Traces', pt: 'Rastros' },
   'header.status': { en: 'Ready', pt: 'Pronto' },
   'header.statusStreaming': { en: 'Streaming', pt: 'Transmitindo' },
@@ -104,6 +109,7 @@ export const strings = {
   'turn.you': { en: 'You', pt: 'Você' },
   'turn.agent': { en: 'Agent', pt: 'Agente' },
   'turn.activityTitle': { en: 'Agent activity', pt: 'Atividade do agente' },
+  'turn.pending': { en: 'The agent is working', pt: 'O agente está trabalhando' },
 
   // --- Reasoning card ------------------------------------------------------
   'reasoning.title': { en: 'Reasoning', pt: 'Raciocínio' },
