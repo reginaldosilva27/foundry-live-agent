@@ -22,7 +22,7 @@ export function Sidebar({ config, lang, onLang, onNewSession }: Props) {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <img src="/icon-dataside-branco.svg" alt="" width="22" height="22" />
+        <img src="/icon-foundry-live-agent-branco.svg" alt="" width="22" height="22" />
         <span className="sidebar__product">{s('app.name')}</span>
       </div>
 

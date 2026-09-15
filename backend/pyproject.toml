@@ -9,6 +9,9 @@ dependencies = [
     "azure-ai-projects>=2.3.0",
     "azure-identity>=1.19",
     "openai>=1.60",
+    # The Voice Live control channel. One small dependency, and the alternative — a hand-rolled
+    # WebSocket client — is exactly the kind of thing that looks fine until a close frame arrives.
+    "websockets>=13",
 ]
 
 [project.optional-dependencies]

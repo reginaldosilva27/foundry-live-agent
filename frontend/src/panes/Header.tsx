@@ -1,10 +1,11 @@
 /**
  * The 60px header: which agent, running where, on which harness — plus the two toggles.
  *
- * `Voice` is present and disabled. Spec 006 builds it; drawing an enabled button for a feature that
- * does nothing would be the same lie as a faked session list.
+ * `Voice` is enabled only when the BFF reports that it is configured. A server without a Voice Live
+ * endpoint says so through `GET /config`, and the button stays disabled with the reason on it —
+ * rather than offering a feature that fails on click.
  */
-import { ActivityIcon } from '../components/Icon'
+import { ActivityIcon, MicIcon } from '../components/Icon'
 import { HarnessBadge } from '../components/HarnessBadge'
 import { useT } from '../i18n/context'
 import type { BffConfig } from '../config'
@@ -14,11 +15,22 @@ interface Props {
   configFailed: boolean
   streaming: boolean
   tracesOpen: boolean
+  voiceLive: boolean
   onToggleTraces: () => void
+  onVoice: () => void
 }
 
-export function Header({ config, configFailed, streaming, tracesOpen, onToggleTraces }: Props) {
+export function Header({
+  config,
+  configFailed,
+  streaming,
+  tracesOpen,
+  voiceLive,
+  onToggleTraces,
+  onVoice,
+}: Props) {
   const s = useT()
+  const voiceEnabled = config?.voice?.enabled ?? false
 
   return (
     <header className="header">
@@ -33,7 +45,15 @@ export function Header({ config, configFailed, streaming, tracesOpen, onToggleTr
 
       <HarnessBadge harness={config?.harness} failed={configFailed} />
 
-      <button type="button" className="pill-button" disabled title={s('header.voiceUnavailable')}>
+      <button
+        type="button"
+        className="pill-button"
+        aria-pressed={voiceLive}
+        disabled={!voiceEnabled}
+        title={voiceEnabled ? undefined : s('header.voiceUnavailable')}
+        onClick={onVoice}
+      >
+        <MicIcon size={14} />
         {s('header.voice')}
       </button>
       <button

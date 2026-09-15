@@ -1,0 +1,342 @@
+"""The voice control channel (spec 006, AC1 · AC3–AC6).
+
+The socket is injected, exactly as the chat router injects a raw Foundry stream, so the whole round
+trip runs with no credential and no microphone. The frames it replays are the ones the live service
+sent on 2026-09-15, read from `ai/tests/fixtures/recorded/`.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
+
+from app.main import create_app
+from app.voice_session import VoiceSession
+
+FIXTURES = Path(__file__).resolve().parents[2] / "ai" / "tests" / "fixtures" / "recorded"
+RECORDED = [
+    json.loads(line)
+    for line in (FIXTURES / "voice-live-tool-call-20260915.jsonl").read_text().splitlines()
+    if line.strip()
+]
+SDP_OFFER = "v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n"
+SDP_ANSWER = (
+    "v=0\r\no=str0m 1 2 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n"
+)
+
+
+class FakeSocket:
+    """A Voice Live control channel that replays recorded frames and records what we sent."""
+
+    def __init__(self, frames: list[dict], *, refuse: str | None = None) -> None:
+        self.sent: list[dict] = []
+        self.closed = False
+        self._refuse = refuse
+        self._inbox: asyncio.Queue[dict] = asyncio.Queue()
+        self._pending = list(frames)
+
+    async def send(self, payload: str) -> None:
+        frame = json.loads(payload)
+        self.sent.append(frame)
+        if frame["type"] != "rtc.call.sdp.create":
+            return
+        if self._refuse is not None:
+            # The observed refusal shape: `rtc.call.error`, not silence. Seen on 2026-09-15 when
+            # the SDP was sent under the wrong field name.
+            await self._inbox.put(
+                {
+                    "type": "rtc.call.error",
+                    "operation": "rtc.call.sdp.create",
+                    "error": {"type": "invalid_request_error", "message": self._refuse},
+                }
+            )
+            return
+        await self._inbox.put(
+            {"type": "rtc.call.sdp.created", "rtc_call_id": "rtc_1", "sdp_answer": SDP_ANSWER}
+        )
+        for recorded in self._pending:
+            await self._inbox.put(recorded)
+        self._pending = []
+
+    async def recv(self) -> str:
+        return json.dumps(await self._inbox.get())
+
+    async def close(self) -> None:
+        self.closed = True
+
+
+def app_with(socket: FakeSocket):
+    """An app whose voice sessions talk to `socket` instead of Azure."""
+    sockets: list[FakeSocket] = []
+
+    async def connect(_query: dict[str, str]) -> FakeSocket:
+        sockets.append(socket)
+        return socket
+
+    app = create_app(
+        voice_connect=connect,
+        project_endpoint="https://example.services.ai.azure.com/api/projects/p",
+        project_name="p",
+        model="gpt-5.5",
+    )
+    return app, sockets
+
+
+def open_session(client: TestClient) -> dict:
+    response = client.post("/voice/session", json={"sdp": SDP_OFFER})
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+async def drain(socket: FakeSocket, predicate, timeout: float = 2.0) -> None:
+    """Wait until the session has sent what we are asserting about."""
+    async with asyncio.timeout(timeout):
+        while not predicate(socket.sent):
+            await asyncio.sleep(0.01)
+
+
+# --- AC1: the handshake ----------------------------------------------------
+
+
+def test_session_returns_an_answer_and_never_a_credential():
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        body = open_session(client)
+
+    assert body["sdp_answer"] == SDP_ANSWER
+    assert body["session_id"]
+
+    flat = json.dumps(body).lower()
+    for leak in ("token", "bearer", "key", "secret", "azure.com", "authorization"):
+        assert leak not in flat, f"the browser must not receive {leak!r}"
+
+
+def test_the_browsers_offer_is_what_is_sent_to_voice_live():
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        open_session(client)
+
+    create = next(f for f in socket.sent if f["type"] == "rtc.call.sdp.create")
+    # Observed 2026-09-15: the field is `sdp_offer`. `sdp` and `offer` are both rejected with
+    # "SDP offer is required", which reads like a missing value rather than a wrong key.
+    assert create["sdp_offer"] == SDP_OFFER
+
+
+def test_a_refused_negotiation_is_a_502_and_closes_the_channel():
+    socket = FakeSocket(RECORDED, refuse="SDP offer is required")
+
+    app, _ = app_with(socket)
+    with TestClient(app) as client:
+        response = client.post("/voice/session", json={"sdp": SDP_OFFER})
+
+    assert response.status_code == 502
+    assert "SDP offer is required" in response.json()["detail"]
+    assert socket.closed, "a failed negotiation must not leave the control channel open"
+
+
+def test_a_negotiation_that_never_answers_times_out_rather_than_hanging():
+    """Silence is the worst failure mode: the browser sits on a spinner with no reason given."""
+    import app.voice_session as voice_session
+
+    class Silent:
+        closed = False
+
+        async def send(self, payload: str) -> None: ...
+        async def recv(self) -> str:
+            await asyncio.sleep(3600)
+            raise AssertionError("unreachable")
+
+        async def close(self) -> None:
+            self.Silent_closed = True
+
+    original = voice_session.NEGOTIATION_TIMEOUT
+    voice_session.NEGOTIATION_TIMEOUT = 0.05
+    try:
+        session = voice_session.VoiceSession("s1", Silent())
+        with pytest.raises(voice_session.NegotiationError, match="did not answer"):
+            asyncio.run(session.negotiate(SDP_OFFER))
+    finally:
+        voice_session.NEGOTIATION_TIMEOUT = original
+
+
+# --- AC3, AC4, AC5: the function-call round trip ---------------------------
+
+
+def test_a_function_call_on_the_control_channel_is_executed_and_submitted():
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        open_session(client)
+        asyncio.run(
+            drain(socket, lambda sent: any(f["type"] == "conversation.item.create" for f in sent))
+        )
+
+    answer = next(f for f in socket.sent if f["type"] == "conversation.item.create")
+    item = answer["item"]
+    assert item["type"] == "function_call_output"
+    assert item["call_id"] == next(
+        f["call_id"] for f in RECORDED if f["type"] == "response.function_call_arguments.done"
+    )
+    # The real tool ran: the output is a datetime payload, not an echo.
+    assert "America/Sao_Paulo" in item["output"]
+
+
+def test_answering_a_call_asks_for_the_response_to_continue():
+    """Submitting the output is not enough — the agent resumes only on `response.create`, and a
+    conversation that stops talking mid-turn is the symptom of forgetting it."""
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        open_session(client)
+        asyncio.run(drain(socket, lambda sent: any(f["type"] == "response.create" for f in sent)))
+
+    types = [f["type"] for f in socket.sent]
+    assert types.index("conversation.item.create") < types.index("response.create")
+
+
+async def session_events(socket: FakeSocket, count: int) -> list[dict]:
+    """Drive a session through the recorded frames and collect what it publishes.
+
+    Against the session rather than over HTTP: a voice session's event stream has no terminal — it
+    lives until someone hangs up — and an HTTP client that has to walk away mid-stream tests its own
+    buffering more than it tests this. The SSE layer is covered separately, below, by a session that
+    has ended and therefore streams a finite body.
+    """
+    session = VoiceSession("s-test", socket)
+    await session.negotiate(SDP_OFFER)
+
+    events: list[dict] = []
+    async for event in session.events():
+        events.append(dict(event))
+        if len(events) >= count:
+            break
+    await session.close()
+    return events
+
+
+async def test_a_voice_tool_call_produces_the_same_events_as_a_text_one():
+    """AC4 — the activity panel has no voice-specific branch: there is nothing to branch on."""
+    events = await session_events(FakeSocket(RECORDED), 2)
+
+    call = next(e for e in events if e["type"] == "tool_call")
+    result = next(e for e in events if e["type"] == "tool_result")
+
+    assert call["executor"] == "app"
+    assert call["name"] == "get_current_datetime"
+    assert result["call_id"] == call["call_id"]
+    assert result["duration_ms"] >= 0
+    assert "America/Sao_Paulo" in result["output"]
+
+
+async def test_every_call_is_answered_or_the_session_errors():
+    """AC5. Voice Live waits on an unanswered call exactly as the Responses API does; in a spoken
+    conversation the symptom is the agent going quiet mid-sentence."""
+    events = await session_events(FakeSocket(RECORDED), 2)
+
+    calls = {e["call_id"] for e in events if e["type"] == "tool_call"}
+    answered = {e["call_id"] for e in events if e["type"] == "tool_result"}
+    assert calls and calls == answered
+
+
+async def test_the_session_reports_what_the_conversation_cost():
+    """Both response turns bill; the activity panel shows usage in voice as it does in text."""
+    usage = next(e for e in await session_events(FakeSocket(RECORDED), 3) if e["type"] == "usage")
+    assert usage["input_tokens"] > 0
+
+
+async def test_the_events_endpoint_serves_sse_and_ends_when_the_session_does():
+    """The transport half of AC4: the same SSE framing `/chat` uses, and a stream that finishes
+    rather than dangling once the control channel is gone."""
+    socket = FakeSocket(RECORDED)
+    session = VoiceSession("s-http", socket)
+    await session.negotiate(SDP_OFFER)
+    async with asyncio.timeout(2):
+        while not any(f["type"] == "response.create" for f in socket.sent):
+            await asyncio.sleep(0.01)
+    await session.close()
+
+    app, _ = app_with(FakeSocket(RECORDED))
+    app.state.voice_sessions["s-http"] = session
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://bff") as client:
+        response = await client.get("/voice/session/s-http/events")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: tool_call" in response.text
+    assert "event: tool_result" in response.text
+
+
+# --- AC6: lifecycle --------------------------------------------------------
+
+
+def test_deleting_a_session_closes_the_control_channel():
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        session = open_session(client)
+        assert client.delete(f"/voice/session/{session['session_id']}").status_code == 204
+        assert client.delete(f"/voice/session/{session['session_id']}").status_code == 404
+
+    assert socket.closed
+
+
+def test_shutdown_closes_a_session_the_browser_abandoned():
+    """A closed tab sends no DELETE. Nothing may outlive the process."""
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        open_session(client)
+
+    assert socket.closed
+
+
+def test_events_for_an_unknown_session_are_a_404_not_an_empty_stream():
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        assert client.get("/voice/session/nope/events").status_code == 404
+
+
+def test_voice_is_refused_when_it_is_not_configured():
+    """A server without a Voice Live endpoint says so, rather than failing at negotiation."""
+    app = create_app(project_endpoint="", project_name="p", model="gpt-5.5", voice_connect=None)
+
+    with TestClient(app) as client:
+        response = client.post("/voice/session", json={"sdp": SDP_OFFER})
+
+    assert response.status_code == 503
+    assert "voice" in response.json()["detail"].lower()
+
+
+@pytest.mark.parametrize("payload", [{}, {"sdp": ""}])
+def test_a_session_without_an_offer_is_rejected(payload: dict):
+    socket = FakeSocket(RECORDED)
+    app, _ = app_with(socket)
+
+    with TestClient(app) as client:
+        assert client.post("/voice/session", json=payload).status_code == 422
+
+
+def test_voice_executes_tools_through_the_same_module_as_chat():
+    """AC11, stated positively. The §8 import guards in `test_routes.py` already cover every module
+    under `app/`, voice included. What they cannot see is a *second* executor being introduced that
+    happens to name no tools — so this pins the identity."""
+    import app.tool_executor as chat_path
+    import app.voice_session as voice_path
+
+    assert voice_path.execute is chat_path.execute

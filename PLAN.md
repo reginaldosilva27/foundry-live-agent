@@ -1,6 +1,7 @@
 # foundry-live-agent — PLAN
 
-> Status: **spec 000 done; specs 001–006 awaiting approval.** No feature code has been written yet.
+> Status: **specs 000–004 and 006 done; 005 (traces) remains.** Chat and voice both run against a
+> live Foundry project. Voice findings observed 2026-09-15 — see §9 for what the docs got wrong.
 > Foundry API details verified against learn.microsoft.com on **2026-09-04** — every URL and API
 > version is recorded in [docs/REFERENCES.md](docs/REFERENCES.md).
 > Engineering practices inherited from

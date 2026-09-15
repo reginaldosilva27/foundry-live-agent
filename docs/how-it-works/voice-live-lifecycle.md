@@ -1,8 +1,152 @@
 # The Voice Live session lifecycle
 
-> **Status: stub — filled by spec 006.** Written when the code exists, so that it describes
-> behaviour that actually runs (constitution §5) and stays in sync with it (§4).
+The same agent, the same two function tools, a completely different transport — and the application
+gains no second brain to make it work. That is the whole point of this page.
 
-VAD, interruption (barge-in), and how tool calls work during a voice conversation.
+Everything here was **observed against the live service on 2026-09-15** by
+[`ai/scripts/spike_voice.py`](../../ai/scripts/spike_voice.py), and the captures are committed under
+[`ai/tests/fixtures/recorded/`](../../ai/tests/fixtures/recorded/). Three of the findings contradict
+the published documentation; they are called out below, because a reader who trusts the docs over
+this page will build something that does not connect.
 
-Sources for everything this page will assert: [../REFERENCES.md](../REFERENCES.md) (constitution §10).
+## Three channels
+
+```
+                    ┌──────────── BFF (holds the credential) ────────────┐
+browser ─POST /voice/session (SDP offer)──>│  control WebSocket ──> Voice Live
+        <─────────── SDP answer ───────────│    · rtc.call.sdp.create / .created
+        <──GET /voice/session/{id}/events──│    · function calls ──> tool_executor
+        ◄════════ WebRTC audio (RTP) ══════╪═══════════════════════════> Voice Live
+        ◄═══ data channel: transcripts ════╪═══════════════════════════> Voice Live
+```
+
+| Channel | Between | Carries |
+|---|---|---|
+| Control WebSocket | **BFF** ↔ Voice Live | SDP exchange, session config, **function calls** |
+| WebRTC media (RTP) | browser ↔ Voice Live | audio, both directions |
+| Data channel `voice-live-events` | browser ↔ Voice Live | VAD edges, transcripts, response lifecycle |
+
+Two consequences worth stating plainly:
+
+- **No Azure credential reaches the browser.** It never mints one, never holds one, never sees one.
+  The only thing it sends is its own SDP offer.
+- **The BFF is not in the latency path of anything a person hears.** Audio is peer-to-peer. The
+  server is on the path of tool calls only, which is where it has to be, because that is where the
+  tools are.
+
+## Attaching to the agent
+
+```
+wss://<resource>.services.ai.azure.com/voice-live/realtime/calls
+  ?api-version=2026-01-01-preview
+  &agent_name=foundry-live-agent
+  &agent_project_name=<project>
+```
+
+> **Contradiction 1 — the parameter names.** The agents quickstart documents `agent_name` +
+> `project_name`. The service rejects that pair with:
+>
+> ```
+> "Missing required agent project name"
+> ```
+>
+> The second parameter is **`agent_project_name`**. The error names a missing *value*, not a wrong
+> *key*, which is what makes this cost an afternoon. The hyphenated `agent-name` /
+> `agent-project-name` pair also works. The older `agent_id` + `project_id` is rejected outright:
+> *"Classic foundry agent is not supported in API version 2026-04-10 and above."*
+
+> **Contradiction 2 — there is no single api-version.** The WebRTC control route
+> `/voice-live/realtime/calls` exists **only** on `2026-01-01-preview` — 404 on `2026-04-10` and
+> `2026-07-15`, 401 on `2026-06-01-preview`. The plain WebSocket route `/voice-live/realtime` works
+> on all four. So the settings carry **two** api-versions, one per endpoint. Collapsing them into a
+> single `VOICELIVE_API_VERSION` silently breaks whichever path it was not chosen for.
+
+Entra ID only — key authentication is unsupported in agent mode, which suits this repository's
+"no secrets anywhere" rule rather than fighting it. Scope: `https://ai.azure.com/.default`.
+
+## The handshake
+
+The browser builds an offer, the BFF relays it, Voice Live answers:
+
+```jsonc
+// BFF -> Voice Live
+{ "type": "rtc.call.sdp.create", "sdp_offer": "v=0\r\no=- …" }
+
+// Voice Live -> BFF
+{ "type": "rtc.call.sdp.created", "rtc_call_id": "37869044-…", "sdp_answer": "v=0\r\no=str0m…" }
+```
+
+> **Contradiction 3 — the field is `sdp_offer`.** `sdp`, `offer`, `call.sdp` and every other obvious
+> spelling are refused with `rtc.call.error` / `missing_sdp` — *"SDP offer is required"* — which,
+> again, reads as a missing value rather than a wrong key.
+
+`session.created` arrives alongside it and confirms the attachment:
+
+```jsonc
+{
+  "agent": { "type": "agent", "name": "foundry-live-agent" },
+  "voice": { "name": "en-US-AvaNeural", "type": "azure-standard" },
+  "turn_detection": { "type": "server_vad", "interrupt_response": true }
+}
+```
+
+**Barge-in is on by default.** `interrupt_response: true` is what stops the agent mid-sentence when
+you talk over it. It is a server-side default this project depends on rather than sets, so a test
+asserts it against the recorded frame instead of assuming it holds.
+
+## A tool call during a conversation
+
+This is the part that matters. Mid-sentence, the agent decides it needs the time in São Paulo:
+
+```jsonc
+// Voice Live -> BFF, on the control channel
+{
+  "type": "response.function_call_arguments.done",
+  "call_id": "call_0004",
+  "name": "get_current_datetime",
+  "arguments": "{\"timezone\":\"America/Sao_Paulo\"}"
+}
+
+// BFF -> Voice Live, after running it through the SAME tool_executor the chat uses
+{ "type": "conversation.item.create",
+  "item": { "type": "function_call_output", "call_id": "call_0004", "output": "{…}" } }
+{ "type": "response.create" }
+```
+
+Three things about that exchange:
+
+1. **The BFF chose nothing.** Foundry picked the tool and the arguments; `tool_executor.execute`
+   resolved the name through the registry and called it. A test asserts the voice path and the chat
+   path are literally the same function object — not two implementations that happen to agree.
+2. **The voice frame is better shaped than the text one.** It carries `name` *and* `call_id`
+   together. The Responses API sends `name: null` on the equivalent event and forces a read of the
+   completed output item (see [streaming-events.md](streaming-events.md)).
+3. **`response.create` is not optional.** Submitting the output alone leaves the agent silent: it
+   resumes only when asked to. The symptom of forgetting it is an agent that stops talking
+   mid-answer, which reads as a crash.
+
+An unanswered call is the same failure as in text, with a worse symptom: Voice Live waits, and the
+user hears nothing and assumes the app broke. So every collected call is answered — with an error
+payload if the tool failed, because an error the agent can *say out loud* beats silence.
+
+## What the browser sees
+
+Tool activity reaches the UI as the **existing** `AgentEvent`s — `tool_call`, `tool_result`,
+`mcp_call`, `usage` — over `GET /voice/session/{id}/events`. The voice overlay renders them with the
+same `ToolCard` the chat uses. The `AgentEvent` set did not grow for voice, and that was a design
+goal rather than a happy accident: transcripts, which would have needed new event types, arrive at
+the browser directly on the data channel instead of being relayed.
+
+## Ending, and what is not solved
+
+`DELETE /voice/session/{id}` closes the control channel. A closed browser tab sends no `DELETE`, so
+the server also caps concurrent sessions and closes everything on shutdown rather than trusting the
+client to hang up.
+
+**Sessions live in the BFF's process memory, so the BFF is single-replica for voice.** This is
+stated rather than solved. Fixing it means a session store, which is a different feature and not
+this repository's lesson — the same honesty the in-process conversation memory gets elsewhere (§5).
+
+**No test in CI proves a human can hear the agent.** The tests prove the negotiation, the round trip
+and the events, all against recorded frames. The audio path is verified by hand, and
+[`specs/006-voice-mode/tasks.md`](../../specs/006-voice-mode/tasks.md) records that it was.

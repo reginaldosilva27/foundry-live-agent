@@ -110,6 +110,16 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
 - Foundry's own `agent.yaml` is **deprecated**; ours (`ai/harness/*/agent.yaml`) is our schema,
   labelled as such.
 - **Voice Live never passes through the AI Gateway**, and the gateway does not log tool traces.
+- **Reasoning summaries are configured on the agent definition, not per request.** Sending
+  `reasoning` alongside an `agent_reference` is rejected: *"Not allowed when agent is specified."*
+  Without it the card is empty forever, though the model still spends reasoning tokens.
+- **`response.mcp_call.completed` carries no `item`** — only `item_id`. Read the MCP call from
+  `response.output_item.done`. Same for function calls: `…arguments.done` has `name: null`.
+- **Foundry completes the leg it is waiting on**, so a turn with a tool round trip contains two
+  `response.completed` events. Usage must be summed and `done` held back, or the contract breaks.
+- **Voice Live attaches with `agent_name` + `agent_project_name`** — *not* `project_name`, which the
+  quickstart documents and the service rejects. The SDP field is `sdp_offer`, and the WebRTC control
+  endpoint exists **only** on `api-version=2026-01-01-preview`.
 
 ## Working style — behavioral guardrails
 

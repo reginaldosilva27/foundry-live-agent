@@ -74,16 +74,19 @@ def test_a_non_function_output_item_is_not_a_tool_call():
 # --- MCP -------------------------------------------------------------------
 
 
-def test_mcp_call_completed_becomes_mcp_call():
+def test_a_completed_mcp_item_becomes_an_mcp_call():
+    """Observed 2026-09-15: the MCP item, not the lifecycle event, is the complete record."""
     out = norm(
         [
             {
-                "type": "response.mcp_call.completed",
+                "type": "response.output_item.done",
                 "item": {
+                    "type": "mcp_call",
                     "server_label": "microsoft_learn",
-                    "name": "search",
-                    "arguments": '{"q":"hosted agents"}',
+                    "name": "microsoft_docs_search",
+                    "arguments": '{"query":"hosted agents"}',
                     "output": "some docs",
+                    "error": None,
                 },
             }
         ]
@@ -91,6 +94,31 @@ def test_mcp_call_completed_becomes_mcp_call():
     assert out[0]["type"] == "mcp_call"
     assert out[0]["server_label"] == "microsoft_learn"
     assert out[0]["output"] == "some docs"
+    assert "error" not in out[0]
+
+
+def test_the_mcp_lifecycle_event_is_not_the_call():
+    """Observed 2026-09-15: `response.mcp_call.completed` carries `item_id` and nothing else.
+    Building the card from it produced `server_label: unknown` and no output at all."""
+    assert norm([{"type": "response.mcp_call.completed", "item_id": "mcp_1"}]) == []
+
+
+def test_an_mcp_item_that_carries_an_error_is_reported_as_failed():
+    out = norm(
+        [
+            {
+                "type": "response.output_item.done",
+                "item": {
+                    "type": "mcp_call",
+                    "server_label": "microsoft_learn",
+                    "name": "microsoft_docs_fetch",
+                    "arguments": "{}",
+                    "error": "upstream timeout",
+                },
+            }
+        ]
+    )
+    assert out[0]["error"] == "upstream timeout"
 
 
 def test_mcp_list_tools_is_not_a_call():
@@ -189,18 +217,27 @@ def test_a_malformed_raw_event_raises_rather_than_emitting_junk():
 
 
 def test_verified_flags_are_honest():
-    """Only event names this project has actually seen may be marked verified (§5, §10)."""
-    observed_on_2026_09_04 = {
-        "response.created",
-        "response.in_progress",
-        "response.output_item.added",
-        "response.mcp_list_tools.in_progress",
-        "response.mcp_list_tools.completed",
+    """Only event names this project has actually seen may be marked verified (§5, §10).
+
+    The observed set is read from the recorded fixtures rather than typed here, so the flags can
+    only move when a new recording moves them.
+    """
+    import json
+    from pathlib import Path
+
+    recorded = Path(__file__).parent / "fixtures" / "recorded"
+    observed = {
+        json.loads(line)["type"]
+        for fixture in recorded.glob("*.jsonl")
+        for line in fixture.read_text().splitlines()
+        if line.strip()
     }
+    assert observed, "no recordings to check the flags against"
+
     for mapping in MAPPINGS:
         if mapping.verified:
-            assert mapping.raw_type in observed_on_2026_09_04, (
-                f"{mapping.raw_type} is marked verified but is not in the observed set"
+            assert mapping.raw_type in observed, (
+                f"{mapping.raw_type} is marked verified but appears in no recorded fixture"
             )
 
 

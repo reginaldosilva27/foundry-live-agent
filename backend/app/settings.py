@@ -25,6 +25,23 @@ class Settings:
     model: str
     harness: str
     agent_version: str | None = None
+    voice_endpoint: str = ""
+    # Observed 2026-09-15: the two Voice Live endpoints need DIFFERENT api-versions. The WebRTC
+    # control route `/voice-live/realtime/calls` exists only on 2026-01-01-preview (404 on
+    # 2026-04-10 and 2026-07-15, 401 on 2026-06-01-preview); the plain WebSocket route works on all
+    # four. One shared value would silently break whichever path it was not chosen for.
+    voice_webrtc_api_version: str = "2026-01-01-preview"
+    voice_ws_api_version: str = "2026-04-10"
+
+    @property
+    def voice_enabled(self) -> bool:
+        return bool(self.voice_endpoint)
+
+    @property
+    def voice_calls_url(self) -> str:
+        """The control-channel endpoint. Voice Live never goes through the AI Gateway."""
+        host = self.voice_endpoint.split("://", 1)[-1].split("/", 1)[0]
+        return f"wss://{host}/voice-live/realtime/calls"
 
     @property
     def uses_gateway(self) -> bool:
@@ -45,9 +62,27 @@ def load_settings(**overrides: object) -> Settings:
         "model": os.environ.get("FOUNDRY_MODEL_DEPLOYMENT", ""),
         "harness": os.environ.get("AGENT_HARNESS", "prompt-agent"),
         "agent_version": os.environ.get("AGENT_VERSION") or None,
+        "voice_endpoint": os.environ.get("VOICELIVE_ENDPOINT")
+        or _resource_endpoint(os.environ.get("FOUNDRY_PROJECT_ENDPOINT", "")),
+        "voice_webrtc_api_version": os.environ.get(
+            "VOICELIVE_WEBRTC_API_VERSION", "2026-01-01-preview"
+        ),
+        "voice_ws_api_version": os.environ.get("VOICELIVE_WS_API_VERSION", "2026-04-10"),
     }
     values.update({k: v for k, v in overrides.items() if v is not None})
     return Settings(**values)  # type: ignore[arg-type]
+
+
+def _resource_endpoint(project_endpoint: str) -> str:
+    """Voice Live lives on the *resource*, not the project path.
+
+    Deriving it saves one more variable to get wrong, and the derivation is the whole difference:
+    `https://<resource>.services.ai.azure.com/api/projects/<project>` -> `https://<resource>…`.
+    """
+    if not project_endpoint:
+        return ""
+    scheme, _, rest = project_endpoint.partition("://")
+    return f"{scheme}://{rest.split('/', 1)[0]}"
 
 
 def require_live_settings(settings: Settings) -> None:

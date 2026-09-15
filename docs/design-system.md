@@ -17,6 +17,18 @@ truth (§4).
 
 Tokens are **imported, not retyped**. When the design changes, re-import; never hand-edit the copy.
 
+## The mark is ours; the system is not
+
+The **design system** is Dataside's — the tokens, the type, the rules below. The **brand mark** is
+not: `frontend/public/icon-foundry-live-agent-{azul,branco}.svg` is this project's own, and it
+replaced the Dataside icon that stood in for it while the UI was being built. A repository whose
+argument is about Microsoft Foundry should not wear a consultancy's logo on its agent avatar.
+
+It is built to the same rules as everything else here: one colour (`#0074FF`, or white on ink), no
+gradient, no glyph, a 24×24 grid. A solid core inside a ring left deliberately open — the agent runs
+in Foundry, and this repository is the app around it. It is checked at 12px (the turn avatar), 22px
+(the sidebar) and as a favicon, because that is where it actually has to work.
+
 ## The brand rules that constrain us
 
 From the design system's own README — these are not preferences, they are the brand:

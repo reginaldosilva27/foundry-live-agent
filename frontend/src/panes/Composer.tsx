@@ -1,14 +1,16 @@
-/** The input. The mic is present and disabled: voice is a later spec, and says so. */
+/** The input. The mic opens a voice session; it is disabled when the server has no Voice Live. */
 import { useState } from 'react'
 import { MicIcon, SendIcon } from '../components/Icon'
 import { useT } from '../i18n/context'
 
 interface Props {
   disabled: boolean
+  voiceEnabled: boolean
   onSend: (text: string) => void
+  onVoice: () => void
 }
 
-export function Composer({ disabled, onSend }: Props) {
+export function Composer({ disabled, voiceEnabled, onSend, onVoice }: Props) {
   const s = useT()
   const [value, setValue] = useState('')
 
@@ -33,9 +35,10 @@ export function Composer({ disabled, onSend }: Props) {
       <button
         type="button"
         className="composer__mic"
-        disabled
-        title={s('header.voiceUnavailable')}
+        disabled={!voiceEnabled}
+        title={voiceEnabled ? undefined : s('header.voiceUnavailable')}
         aria-label={s('composer.voiceInput')}
+        onClick={onVoice}
       >
         <MicIcon size={17} />
       </button>

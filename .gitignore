@@ -30,4 +30,7 @@ dist/
 infra/*.json
 !infra/main.parameters.json
 # Recorded Foundry fixtures may contain response IDs; keep the redacted ones only
-ai/tests/fixtures/*.raw.jsonl
+ai/tests/fixtures/**/*.raw.jsonl
+
+# Browser-automation scratch (screenshots, snapshots, console logs)
+.playwright-mcp/

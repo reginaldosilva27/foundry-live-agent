@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img">
+  <!-- Foundry Live Agent.
+       A solid core held inside a ring that is deliberately open: the agent runs in Foundry, and
+       this repository is the app around it. The two gaps are where the app reaches in — the
+       function calls it executes on the agent's behalf.
+       One colour, no gradient, no glyph. Brand rules: docs/design-system.md. -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round">
+    <path d="M15.59 19.70 A 8.5 8.5 0 0 1 4.30 8.41" />
+    <path d="M8.41 4.30 A 8.5 8.5 0 0 1 19.70 15.59" />
+  </g>
+  <circle cx="12" cy="12" r="3.9" fill="#FFFFFF" />
+</svg>

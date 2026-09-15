@@ -55,15 +55,15 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 |---|---|---|---|
 | 000 | [Project scaffold — inherit the agentic-coding-template](000-project-scaffold/spec.md) | 0 | ✅ done |
 | 001 | [Harness contract — `HarnessAdapter` + `AgentEvent` + conformance suite](001-harness-contract/spec.md) | 1 | ✅ done |
-| 002 | [Prompt-agent harness — agent as code + the client-side tools](002-prompt-agent-harness/spec.md) | 1 | 🔧 in-progress |
+| 002 | [Prompt-agent harness — agent as code + the client-side tools](002-prompt-agent-harness/spec.md) | 1 | ✅ done |
 | 003 | [BFF — streaming chat and the function-call round trip](003-bff-streaming/spec.md) | 1 | ✅ done |
-| 004 | [Frontend shell — three panes, streaming, and the two kinds of tool](004-frontend-shell/spec.md) | 1 | 📋 planned |
+| 004 | [Frontend shell — three panes, streaming, and the two kinds of tool](004-frontend-shell/spec.md) | 1 | ✅ done |
 | 005 | Trace drawer — Application Insights span tree, gateway correlation, usage/cost | 2 | ✏️ draft |
-| 006 | Voice mode — Voice Live attached to the same prompt agent | 3 | ✏️ draft |
+| 006 | [Voice mode — Voice Live attached to the same prompt agent](006-voice-mode/spec.md) | 3 | ✅ done |
 
-**004 is unblocked.** The Dataside design system and the `Foundry Live Agent.dc.html` screen were
-read on 2026-09-04 and recorded in [`../docs/design-system.md`](../docs/design-system.md), along with
-nine points where the mock disagrees with what we are building.
+The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
+screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),
+along with nine points where the mock disagrees with what we are building.
 
 ## Execution order ≠ numbering
 
@@ -71,17 +71,17 @@ Spec numbers are an append-only record and are **never** renumbered. Execution o
 changeable decision. Current order, chosen because **seeing Voice Live work is the stated priority**:
 
 ```
-000 ✅ → 001 ✅ → 002 → 006 (voice) → 003 → 004 → 005
+000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 005
 ```
 
-Voice moves ahead of the text UI because it needs only the agent (002) plus a control channel, and
-it is the most convincing demo.
+Voice was meant to come before the text UI, on the grounds that it needs only the agent plus a
+control channel. It did not: spec 002 sat blocked on Azure access for eleven days, so 003 and 004
+were built first against inferred event shapes, and 002 finished last — on **2026-09-15**, against a
+different Foundry project than the one it was blocked on.
 
-**Spec 002 is half done.** Everything that does not need a live Foundry project is built and green:
-the two tools, the registry, `agent.yaml` and its loader, `apply_agent.py`, the LangGraph scaffold,
-and `scripts/spike.py`. The second half — running the spike, recording fixtures, and writing the
-event normaliser against what was observed — is blocked on `az login` reaching subscription
-`7a4e9773-94ea-45a8-9b58-2701ed307318`.
+That order left a mark worth recording. Building the normaliser before the recording meant shipping
+inferences, three of which the real stream contradicted; 002's closing pass corrected them. The
+lesson is the constitution's §10, learned the expensive way rather than the cheap one.
 
 Phase 4 (LangGraph hosted agent, Foundry IQ, extra MCP tools, M365 Copilot publishing) is
 deliberately **not** specced — it ships as extension points and docs stubs. See `PLAN.md` §6.

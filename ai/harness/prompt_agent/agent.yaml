@@ -19,10 +19,19 @@ description: >
 # The "<connection>/<model>" form routes the agent's inference through the bring-your-own-model
 # connection, i.e. through the APIM gateway. A PLAIN name here silently bypasses the gateway.
 #
-# gpt-4o is what the existing connection exposes. It is NOT a reasoning model: on this path the
-# agent emits no reasoning summaries and the activity panel's reasoning card stays empty. Expose a
-# GPT-5.x model on the same connection to get them back. See PLAN.md O-9.
-model: foundry-analytics-demo/gpt-4o
+# DELIBERATE BYPASS: a plain name, so inference does NOT go through the APIM gateway. The gateway
+# path is `ai-admin2354ai223634534338/gpt-5.5` (connection name, not project name -- Foundry answers
+# "Connection not found" for the project name). Restore it once the APIM API is bound to its backend.
+model: gpt-5.5
+
+# Reasoning summaries — what the activity panel's reasoning card shows.
+#
+# This MUST live on the agent definition. Observed 2026-09-15: sending `reasoning` on the request
+# instead gets HTTP 400 `invalid_payload` — "Not allowed when agent is specified". Without this
+# block the model still spends reasoning tokens (68 + 342 in the recorded turn) and still emits
+# `reasoning` output items, but every one of them carries `summary: []` and the card stays empty.
+reasoning:
+  summary: auto
 
 instructions: |
   You are the reference agent for the foundry-live-agent project. You are precise, concise, and

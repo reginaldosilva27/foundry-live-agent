@@ -103,10 +103,93 @@ signal than the date I read it.
 >
 > **O-9 — untestable here.** No reasoning model is reachable, so there is nothing to summarise.
 
-> **Voice Live api-version status (unresolved):** three values appear across current pages —
-> `2026-04-10` (WebSocket how-to), `2026-01-01-preview` (WebRTC + agent quickstart samples),
-> `2026-06-01-preview` (a reference page), plus `2026-07-15` gating Live-Reference AEC. The docs do
-> not state which is latest/GA. **Pin explicitly in `.env.example` and re-verify in Phase 3.**
+> ### Spike findings — observed 2026-09-15 against `ai-admin2354ai223634534-project`
+>
+> A second environment, because the first one's BYOM gateway was never finished. Resource
+> `ai-admin2354ai223634534338` (`rg-belake-core-lab`, **eastus2**), model **`gpt-5.5`** on a plain
+> deployment — *not* through the gateway, so the BYOM question below stays open. Runs:
+> `ai/scripts/spike.py` (agent `spike-byom`, 131 events) and a follow-up probe (agent
+> `spike-reasoning`, 310 events). Both captures are committed, redacted, under
+> [`ai/tests/fixtures/recorded/`](../ai/tests/fixtures/recorded/).
+>
+> **O-8 — ANSWERED: yes.** `responses.create(stream=True)` with an `agent_reference` drives a prompt
+> agent end to end: MCP tools listed and called, function calls emitted and answered, text streamed,
+> `response.completed` with usage. The BYOM page's "The Response API isn't supported at present"
+> does **not** constrain this hop. *Caveat, stated because it matters:* this ran on a plain
+> deployment. Whether the same holds with `<connection>/<model>` is **still unverified** — see the
+> gateway note above.
+>
+> **O-3 — CONFIRMED again.** `require_approval: never` accepted; zero approval events in 441
+> recorded events across both runs.
+>
+> **O-1 — ANSWERED in full.** 21 distinct event types, mapped and tested in
+> `ai/harness/prompt_agent/events.py`; the table is in
+> [how-it-works/streaming-events.md](how-it-works/streaming-events.md). Three of them contradicted a
+> reasonable inference, and are documented there rather than quietly fixed:
+> `response.mcp_call.completed` carries **no `item`** (only `item_id`), so the MCP call must be read
+> from `response.output_item.done`; `response.function_call_arguments.done` carries `name: null`;
+> and a turn with a function-call round trip contains **two** `response.completed` events, because
+> Foundry closes the leg it is waiting on.
+>
+> **O-9 — ANSWERED: yes, but only from the agent definition.** Reasoning summaries stream as
+> `response.reasoning_summary_part.added` → `response.reasoning_summary_text.delta` (×159) →
+> `.done` → `_part.done`. The configuration must live on `PromptAgentDefinition.reasoning`; sending
+> it per request next to an `agent_reference` is rejected:
+>
+> ```
+> 400 invalid_payload — "Not allowed when agent is specified."  (param: reasoning)
+> ```
+>
+> Without it the model still spends reasoning tokens (410 in the recorded turn) and still emits
+> `reasoning` output items, but each carries `summary: []`. Hence the `reasoning:` block in
+> `ai/harness/prompt_agent/agent.yaml`. **Not answered:** whether summaries survive the
+> `chat/completions` hop to a BYOM model — same caveat as O-8.
+>
+> **Token accounting.** Both legs bill separately: 1 091 + 17 520 input, 132 + 754 output, 68 + 342
+> reasoning. A turn's usage is the sum, not the last leg.
+
+> **Voice Live api-version status — RESOLVED 2026-09-15, and the answer is "two".** Probed with
+> `ai/scripts/spike_voice.py` against `ai-admin2354ai223634534338` (eastus2):
+>
+> | Endpoint | 2026-01-01-preview | 2026-04-10 | 2026-06-01-preview | 2026-07-15 |
+> |---|---|---|---|---|
+> | `/voice-live/realtime` (WebSocket) | ✅ | ✅ | ✅ | ✅ |
+> | `/voice-live/realtime/calls` (WebRTC control) | ✅ | 404 | 401 | 404 |
+>
+> The WebRTC route exists on **one** version. `.env.example` therefore carries
+> `VOICELIVE_WEBRTC_API_VERSION` **and** `VOICELIVE_WS_API_VERSION`; a single shared value silently
+> breaks whichever path it was not chosen for.
+
+> ### Voice Live findings — observed 2026-09-15
+>
+> **O-2 — ANSWERED: yes, agent mode works over WebRTC.** The full handshake completed against the
+> live service and a real Chromium SDP offer: `rtc.call.sdp.create` → `rtc.call.sdp.created` with an
+> SDP answer carrying an audio m-line and ICE candidates. The PLAN §4.4 design stands and the
+> server-side audio-relay fallback was not needed. Recorded in
+> `ai/tests/fixtures/recorded/voice-live-webrtc-handshake-20260915.jsonl`.
+>
+> **The attachment parameters in the quickstart are wrong.** Documented: `agent_name` +
+> `project_name`. The service answers `"Missing required agent project name"`. The working pair is
+> `agent_name` + **`agent_project_name`** (hyphenated `agent-name` / `agent-project-name` also
+> works). `agent_id` + `project_id` is refused: *"Classic foundry agent is not supported in API
+> version 2026-04-10 and above. Use API version 2025-10-01 or 2026-01-01-preview for classic foundry
+> agent, or migrate to the new foundry agent."*
+>
+> **The SDP field is `sdp_offer`.** `sdp`, `offer`, `call.sdp`, `session_description` and the other
+> obvious spellings all return `rtc.call.error` / `missing_sdp` — *"SDP offer is required"*, which
+> reads as a missing value rather than a wrong key.
+>
+> **Function calls reach the control channel, complete.** `response.function_call_arguments.done`
+> carries `name`, `call_id` and `arguments` **together** — better shaped than the Responses API,
+> which sends `name: null`. The round trip was completed end to end using this repository's own
+> registry: `conversation.item.create` (`function_call_output`) followed by `response.create`, and
+> the agent then answered. Without the `response.create` the agent stays silent. Recorded in
+> `voice-live-tool-call-20260915.jsonl`. MCP works in voice too (`mcp_list_tools.*`).
+>
+> **Session defaults.** `voice: en-US-AvaNeural` (`azure-standard`); `turn_detection: server_vad`
+> with **`interrupt_response: true`** — barge-in is on without being asked for.
+>
+> **O-5 — region.** eastus2 serves Voice Live for this resource.
 
 ## Models
 
@@ -144,6 +227,8 @@ signal than the date I read it.
 | Model deployment | `gpt-5.4` (configurable) | reasoning models page |
 | Model name via BYOM gateway | `<connection-name>/<model-name>` | bring-your-own-model page |
 | APIM gateway base URL | base path only — Foundry appends `chat/completions` | bring-your-own-model page |
-| Voice Live api-version | **unresolved — see box above**; default `2026-04-10` | Voice Live how-to |
+| Voice Live api-version (WebRTC `/calls`) | **`2026-01-01-preview` — the only one that serves it** | observed 2026-09-15 |
+| Voice Live api-version (plain WebSocket) | `2026-04-10` | observed 2026-09-15 |
+| Voice Live agent attachment | `agent_name` + **`agent_project_name`** (not `project_name`) | observed 2026-09-15 |
 | Learn MCP server | `https://learn.microsoft.com/api/mcp` | Microsoft Learn MCP docs |
 | Python | 3.12 | project decision |

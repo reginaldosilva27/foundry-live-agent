@@ -39,12 +39,41 @@ export const strings = {
   'header.harnessLabel': { en: 'harness', pt: 'harness' },
   'header.voice': { en: 'Voice', pt: 'Voz' },
   'header.voiceUnavailable': {
-    en: 'Voice mode arrives with the Voice Live spec. It is not wired up yet.',
-    pt: 'O modo de voz chega com a spec do Voice Live. Ainda não está ligado.',
+    en: 'Voice is not configured on this server.',
+    pt: 'A voz não está configurada neste servidor.',
   },
   'header.traces': { en: 'Traces', pt: 'Rastros' },
   'header.status': { en: 'Ready', pt: 'Pronto' },
   'header.statusStreaming': { en: 'Streaming', pt: 'Transmitindo' },
+
+  // --- Voice (spec 006) ----------------------------------------------------
+  'voice.title': { en: 'Voice session', pt: 'Sessão de voz' },
+  'voice.start': { en: 'Start voice', pt: 'Iniciar voz' },
+  'voice.connecting': { en: 'Connecting', pt: 'Conectando' },
+  'voice.listening': { en: 'listening', pt: 'ouvindo' },
+  'voice.muted': { en: 'muted', pt: 'silenciado' },
+  'voice.mute': { en: 'Mute', pt: 'Silenciar' },
+  'voice.unmute': { en: 'Unmute', pt: 'Reativar' },
+  'voice.end': { en: 'End session', pt: 'Encerrar sessão' },
+  'voice.transcriptEmpty': { en: 'Say something to begin.', pt: 'Fale algo para começar.' },
+  'voice.toolRunning': { en: 'Agent activity', pt: 'Atividade do agente' },
+  'voice.errorMicDenied': {
+    en: 'Microphone permission was denied. Allow it in your browser and try again.',
+    pt: 'A permissão do microfone foi negada. Libere no navegador e tente de novo.',
+  },
+  'voice.errorUnsupported': {
+    en: 'This browser cannot open a WebRTC audio session.',
+    pt: 'Este navegador não consegue abrir uma sessão de áudio por WebRTC.',
+  },
+  'voice.errorDisabled': {
+    en: 'Voice is not configured on this server.',
+    pt: 'A voz não está configurada neste servidor.',
+  },
+  'voice.errorFailed': {
+    en: 'The voice session could not be established. Try again.',
+    pt: 'Não foi possível estabelecer a sessão de voz. Tente de novo.',
+  },
+  'voice.dismissError': { en: 'Dismiss', pt: 'Dispensar' },
 
   // --- Empty state ---------------------------------------------------------
   'empty.headlineLight': { en: 'Talk to your agent.', pt: 'Converse com o seu agente.' },

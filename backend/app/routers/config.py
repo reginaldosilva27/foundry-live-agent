@@ -25,6 +25,13 @@ async def config(request: Request) -> dict:
         "model": settings.model,
         "uses_gateway": settings.uses_gateway,
         "project_name": settings.project_name,
+        "voice": {
+            "enabled": request.app.state.voice_connect is not None,
+            # Two endpoints, two api-versions — observed 2026-09-15. Reported rather than hidden:
+            # the WebRTC control route exists only on the preview version, and when that changes
+            # this is the first place anyone will look.
+            "webrtc_api_version": settings.voice_webrtc_api_version,
+        },
         "event_types": sorted(EVENT_TYPES),
         "event_mapping": mapping_report(),
     }

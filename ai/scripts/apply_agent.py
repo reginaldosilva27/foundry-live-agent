@@ -58,18 +58,19 @@ def build_tools(spec: AgentSpec) -> list:
 
 def apply(spec: AgentSpec, endpoint: str) -> tuple[str, str]:
     from azure.ai.projects import AIProjectClient
-    from azure.ai.projects.models import PromptAgentDefinition
+    from azure.ai.projects.models import PromptAgentDefinition, Reasoning
     from azure.identity import DefaultAzureCredential
 
     project = AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential())
-    version = project.agents.create_version(
-        agent_name=spec.name,
-        definition=PromptAgentDefinition(
-            model=spec.model,
-            instructions=spec.instructions,
-            tools=build_tools(spec),
-        ),
+    definition = PromptAgentDefinition(
+        model=spec.model,
+        instructions=spec.instructions,
+        tools=build_tools(spec),
     )
+    if spec.reasoning:
+        definition.reasoning = Reasoning(**spec.reasoning)
+
+    version = project.agents.create_version(agent_name=spec.name, definition=definition)
     return version.name, version.version
 
 
@@ -79,6 +80,7 @@ def describe(spec: AgentSpec) -> str:
         f"  model         {spec.model}",
         f"  via gateway   {'yes' if spec.uses_gateway else 'NO — bypasses the gateway'}",
         f"  instructions  {len(spec.instructions)} chars",
+        f"  reasoning     {spec.reasoning or 'off — the reasoning card will stay empty'}",
         "  tools",
     ]
     for mcp in spec.mcp_tools:

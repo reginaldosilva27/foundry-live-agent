@@ -22,8 +22,9 @@ Chat com streaming · atividade do agente ao vivo · traces distribuídos · voz
 
 ---
 
-> **Status: scaffold.** A spec 000 (estrutura do projeto) está concluída. As specs de feature 001–006
-> estão na fila — veja [`specs/README.md`](specs/README.md). O registro de arquitetura é o
+> **Status: chat e voz funcionando.** As specs 000–004 e 006 estão concluídas — o contrato do
+> harness, o prompt agent, o BFF, a interface e a **voz no mesmo agente**. Falta a 005 (o painel de
+> rastros). Veja [`specs/README.md`](specs/README.md); o registro de arquitetura é o
 > [`PLAN.md`](PLAN.md).
 
 ## 📑 Conteúdo
@@ -150,18 +151,18 @@ Opcional — o AI Gateway é um fluxo de portal sem caminho de IaC: `just gatewa
 |---|---|
 | ![A casca: barra lateral, conversa, painel de rastros](docs/assets/screenshot-chat.png) | ![Um turno que falhou renderizado como erro, com o painel de rastros aberto](docs/assets/screenshot-error-and-trace.png) |
 | _A casca de três painéis, com o selo do harness no cabeçalho_ | _Um `error` terminal aparece como erro, não como um stream que parou_ |
+| ![Uma sessão de voz ao vivo: barras de nível, transcrição, silenciar e encerrar](docs/assets/screenshot-voice.png) | |
+| _Uma sessão do Voice Live ao vivo no mesmo agente — a transcrição chega pelo data channel do WebRTC_ | |
 
 As duas são capturas reais de uma execução real. A segunda mostra o que o app exibe quando o projeto
 do Foundry ainda não tem um model deployment atrás da conexão do gateway: o round trip completou, o
 gateway respondeu `404`, e o contrato transformou isso em um evento terminal em vez de silêncio.
 
-Faltam duas telas, e elas faltam por um motivo, não por descuido (constituição §5):
+Falta uma tela, e ela falta por um motivo, não por descuido (constituição §5):
 
 | Falta | Depende de |
 |---|---|
-| `screenshot-activity.png` — cartões de ferramenta, `bff` ao lado de `foundry` | Um model deployment funcionando (spec 002, passo 2) |
 | `screenshot-traces.png` — a árvore de spans com durações | Spec 005 |
-| `screenshot-voice.png` — ouvindo / pensando / falando | Spec 006 |
 
 ## 🔌 Harnesses
 

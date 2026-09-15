@@ -27,6 +27,11 @@ __all__ = ["AgentSpec", "AgentSpecError", "FunctionToolSpec", "McpToolSpec", "lo
 SCHEMA_VERSION = "foundry-live-agent/v1"
 _REQUIRED = ("schema_version", "name", "model", "instructions", "tools")
 
+# Observed 2026-09-15: Foundry rejects `reasoning` on the request with 400 invalid_payload,
+# "Not allowed when agent is specified" — so it belongs to the definition or nowhere.
+_REASONING_KEYS = ("summary", "effort", "mode", "context")
+_SUMMARY_VALUES = ("auto", "concise", "detailed")
+
 
 class AgentSpecError(ValueError):
     """The agent definition is malformed or refers to something that doesn't exist."""
@@ -61,6 +66,7 @@ class AgentSpec:
     function_tools: list[FunctionToolSpec]
     mcp_tools: list[McpToolSpec]
     description: str = ""
+    reasoning: dict[str, str] | None = None
 
     @property
     def uses_gateway(self) -> bool:
@@ -138,4 +144,34 @@ def load_agent_spec(path: Path | str) -> AgentSpec:
         description=raw.get("description", ""),
         function_tools=function_tools,
         mcp_tools=mcp_tools,
+        reasoning=_reasoning(raw.get("reasoning"), path),
     )
+
+
+def _reasoning(raw: Any, path: Path) -> dict[str, str] | None:
+    """Validate the optional `reasoning:` block.
+
+    Worth validating rather than passing through: a summary value Foundry does not accept fails at
+    `create_version` time, long after the typo, and the symptom — an activity panel whose reasoning
+    card never fills — reads as a missing feature rather than a rejected field.
+    """
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise AgentSpecError(f"{path}: 'reasoning' must be a mapping")
+
+    unknown = [key for key in raw if key not in _REASONING_KEYS]
+    if unknown:
+        raise AgentSpecError(
+            f"{path}: unknown reasoning field(s) {', '.join(sorted(unknown))}; "
+            f"expected any of {', '.join(_REASONING_KEYS)}"
+        )
+
+    summary = raw.get("summary")
+    if summary is not None and summary not in _SUMMARY_VALUES:
+        raise AgentSpecError(
+            f"{path}: reasoning.summary is {summary!r}; "
+            f"Foundry accepts {', '.join(_SUMMARY_VALUES)}"
+        )
+
+    return {key: str(value) for key, value in raw.items()}

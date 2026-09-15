@@ -1,6 +1,6 @@
 """Foundry Responses stream -> `AgentEvent`.
 
-Constitution §10 forbids writing a Foundry integration from memory. Some of these event names have
+Constitution §10 forbids writing a Foundry integration from memory. Most of these event names have
 been **observed** coming out of Foundry; the rest are inferred from documented payload shapes and
 have not yet been seen on the wire. That difference is tracked, not hidden:
 
@@ -8,13 +8,22 @@ have not yet been seen on the wire. That difference is tracked, not hidden:
 - ``verified=True`` means *this project watched Foundry emit it*, with a date.
 - :func:`mapping_report` surfaces the split, and ``GET /config`` exposes it, so a reader can see how
   much of the normaliser is still inference.
-- A test asserts no mapping is marked verified unless it is in the observed set, so the flags cannot
-  drift into optimism.
+- A test replays the recorded fixtures and asserts no mapping is marked verified unless it appears
+  in one of them, so the flags cannot drift into optimism.
 
-The unverified half exists because the spike run on 2026-09-04 reached
-``response.mcp_list_tools.completed`` and then died on a gateway 404 (the reference environment has
-no model deployment, and the connection's Base URL stops one segment short). Finish that run and the
-flags move.
+What remains unverified is the failure half — ``response.failed``, ``response.incomplete``, the bare
+``error`` frame, and ``response.mcp_call.failed``. Nothing has gone wrong on the wire yet, and
+provoking a failure deliberately is a different exercise.
+
+Two shapes here were **wrong before the 2026-09-15 recording** and are worth naming, because both
+were plausible and neither survived contact:
+
+1. ``response.mcp_call.completed`` carries **no ``item``** — only ``item_id``, ``output_index`` and
+   ``sequence_number``. The server label, the arguments and the output live on
+   ``response.output_item.done``, which is where the ``mcp_call`` event is now built from. Reading
+   the lifecycle event gave a card labelled ``unknown`` with no output.
+2. ``response.function_call_arguments.done`` carries ``name: null``, so it cannot identify a call
+   on its own either. The completed output item is again the only complete record.
 
 Unrecognised events are **counted**, not silently dropped — see :func:`unmapped_types`. An event
 Foundry starts sending that we ignore is exactly the kind of thing that should be visible.
@@ -41,15 +50,23 @@ class EventMapping:
     note: str
 
 
-# Observed 2026-09-04 against proj-default, agent `spike-byom`. See docs/REFERENCES.md.
-_OBSERVED = "observed 2026-09-04"
+# Observed 2026-09-15 against ai-admin2354ai223634534-project, agent `spike-reasoning`, model
+# gpt-5.5, and recorded in tests/fixtures/recorded/. See docs/REFERENCES.md.
+_OBSERVED = "observed 2026-09-15"
 _INFERRED = "NOT yet observed — inferred from documented payload shape"
 
 MAPPINGS: tuple[EventMapping, ...] = (
+    # --- lifecycle: real events that carry nothing the contract needs ---
     EventMapping("response.created", "—", True, f"{_OBSERVED}; lifecycle noise, ignored"),
     EventMapping("response.in_progress", "—", True, f"{_OBSERVED}; lifecycle noise, ignored"),
     EventMapping(
         "response.output_item.added", "—", True, f"{_OBSERVED}; the item is empty until .done"
+    ),
+    EventMapping(
+        "response.content_part.added", "—", True, f"{_OBSERVED}; the part is empty until deltas"
+    ),
+    EventMapping(
+        "response.content_part.done", "—", True, f"{_OBSERVED}; the deltas already said it"
     ),
     EventMapping(
         "response.mcp_list_tools.in_progress", "—", True, f"{_OBSERVED}; MCP setup, not a call"
@@ -57,18 +74,65 @@ MAPPINGS: tuple[EventMapping, ...] = (
     EventMapping(
         "response.mcp_list_tools.completed", "—", True, f"{_OBSERVED}; MCP setup, not a call"
     ),
-    EventMapping("response.output_text.delta", "text_delta", False, _INFERRED),
-    EventMapping("response.reasoning_summary_text.delta", "reasoning_summary", False, _INFERRED),
-    EventMapping("response.function_call_arguments.delta", "—", False, f"{_INFERRED}; partial"),
     EventMapping(
-        "response.function_call_arguments.done", "—", False, f"{_INFERRED}; see item.done"
+        "response.mcp_call.in_progress", "—", True, f"{_OBSERVED}; carries item_id only, no item"
     ),
     EventMapping(
-        "response.output_item.done", "tool_call", False, f"{_INFERRED}; function_call item"
+        "response.mcp_call.completed",
+        "—",
+        True,
+        f"{_OBSERVED}; carries item_id only — the call is built from response.output_item.done",
     ),
-    EventMapping("response.mcp_call.completed", "mcp_call", False, _INFERRED),
+    EventMapping(
+        "response.mcp_call_arguments.delta", "—", True, f"{_OBSERVED}; partial, see item.done"
+    ),
+    EventMapping(
+        "response.mcp_call_arguments.done",
+        "—",
+        True,
+        f"{_OBSERVED}; no server_label, see item.done",
+    ),
+    EventMapping(
+        "response.function_call_arguments.delta", "—", True, f"{_OBSERVED}; partial, see item.done"
+    ),
+    EventMapping(
+        "response.function_call_arguments.done",
+        "—",
+        True,
+        f"{_OBSERVED}; carries `name: null`, so it cannot identify the call — see item.done",
+    ),
+    # --- the events that become contract events ---
+    EventMapping("response.output_text.delta", "text_delta", True, _OBSERVED),
+    EventMapping(
+        "response.output_text.done", "—", True, f"{_OBSERVED}; the whole text, already streamed"
+    ),
+    EventMapping(
+        "response.reasoning_summary_text.delta",
+        "reasoning_summary",
+        True,
+        f"{_OBSERVED}; 159 of them",
+    ),
+    EventMapping(
+        "response.reasoning_summary_text.done",
+        "—",
+        True,
+        f"{_OBSERVED}; the whole summary, already streamed",
+    ),
+    EventMapping(
+        "response.reasoning_summary_part.added", "—", True, f"{_OBSERVED}; a new summary paragraph"
+    ),
+    EventMapping(
+        "response.reasoning_summary_part.done", "—", True, f"{_OBSERVED}; end of paragraph"
+    ),
+    EventMapping(
+        "response.output_item.done",
+        "tool_call | mcp_call",
+        True,
+        f"{_OBSERVED}; the only complete record of either kind of call",
+    ),
+    EventMapping("response.completed", "usage+trace_ids+done", True, _OBSERVED),
+    # --- the failure half, still inferred ---
     EventMapping("response.mcp_call.failed", "mcp_call", False, _INFERRED),
-    EventMapping("response.completed", "usage+trace_ids+done", False, _INFERRED),
     EventMapping("response.failed", "error", False, _INFERRED),
     EventMapping("response.incomplete", "error", False, _INFERRED),
     EventMapping("error", "error", False, _INFERRED),
@@ -106,7 +170,9 @@ def _convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
 
     if etype == "response.output_item.done":
         item = raw.get("item") or {}
-        if item.get("type") == "function_call":
+        kind = item.get("type")
+
+        if kind == "function_call":
             # executor="app": Foundry emitted this and is now WAITING. See contract.check_stream.
             yield {
                 "type": "tool_call",
@@ -115,21 +181,13 @@ def _convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
                 "arguments": item.get("arguments") or "{}",
                 "executor": "app",
             }
+        elif kind == "mcp_call":
+            # executor is Foundry's: the call already ran, output and all. We only report it.
+            yield _mcp_call(item)
         return
 
-    if etype.startswith("response.mcp_call."):
-        item = raw.get("item") or {}
-        event: dict[str, Any] = {
-            "type": "mcp_call",
-            "server_label": item.get("server_label", "unknown"),
-            "name": item.get("name", "unknown"),
-            "arguments": item.get("arguments") or "{}",
-        }
-        if (output := item.get("output")) is not None:
-            event["output"] = output
-        if etype.endswith(".failed"):
-            event["error"] = str(item.get("error") or "mcp call failed")
-        yield event  # type: ignore[misc]
+    if etype == "response.mcp_call.failed":
+        yield _mcp_call(raw.get("item") or {}, failed=True)
         return
 
     if etype == "response.completed":
@@ -163,6 +221,26 @@ def _convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
         if code := detail.get("code"):
             error["code"] = str(code)
         yield error  # type: ignore[misc]
+
+
+def _mcp_call(item: Mapping[str, Any], *, failed: bool = False) -> AgentEvent:
+    """Build an `mcp_call` from a completed MCP output item.
+
+    An `error` on the item counts as a failure even on the success path: observed items carry
+    `error: null` when they worked, and reporting a failed call as successful would put a green
+    card on the screen for a call that returned nothing.
+    """
+    event: dict[str, Any] = {
+        "type": "mcp_call",
+        "server_label": item.get("server_label") or "unknown",
+        "name": item.get("name") or "unknown",
+        "arguments": item.get("arguments") or "{}",
+    }
+    if (output := item.get("output")) is not None:
+        event["output"] = output
+    if failed or item.get("error"):
+        event["error"] = str(item.get("error") or "mcp call failed")
+    return event  # type: ignore[return-value]
 
 
 def unmapped_types(raw_events: Iterable[Mapping[str, Any]]) -> dict[str, int]:

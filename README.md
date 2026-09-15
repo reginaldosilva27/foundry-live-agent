@@ -22,8 +22,10 @@ Streaming chat · live agent activity · distributed traces · real-time voice
 
 ---
 
-> **Status: scaffold.** Spec 000 (project scaffold) is done. Feature specs 001–006 are queued —
-> see [`specs/README.md`](specs/README.md). The architecture record is [`PLAN.md`](PLAN.md).
+> **Status: chat and voice both run.** Specs 000–004 and 006 are done — the harness contract, the
+> prompt agent, the BFF, the UI, and **voice on the same agent**. Spec 005 (the trace drawer) is the
+> remaining one. See [`specs/README.md`](specs/README.md); the architecture record is
+> [`PLAN.md`](PLAN.md).
 
 ## 📑 Contents
 
@@ -149,19 +151,19 @@ Optional — the AI Gateway is a portal flow with no IaC path: `just gateway` pr
 |---|---|
 | ![The shell: sidebar, conversation, trace panel](docs/assets/screenshot-chat.png) | ![A failed turn rendered as an error, with the trace panel open](docs/assets/screenshot-error-and-trace.png) |
 | _The three-pane shell, with the harness badge in the header_ | _A terminal `error` renders as an error, not as a stream that stopped_ |
+| ![A live voice session: level bars, transcript, mute and end](docs/assets/screenshot-voice.png) | |
+| _A live Voice Live session on the same agent — the transcript arrives on the WebRTC data channel_ | |
 
 Both are real screenshots of a real run. The second one is what the app shows when the Foundry
 project has no model deployment behind the gateway connection yet: the round trip completed, the
 gateway answered `404`, and the contract turned that into a terminal event instead of silence.
 
-Two shots are still missing, and they are missing for a reason rather than out of neglect
+One shot is still missing, and it is missing for a reason rather than out of neglect
 (constitution §5):
 
 | Missing | Waiting on |
 |---|---|
-| `screenshot-activity.png` — tool cards, `bff` beside `foundry` | A working model deployment (spec 002, pass 2) |
 | `screenshot-traces.png` — the span tree with durations | Spec 005 |
-| `screenshot-voice.png` — listening / thinking / speaking | Spec 006 |
 
 ## 🔌 Harnesses
 

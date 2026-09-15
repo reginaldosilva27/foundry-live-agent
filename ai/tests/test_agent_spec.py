@@ -88,3 +88,36 @@ def test_the_shipped_agent_yaml_is_valid():
     assert spec.name
     assert len(spec.function_tools) == 2
     assert len(spec.mcp_tools) == 1
+
+
+# --- reasoning summaries (spec 002, observed 2026-09-15) -------------------
+
+
+def test_reasoning_defaults_to_off(tmp_path):
+    """Absent from the YAML means absent from the definition — not a silently applied default."""
+    spec = load_agent_spec(write(tmp_path, VALID))
+    assert spec.reasoning is None
+
+
+def test_reasoning_is_read_from_the_definition(tmp_path):
+    """Observed 2026-09-15: Foundry rejects a request-level `reasoning` with 400
+    "Not allowed when agent is specified", so the agent definition is the only place it can live."""
+    spec = load_agent_spec(
+        write(tmp_path, VALID + "\nreasoning:\n  summary: auto\n  effort: high\n")
+    )
+    assert spec.reasoning == {"summary": "auto", "effort": "high"}
+
+
+def test_rejects_a_reasoning_summary_foundry_does_not_accept(tmp_path):
+    bad = VALID + "\nreasoning:\n  summary: verbose\n"
+    with pytest.raises(AgentSpecError, match="verbose"):
+        load_agent_spec(write(tmp_path, bad))
+
+
+def test_the_shipped_agent_asks_for_reasoning_summaries():
+    """Without this the activity panel's reasoning card is permanently empty — the recorded
+    contrast between the two fixtures is exactly this one setting."""
+    from pathlib import Path
+
+    shipped = Path(__file__).resolve().parent.parent / "harness" / "prompt_agent" / "agent.yaml"
+    assert load_agent_spec(shipped).reasoning == {"summary": "auto"}

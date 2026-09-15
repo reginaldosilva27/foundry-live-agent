@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 002-prompt-agent-harness |
-| **Status** | in-progress |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-04 |
 
@@ -68,13 +68,19 @@ the pair the activity panel exists to show side by side.
 8. **AC8** — `apply_agent.py` reads `agent.yaml` and creates an agent version through the Agent
    Service SDK, printing the resulting name and version. Run twice, it creates a second version
    rather than failing.
-9. **AC9** — **The spike answers O-8**: whether `responses.create(stream=True)` drives a prompt agent
-   whose model is `apim-analytics-demo/gpt-5.4`. Result recorded in `docs/REFERENCES.md` either way.
+9. **AC9** — **The spike answers O-8**: whether `responses.create(stream=True)` drives a prompt
+   agent. Result recorded in `docs/REFERENCES.md` either way. *Answered 2026-09-15: yes, on a plain
+   deployment. Whether it also holds through a BYOM connection is carried forward, unanswered and
+   marked as such — the second environment has no working gateway either.*
 10. **AC10** — **The spike answers O-1**: the real stream event names for reasoning summaries, text,
     function calls and MCP calls, recorded as a fixture under `tests/fixtures/recorded/`.
 11. **AC11** — `PromptAgentAdapter` satisfies `HarnessAdapter` and **passes the spec 001 conformance
     suite unedited**, replaying the recorded fixture.
 12. **AC12** — `ai/` gates green.
+13. **AC13** — `agent.yaml` can declare `reasoning:` and the loader validates it, rejecting a
+    `summary` value Foundry does not accept. Added mid-spec: the spike showed that without it the
+    activity panel's reasoning card is empty by construction, because the only other place to put
+    the setting is rejected by the service.
 
 ## Contract / data impact
 
@@ -83,13 +89,25 @@ the pair the activity panel exists to show side by side.
 - Creates `agent.yaml` as our schema. `docs/harness-comparison.md` already explains why it is ours
   and not Foundry's deprecated one; it moves if this changes.
 - `docs/REFERENCES.md` gains the spike's findings (§10).
+- `agent.yaml` gains an optional `reasoning:` block (AC13). Our schema, our change — it does not
+  touch the §9 `AgentEvent` contract, which is why this stayed inside spec 002 rather than becoming
+  a new one.
+
+**What this spec did NOT establish.** The agent runs on a plain `gpt-5.5` deployment and therefore
+**bypasses the APIM gateway**. Every finding above is about the BFF→Foundry hop. Whether the
+Responses API and reasoning summaries survive the Foundry→gateway hop is still unverified in both
+reference environments, and is recorded as open rather than assumed.
 
 ## Open questions (clarify before planning)
 
-- [ ] **O-8 / O-9 / O-1 / O-3 — all blocked on Azure access.** The `az` session is authenticated as
-      `reginaldo.silva@belake.ai`, whose tenants do **not** include subscription
-      `7a4e9773-94ea-45a8-9b58-2701ed307318` where `foundry-analytics-demo` lives. The spike is
-      written and ready; it cannot run until `az login` reaches that tenant.
+- [x] **O-8 / O-9 / O-1 / O-3 — answered 2026-09-15.** Not by regaining access to subscription
+      `7a4e9773-94ea-45a8-9b58-2701ed307318`, but by running the spike against a **different**
+      project: `ai-admin2354ai223634534-project` (resource `ai-admin2354ai223634534338`, eastus2),
+      model `gpt-5.5`. Findings in [`docs/REFERENCES.md`](../../docs/REFERENCES.md); the 441 recorded
+      events are committed under `ai/tests/fixtures/recorded/`.
+- [x] **Where does `reasoning.summary` belong?** → **The agent definition.** Raised by the spike, not
+      before it: the request-level parameter is rejected with `400 invalid_payload — "Not allowed
+      when agent is specified"`. `agent.yaml` gains a `reasoning:` block (AC13).
 - [x] Should the tools be async? → **No.** Both are synchronous and fast. The BFF runs them in a
       thread if it ever needs to. Making them async would add ceremony for no benefit.
 - [x] Should `lookup_knowledge` do embeddings? → **No.** A scored keyword match over a small markdown

@@ -19,6 +19,14 @@ Three guarantees, in order of how much damage they prevent:
    the run expires ten minutes later, and the browser sees a stream that merely stops.
 2. **The stream always terminates.** If Foundry explodes, the last thing out is an ``error``.
 3. **The loop is capped.** A pathological agent ends with an ``error``, not an infinite stream.
+
+**A leg's terminal is not the turn's terminal.** Observed 2026-09-15 and recorded in
+`tests/fixtures/recorded/prompt-agent-turn-20260915.jsonl`: Foundry does not hold the stream open
+while it waits for tool output. It emits the function calls, says ``response.completed`` — with the
+usage for that leg — and waits for a *new* request carrying the outputs. Forwarding that straight
+through would put ``done`` in the middle of the turn and two ``usage`` events in it, both of which
+the §9 contract forbids. So ``usage`` is accumulated across legs and ``done`` is held until the
+turn really ends.
 """
 
 from __future__ import annotations
@@ -63,6 +71,8 @@ class PromptAgentAdapter:
     ) -> AsyncIterator[AgentEvent]:
         """Yield one complete, contract-conforming turn."""
         inputs: list[Mapping[str, Any]] = list(messages)
+        totals: dict[str, int] = {}
+        done: AgentEvent | None = None
 
         try:
             for _turn in range(self.max_turns):
@@ -72,12 +82,27 @@ class PromptAgentAdapter:
                 for event in normalise(self._stream_factory(inputs, conversation_state)):
                     if event["type"] == "tool_call" and event["executor"] == "app":
                         pending.append((event["call_id"], event["name"], event["arguments"]))
-                    if event["type"] in {"done", "error"}:
+                    if event["type"] == "usage":
+                        for key, value in event.items():
+                            if key != "type":
+                                totals[key] = totals.get(key, 0) + int(value)  # type: ignore[arg-type]
+                        continue
+                    if event["type"] == "done":
                         terminated = True
+                        done = event
+                        continue
+                    if event["type"] == "error":
+                        yield event
+                        return
                     yield event
 
                 if not pending:
-                    if not terminated:
+                    if terminated and done is not None:
+                        # The turn really is over: release what was held back across the legs.
+                        if totals:
+                            yield {"type": "usage", **totals}  # type: ignore[misc]
+                        yield done
+                    else:
                         # Foundry stopped without saying it completed and asked for nothing. That is
                         # an anomaly, not a success, so it terminates as an error — dressing it up
                         # as `done` would also mean emitting an empty response_id and leaving the
