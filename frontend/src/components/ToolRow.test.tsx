@@ -75,3 +75,41 @@ describe('the chat row for a call', () => {
     expect(onOpen).toHaveBeenCalledOnce()
   })
 })
+
+/**
+ * Spec 014 AC6, AC7, AC12 — duration as magnitude.
+ *
+ * The bar is the spec's most §5-sensitive element, so what it must *not* do is tested as hard as
+ * what it must: no bar without a measured duration, and no bar that implies a position on a clock.
+ * Its length is a ratio the caller computed from durations the events carried, and nothing else.
+ */
+describe('the duration bar', () => {
+  it('gives the longest call in a turn a full-width bar (AC6)', () => {
+    render(<ToolRow activity={appCall} durationRatio={1} onOpen={() => {}} />)
+
+    expect(screen.getByTestId('tool-bar')).toHaveStyle({ '--bar': '100%' })
+  })
+
+  it('scales a shorter call against it (AC6)', () => {
+    render(<ToolRow activity={appCall} durationRatio={0.25} onOpen={() => {}} />)
+
+    expect(screen.getByTestId('tool-bar')).toHaveStyle({ '--bar': '25%' })
+  })
+
+  it('draws no bar for a call that carries no duration, and says why (AC7)', () => {
+    render(<ToolRow activity={mcpCall} onOpen={() => {}} />)
+
+    expect(screen.queryByTestId('tool-bar')).toBeNull()
+    expect(screen.getByTestId('tool-row')).toHaveTextContent(
+      /carries no duration|não carrega duração/i,
+    )
+  })
+
+  it('draws no bar when no ratio was given, even for a call that has a duration (AC12)', () => {
+    // The chat renders rows without ratios in the voice overlay, where there is no turn to
+    // compare against. A bar there would be a comparison with nothing.
+    render(<ToolRow activity={appCall} />)
+
+    expect(screen.queryByTestId('tool-bar')).toBeNull()
+  })
+})

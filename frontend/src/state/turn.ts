@@ -200,3 +200,21 @@ export function turnStatus(turn: Turn): LiveStatus {
 
   return turn.reasoning ? { kind: 'thinking' } : { kind: 'idle' }
 }
+
+/**
+ * The longest measured call in a turn, or 0 when nothing measured one.
+ *
+ * The bars under the calls are fractions of this (spec 014 AC6). It lives here, with the other
+ * pure derivations of the event log, so the panel and its test read the same rule — and so that
+ * "measured" keeps one definition: an MCP call carries no duration and is not a zero-length call.
+ */
+export function longestDuration(turn: Turn): number {
+  return turn.activities.reduce(
+    (longest, activity) =>
+      activity.kind === 'tool' && activity.durationMs !== undefined
+        ? Math.max(longest, activity.durationMs)
+        : longest,
+    0,
+  )
+}
+

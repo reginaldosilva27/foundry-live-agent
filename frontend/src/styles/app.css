@@ -114,6 +114,8 @@ button:disabled {
 .log__close:focus-visible,
 .meta-line__link:focus-visible,
 .reasoning-card__toggle:focus-visible,
+.copy-row__button:focus-visible,
+.trace__turn-step:focus-visible,
 .composer__mic:focus-visible,
 .composer__send:focus-visible {
   outline: 2px solid var(--ds-blue);
@@ -126,7 +128,9 @@ button:disabled {
 .trace__close:focus-visible,
 .trace__portal:focus-visible,
 .log__close:focus-visible,
-.trace .tool-row:focus-visible {
+.trace .tool-row:focus-visible,
+.trace .copy-row__button:focus-visible,
+.trace__turn-step:focus-visible {
   outline-color: var(--ds-blue-500);
 }
 
@@ -567,10 +571,20 @@ button:disabled {
   gap: var(--sp-2);
 }
 
+/* The reasoning is context for the answer, not a peer of it. Given the same white card the answer
+   sits on, the two competed for first read; on the page's own ground with a dashed edge, it reads
+   as the note it is and the answer wins the eye. */
 .reasoning-card {
-  border: 1px solid var(--border-1);
+  border: 1px dashed var(--border-2);
   border-radius: var(--r-md);
-  background: var(--bg-1);
+  background: transparent;
+}
+
+/* Its body is quieter than the answer's body, by colour rather than by size — the summary is
+   prose and shrinking it would make it harder to read, not easier to skip. */
+.reasoning-card__body .markdown p,
+.reasoning-card__body .markdown li {
+  color: var(--fg-2);
 }
 
 .reasoning-card__toggle {
@@ -745,9 +759,13 @@ button:disabled {
 /* The chat's one-line rendering of a call (spec 009). The payload it used to carry lives in the
    trace panel; what stays is the fact, and the executor tag that says who ran it. */
 .tool-row {
-  display: flex;
+  /* Four content columns and a second row for the bar. `auto` everywhere but the name means each
+     column is as wide as the widest thing in it, so the executor tag starts at the same x on every
+     row — which is the column that carries §8 and the one the eye needs to scan (spec 014 AC9). */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: var(--sp-2);
+  gap: var(--sp-1) var(--sp-2);
   width: 100%;
   padding: var(--sp-2) var(--sp-3);
   border: 1px solid var(--border-1);
@@ -768,6 +786,51 @@ button:disabled {
 
 .tool-row[data-executor='foundry'] {
   border-left-color: var(--ds-n-400);
+}
+
+
+/* The duration bar (spec 014 AC6). It spans the row's full width on a second grid line, so a call
+   with no duration costs no height — `grid-column` rather than a reserved track.
+
+   Its length is the ratio the caller computed, handed over as `--bar`. It is deliberately not a
+   timeline: no axis, no gridlines, no start offset, because the events carry durations and not a
+   clock (§5). Spans with a real time axis arrive with spec 005. */
+.tool-row__bar {
+  grid-column: 1 / -1;
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: var(--ds-n-200);
+}
+
+.tool-row__bar::before {
+  content: '';
+  display: block;
+  width: var(--bar, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ds-n-400);
+}
+
+.tool-row[data-executor='app'] .tool-row__bar::before {
+  background: var(--ds-blue);
+}
+
+.tool-row[data-status='failed'] .tool-row__bar::before {
+  background: var(--ds-danger);
+}
+
+/* Why a call has no bar, for anyone who cannot hover a title. Present to a screen reader and to
+   the test that pins AC7; absent from the layout, because in the chat it would be a sentence
+   under every MCP call. */
+.tool-row__nobar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .tool-row__status {
@@ -964,9 +1027,10 @@ button:disabled {
 }
 
 .trace__head {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--sp-2);
 }
 
 .trace__title {
@@ -1045,6 +1109,182 @@ button:disabled {
 
 .trace__activity .tool-row__meta {
   color: var(--ds-n-500);
+}
+
+
+/* Which turn, and the two arrows that move between them (spec 014 AC4, AC5). A session is short,
+   so this is a stepper and not a list — a list would be a second sidebar inside a 320px column. */
+.trace__turn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.trace__turn-step {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-1);
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--ds-n-400);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.trace__turn-step:hover:not(:disabled) {
+  color: var(--ds-white);
+}
+
+.trace__turn-step:disabled {
+  color: var(--ds-n-700);
+}
+
+/* One chevron glyph, turned around. The brand forbids a second arrow character, and a mirrored
+   SVG is the same shape rather than a lookalike of it. */
+.trace__turn-back {
+  transform: rotate(180deg);
+}
+
+.trace__position {
+  font-size: var(--fs-caption);
+  color: var(--ds-n-500);
+  white-space: nowrap;
+}
+
+/* The run's numbers. A two-column grid so the labels and the figures each form a column — this is
+   the row a reader scans when comparing one turn against another. */
+.trace-numbers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2) var(--sp-3);
+  margin: 0;
+}
+
+.trace-numbers__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trace-numbers dt {
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  color: var(--ds-n-500);
+}
+
+.trace-numbers dd {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--ds-n-100);
+  overflow-wrap: anywhere;
+}
+
+/* An identifier, copyable (spec 014 AC1). The whole value is the target: at 12px monospace, a
+   separate icon-sized button beside it is the wrong thing to ask anyone to hit. */
+.trace__ids {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.copy-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.copy-row__label {
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  color: var(--ds-n-500);
+}
+
+.copy-row__button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--ds-n-800);
+  border-radius: var(--r-sm);
+  background: var(--ds-n-900);
+  color: var(--ds-blue-500);
+  font: inherit;
+  text-align: left;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.copy-row__button:hover {
+  border-color: var(--ds-n-700);
+}
+
+.copy-row__value {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.copy-row__icon {
+  flex: none;
+  color: var(--ds-n-500);
+}
+
+.copy-row__button:hover .copy-row__icon {
+  color: var(--ds-n-300);
+}
+
+.copy-row__feedback {
+  font-size: var(--fs-caption);
+  color: var(--ds-success);
+}
+
+.copy-row[data-state='failed'] .copy-row__feedback {
+  color: var(--ds-warning);
+}
+
+/* An identifier this build does not receive yet. It renders — greyed, with a dashed edge that says
+   "reserved" rather than "empty" — because silently omitting it would make a pending field and a
+   dropped one look the same (§5). */
+.copy-row--pending .copy-row__pending {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px dashed var(--ds-n-800);
+  border-radius: var(--r-sm);
+  color: var(--ds-n-600);
+}
+
+/* Where the empty "Spans" section used to be: one line, at the weight of a footnote. */
+.trace__foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: auto;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--ds-n-800);
+}
+
+.trace__spans-note {
+  margin: 0;
+  font-family: var(--font-sans);
+  line-height: var(--lh-base);
+  color: var(--ds-n-500);
+}
+
+/* The panel's own ground is darker than a row's, so the rows read as objects on it rather than as
+   stripes of it. */
+.trace__run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.trace__activity .tool-row__bar {
+  background: var(--ds-n-800);
+}
+
+.trace__activity .tool-row[data-executor='foundry'] .tool-row__bar::before {
+  background: var(--ds-n-500);
 }
 
 /* ---------- Call reader (spec 010) ---------- */
@@ -1191,6 +1431,43 @@ button:disabled {
 
 .markdown > *:last-child {
   margin-bottom: 0;
+}
+
+/* An answer's headings are headings *within a message*, not within the page. Unstyled they take
+   the browser's own scale — `h1` at 2em — and a section title inside a chat bubble rendered larger
+   than the product name in the sidebar. The scale here starts just above body text and compresses
+   fast, because a markdown answer nests three levels deep and the page has one real h1 already. */
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-snug);
+  color: var(--fg-1);
+}
+
+.markdown h1 {
+  font-size: var(--fs-h5);
+}
+
+.markdown h2 {
+  font-size: var(--fs-body-l);
+}
+
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  font-size: var(--fs-body);
+}
+
+/* The first line of an answer never needs top margin — it is already the top. */
+.markdown > :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-top: 0;
 }
 
 .markdown p,

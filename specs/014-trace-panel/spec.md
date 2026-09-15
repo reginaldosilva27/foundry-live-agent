@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 014-trace-panel |
-| **Status** | clarified |
+| **Status** | in-progress |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-15 |
 

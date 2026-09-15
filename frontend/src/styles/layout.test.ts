@@ -71,7 +71,11 @@ describe('app.css regressions', () => {
     )
     const defined = new Set(tokens.match(/^\s*(--[a-z0-9-]+)/gm)?.map((m) => m.trim()) ?? [])
     const declared = new Set(css.match(/^\s*(--[a-z0-9-]+):/gm)?.map((m) => m.trim().slice(0, -1)) ?? [])
-    const used = new Set(css.match(/var\((--[a-z0-9-]+)/g)?.map((m) => m.slice(4)) ?? [])
+    // A property with a fallback — `var(--bar, 0%)` — is one the stylesheet knows comes from
+    // somewhere else, which is how spec 014 hands the duration bar its width from React. Without
+    // the fallback there is no way to tell that from a typo, so the rule is: if the stylesheet
+    // does not define it, it must say what to do without it.
+    const used = new Set(css.match(/var\((--[a-z0-9-]+)\s*\)/g)?.map((m) => m.slice(4, -1).trim()) ?? [])
 
     expect([...used].filter((name) => !defined.has(name) && !declared.has(name))).toEqual([])
   })
@@ -91,9 +95,32 @@ describe('app.css regressions', () => {
       '.meta-line__link',
       '.reasoning-card__toggle',
       '.composer__send',
+      // Spec 014 added these two.
+      '.copy-row__button',
+      '.trace__turn-step',
     ]
     const ringed = css.match(/^[^{}]*:focus-visible[^{}]*\{/gm)?.join('\n') ?? ''
 
     expect(focusable.filter((selector) => !ringed.includes(selector))).toEqual([])
+  })
+})
+
+/** Spec 014 AC9 — the calls align, in every surface that renders one. */
+describe('the tool row grid', () => {
+  it('declares fixed columns so the executor tags line up down the list', () => {
+    const row = css.split('.tool-row {')[1].split('}')[0]
+
+    expect(row).toContain('display: grid')
+    expect(row).toMatch(/grid-template-columns:/)
+    // The name column is the one that flexes; every other column is sized by its content, which
+    // is what makes two rows with different name lengths agree on where the tag starts.
+    expect(row).toMatch(/grid-template-columns:[^;]*1fr/)
+  })
+
+  it('keeps the bar out of the row height when a call has no duration', () => {
+    // The chat renders rows for MCP calls, which never carry one. If the bar reserved a row in
+    // the grid, every one of those would gain its height for nothing.
+    const bar = css.split('.tool-row__bar {')[1].split('}')[0]
+    expect(bar).toMatch(/grid-(column|area)/)
   })
 })

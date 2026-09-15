@@ -22,7 +22,7 @@ The two pieces of plumbing:
 Three new small components, because each is a distinct thing with its own test surface and the
 alternative is one 200-line panel:
 
-- **`CopyRow`** — label, monospace value, one press to copy. Used for every id, so "copied"
+- **`CopyRow`** — label, monospace value, one press to copy; it also renders the *pending* case. Used for every id, so "copied"
   behaves identically everywhere and the clipboard is touched in exactly one place.
 - **`TraceNumbers`** — the model/tokens/latency row, which omits what it does not have.
 - The duration bar is **not** a component; it is a `<span>` inside `ToolRow` driven by a CSS custom
@@ -48,8 +48,11 @@ something that can fail and reports failure in the row, which is also what makes
 - `frontend/src/components/TraceNumbers.tsx` — **new.** Model, tokens, reasoning tokens, latency.
 - `frontend/src/components/ToolRow.tsx` — fixed columns; optional duration bar driven by a
   `--bar` custom property; the bar's absence explained via `title` for MCP calls.
-- `frontend/src/panes/ActivityPanel.tsx` — computes the turn's longest duration once and passes the
-  ratio down, so each row does not rescan the turn.
+- ~~`frontend/src/panes/ActivityPanel.tsx`~~ — **unchanged, decided during implementation.** The
+  plan had the chat's rows carry bars too. Spec 009 deliberately stripped the chat row down to one
+  line of fact, and a bar under every call puts back the visual weight it removed. The bars live in
+  the panel, which is the surface for comparing calls; `ToolRow` draws one only when it is given a
+  ratio, so the chat and the voice overlay simply do not pass one.
 - `frontend/src/App.tsx` — derives the shown turn's index/count, passes `model`, `latencyMs` and
   the two navigation callbacks to `TraceDrawer`.
 - `frontend/src/components/Icon.tsx` — `CopyIcon`, and a left/right chevron reuse of `ChevronIcon`
@@ -101,7 +104,7 @@ the list only if the heading goes; it stays, because the footer keeps the word.
 | AC3 | a turn with no usage omits the figures rather than rendering `0` | `components/TraceNumbers.test.tsx` |
 | AC4 | panel states position; arrows call the callbacks | `panes/TraceDrawer.test.tsx` |
 | AC5 | first/last turn disables the corresponding arrow | `panes/TraceDrawer.test.tsx` |
-| AC6 | bar widths are proportional to the longest duration in the turn; longest is 100% | `components/ToolRow.test.tsx` |
+| AC6 | bar widths are proportional to the longest duration in the turn; longest is 100% | `components/ToolRow.test.tsx`, `panes/TraceDrawer.test.tsx` |
 | AC7 | an MCP call renders no bar and carries the reason as text | `components/ToolRow.test.tsx` |
 | AC8 | absent reserved ids render as pending; present ones render as copyable | `panes/TraceDrawer.test.tsx` |
 | AC9 | the row declares fixed grid columns | `styles/layout.test.ts` |
@@ -128,3 +131,14 @@ browser painted it.
 - **Turn navigation makes the panel's content depend on `App` state.** If a new turn streams while
   the reader is looking at turn 2, the panel must not jump. It follows `trace.turnId`, which is
   already how it works; the risk is a regression, and AC4 pins it.
+
+
+## Implementation notes (2026-09-15)
+
+- **`longestDuration` lives in `state/turn.ts`**, with the other pure derivations of the event log,
+  so "measured" keeps one definition: an MCP call carries no duration and is not a zero-length one.
+- **`layout.test.ts`'s token rule gained a clause.** `--bar` is set by React, so the stylesheet
+  cannot define it; the rule is now that a property the stylesheet does not define must carry a
+  fallback — `var(--bar, 0%)` — which is what distinguishes a runtime property from a typo. The
+  typo it originally caught (`--dur-2`) would still fail.
+- **No bars in the chat** — see the struck-through file above.

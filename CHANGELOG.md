@@ -8,6 +8,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Spec 014 — the trace panel becomes an instrument.** The surface that argues this project's
+  central claim now carries its own argument. Every identifier is a copyable row; the run's model,
+  tokens, reasoning tokens and latency sit in the panel rather than only in the chat's meta line;
+  the head says which turn of the session is shown and steps between them without closing; and the
+  calls sit on a fixed grid, so the executor tag — the column that carries the whole of §8 — starts
+  at the same x on every row instead of ragged-edging down the list.
+  - **`otel_trace_id` and `gateway_request_id` stop being invisible.** They are reserved for spec
+    005, no harness emits them, and until now the frontend parsed them and dropped them in silence —
+    which looks exactly like a bug. They are listed as pending instead, and the panel keys off
+    presence alone, so the first harness to emit either renders it as an ordinary id with no
+    frontend change (§5).
+  - **The duration bars are not a waterfall, deliberately.** Their lengths are the `duration_ms` the
+    `tool_result` events carried, relative to the longest call in the same turn. They are given no
+    time axis, no gridlines and no start offsets, because the events carry durations and not a
+    clock. The empty "Spans" heading is now one footer line saying where real spans come from.
+  - No `AgentEvent` change (§9) and no harness change: everything rendered was already on `Turn`.
+
+### Changed
+- **An answer's markdown headings are chat headings, not page headings.** Unstyled, `h1` took the
+  browser's 2em, so a section title inside a message rendered larger than the product name in the
+  sidebar. The scale now starts just above body text and compresses fast.
+- **The reasoning card recedes behind the answer.** It had the same white card the answer sits on
+  and the two competed for first read; on the page's own ground with a dashed edge it reads as the
+  note it is.
+
+### Fixed
+- **Keyboard focus was invisible everywhere.** 1425 lines of CSS contained no `:focus-visible` rule
+  at all, and every control carries its own background — Dataside blue, ink, transparent-on-ink —
+  against which the user-agent ring barely shows. One rule now covers every control, stated once.
+- **Both modals claimed `aria-modal="true"` and honoured none of it.** The call reader and the voice
+  card left focus on whatever opened them, let Tab walk out into the chat behind the scrim, and did
+  not restore focus on close. `useModalFocus` is one hook for both (§4).
+- **`.tool-row` transitioned on `var(--dur-2)`**, which the design system does not define, so the
+  hover transition silently never ran. `layout.test.ts` now fails on any custom property that is
+  neither defined in the design system nor given a fallback.
+- **A stale copy of the backend's speech tests was being collected.** 16 Finder/iCloud conflict
+  copies (`file 2.ts`) sat untracked in the tree; the frontend's were inert, but pytest's
+  `test_*.py` matched `test_speech 2.py`, so seven tests ran twice against an older file. Removed,
+  and `.gitignore` now catches the pattern. A `.nvmrc` and an `engines` floor pin the Node the
+  project already requires — vitest 5 needs >= 22.12, and below it all 21 test files fail to start
+  with an ESM stack trace that names nothing about the version.
+
+### Added
 - **Spec 013 — the agent can search the live web.** A third function tool, `search_web`, backed by
   Tavily's `/search` endpoint and executed by the BFF like the other two. It is the first tool here
   that depends on a third-party network service, which is the point: it is where the repo shows what

@@ -24,3 +24,20 @@ Sources for everything this page will assert: [../REFERENCES.md](../REFERENCES.m
 - For gateway-side correlation: enable Application Insights on the APIM resource (Monitoring →
   Application Insights, 100% sampling for testing), then `requests` / `dependencies` in App Insights
   for request tracing, and `ApiManagementGatewayLogs` in Log Analytics for gateway diagnostics.
+
+## What the panel shows today (spec 014)
+
+The trace panel already renders the two identifiers the run produces — `response_id` and
+`conversation_id` — as copyable rows, alongside the turn's tokens and latency and the calls it made.
+
+`otel_trace_id` and `gateway_request_id` are **reserved for this spec**. They exist in the §9
+contract and in the frontend's `Turn`, no harness emits them yet, and the panel lists them as
+pending rather than omitting them — a field that is silently absent and one that is deliberately
+pending must not look the same on screen (§5). The panel keys off presence alone, so the first
+harness to emit either renders it as an ordinary copyable id with no frontend change.
+
+The duration bars under the calls are **not spans**. Their lengths are the `duration_ms` the
+`tool_result` events carried, compared against the longest call in the same turn; they are given no
+time axis, no gridlines and no start offsets, because the events carry durations and not a clock.
+The waterfall with a real axis is this spec's job, from Application Insights.
+

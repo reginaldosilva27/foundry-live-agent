@@ -47,11 +47,30 @@ export default function App() {
 
   const spoken = useSpokenAnswers(messages, lang, speaking)
 
-  const shownTurn = useMemo(() => {
+  /**
+   * The turn the panel is on, and where it sits in the session (spec 014 AC4).
+   *
+   * Derived rather than stored: with no `turnId` the panel follows the newest turn, which is what
+   * the header's Traces button opens, and a turn streaming in the background therefore does not
+   * move a panel the reader has parked on an older one.
+   */
+  const shown = useMemo(() => {
     const agentMessages = messages.filter((m) => m.role === 'agent')
-    const chosen = trace.turnId && agentMessages.find((m) => m.id === trace.turnId)
-    return chosen || agentMessages[agentMessages.length - 1]
+    const found = trace.turnId ? agentMessages.findIndex((m) => m.id === trace.turnId) : -1
+    const index = found >= 0 ? found : agentMessages.length - 1
+    return { message: agentMessages[index], index, total: agentMessages.length, agentMessages }
   }, [messages, trace.turnId])
+
+  const shownTurn = shown.message
+
+  /** Move to the adjacent turn, pinning the panel to it so the newest one stops pulling it away. */
+  const stepTurn = useCallback(
+    (delta: number) => {
+      const next = shown.agentMessages[shown.index + delta]
+      if (next) setTrace({ turnId: next.id })
+    },
+    [shown],
+  )
 
   const openTrace = useCallback((turnId?: string, callId?: string) => {
     setTrace({ turnId, callId })
@@ -121,6 +140,12 @@ export default function App() {
           turn={shownTurn?.role === 'agent' ? shownTurn.turn : undefined}
           selectedCall={trace.callId}
           open={tracesOpen}
+          position={shown.total > 0 ? { index: shown.index, total: shown.total } : undefined}
+          model={config?.model}
+          latencyMs={
+            shownTurn?.endedAt ? shownTurn.endedAt - shownTurn.startedAt : undefined
+          }
+          onStep={stepTurn}
           onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
           onClose={() => setTracesOpen(false)}
         />

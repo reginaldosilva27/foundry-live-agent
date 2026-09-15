@@ -135,6 +135,10 @@ export const strings = {
   'tool.arguments': { en: 'Arguments', pt: 'Argumentos' },
   'tool.result': { en: 'Result', pt: 'Resultado' },
   'tool.failed': { en: 'failed', pt: 'falhou' },
+  'tool.noDuration': {
+    en: 'Foundry reports this call already finished, so it carries no duration.',
+    pt: 'O Foundry informa esta chamada já concluída, então ela não carrega duração.',
+  },
   'tool.openInTrace': {
     en: 'Show this call in the trace panel',
     pt: 'Mostrar esta chamada no painel de rastros',
@@ -148,6 +152,7 @@ export const strings = {
   // --- Meta line -----------------------------------------------------------
   'meta.tokens': { en: 'tokens', pt: 'tokens' },
   'meta.reasoningTokens': { en: 'reasoning', pt: 'raciocínio' },
+  'meta.latency': { en: 'latency', pt: 'latência' },
   'meta.viewTrace': { en: 'view trace', pt: 'ver rastro' },
 
   // --- Errors --------------------------------------------------------------
@@ -175,6 +180,23 @@ export const strings = {
     en: 'Send a message to see the identifiers this run produced.',
     pt: 'Envie uma mensagem para ver os identificadores que esta execução produziu.',
   },
+  'trace.turnPosition': { en: 'turn {n} of {total}', pt: 'turno {n} de {total}' },
+  'trace.previousTurn': { en: 'Previous turn', pt: 'Turno anterior' },
+  'trace.nextTurn': { en: 'Next turn', pt: 'Próximo turno' },
+  'trace.copy': { en: 'Copy', pt: 'Copiar' },
+  'trace.copied': { en: 'copied', pt: 'copiado' },
+  'trace.copyFailed': { en: 'could not copy', pt: 'não foi possível copiar' },
+  'trace.otelTraceId': { en: 'otel trace id', pt: 'otel trace id' },
+  'trace.gatewayRequestId': { en: 'gateway request id', pt: 'gateway request id' },
+  'trace.pendingTracing': {
+    en: 'arrives with the tracing spec',
+    pt: 'chega com a spec de tracing',
+  },
+  'trace.numbersTitle': { en: 'Run', pt: 'Execução' },
+  'trace.spansFooter': {
+    en: 'Spans come from Application Insights, which the tracing spec adds.',
+    pt: 'Spans vêm do Application Insights, que a spec de tracing adiciona.',
+  },
   'trace.openPortal': { en: 'Open in the Foundry portal', pt: 'Abrir no portal do Foundry' },
 
   // --- Configuration -------------------------------------------------------
@@ -201,6 +223,8 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'trace.responseId',
   'trace.conversationId',
   'trace.spansTitle',
+  'trace.otelTraceId',
+  'trace.gatewayRequestId',
 ]
 
 export function t(key: StringKey, lang: Lang): string {

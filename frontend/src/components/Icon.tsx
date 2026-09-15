@@ -104,3 +104,13 @@ export const SpeakerIcon = (p: IconProps) =>
 
 export const ActivityIcon = (p: IconProps) =>
   svg(<polyline points="2.5 12 7 12 10 4.5 14 19.5 17 12 21.5 12" />, p)
+
+export const CopyIcon = (p: IconProps) =>
+  svg(
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5.5 15H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v.5" />
+    </>,
+    p,
+  )
+
