@@ -6,22 +6,25 @@
  * activity is part of the answer's story, not a sidebar to it.
  */
 import { ReasoningCard } from '../components/ReasoningCard'
-import { ToolCard } from '../components/ToolCard'
+import { ToolRow } from '../components/ToolRow'
 import type { Turn } from '../state/turn'
 
 interface Props {
   turn: Turn
+  /** Open the trace panel on one call. The chat shows the fact; the panel holds the payload. */
+  onOpenCall: (callId: string) => void
 }
 
-export function ActivityPanel({ turn }: Props) {
+export function ActivityPanel({ turn, onOpenCall }: Props) {
   const streaming = turn.status === 'streaming'
 
   return (
     <div className="activity">
       <ReasoningCard text={turn.reasoning} streaming={streaming} />
-      {turn.activities.map((activity, i) => (
-        <ToolCard key={activity.kind === 'tool' ? activity.callId : `mcp_${i}`} activity={activity} />
-      ))}
+      {turn.activities.map((activity, i) => {
+        const id = activity.kind === 'tool' ? activity.callId : `mcp_${i}`
+        return <ToolRow key={id} activity={activity} onOpen={() => onOpenCall(id)} />
+      })}
     </div>
   )
 }

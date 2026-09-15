@@ -100,6 +100,11 @@ button:disabled {
 .app {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr) 320px;
+  /* The row must be declared. Left implicit it is `auto`, and a grid item's default
+     `min-height: auto` then lets `.main` grow past the viewport: the document scrolls instead of
+     the conversation, and the hidden overflow on `body` makes that scroll unreachable — it stops
+     the user, not `scrollIntoView`. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }
 
@@ -111,6 +116,9 @@ button:disabled {
   display: grid;
   grid-template-rows: 60px minmax(0, 1fr) auto;
   min-width: 0;
+  /* Same reason, one level down: without it this item is floored at its content height and the
+     `minmax(0, 1fr)` row above never gets to cap the conversation. */
+  min-height: 0;
   background: var(--ds-n-50);
 }
 
@@ -398,9 +406,47 @@ button:disabled {
 }
 
 .turn__pending {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   margin: 0;
   font-size: var(--fs-body-s);
   color: var(--fg-3);
+}
+
+/* Three dots, out of phase. A blinking caret reads as a stalled text field; this reads as work
+   happening, which is what the wait actually is. */
+.turn__pending-tool {
+  font-family: var(--font-mono);
+  color: var(--fg-2);
+}
+
+.turn__pending-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.turn__pending-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--ds-blue);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.turn__pending-dot:nth-child(2) {
+  animation-delay: 200ms;
+}
+
+.turn__pending-dot:nth-child(3) {
+  animation-delay: 400ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn__pending-dot {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 /* The line that opens a replayed voice session (spec 007). */
@@ -655,6 +701,90 @@ button:disabled {
   color: var(--fg-4);
 }
 
+/* The chat's one-line rendering of a call (spec 009). The payload it used to carry lives in the
+   trace panel; what stays is the fact, and the executor tag that says who ran it. */
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-left-width: 3px;
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  text-align: left;
+  transition: background var(--dur-2) var(--ease-out);
+}
+
+.tool-row:hover {
+  background: var(--bg-2);
+}
+
+.tool-row[data-executor='app'] {
+  border-left-color: var(--ds-blue);
+}
+
+.tool-row[data-executor='foundry'] {
+  border-left-color: var(--ds-n-400);
+}
+
+.tool-row__status {
+  display: flex;
+  color: var(--fg-4);
+}
+
+.tool-row[data-status='ok'] .tool-row__status {
+  color: var(--ds-success);
+}
+
+.tool-row[data-status='failed'] .tool-row__status {
+  color: var(--ds-danger);
+}
+
+.tool-row[data-status='running'] .tool-row__status {
+  color: var(--ds-blue);
+  animation: spin 900ms linear infinite;
+}
+
+.tool-row__name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+  overflow-wrap: anywhere;
+}
+
+.tool-row__executor {
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-xs);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+
+.tool-row[data-executor='app'] .tool-row__executor {
+  background: var(--ds-blue-100);
+  color: var(--ds-blue-700);
+}
+
+.tool-row[data-executor='foundry'] .tool-row__executor {
+  background: var(--ds-n-100);
+  color: var(--ds-n-600);
+}
+
+.tool-row__meta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+  white-space: nowrap;
+}
+
+.tool-row[data-status='failed'] .tool-row__meta {
+  color: var(--ds-danger);
+}
+
 /* ---------- Error ---------- */
 .error-card {
   padding: var(--sp-3);
@@ -848,6 +978,156 @@ button:disabled {
   border-radius: var(--r-sm);
   font-family: var(--font-sans);
   line-height: var(--lh-base);
+  color: var(--ds-n-500);
+}
+
+/* The calls are listed here as the same row the chat uses (spec 010) — one component, two
+   surfaces, so the two cannot drift. The panel only restates the colours for its dark ground. */
+.trace__activity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.trace__activity .tool-row {
+  border-color: var(--ds-n-800);
+  background: var(--ds-n-900);
+}
+
+.trace__activity .tool-row:hover {
+  background: var(--ds-n-800);
+}
+
+.trace__activity .tool-row__name {
+  color: var(--ds-n-100);
+}
+
+.trace__activity .tool-row__meta {
+  color: var(--ds-n-500);
+}
+
+/* ---------- Call reader (spec 010) ---------- */
+.log-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+}
+
+.log-backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ds-ink) 55%, transparent);
+}
+
+.log {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 100%);
+  max-height: min(680px, calc(100vh - var(--sp-6)));
+  border-radius: var(--r-lg);
+  background: var(--ds-ink);
+  color: var(--ds-n-200);
+  box-shadow: var(--shadow-4);
+  overflow: hidden;
+}
+
+.log__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--ds-n-800);
+}
+
+.log__name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+  color: var(--ds-white);
+  overflow-wrap: anywhere;
+}
+
+.log__executor {
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-xs);
+  background: var(--ds-n-800);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ds-n-300);
+  white-space: nowrap;
+}
+
+.log[data-executor='app'] .log__executor {
+  background: var(--ds-blue-700);
+  color: var(--ds-white);
+}
+
+.log__duration {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ds-n-500);
+}
+
+.log__close {
+  display: flex;
+  padding: var(--sp-1);
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  color: var(--ds-n-400);
+}
+
+.log__close:hover {
+  color: var(--ds-white);
+}
+
+/* The reader is the only thing that scrolls: the header stays put over a long payload. */
+.log__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+}
+
+.log__label {
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--ds-n-500);
+}
+
+.log__label:first-child {
+  margin-top: 0;
+}
+
+.log__payload {
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--ds-n-900);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--ds-n-200);
+  /* Wrap rather than scroll sideways: a 4000-character line read one horizontal scroll at a time
+     is the problem this reader exists to solve. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.log__payload--error {
+  color: var(--ds-danger);
+}
+
+.log__empty {
+  margin: 0;
   color: var(--ds-n-500);
 }
 

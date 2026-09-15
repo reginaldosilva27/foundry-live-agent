@@ -110,6 +110,8 @@ export const strings = {
   'turn.agent': { en: 'Agent', pt: 'Agente' },
   'turn.activityTitle': { en: 'Agent activity', pt: 'Atividade do agente' },
   'turn.pending': { en: 'The agent is working', pt: 'O agente está trabalhando' },
+  'turn.thinking': { en: 'Thinking', pt: 'Pensando' },
+  'turn.calling': { en: 'Calling', pt: 'Chamando' },
 
   // --- Reasoning card ------------------------------------------------------
   'reasoning.title': { en: 'Reasoning', pt: 'Raciocínio' },
@@ -129,6 +131,15 @@ export const strings = {
   'tool.arguments': { en: 'Arguments', pt: 'Argumentos' },
   'tool.result': { en: 'Result', pt: 'Resultado' },
   'tool.failed': { en: 'failed', pt: 'falhou' },
+  'tool.openInTrace': {
+    en: 'Show this call in the trace panel',
+    pt: 'Mostrar esta chamada no painel de rastros',
+  },
+
+  // --- Call reader (spec 010) ----------------------------------------------
+  'log.title': { en: 'Call detail', pt: 'Detalhe da chamada' },
+  'log.close': { en: 'Close the reader', pt: 'Fechar o leitor' },
+  'log.empty': { en: 'This call returned nothing.', pt: 'Esta chamada não retornou nada.' },
 
   // --- Meta line -----------------------------------------------------------
   'meta.tokens': { en: 'tokens', pt: 'tokens' },
@@ -148,6 +159,10 @@ export const strings = {
   'trace.responseId': { en: 'response id', pt: 'response id' },
   'trace.conversationId': { en: 'conversation id', pt: 'conversation id' },
   'trace.spansTitle': { en: 'Spans', pt: 'Spans' },
+  'trace.activityEmpty': {
+    en: 'This turn called no tools.',
+    pt: 'Este turno não chamou nenhuma ferramenta.',
+  },
   'trace.spansEmpty': {
     en: 'Span data arrives with the tracing spec. Nothing is drawn here that has not been queried.',
     pt: 'Os dados de spans chegam com a spec de rastreamento. Nada é desenhado aqui sem ter sido consultado.',

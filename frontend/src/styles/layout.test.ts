@@ -17,6 +17,19 @@ describe('app.css', () => {
     expect(css).toMatch(/\.app\s*\{[^}]*grid-template-columns:\s*248px minmax\(0, 1fr\) 320px/)
   })
 
+  it('caps the shell at the viewport so the conversation is what scrolls', () => {
+    // Without this the grid's implicit row is `auto`, `.main` refuses to shrink below its content
+    // (grid items default to `min-height: auto`), and the DOCUMENT scrolls instead — which
+    // `body { overflow: hidden }` then makes impossible to scroll back, because it blocks the
+    // user and not `scrollIntoView`. Measured in a real browser: document.scrollTop 382.5,
+    // `.app` at top: -382.5, `.conversation` scrollHeight === clientHeight.
+    const app = css.split('.app {')[1].split('}')[0]
+    expect(app).toMatch(/grid-template-rows:\s*minmax\(0, 1fr\)/)
+
+    const main = css.split('.main {')[1].split('}')[0]
+    expect(main).toContain('min-height: 0')
+  })
+
   it('turns the trace panel into an overlay below the breakpoint', () => {
     const breakpoint = css.split('@media (max-width: 1100px)')[1]
     expect(breakpoint).toBeDefined()

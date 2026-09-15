@@ -59,6 +59,14 @@ One call produces two contract events:
 ran it itself and we are only watching. The UI renders the two differently, because they are not the
 same kind of event.
 
+**Where each half is drawn.** The chat shows one line per call — the name, the executor tag, the
+status, the duration. The trace panel lists the same rows for the turn it is showing, and pressing
+one opens a centred reader with that call's arguments and result, indented if they are JSON and
+untouched if they are not (specs 009 and 010). An MCP search returns a page of documentation, and rendering it between the question
+and the answer buried the answer. The fact belongs next to the prose; the payload belongs where a
+run is inspected. During a *voice* session there is no trace panel, so the overlay still shows the
+whole card.
+
 ## Four guarantees
 
 Implemented across `ai/harness/prompt_agent/adapter.py`, `backend/app/tool_executor.py` and

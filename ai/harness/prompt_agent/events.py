@@ -37,7 +37,7 @@ from typing import Any
 
 from harness._shared.contract import AgentEvent
 
-__all__ = ["MAPPINGS", "EventMapping", "mapping_report", "normalise", "unmapped_types"]
+__all__ = ["MAPPINGS", "EventMapping", "convert", "mapping_report", "normalise", "unmapped_types"]
 
 
 @dataclass(frozen=True)
@@ -119,7 +119,10 @@ MAPPINGS: tuple[EventMapping, ...] = (
         f"{_OBSERVED}; the whole summary, already streamed",
     ),
     EventMapping(
-        "response.reasoning_summary_part.added", "—", True, f"{_OBSERVED}; a new summary paragraph"
+        "response.reasoning_summary_part.added",
+        "reasoning_summary",
+        True,
+        f"{_OBSERVED}; a new summary part — carried through as a paragraph break, see below",
     ),
     EventMapping(
         "response.reasoning_summary_part.done", "—", True, f"{_OBSERVED}; end of paragraph"
@@ -149,10 +152,12 @@ def normalise(raw_events: Iterable[Mapping[str, Any]]) -> Iterator[AgentEvent]:
     yields usage, trace ids and the terminal).
     """
     for raw in raw_events:
-        yield from _convert(raw)
+        yield from convert(raw)
 
 
-def _convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
+def convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
+    """Convert **one** raw event. Stateless, which is what lets the adapter consume the Foundry
+    stream one event at a time off the event loop (see `adapter._stream_events`)."""
     etype = raw.get("type", "")
 
     if etype in _IGNORED or etype not in _KNOWN:
@@ -161,6 +166,14 @@ def _convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
     if etype == "response.output_text.delta":
         if text := raw.get("delta", ""):
             yield {"type": "text_delta", "text": text}
+        return
+
+    if etype == "response.reasoning_summary_part.added":
+        # Foundry sends the summary in parts, each opening with its own `**Title**`, and this event
+        # is the only thing that marks where one ends and the next begins. Ignoring it ran the
+        # phases together — `...spot-on!**Researching project architecture**...`. The break is
+        # Foundry's own boundary carried through, not formatting invented here (§5).
+        yield {"type": "reasoning_summary", "text": "\n\n"}
         return
 
     if etype == "response.reasoning_summary_text.delta":

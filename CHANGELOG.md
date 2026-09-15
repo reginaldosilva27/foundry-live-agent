@@ -125,7 +125,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Without speech configuration the toggle is disabled with the reason on it and `POST /speech`
   answers `503`, the same shape voice already uses.
 
+- **Spec 011 — the turn says what is happening right now.** While a turn streams, one line states
+  which of three things is going on: the agent has not started, it is thinking, or it is running a
+  named tool (*Calling* `lookup_knowledge`). It is a pure projection of the turn — `turnStatus` in
+  `state/turn.ts` — with the priority decided in one place: a call in flight beats reasoning, and
+  the answer beats both. It disappears the moment the answer starts, because the answer and its
+  caret are then the status.
+- **Spec 010 — the trace panel groups its calls, and opens one in a reader.** Spec 009 moved the
+  payloads into a 320px dark column, which is the wrong shape for a page of JSON. The panel now
+  lists the turn's calls as the same compact rows the chat uses, and pressing one opens a centred
+  reader — wide, scrollable, with JSON indented so the structure is visible and anything else left
+  exactly as it came (§5). It closes with its button, with `Escape`, or on the backdrop.
+- **Spec 009 — the tool payload moved to the trace panel.** A `microsoft_docs_search` returns a
+  page of documentation, and the chat rendered all of it between the question and the answer. The
+  chat now shows **one line per call** — name, executor tag, status, duration — and pressing that
+  line opens the trace panel on the call, with its arguments and its result. Nothing is lost and
+  nothing is truncated; the fact stays next to the prose and the evidence moved to the panel built
+  for inspecting a run. The voice overlay keeps the full card, because there is no trace panel
+  beside a voice session.
+- The trace panel follows the turn you opened it from, defaulting to the newest.
+
 ### Fixed
+- **Thinking phases no longer run together.** Foundry sends the reasoning summary in *parts*, each
+  opening with its own `**Title**`, and marks each one with `response.reasoning_summary_part.added`
+  — which the normaliser dropped. Two phases arrived as `…spot-on!**Researching project
+  architecture**…` with no seam. That boundary is now carried through as a paragraph break, and the
+  card renders the summary with the same markdown renderer the answer uses, so the `\n\n` the model
+  actually sent stops being collapsed by HTML.
+- **The READMEs asked for Node 20**, but Vite 8 needs ≥ 20.19 and CI runs 24. On Node 20.13 `npm`
+  silently skips Vite's native binding and `npm run dev` dies with *"Cannot find native binding"*.
+- **The stream did not stream.** The whole turn — reasoning summary and answer — reached the browser
+  in one burst at the end, which read as a model without streaming. It was ours: the Foundry client
+  is synchronous, so iterating it inside the adapter's async generator blocked the event loop
+  between events and the server never got to flush the frames it had already encoded. Measured
+  straight from Foundry: 76 reasoning deltas over 1.35s, 78 text deltas over 0.8s — all of it
+  arriving at the browser at 8.26s. Each `next()` now runs in a worker thread; ordering is
+  unaffected, because the awaits are sequential. Reproduced with no Azure in
+  `test_the_event_loop_stays_free_while_the_foundry_stream_blocks`.
+- **The app could scroll itself off the screen, with no way back.** A long answer pushed `.main`
+  past the viewport: `.app` declared no grid row, so the implicit one was `auto`, and a grid item's
+  default `min-height: auto` kept `.main` at its content height. The conversation never became a
+  scrolling region — the *document* scrolled instead, and `overflow: hidden` on `body` stops the
+  user from scrolling it back, not `scrollIntoView` from scrolling it away. Measured in a real
+  browser before the fix: `document.scrollTop` 382.5, `.app` at `top: -382.5` (header off-screen),
+  `.conversation` `scrollHeight === clientHeight`. After: the document has nothing to scroll and
+  the conversation scrolls.
+- **Following the stream no longer fights the reader.** The column stuck to the newest token on
+  every re-render, so scrolling up during a long answer yanked you straight back down. It now
+  sticks only when the reader is already within 120px of the bottom, and it scrolls the column
+  itself instead of calling `scrollIntoView`, which walks every scrollable ancestor — including
+  the document it should never touch.
+- **The waiting indicator is alive.** Three out-of-phase dots instead of a static line with a
+  blinking caret, which read as a stalled text field rather than as work in progress. Still gone
+  the instant anything arrives, and still silent under `prefers-reduced-motion`.
 - **`typescript` held at `~6.0.3`** — the merged bump to `~7.0.2` (PR #5) turned `npm test` and
   `npm run build` red on `main`. TypeScript 7 is the native port, and the package no longer exports
   the compiler API at all (`"." → "./lib/version.cjs"`); the i18n gate in

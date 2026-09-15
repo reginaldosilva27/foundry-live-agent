@@ -41,7 +41,8 @@ failure half — nothing has gone wrong on the wire yet.
 | `response.output_text.delta` | `text_delta` | **observed** |
 | `response.output_text.done` | *(ignored — already streamed)* | **observed** |
 | `response.reasoning_summary_text.delta` | `reasoning_summary` | **observed** |
-| `response.reasoning_summary_text.done` · `_part.added` · `_part.done` | *(ignored)* | **observed** |
+| `response.reasoning_summary_part.added` | `reasoning_summary` (a paragraph break) | **observed** |
+| `response.reasoning_summary_text.done` · `_part.done` | *(ignored)* | **observed** |
 | `response.output_item.done` (a `function_call` item) | `tool_call` | **observed** |
 | `response.output_item.done` (an `mcp_call` item) | `mcp_call` | **observed** |
 | `response.completed` | `usage` + `trace_ids` + `done` | **observed** |
@@ -93,6 +94,32 @@ The setting belongs to the agent definition (`PromptAgentDefinition.reasoning`),
 the model still *reasons* — the recorded turn spent 410 reasoning tokens and emitted five `reasoning`
 output items — but every one of them carries `summary: []`, and the activity panel's reasoning card
 stays empty forever. The two committed fixtures are the same agent with and without that one line.
+
+## A synchronous client is a streaming bug
+
+The Foundry SDK's stream is **synchronous**: every `next()` is a blocking network read. Iterating it
+directly inside the adapter's async generator blocks the event loop between events — and a blocked
+loop cannot flush the frames the server has already been handed. The turn then arrives on the
+browser as one burst at the end, which looks exactly like a model that does not stream.
+
+Measured on 2026-09-15, straight from Foundry with no BFF in the path:
+
+| event | count | first | last |
+|---|---|---|---|
+| `response.reasoning_summary_text.delta` | 76 | 5.37s | 6.72s |
+| `response.output_text.delta` | 78 | 6.72s | 7.52s |
+
+Foundry streams. Through the BFF, all of it reached the browser at 8.26s.
+
+Reproduced with no Azure at all — a sync generator sleeping 200ms per event, behind the real app:
+
+```
+blocking (time.sleep)        all 10 frames at 2.05s
+awaiting (asyncio.sleep)     0.20s  0.41s  0.61s  0.81s  …
+```
+
+So each `next()` now runs in a worker thread (`PromptAgentAdapter._stream_events`). The awaits are
+sequential, so ordering is untouched; the loop is free to write each frame as it arrives.
 
 ## Unknown events are counted, not dropped
 

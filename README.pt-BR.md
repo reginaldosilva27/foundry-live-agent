@@ -52,7 +52,7 @@ contêiner roda (*hosted agent* com LangGraph). Os dois ficam atrás de um únic
 | | |
 |---|---|
 | 🔌 **Um contrato, dois harnesses** | `HarnessAdapter` + um stream tipado de `AgentEvent`. O `prompt-agent` está pronto; o `langgraph` é scaffold. |
-| 🛠️ **Três ferramentas, dois donos** | O MCP do Microsoft Learn roda *no Foundry*; duas function tools rodam *no BFF* — porque o Foundry pede e para. |
+| 🛠️ **Três ferramentas, dois donos** | O MCP do Microsoft Learn roda *no Foundry*; duas function tools rodam *no BFF* — porque o Foundry pede e para. Uma linha por chamada no chat, o payload no painel de rastros. |
 | 🔍 **Traces visíveis** | Uma árvore de spans do Application Insights numa gaveta: execução do agente › chamadas de modelo › chamadas de ferramenta, com durações e tokens. |
 | 🗣️ **Voz no mesmo agente** | O Voice Live se conecta à *mesma* definição — um agente, um conjunto de ferramentas, um repositório de traces, duas modalidades. |
 | 🔊 **Respostas que dá para ouvir** | Um botão lê as respostas do chat em voz alta, frase a frase conforme elas chegam, sintetizadas pelo BFF — o navegador continua sem credencial. |
@@ -123,7 +123,7 @@ Detalhes completos: [`docs/architecture.md`](docs/architecture.md) · [`PLAN.md`
 
 **Pré-requisitos:** uma assinatura Azure · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) ·
 [azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) ·
-[just](https://github.com/casey/just) · Python 3.12 · Node 20.
+[just](https://github.com/casey/just) · Python 3.12 · Node 24 (Vite 8 needs ≥ 20.19; CI runs 24).
 
 ```bash
 git clone https://github.com/reginaldosilva27/foundry-live-agent

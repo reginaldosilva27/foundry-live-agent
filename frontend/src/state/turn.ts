@@ -169,3 +169,34 @@ function typeName(raw: unknown): string {
   }
   return '(malformed)'
 }
+
+
+/** What the turn is doing right now, for the line that says so while it streams (spec 011). */
+export type TurnStatusKind = 'idle' | 'thinking' | 'calling' | 'answering' | 'settled'
+
+export interface LiveStatus {
+  kind: TurnStatusKind
+  /** The tool being run, when one is. */
+  name?: string
+}
+
+/**
+ * Derive what is happening, from the events and nothing else (§5, §8).
+ *
+ * The priority is the interesting part, and it lives here rather than in the component so it is
+ * decided once: a call in flight beats reasoning, and an answer beats both. A turn can be true in
+ * several of these at the same moment — `reasoning` is still there while a tool runs — and the
+ * question the line answers is "what now", not "what so far".
+ *
+ * `answering` and `settled` both mean *say nothing*: the answer with its caret is the status once
+ * it starts, and a finished turn has a meta line.
+ */
+export function turnStatus(turn: Turn): LiveStatus {
+  if (turn.status !== 'streaming') return { kind: 'settled' }
+  if (turn.text) return { kind: 'answering' }
+
+  const running = turn.activities.find((activity) => activity.status === 'running')
+  if (running) return { kind: 'calling', name: running.name }
+
+  return turn.reasoning ? { kind: 'thinking' } : { kind: 'idle' }
+}

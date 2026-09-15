@@ -211,3 +211,50 @@ def test_an_unanswered_call_would_fail_the_contract():
                 {"type": "done"},
             ]
         )
+
+
+# --- the stream must not hold the event loop -------------------------------
+
+
+async def test_the_event_loop_stays_free_while_the_foundry_stream_blocks():
+    """Measured 2026-09-15 against the live service: Foundry sends 76 reasoning deltas over 1.35s
+    and 78 text deltas over 0.8s. The browser received all of them at once, at the end of the turn.
+
+    The cause is here: the Foundry client is **synchronous**, so iterating it inside an async
+    generator blocks the event loop between events, and the server never gets a chance to flush the
+    frames it has already been handed. A stream that arrives in one burst is not a stream.
+
+    The test asserts the property rather than the mechanism: while the blocking stream is being
+    consumed, another coroutine still runs.
+    """
+    import asyncio
+    import time
+
+    def blocking_stream(_inputs, _state):
+        for index in range(5):
+            time.sleep(0.05)  # what a blocking network read does to the loop
+            yield {"type": "response.output_text.delta", "delta": f"token{index} "}
+        yield COMPLETED
+
+    a = PromptAgentAdapter(
+        stream_factory=blocking_stream,
+        executor=lambda name, arguments: ("{}", 0, None),
+        agent_name="test-agent",
+        project_name="proj-default",
+    )
+
+    ticks = 0
+
+    async def ticker():
+        nonlocal ticks
+        while True:
+            await asyncio.sleep(0.01)
+            ticks += 1
+
+    beat = asyncio.create_task(ticker())
+    events = await collect(a)
+    beat.cancel()
+
+    assert [e["type"] for e in events][-1] == "done"
+    # Five 50ms reads: a free loop ticks ~25 times. A blocked one ticks 0.
+    assert ticks >= 5, f"the event loop was blocked while the stream was consumed ({ticks} ticks)"

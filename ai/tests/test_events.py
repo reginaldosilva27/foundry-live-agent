@@ -33,6 +33,23 @@ def test_reasoning_summary_delta_becomes_reasoning_summary():
     assert out == [{"type": "reasoning_summary", "text": "Thinking."}]
 
 
+def test_a_new_summary_part_starts_a_new_paragraph():
+    """Foundry sends the summary in **parts**, each opening with its own `**Title**`, and marks each
+    one with `reasoning_summary_part.added`. Dropping that boundary ran the phases together:
+    `...spot-on!**Researching project architecture**...` — two phases, no seam. The boundary is
+    data Foundry gave us, so it is carried through as a paragraph break rather than discarded."""
+    out = norm(
+        [
+            {"type": "response.reasoning_summary_part.added", "summary_index": 0},
+            {"type": "response.reasoning_summary_text.delta", "delta": "**One** first phase."},
+            {"type": "response.reasoning_summary_part.added", "summary_index": 1},
+            {"type": "response.reasoning_summary_text.delta", "delta": "**Two** second phase."},
+        ]
+    )
+
+    assert "".join(e["text"] for e in out) == "\n\n**One** first phase.\n\n**Two** second phase."
+
+
 # --- function calls --------------------------------------------------------
 
 

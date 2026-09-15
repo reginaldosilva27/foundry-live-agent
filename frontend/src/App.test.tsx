@@ -104,11 +104,14 @@ describe('App', () => {
 
     expect(screen.getByTestId('reasoning-body')).toHaveTextContent('what time it is')
 
-    const [appCard, foundryCard] = screen.getAllByTestId('tool-card')
-    expect(appCard).toHaveAttribute('data-executor', 'app')
-    expect(within(appCard).getByTestId('executor-tag')).toHaveTextContent('bff')
-    expect(foundryCard).toHaveAttribute('data-executor', 'foundry')
-    expect(within(foundryCard).getByTestId('executor-tag')).toHaveTextContent('microsoft_learn')
+    const [appRow, foundryRow] = screen.getAllByTestId('tool-row')
+    expect(appRow).toHaveAttribute('data-executor', 'app')
+    expect(within(appRow).getByTestId('executor-tag')).toHaveTextContent('bff')
+    expect(foundryRow).toHaveAttribute('data-executor', 'foundry')
+    expect(within(foundryRow).getByTestId('executor-tag')).toHaveTextContent('microsoft_learn')
+
+    // Spec 009 AC1: the payload is not in the chat any more.
+    expect(screen.getByRole('main').textContent).not.toContain('America/Sao_Paulo')
 
     expect(screen.getByTestId('meta-line')).toHaveTextContent('154')
   })
@@ -150,6 +153,25 @@ describe('App', () => {
       push({ type: 'done', response_id: 'resp_1' })
       close()
     })
+  })
+
+  it('opens the trace panel on the call whose row was pressed (spec 009, AC4)', async () => {
+    fakeBff(twoToolTurn)
+    render(<App />)
+    const user = await ask()
+
+    await waitFor(() => expect(screen.getAllByTestId('tool-row')).toHaveLength(2))
+    expect(screen.queryByTestId('trace-panel')).toBeNull()
+
+    await user.click(screen.getAllByTestId('tool-row')[0])
+
+    const panel = await screen.findByTestId('trace-panel')
+    expect(panel.querySelector('[data-call="call_1"]')).not.toBeNull()
+
+    // Spec 010 AC7: and the reader opens on that call, which is where the payload now lives.
+    expect(screen.getByTestId('log-viewer')).toHaveTextContent('get_current_datetime')
+    expect(screen.getByTestId('log-arguments')).toHaveTextContent('America/Sao_Paulo')
+    expect(within(panel).getByTestId('trace-activity').textContent).not.toContain('America/Sao_Paulo')
   })
 
   it('renders a terminal error as an error, not as a stream that stopped', async () => {

@@ -10,6 +10,7 @@
 import { useState } from 'react'
 import { useT } from '../i18n/context'
 import { ChevronIcon } from './Icon'
+import { Markdown } from './Markdown'
 
 interface Props {
   text: string
@@ -45,10 +46,14 @@ export function ReasoningCard({ text, streaming }: Props) {
       </button>
 
       {open && (
-        <p className="reasoning-card__body" data-testid="reasoning-body">
-          {text}
+        <div className="reasoning-card__body" data-testid="reasoning-body">
+          {/* The summary arrives as markdown — each phase opens with its own `**Title**`, and
+              Foundry's part boundaries come through as paragraph breaks. Rendered as one blob of
+              text the phases collided, because HTML collapses the newlines the model sent. This is
+              the same renderer the answer uses (§4). */}
+          <Markdown text={text.trimStart()} />
           {streaming && <span className="caret" aria-hidden="true" />}
-        </p>
+        </div>
       )}
     </section>
   )

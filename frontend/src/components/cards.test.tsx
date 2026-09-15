@@ -98,6 +98,21 @@ describe('ReasoningCard', () => {
     expect(screen.queryByTestId('reasoning-body')).toBeNull()
   })
 
+  it('keeps each thinking phase apart instead of running them together', () => {
+    // Foundry sends the summary in parts, each with its own `**Title**`. Rendered as one blob of
+    // text they collided: `...spot-on!**Researching project architecture**...`.
+    render(
+      <ReasoningCard
+        text={'\n\n**Looking into it** First phase.\n\n**Searching docs** Second phase.'}
+        streaming={false}
+      />,
+    )
+
+    const body = screen.getByTestId('reasoning-body')
+    expect(body.querySelectorAll('p')).toHaveLength(2)
+    expect(body.querySelectorAll('strong')[0]).toHaveTextContent('Looking into it')
+  })
+
   it('says why it is empty rather than rendering an empty box', () => {
     render(<ReasoningCard text="" streaming={false} />)
     expect(screen.getByTestId('reasoning-absent')).toBeInTheDocument()

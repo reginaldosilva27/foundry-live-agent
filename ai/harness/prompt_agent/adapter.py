@@ -20,6 +20,13 @@ Three guarantees, in order of how much damage they prevent:
 2. **The stream always terminates.** If Foundry explodes, the last thing out is an ``error``.
 3. **The loop is capped.** A pathological agent ends with an ``error``, not an infinite stream.
 
+**The Foundry client is synchronous, and that is a streaming problem.** Iterating it directly
+inside this async generator blocks the event loop between events, so the server never gets to flush
+the frames it has already been handed and the whole turn lands on the browser at once. Measured
+2026-09-15: Foundry sent 76 reasoning deltas over 1.35s and 78 text deltas over 0.8s; the browser
+received all of them in one burst. Each `next()` therefore runs in a worker thread — see
+:meth:`PromptAgentAdapter._stream_events`.
+
 **A leg's terminal is not the turn's terminal.** Observed 2026-09-15 and recorded in
 `tests/fixtures/recorded/prompt-agent-turn-20260915.jsonl`: Foundry does not hold the stream open
 while it waits for tool output. It emits the function calls, says ``response.completed`` — with the
@@ -31,12 +38,13 @@ turn really ends.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 from typing import Any
 
 from harness._shared.contract import AgentEvent, VoiceAttachment
-from harness.prompt_agent.events import normalise
+from harness.prompt_agent.events import convert
 
 __all__ = ["PromptAgentAdapter"]
 
@@ -79,7 +87,7 @@ class PromptAgentAdapter:
                 pending: list[tuple[str, str, str]] = []
                 terminated = False
 
-                for event in normalise(self._stream_factory(inputs, conversation_state)):
+                async for event in self._stream_events(inputs, conversation_state):
                     if event["type"] == "tool_call" and event["executor"] == "app":
                         pending.append((event["call_id"], event["name"], event["arguments"]))
                     if event["type"] == "usage":
@@ -153,6 +161,27 @@ class PromptAgentAdapter:
                 "message": f"{type(exc).__name__}: {exc}",
                 "code": "harness_error",
             }
+
+    async def _stream_events(
+        self, inputs: list[Mapping[str, Any]], conversation_state: Mapping[str, Any]
+    ) -> AsyncIterator[AgentEvent]:
+        """One leg of the turn, as contract events, without holding the event loop.
+
+        The stream factory is a **synchronous** iterable — that is what the Foundry SDK gives us —
+        so every `next()` is a blocking network read. Run inline it would freeze the loop between
+        events, and frames that are already encoded would sit unflushed until the turn ended. One
+        `to_thread` per event keeps the loop free to write them as they arrive; ordering is
+        unaffected, because the awaits are sequential.
+        """
+        stream = iter(self._stream_factory(inputs, conversation_state))
+        exhausted = object()
+
+        while True:
+            raw = await asyncio.to_thread(next, stream, exhausted)
+            if raw is exhausted:
+                return
+            for event in convert(raw):  # type: ignore[arg-type]
+                yield event
 
     async def submit_tool_output(
         self, call_id: str, output: str, conversation_state: Mapping[str, Any]

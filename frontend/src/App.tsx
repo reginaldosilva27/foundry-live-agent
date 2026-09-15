@@ -20,6 +20,7 @@ import { useSpokenAnswers } from './hooks/useSpokenAnswers'
 import { useVoiceSession } from './hooks/useVoiceSession'
 import { voiceMessages } from './state/voiceLog'
 import { ErrorCard } from './components/ErrorCard'
+import { LogViewer } from './components/LogViewer'
 import { useT } from './i18n/context'
 
 export default function App() {
@@ -27,6 +28,9 @@ export default function App() {
     detectLang(typeof navigator === 'undefined' ? [] : navigator.languages),
   )
   const [tracesOpen, setTracesOpen] = useState(false)
+  // Which turn the trace panel is showing, and which of its calls to bring into view. Empty means
+  // the newest turn, which is what the header's Traces button opens (spec 009).
+  const [trace, setTrace] = useState<{ turnId?: string; callId?: string }>({})
   const [speaking, setSpeaking] = useState(false)
   const { config, failed } = useConfig()
   const { messages, streaming, send, append, reset } = useAgentStream()
@@ -42,10 +46,25 @@ export default function App() {
 
   const spoken = useSpokenAnswers(messages, lang, speaking)
 
-  const lastTurn = useMemo(
-    () => [...messages].reverse().find((m) => m.role === 'agent'),
-    [messages],
-  )
+  const shownTurn = useMemo(() => {
+    const agentMessages = messages.filter((m) => m.role === 'agent')
+    const chosen = trace.turnId && agentMessages.find((m) => m.id === trace.turnId)
+    return chosen || agentMessages[agentMessages.length - 1]
+  }, [messages, trace.turnId])
+
+  const openTrace = useCallback((turnId?: string, callId?: string) => {
+    setTrace({ turnId, callId })
+    setTracesOpen(true)
+  }, [])
+
+  /** The call the reader is showing, resolved from the turn the panel is on (spec 010). */
+  const openCall = useMemo(() => {
+    if (!trace.callId || shownTurn?.role !== 'agent') return undefined
+    return shownTurn.turn.activities.find(
+      (activity, index) =>
+        (activity.kind === 'tool' ? activity.callId : `mcp_${index}`) === trace.callId,
+    )
+  }, [shownTurn, trace.callId])
 
   return (
     <LangContext.Provider value={lang}>
@@ -56,6 +75,7 @@ export default function App() {
           onLang={setLang}
           onNewSession={() => {
             reset()
+            setTrace({})
             setTracesOpen(false)
           }}
         />
@@ -68,7 +88,10 @@ export default function App() {
             tracesOpen={tracesOpen}
             voiceLive={voice.status === 'live'}
             speaking={speaking}
-            onToggleTraces={() => setTracesOpen((v) => !v)}
+            onToggleTraces={() => {
+              setTrace({})
+              setTracesOpen((v) => !v)
+            }}
             onVoice={() => void voice.start()}
             onToggleSpeaking={() => setSpeaking((v) => !v)}
             onStopSpeaking={spoken.stop}
@@ -77,7 +100,7 @@ export default function App() {
             messages={messages}
             model={config?.model}
             onSuggestion={send}
-            onOpenTrace={() => setTracesOpen(true)}
+            onOpenTrace={openTrace}
           />
           <Composer
             disabled={streaming}
@@ -94,10 +117,19 @@ export default function App() {
         )}
 
         <TraceDrawer
-          turn={lastTurn?.role === 'agent' ? lastTurn.turn : undefined}
+          turn={shownTurn?.role === 'agent' ? shownTurn.turn : undefined}
+          selectedCall={trace.callId}
           open={tracesOpen}
+          onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
           onClose={() => setTracesOpen(false)}
         />
+
+        {openCall && (
+          <LogViewer
+            activity={openCall}
+            onClose={() => setTrace((current) => ({ ...current, callId: undefined }))}
+          />
+        )}
       </div>
     </LangContext.Provider>
   )

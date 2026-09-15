@@ -52,7 +52,7 @@ your container does (a *hosted agent* running LangGraph). Both sit behind one co
 | | |
 |---|---|
 | 🔌 **One contract, two harnesses** | `HarnessAdapter` + a typed `AgentEvent` stream. `prompt-agent` ships; `langgraph` is scaffolded. |
-| 🛠️ **Three tools, two owners** | Microsoft Learn MCP runs *in Foundry*; two function tools run *in the BFF* — because Foundry asks and stops. |
+| 🛠️ **Three tools, two owners** | Microsoft Learn MCP runs *in Foundry*; two function tools run *in the BFF* — because Foundry asks and stops. One line per call in the chat, the payload in the trace panel. |
 | 🔍 **Traces you can see** | An Application Insights span tree in a drawer: agent run › model calls › tool calls, with durations and tokens. |
 | 🗣️ **Voice on the same agent** | Voice Live attaches to the *same* definition — one agent, one tool set, one trace store, two modalities. |
 | 🔊 **Answers you can hear** | A toggle reads the chat's answers aloud, sentence by sentence as they stream, synthesised by the BFF so the browser still holds no credential. |
@@ -123,7 +123,7 @@ Full detail: [`docs/architecture.md`](docs/architecture.md) · [`PLAN.md`](PLAN.
 
 **Prerequisites:** an Azure subscription · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) ·
 [azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) ·
-[just](https://github.com/casey/just) · Python 3.12 · Node 20.
+[just](https://github.com/casey/just) · Python 3.12 · Node 24 (Vite 8 needs ≥ 20.19; CI runs 24).
 
 ```bash
 git clone https://github.com/reginaldosilva27/foundry-live-agent
