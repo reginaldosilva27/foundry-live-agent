@@ -71,8 +71,17 @@ class ToolCall(TypedDict):
     """A tool invocation the agent decided to make.
 
     ``executor`` is the whole of constitution §8 expressed in the type system: ``"app"`` means
-    *we* must run this and answer, ``"foundry"`` means Foundry runs it and we only observe.
-    Note that the app never decides *which* tool to call — it only executes what it is asked to.
+    *we* must run this and answer, ``"foundry"`` means **the platform side** runs it and we only
+    observe. Note that the app never decides *which* tool to call — it only executes what it is
+    asked to.
+
+    "The platform side" rather than "Foundry" since spec 018, and the wording is load-bearing. A
+    hosted agent's tools run in a container *we wrote*, on infrastructure *Foundry runs*, and they
+    are tagged ``"foundry"`` — because ``executor`` answers *who is responsible for executing and
+    answering this call, this app or the platform side?*, and the container is the platform side. A
+    third value for "our container, their infrastructure" was considered and rejected: it would
+    make the BFF care **how** the platform ran a tool, which is the coupling §9 exists to prevent.
+    Which harness produced the call is already on the harness badge.
 
     ``arguments`` is the raw JSON string, not parsed: it arrives in fragments while streaming, and
     the contract should not have to decide what a half-arrived argument means.

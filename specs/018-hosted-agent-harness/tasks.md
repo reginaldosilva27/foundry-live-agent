@@ -58,14 +58,14 @@ Phases A and B need no Azure. Phase C is the gate everything else waits on.
       the agent's Entra identity reads it. Automate it if it can be verified from this repo;
       otherwise write it up as a manual step, the way `infra/README.md` handles the AI Gateway
       (**AC7**).
-- [ ] **T14**: `azd ext install azure.ai.agents` → `azd provision` → `azd deploy` from the committed
+- [x] **T14**: `azd ext install azure.ai.agents` → `azd provision` → `azd deploy` from the committed
       `azure.yaml`. Record every command that actually ran; that transcript is what AC8 promises a
       cloner (**AC8**).
-- [ ] **T15 — implement**: `ai/scripts/spike_hosted.py`, and record **live** turns —
+- [x] **T15 — implement**: `ai/scripts/spike_hosted.py`, and record **live** turns —
       (a) a Microsoft Learn question, (b) a function-tool question. Redact via
       `ai/scripts/redact_fixture.py`, commit dated raw + normalised fixtures, and describe each in
       `ai/tests/fixtures/recorded/README.md` (**AC3**, **AC4**, §5).
-- [ ] **T16 — observe**: does a hosted turn emit `reasoning_summary`? Record the answer with its
+- [x] **T16 — observe**: does a hosted turn emit `reasoning_summary`? Record the answer with its
       date (**AC13**).
 - [ ] **T17 — observe**: attempt a **Voice Live** session against the hosted agent. Record whichever
       answer the service gives — a committed voice fixture, or the refusal written into
@@ -102,9 +102,9 @@ Phases A and B need no Azure. Phase C is the gate everything else waits on.
 
 ## E — the contract, the constitution, the docs
 
-- [ ] **T28 — implement**: `ToolCall`'s docstring in `ai/harness/_shared/contract.py` — "Foundry runs
+- [x] **T28 — implement**: `ToolCall`'s docstring in `ai/harness/_shared/contract.py` — "Foundry runs
       it" → "the platform side runs it". Docstring only; no type, field or enum change (decision 2).
-- [ ] **T29 — implement**: amend `.specify/constitution.md` §8's headline and its amendments table
+- [x] **T29 — implement**: amend `.specify/constitution.md` §8's headline and its amendments table
       (spec, *Contract / data impact*), and move `CLAUDE.md`, `AGENTS.md` and the `.claude/`+`.codex/`
       workflows in the **same commit** (§6).
 - [ ] **T30 — docs**: `docs/harness-comparison.md` — the hosted column filled from **measurement**,
@@ -117,7 +117,7 @@ Phases A and B need no Azure. Phase C is the gate everything else waits on.
 - [ ] **T32 — docs**: `docs/REFERENCES.md` — every row of the spec's §10 table with the date it was
       read, the four measured answers (T16–T18, T13), and the stale idle-timeout range corrected
       from 5–60 to **2–60** (**AC12**, §10).
-- [ ] **T33 — docs**: `.env.example` (`AGENT_HARNESS=langgraph`, and where the reader hits the Key
+- [x] **T33 — docs**: `.env.example` (`AGENT_HARNESS=langgraph`, and where the reader hits the Key
       Vault connection), `justfile` (`hosted-build`, `hosted-deploy`, `hosted-record`),
       `ai/README.md`, `PLAN.md` Phase 4.
 - [ ] **T34 — refactor**: clean up, keep everything green.

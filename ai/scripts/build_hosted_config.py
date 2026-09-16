@@ -143,6 +143,13 @@ services:
       resources:
         cpu: "{cpu}"
         memory: {memory}
+
+# Foundry synthesises the infrastructure from the services above; there is no infra/ directory and
+# no Bicep. Without this block azd falls back to its default bicep provider and fails looking for
+# `infra/main.bicep` — observed 2026-09-16. The value is the one `azd ai agent init` writes itself,
+# confirmed by running it against this project rather than inferred from prose (§10).
+infra:
+  provider: microsoft.foundry
 """
 
 

@@ -87,10 +87,13 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
 
 **The three invariants you must not break** (constitution §8–§10):
 
-1. **§8 — no agent loop in `backend/` or `frontend/`.** They never choose *which* tool to call,
+1. **§8 — no agent loop in the app.** `backend/` and `frontend/` never choose *which* tool to call,
    re-prompt the model, loop on model output, or duplicate state Foundry owns. Executing a function
    tool Foundry asked for, and submitting its output, is the documented client-side contract and is
-   fine. Test: *"would this still be true if the harness were swapped?"* **One bounded exception**
+   fine. Test: *"would this still be true if the harness were swapped?"* Inside a harness, the
+   **adapter** is imported by the BFF and contains no loop; the **agent** (`ai/harness/<name>/agent/`)
+   is deployed to Foundry and may contain all the loop it likes — authoring an agent is not the app
+   running one (amended 2026-09-16, spec 018). **One bounded exception**
    (amended 2026-09-16, spec 017): a voice session states one static fact about the transport — that
    the conversation is spoken — because the agent cannot perceive it and `instructions` is
    unsupported with a custom agent. One item, one sentence, once; not a licence to prompt.

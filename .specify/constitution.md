@@ -73,10 +73,25 @@ strings. A feature is not done until its `pt` text exists alongside its `en` tex
 
 ## Project-specific principles
 
-### 8. The agent loop lives in Foundry — never in this repo
+### 8. The agent loop never lives in the app
 `backend/` and `frontend/` contain **no agent-loop logic**: no tool selection, no model
 orchestration, no planning, no retry-until-satisfied loop. The backend is a **BFF** limited to
 identity, streaming, tool *execution* (never tool *choice*), trace lookup, and voice signalling.
+
+**Amended 2026-09-16 (spec 018): "the app", not "this repo".** The headline said *"the agent loop
+lives in Foundry — never in this repo"*, which became false the moment a LangGraph graph landed in
+`ai/harness/langgraph/agent/`. The prohibition is unchanged and unweakened; what was wrong was the
+word *repo*. §8 was always about **the app** — the BFF and the browser. `ai/harness/<name>/` is
+where an agent is **authored**, and authoring an agent is not the same as the app running one.
+
+The distinction that carries it, inside a single harness:
+
+| | where it runs | may it loop? |
+|---|---|---|
+| the **adapter** (`ai/harness/<name>/adapter.py`) | imported by the BFF | **No.** It normalises a stream; it chooses nothing. |
+| the **agent** (`ai/harness/<name>/agent/`, or a Foundry agent version) | on Foundry | **Yes** — all the loop it likes. That is what an agent is. |
+
+§8's own test survives intact: swap the harness, and the BFF is still not choosing tools.
 
 This is the whole point of the repository. Concretely, a change violates §8 if it:
 
@@ -161,6 +176,7 @@ This document changes only by intent, not by accident:
 | `infra/` gate: Terraform → **Bicep** | The brief specifies Bicep + azd |
 | Added §8, §9, §10 | The repo's educational value depends on these invariants holding under review |
 | §8 exception: session context for the voice transport (2026-09-16) | The agent cannot perceive that it is being spoken to, and Voice Live's `instructions` field is unsupported with a custom agent — so a fact about the channel had nowhere else to live. Bounded to one static sentence; spec 017 |
+| §8 headline: "never in this repo" → **never in the app** (2026-09-16) | A hosted agent is a container this repository authors and Foundry runs, so its loop is *in the repo* by construction. The prohibition on `backend/` and `frontend/` is unchanged; the headline was overreaching. Adapter (in the BFF, no loop) is now distinguished from agent (on Foundry, all loop); spec 018 |
 
 ---
 

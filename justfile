@@ -30,6 +30,28 @@ infra:
 agent:
     cd ai && python scripts/apply_agent.py
 
+# --- The hosted agent (spec 018) ------------------------------------------
+# The prompt agent is `just agent` above: one SDK call, no container. This one is a container
+# Foundry runs, so it has a build and a deploy instead.
+
+# Regenerate ai/azure.yaml from ai/harness/langgraph/agent.yaml. A test fails if you forget.
+hosted-config:
+    cd ai && python scripts/build_hosted_config.py
+
+# Build the image. The context is `ai/`, not the agent directory: the image needs
+# harness/_shared/ — the SAME tool implementations the BFF runs — and vendoring a copy would
+# break the one-implementation rule (§4). See the Dockerfile's own comment.
+hosted-build:
+    cd ai && docker build -f harness/langgraph/agent/Dockerfile -t foundry-live-agent-hosted:dev .
+
+# Deploy it. Needs Docker running, `azd auth login`, and the Foundry Project Manager role.
+hosted-deploy:
+    cd ai && azd provision && azd deploy
+
+# Record a live turn against the deployed hosted agent, for the fixtures (§5).
+hosted-record:
+    cd ai && python scripts/spike_hosted.py
+
 # Run the BFF. create_app is a factory, hence --factory.
 backend:
     cd backend && uvicorn app.main:create_app --factory --reload --port ${BACKEND_PORT:-8000}
