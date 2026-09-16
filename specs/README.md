@@ -71,6 +71,9 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 015 | [The turn shows its steps when the model shows no reasoning](015-steps-narration/spec.md) | 3 | ✅ done |
 | 016 | [The agent speaks while it works — and sounds better doing it](016-speaks-while-it-works/spec.md) | 3 | ✅ done |
 | 017 | [A spoken answer does not read URLs out loud](017-no-urls-out-loud/spec.md) | 3 | ✅ done |
+| 018 | [The second harness — a LangGraph graph running as a Foundry hosted agent](018-hosted-agent-harness/spec.md) | 4 | 📋 planned |
+| 019 | [The agents screen — pick which Foundry agent answers](019-agent-picker/spec.md) | 4 | 🔍 clarified |
+| 020 | [Side by side — one question, two agents, two streams](020-side-by-side/spec.md) | 4 | 🔍 clarified |
 
 The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
 screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),
@@ -101,8 +104,13 @@ Spec numbers are an append-only record and are **never** renumbered. Execution o
 changeable decision. Current order, chosen because **seeing Voice Live work is the stated priority**:
 
 ```
-000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ✅
+000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ✅ → 015…017 ✅
+  → 018 📋 → 019 🔍 → 020 🔍
 ```
+
+018 → 019 → 020 is a dependency chain, not a preference: 019's picker has nothing to pick between
+until 018 exists, and 020 cannot run two agents at once while exactly one of them is a startup
+constant.
 
 Voice was meant to come before the text UI, on the grounds that it needs only the agent plus a
 control channel. It did not: spec 002 sat blocked on Azure access for eleven days, so 003 and 004
@@ -113,8 +121,10 @@ That order left a mark worth recording. Building the normaliser before the recor
 inferences, three of which the real stream contradicted; 002's closing pass corrected them. The
 lesson is the constitution's §10, learned the expensive way rather than the cheap one.
 
-Phase 4 (LangGraph hosted agent, Foundry IQ, extra MCP tools, M365 Copilot publishing) is
-deliberately **not** specced — it ships as extension points and docs stubs. See `PLAN.md` §6.
+Phase 4 was planned as extension points and docs stubs only (`PLAN.md` §6). **Reopened 2026-09-16**:
+specs 018–020 take the LangGraph hosted agent out of the stub and build it, with the surfaces that
+make it worth building — an agents screen and a side-by-side comparison. The rest of Phase 4
+(Foundry IQ, extra MCP tools, M365 Copilot publishing) stays unspecced.
 
 ## How SDD + TDD show up together
 

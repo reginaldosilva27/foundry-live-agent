@@ -12,6 +12,11 @@ dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.6"]
 # Only needed to RUN apply_agent.py / spike.py against Azure. Tests replay fixtures and
 # never import these, which keeps CI free of credentials.
 azure = ["azure-ai-projects>=2.3.0", "azure-identity>=1.19", "openai>=1.60"]
+# The hosted agent's graph (spec 018). The container installs from
+# harness/langgraph/agent/requirements.txt, which is what actually ships; this group exists so the
+# graph tests can RUN locally. Where it is absent they skip with a reason that says why, rather
+# than silently passing (ai/tests/test_hosted_graph.py).
+hosted = ["langgraph>=1.0", "langchain-core>=0.3", "langchain-mcp-adapters>=0.1"]
 
 [tool.ruff]
 line-length = 100

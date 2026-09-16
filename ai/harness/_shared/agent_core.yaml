@@ -1,0 +1,86 @@
+# The agent's behaviour, as code — shared by every harness.
+#
+# This file is the single source of truth for WHAT the agent is: its model, its instructions and
+# its tools (constitution §4). Each harness's own agent.yaml names it with `extends:` and adds only
+# what is true of that harness — a name, a `reasoning:` block, a `hosted:` sandbox.
+#
+# It exists because of spec 018. The repository's claim is that only the *harness* changes between
+# the prompt agent and the hosted one; two copies of these instructions, drifting a sentence at a
+# time, would make that claim unfalsifiable and the comparison in docs/harness-comparison.md
+# meaningless. Change the agent's behaviour here, once, and both harnesses change together.
+#
+# This is OUR schema, not Microsoft's — see agent_spec.py and docs/harness-comparison.md.
+
+schema_version: foundry-live-agent/v1
+
+# Model deployment alias.
+#
+# The "<connection>/<model>" form routes the agent's inference through the bring-your-own-model
+# connection, i.e. through the APIM gateway. A PLAIN name here silently bypasses the gateway.
+#
+# DELIBERATE BYPASS: a plain name, so inference does NOT go through the APIM gateway. The gateway
+# path is `ai-admin2354ai223634534338/gpt-5.5` (connection name, not project name -- Foundry answers
+# "Connection not found" for the project name). Restore it once the APIM API is bound to its backend.
+#
+# Shared on purpose (spec 018, decision 8): both harnesses bypass the gateway, so they differ in one
+# thing and only one. Restoring the gateway for one and forgetting the other is a test failure.
+model: gpt-5.5
+
+instructions: |
+  You are the reference agent for the foundry-live-agent project. You are precise, concise, and
+  you never invent facts about Azure or Microsoft Foundry.
+
+  Use your tools deliberately:
+
+  - `microsoft_learn` searches official Microsoft documentation. Use it for any question about
+    Azure, Microsoft Foundry, or Microsoft products. Prefer it over your own memory: Foundry
+    changed substantially during 2026 and your training data is unreliable about it. Cite the page
+    you used.
+  - `lookup_knowledge` searches this project's own knowledge base. Use it for questions about how
+    this repository is built — its architecture, its harnesses, its tools, its gateway setup.
+  - `search_web` searches the live internet. Use it for current events, for products and companies
+    outside Microsoft, and for anything that may have changed since your training data. It is the
+    last resort for a Microsoft question — `microsoft_learn` is authoritative there and this is
+    not. Always cite the URLs it returns; never present a search result as your own knowledge. If
+    it answers `search_unavailable`, web search is not configured on this deployment: say so
+    plainly and answer from what you have.
+  - `get_current_datetime` returns the current time in an IANA timezone. Use it whenever the answer
+    depends on what time it is now; never guess the time or the date.
+
+  Before you call a tool that takes a moment, say one short sentence about what you are about to
+  look up — "let me check that on the web", "I'll see when that happened" — in the same language
+  you are answering in. In a spoken conversation that sentence is the only thing the user hears
+  while the tool runs; without it they get silence and assume the app broke. Say it once, when you
+  start the work, not before every call: a turn that searches five times needs one sentence, not
+  five.
+
+  When a tool returns an error, say what failed and what you would need to answer properly. Do not
+  retry the same call with the same arguments.
+
+  Answer in the language the user wrote in.
+
+# The four tools, named identically for both harnesses — because they ARE the same tools.
+#
+# What differs is who executes them, and that is a property of the harness, not of this file:
+#
+#   prompt agent  Foundry is the MCP client; the BFF executes the three function tools
+#   hosted agent  the container is the MCP client AND executes the three function tools
+#
+# Both read the function tools' schema and description from ai/harness/_shared/tools/registry.py,
+# and both run that one implementation (§4). See docs/harness-comparison.md.
+tools:
+  - type: mcp
+    name: microsoft_learn
+    server_url: https://learn.microsoft.com/api/mcp
+    # Public, unauthenticated, read-only documentation search — no approval gate.
+    # If Foundry rejects "never", the BFF must auto-approve instead; see PLAN.md O-3.
+    require_approval: never
+
+  - type: function
+    name: get_current_datetime
+  - type: function
+    name: lookup_knowledge
+  # Third-party, non-Azure, and the only thing in this repo that needs an API key -- see the
+  # TAVILY_API_KEY block in .env.example for why that is not a constitution violation.
+  - type: function
+    name: search_web

@@ -1,0 +1,24 @@
+# The hosted agent container's dependencies (spec 018).
+#
+# Deliberately NOT ai/pyproject.toml's list. The BFF imports `harness/_shared/` and needs none of
+# LangGraph; the container needs all of it. Two dependency sets, one shared tool implementation —
+# which is the arrangement AC6 is about.
+#
+# Versions read 2026-09-16 from the LangGraph hosted-agents guide; see docs/REFERENCES.md.
+
+# The hosting extra brings azure-ai-agentserver-responses, which serves POST /responses.
+langchain-azure-ai[hosting]>=1.2.9
+langgraph>=1.0
+langchain-openai>=0.3
+# The container is the MCP client here, not Foundry (decision 5).
+langchain-mcp-adapters>=0.1
+
+# Entra ID, everywhere. There are no API keys in this image.
+azure-identity>=1.19
+azure-ai-projects>=2.3.0
+# Reads TAVILY_API_KEY at startup with the agent's own identity (AC7).
+azure-keyvault-secrets>=4.8
+
+# What `harness/_shared/` itself needs: agent.yaml, and the one POST behind `search_web`.
+PyYAML>=6
+httpx>=0.27

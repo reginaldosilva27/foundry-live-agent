@@ -6,6 +6,13 @@ teach a retired schema or invent a hosted-agent file for an agent that isn't hos
 declared format of our own, marked `schema_version: foundry-live-agent/v1` so nobody mistakes it for
 a Microsoft one. See `docs/harness-comparison.md`.
 
+`extends:` (spec 018) is the other thing this loader does. Two harnesses that must answer
+identically cannot each carry their own copy of the model, the instructions and the tool list — that
+is the drift §4 forbids, and "a reviewer will notice" is not a control. So the shared half lives in
+`_shared/agent_core.yaml` and each harness's `agent.yaml` names it. The merge is deliberately dull:
+one key, shallow, the local file wins, no per-list overriding. Anything cleverer would be a second
+schema pretending to be a convenience.
+
 The validation that earns its keep is the registry cross-check: a definition naming a function tool
 nobody implements is rejected **at load time**. Without it, that mistake reaches production as an
 agent that emits a call the BFF cannot answer — and an unanswered call hangs the run for ten minutes
@@ -31,6 +38,14 @@ _REQUIRED = ("schema_version", "name", "model", "instructions", "tools")
 # "Not allowed when agent is specified" — so it belongs to the definition or nowhere.
 _REASONING_KEYS = ("summary", "effort", "mode", "context")
 _SUMMARY_VALUES = ("auto", "concise", "detailed")
+
+# The sandbox a hosted agent runs in (spec 018, AC11). Validated rather than passed through for
+# the same reason `reasoning` is: a size Foundry does not offer fails at deploy time, long after
+# the typo, and the three documented sizes are a closed set.
+_HOSTED_KEYS = ("protocol", "cpu", "memory_gib", "idle_timeout_minutes")
+_PROTOCOLS = ("responses", "invocations")
+_SANDBOX_SIZES = ((0.5, 1), (1, 2), (2, 4))
+_IDLE_RANGE = (2, 60)
 
 
 class AgentSpecError(ValueError):
@@ -67,6 +82,9 @@ class AgentSpec:
     mcp_tools: list[McpToolSpec]
     description: str = ""
     reasoning: dict[str, str] | None = None
+    # Present only for a harness Foundry runs as a container. `None` means "not applicable",
+    # which is a different statement from an empty block meaning "unset".
+    hosted: dict[str, Any] | None = None
 
     @property
     def uses_gateway(self) -> bool:
@@ -78,9 +96,8 @@ class AgentSpec:
         return "/" in self.model
 
 
-def load_agent_spec(path: Path | str) -> AgentSpec:
-    """Load and validate an agent definition, or raise :class:`AgentSpecError`."""
-    path = Path(path)
+def _read(path: Path) -> dict[str, Any]:
+    """One YAML file as a mapping, or a typed error naming the file."""
     try:
         raw = yaml.safe_load(path.read_text())
     except FileNotFoundError:
@@ -90,6 +107,38 @@ def load_agent_spec(path: Path | str) -> AgentSpec:
 
     if not isinstance(raw, dict):
         raise AgentSpecError(f"{path} must contain a mapping at the top level")
+    return raw
+
+
+def _resolve(path: Path, seen: list[Path]) -> dict[str, Any]:
+    """Read ``path`` and merge whatever it ``extends:`` underneath it.
+
+    The target is relative to the file that names it, not to the working directory: `just agent`
+    runs from `ai/`, a test runs from wherever pytest was invoked, and a path that means two things
+    is worse than no path at all.
+    """
+    resolved = path.resolve()
+    if resolved in seen:
+        chain = " -> ".join(p.name for p in [*seen, resolved])
+        raise AgentSpecError(f"extends cycle: {chain}")
+
+    raw = _read(path)
+    parent = raw.pop("extends", None)
+    if parent is None:
+        return raw
+
+    if not isinstance(parent, str):
+        raise AgentSpecError(f"{path}: 'extends' must be a path, got {type(parent).__name__}")
+
+    base = _resolve((path.parent / parent).resolve(), [*seen, resolved])
+    # Shallow, and the local file wins. A key the child does not mention comes from the base.
+    return {**base, **raw}
+
+
+def load_agent_spec(path: Path | str) -> AgentSpec:
+    """Load and validate an agent definition, or raise :class:`AgentSpecError`."""
+    path = Path(path)
+    raw = _resolve(path, seen=[])
 
     missing = [key for key in _REQUIRED if key not in raw]
     if missing:
@@ -145,6 +194,7 @@ def load_agent_spec(path: Path | str) -> AgentSpec:
         function_tools=function_tools,
         mcp_tools=mcp_tools,
         reasoning=_reasoning(raw.get("reasoning"), path),
+        hosted=_hosted(raw.get("hosted"), path),
     )
 
 
@@ -175,3 +225,48 @@ def _reasoning(raw: Any, path: Path) -> dict[str, str] | None:
         )
 
     return {key: str(value) for key, value in raw.items()}
+
+
+def _hosted(raw: Any, path: Path) -> dict[str, Any] | None:
+    """Validate the optional `hosted:` block — the sandbox a container agent runs in.
+
+    Every value here is stated in this one file and generated into `azure.yaml` from it (§4), so a
+    value that Foundry will reject must be caught at load time rather than at `azd deploy`, where
+    the error arrives minutes later and names a generated file nobody wrote by hand.
+    """
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise AgentSpecError(f"{path}: 'hosted' must be a mapping")
+
+    missing = [key for key in _HOSTED_KEYS if key not in raw]
+    if missing:
+        raise AgentSpecError(f"{path}: 'hosted' is missing {', '.join(missing)}")
+    unknown = [key for key in raw if key not in _HOSTED_KEYS]
+    if unknown:
+        raise AgentSpecError(
+            f"{path}: unknown hosted field(s) {', '.join(sorted(unknown))}; "
+            f"expected any of {', '.join(_HOSTED_KEYS)}"
+        )
+
+    if raw["protocol"] not in _PROTOCOLS:
+        raise AgentSpecError(
+            f"{path}: hosted.protocol is {raw['protocol']!r}; expected {' or '.join(_PROTOCOLS)}"
+        )
+
+    size = (raw["cpu"], raw["memory_gib"])
+    if size not in _SANDBOX_SIZES:
+        offered = ", ".join(f"{cpu} vCPU / {mem} GiB" for cpu, mem in _SANDBOX_SIZES)
+        raise AgentSpecError(
+            f"{path}: hosted sandbox {size[0]} vCPU / {size[1]} GiB is not one of the sizes "
+            f"Foundry offers ({offered})"
+        )
+
+    low, high = _IDLE_RANGE
+    if not low <= raw["idle_timeout_minutes"] <= high:
+        raise AgentSpecError(
+            f"{path}: hosted.idle_timeout_minutes is {raw['idle_timeout_minutes']}; "
+            f"Foundry accepts {low}-{high}"
+        )
+
+    return dict(raw)

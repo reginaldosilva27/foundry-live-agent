@@ -1,0 +1,38 @@
+# The hosted agent, as code (spec 018).
+#
+# WHAT this agent is — model, instructions, tools — lives in ../_shared/agent_core.yaml, shared with
+# the prompt agent (§4). That sharing is the spec's premise: only the *harness* differs, so the
+# comparison in docs/harness-comparison.md measures the harness and nothing else.
+#
+# This file carries what is true of *this* harness: it is a container Foundry runs.
+#
+# Applied by:  just hosted-deploy  ->  azd provision && azd deploy, against the azure.yaml that
+# ai/scripts/build_hosted_config.py generates from this file. `apply_agent.py` does NOT create a
+# version for a hosted agent — create_version is a prompt-agent API.
+
+schema_version: foundry-live-agent/v1
+extends: ../_shared/agent_core.yaml
+
+name: foundry-live-agent-hosted
+description: >
+  The same reference agent, authored as a LangGraph graph and run by Foundry as a hosted agent
+  container. Identical model, instructions and tools to the prompt agent — the difference is that
+  the container owns the loop and executes all four tools itself, including the Microsoft Learn
+  MCP client.
+
+# The sandbox. These three values are stated HERE and nowhere else (AC11); azure.yaml is generated
+# from them and a test fails if the committed file drifts.
+#
+#   protocol              Responses, so the platform manages conversation history and the streaming
+#                         lifecycle (decision 10). `Invocations` only if a custom payload is needed.
+#   cpu / memory_gib      1 vCPU / 2 GiB — the middle of the three documented sizes (decision 9).
+#                         Billing is CPU+memory across ACTIVE SESSIONS, so oversizing multiplies by
+#                         concurrency. Right-sizing is done later by measurement, following the
+#                         documented procedure: representative load, App Insights -> Performance,
+#                         adjust if sustained peaks pass ~70% of allocation.
+#   idle_timeout_minutes  15, the documented default. The range is 2-60.
+hosted:
+  protocol: responses
+  cpu: 1
+  memory_gib: 2
+  idle_timeout_minutes: 15

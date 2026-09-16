@@ -201,3 +201,158 @@ def test_the_written_citation_rule_survives():
     )
 
     assert search_rule, "the written citation rule was removed instead of made conditional"
+
+
+# --- `extends:` — one definition, two harnesses (spec 018, AC5) -----------
+#
+# Two agents that must behave identically cannot each carry their own copy of the model, the
+# instructions and the tool list: that is the drift §4 forbids, and a reviewer noticing is not a
+# control. So the shared half moves into `_shared/agent_core.yaml` and each harness's agent.yaml
+# names it. One key, a shallow merge, and no override rules — anything cleverer has outgrown the
+# job it was added for.
+
+CORE = """
+schema_version: foundry-live-agent/v1
+name: shared-core
+model: gpt-5.5
+instructions: |
+  Shared instructions.
+tools:
+  - type: function
+    name: get_current_datetime
+"""
+
+
+def write_named(tmp_path, filename, text):
+    path = tmp_path / filename
+    path.write_text(text)
+    return path
+
+
+def test_extends_pulls_in_the_shared_definition(tmp_path):
+    write_named(tmp_path, "core.yaml", CORE)
+    child = write_named(
+        tmp_path,
+        "agent.yaml",
+        "schema_version: foundry-live-agent/v1\nextends: core.yaml\nname: child\n",
+    )
+
+    spec = load_agent_spec(child)
+
+    assert spec.model == "gpt-5.5"
+    assert spec.instructions.strip() == "Shared instructions."
+    assert [t.name for t in spec.function_tools] == ["get_current_datetime"]
+
+
+def test_the_local_file_wins_over_what_it_extends(tmp_path):
+    """The child is the more specific statement, so it overrides — but only key by key."""
+    write_named(tmp_path, "core.yaml", CORE)
+    child = write_named(
+        tmp_path,
+        "agent.yaml",
+        "schema_version: foundry-live-agent/v1\nextends: core.yaml\n"
+        "name: child\nreasoning:\n  summary: detailed\n",
+    )
+
+    spec = load_agent_spec(child)
+
+    assert spec.name == "child"
+    assert spec.reasoning == {"summary": "detailed"}
+    assert spec.model == "gpt-5.5", "a key the child does not mention still comes from the core"
+
+
+def test_extends_resolves_relative_to_the_file_that_declares_it(tmp_path):
+    """Not to the working directory — `just agent` runs from `ai/`, a test runs from anywhere."""
+    (tmp_path / "shared").mkdir()
+    write_named(tmp_path / "shared", "core.yaml", CORE)
+    (tmp_path / "harness").mkdir()
+    child = write_named(
+        tmp_path / "harness",
+        "agent.yaml",
+        "schema_version: foundry-live-agent/v1\nextends: ../shared/core.yaml\nname: child\n",
+    )
+
+    assert load_agent_spec(child).model == "gpt-5.5"
+
+
+def test_rejects_an_extends_target_that_does_not_exist(tmp_path):
+    child = write_named(
+        tmp_path,
+        "agent.yaml",
+        "schema_version: foundry-live-agent/v1\nextends: missing.yaml\nname: child\n",
+    )
+    with pytest.raises(AgentSpecError, match="missing.yaml"):
+        load_agent_spec(child)
+
+
+def test_rejects_a_cycle_rather_than_recursing_forever(tmp_path):
+    write_named(
+        tmp_path,
+        "a.yaml",
+        "schema_version: foundry-live-agent/v1\nextends: b.yaml\nname: a\n",
+    )
+    write_named(
+        tmp_path,
+        "b.yaml",
+        "schema_version: foundry-live-agent/v1\nextends: a.yaml\nname: b\n",
+    )
+    with pytest.raises(AgentSpecError, match="extends cycle"):
+        load_agent_spec(tmp_path / "a.yaml")
+
+
+# --- the hosted sandbox (spec 018, AC11) ----------------------------------
+#
+# Same reasoning as the `reasoning:` block above: a value Foundry rejects fails at `azd deploy`,
+# minutes later, naming a generated azure.yaml nobody wrote by hand. Catching it at load time
+# points at the line someone actually typed.
+
+HOSTED = """
+hosted:
+  protocol: responses
+  cpu: 1
+  memory_gib: 2
+  idle_timeout_minutes: 15
+"""
+
+
+def test_hosted_defaults_to_absent(tmp_path):
+    """A prompt agent has no container to size, and that is different from an unset one."""
+    assert load_agent_spec(write(tmp_path, VALID)).hosted is None
+
+
+def test_hosted_is_read_from_the_definition(tmp_path):
+    spec = load_agent_spec(write(tmp_path, VALID + HOSTED))
+    assert spec.hosted == {
+        "protocol": "responses",
+        "cpu": 1,
+        "memory_gib": 2,
+        "idle_timeout_minutes": 15,
+    }
+
+
+def test_rejects_a_sandbox_size_foundry_does_not_offer(tmp_path):
+    """The three documented sizes are a closed set; 4 vCPU is a deploy-time failure otherwise."""
+    bad = VALID + HOSTED.replace("cpu: 1", "cpu: 4")
+    with pytest.raises(AgentSpecError, match="not one of the sizes"):
+        load_agent_spec(write(tmp_path, bad))
+
+
+def test_rejects_an_idle_timeout_outside_the_documented_range(tmp_path):
+    """2-60 minutes, 15 by default — read 2026-09-16. An earlier note said 5-60 and was stale."""
+    bad = VALID + HOSTED.replace("idle_timeout_minutes: 15", "idle_timeout_minutes: 90")
+    with pytest.raises(AgentSpecError, match="2-60"):
+        load_agent_spec(write(tmp_path, bad))
+
+
+def test_rejects_an_unknown_protocol(tmp_path):
+    bad = VALID + HOSTED.replace("protocol: responses", "protocol: graphql")
+    with pytest.raises(AgentSpecError, match="graphql"):
+        load_agent_spec(write(tmp_path, bad))
+
+
+def test_rejects_an_incomplete_hosted_block(tmp_path):
+    """Half a sandbox definition would silently take Foundry's defaults for the other half —
+    which is exactly the one-place-only claim AC11 makes, broken."""
+    bad = VALID + "\nhosted:\n  protocol: responses\n"
+    with pytest.raises(AgentSpecError, match="cpu"):
+        load_agent_spec(write(tmp_path, bad))
