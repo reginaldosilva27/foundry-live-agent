@@ -55,9 +55,8 @@
 - [x] **T14 — implement**: add them to the `:focus-visible` rule.
 - [x] **T15 — docs (§4)**: `docs/how-it-works/tracing-and-gateway.md` gains the line that the panel
       names the two reserved ids as pending; `CHANGELOG.md` entry.
-- [ ] **T15b — screenshot**: `docs/assets/` not refreshed. The browser tooling could not attach to
-      a page in this session (script injection timed out three times against a dev server that was
-      answering 200), so no screenshot was taken rather than an old one being passed off as new (§5).
+- [x] **T15b — screenshot**: `docs/assets/screenshot-chat.png` retaken against a live Foundry run.
+      It is also what caught AC9 being only half true — see T17.
 - [x] **T16 — refactor**: re-read `TraceDrawer` for length; if the head has grown past what reads in
       one screen, lift it into a sibling component. Keep tests green. → `TurnStepper` lifted out; the
       panel body now reads as five sections without a nested control block in the header.
@@ -70,4 +69,19 @@
 - [x] All new user-facing text exists in `en` **and** `pt` (§7)
 - [x] No `AgentEvent` change — `contract.py` untouched (§9)
 - [x] Nothing on screen that the event stream did not produce (§5)
-- [ ] `spec.md` status updated to `done`
+- [x] `spec.md` status updated to `done`
+
+### Found by looking at it (added after the first screenshot)
+
+- [x] **T17 — the grid did not actually align.** Each `.tool-row` is its own grid container, so
+      `auto` tracks size to their own row and cannot agree across rows: `bff` and `microsoft_learn`
+      started at different x, and an MCP call — carrying no duration — let its tag slide into the
+      empty fourth column. The test written for AC9 asserted that the CSS *declared* grid columns,
+      which is mechanism, not behaviour, so it passed against a broken layout. Both tracks now carry
+      a floor, and the test reads the floor. Caught only by the screenshot.
+- [x] **T18 — the floors then broke the 320px panel**, wrapping `lookup_knowledge` over four lines.
+      The floors are custom properties; the panel lowers them and pulls the tag to the duration rail.
+- [x] **T19 — `modelName` moves to `components/format.ts` (§4).** The rule that strips the
+      `<connection>/` prefix lived inside `Sidebar`, so the panel rendered the raw deployment name —
+      four wrapped lines of `ai-admin2354ai223634534-project/gpt-5.5` beside a sidebar saying
+      `gpt-5.5`. `MetaLine` was showing the raw name too. One rule, three callers.

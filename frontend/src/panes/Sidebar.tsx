@@ -10,6 +10,7 @@
  * conversation to in this release, so a list of them would be a drawing of a feature rather than a
  * feature — the shell stays, with one honest entry that says so (constitution §5).
  */
+import { modelName } from '../components/format'
 import { useT } from '../i18n/context'
 import { LANGS, type Lang } from '../i18n/strings'
 import type { BffConfig } from '../config'
@@ -19,12 +20,6 @@ interface Props {
   lang: Lang
   onLang: (lang: Lang) => void
   onNewSession: () => void
-}
-
-/** The model half of a `<connection>/<model>` deployment name; a plain name is returned as is. */
-function modelName(config: BffConfig | null): string {
-  const model = config?.model ?? ''
-  return model.slice(model.lastIndexOf('/') + 1)
 }
 
 export function Sidebar({ config, lang, onLang, onNewSession }: Props) {
@@ -66,7 +61,7 @@ export function Sidebar({ config, lang, onLang, onNewSession }: Props) {
       <footer className="sidebar__footer">
         <p data-testid="sidebar-model">
           <span className="sidebar__key">{s('sidebar.modelLabel')}</span>
-          {modelName(config)}
+          {modelName(config?.model)}
         </p>
         {config && (
           <p className="sidebar__gateway">

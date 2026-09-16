@@ -88,11 +88,11 @@ with the BYOM model, it retries on a plain deployment, which distinguishes "BYOM
 | `ai/harness/_shared/tools/{registry,datetime_tool,knowledge_tool}.py` | New |
 | `ai/harness/_shared/tools/knowledge/*.md` | New — the corpus |
 | `ai/harness/_shared/agent_spec.py` | New — loader + validator |
-| `ai/harness/prompt-agent/agent.yaml` | New — the definition |
+| `ai/harness/prompt_agent/agent.yaml` | New — the definition |
 | `ai/scripts/{apply_agent,spike}.py` | New |
 | `ai/harness/langgraph/{README.md,adapter.py}` | New — scaffold, raises `NotImplementedError` |
 | `ai/tests/test_{tools,agent_spec}.py` | New |
-| `ai/harness/prompt-agent/{adapter,events}.py` | **Second pass**, after the spike |
+| `ai/harness/prompt_agent/{adapter,events}.py` | **Second pass**, after the spike |
 | `docs/REFERENCES.md` | Spike findings (§10) |
 
 ## Contract / data impact

@@ -76,7 +76,7 @@ be broken quietly by someone adding a special case.
 
 ### The event normaliser, and its honest gap
 
-`ai/harness/prompt-agent/events.py` maps raw Foundry stream events onto `AgentEvent`s through a
+`ai/harness/prompt_agent/events.py` maps raw Foundry stream events onto `AgentEvent`s through a
 **declarative table**:
 
 ```python
@@ -106,7 +106,7 @@ production.
 
 ## Affected files
 
-New: everything under `backend/`, plus `ai/harness/prompt-agent/{events,adapter}.py` and their tests.
+New: everything under `backend/`, plus `ai/harness/prompt_agent/{events,adapter}.py` and their tests.
 Changed: `justfile` (already has `just backend`), `docs/how-it-works/*` at the end.
 
 ## Contract / data impact

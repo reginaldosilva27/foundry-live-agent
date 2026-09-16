@@ -8,7 +8,7 @@
  * tokens` there would be a measurement rather than an absence (§5).
  */
 import { useT } from '../i18n/context'
-import { formatMs } from './format'
+import { formatMs, modelName } from './format'
 import type { Turn } from '../state/turn'
 
 interface Props {
@@ -26,7 +26,7 @@ export function TraceNumbers({ turn, model, latencyMs }: Props) {
       {model && (
         <div className="trace-numbers__cell">
           <dt>{s('sidebar.modelLabel')}</dt>
-          <dd>{model}</dd>
+          <dd>{modelName(model)}</dd>
         </div>
       )}
       {usage && (

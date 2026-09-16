@@ -5,7 +5,7 @@
  * do not take it, and a UI that displays a parameter the platform ignores teaches something false.
  */
 import { useT } from '../i18n/context'
-import { formatMs } from './format'
+import { formatMs, modelName } from './format'
 import type { Turn } from '../state/turn'
 
 interface Props {
@@ -21,7 +21,7 @@ export function MetaLine({ turn, model, latencyMs, onOpenTrace }: Props) {
 
   return (
     <p className="meta-line" data-testid="meta-line">
-      {model && <span className="meta-line__item">{model}</span>}
+      {model && <span className="meta-line__item">{modelName(model)}</span>}
       {usage && (
         <span className="meta-line__item">
           {`${usage.inputTokens + usage.outputTokens} ${s('meta.tokens')}`}

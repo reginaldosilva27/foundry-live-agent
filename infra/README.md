@@ -30,4 +30,8 @@ helper. If a supported IaC path appears, this becomes a spec.
 az bicep build --file main.bicep && az bicep lint --file main.bicep
 ```
 
-Filled by **spec 002**.
+**Still empty.** Spec 002 declared Bicep a non-goal — *"`infra/` stays empty until the spike
+confirms what to provision"* — and the spike's answer never became a spec. The CI job skips this
+layer with a notice while `main.bicep` is absent, which is why the gate is green on an empty
+directory. Provisioning is a manual portal/CLI step today; spec 005 is where Application Insights
+gets a home.

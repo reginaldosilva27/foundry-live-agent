@@ -759,11 +759,20 @@ button:disabled {
 /* The chat's one-line rendering of a call (spec 009). The payload it used to carry lives in the
    trace panel; what stays is the fact, and the executor tag that says who ran it. */
 .tool-row {
-  /* Four content columns and a second row for the bar. `auto` everywhere but the name means each
-     column is as wide as the widest thing in it, so the executor tag starts at the same x on every
-     row — which is the column that carries §8 and the one the eye needs to scan (spec 014 AC9). */
+  /* Four content columns and a second row for the bar.
+
+     The tag and duration tracks carry a minimum rather than sizing to their content. Each row is
+     its own grid container, so `auto` tracks cannot align *between* rows: a `bff` tag and a
+     `microsoft_learn` tag would start at different x, and an MCP call — which carries no duration
+     at all — would let its tag slide into the empty fourth column. The floors are what make the
+     executor column, the one that carries §8 and the one the eye needs to scan, actually line up
+     down the list (spec 014 AC9). A label longer than its floor still expands; that is the outlier
+     paying for itself rather than every row paying for the outlier. */
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns:
+    auto minmax(0, 1fr)
+    minmax(var(--tag-col, 7.5rem), auto)
+    minmax(var(--dur-col, 3.5rem), auto);
   align-items: center;
   gap: var(--sp-1) var(--sp-2);
   width: 100%;
@@ -861,6 +870,9 @@ button:disabled {
 }
 
 .tool-row__executor {
+  /* The cell has a floor; the badge must not inherit it, or `bff` becomes a 7.5rem pill. Anchored
+     to the cell's start so every tag begins at the same x, whatever its length. */
+  justify-self: start;
   padding: 2px var(--sp-2);
   border-radius: var(--r-xs);
   font-family: var(--font-mono);
@@ -879,6 +891,8 @@ button:disabled {
 }
 
 .tool-row__meta {
+  /* Numbers read right-aligned: `3 ms` and `70.4 s` agree on their last digit, not their first. */
+  justify-self: end;
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   color: var(--fg-4);
@@ -1095,8 +1109,19 @@ button:disabled {
 }
 
 .trace__activity .tool-row {
+  /* Same grid, narrower column. At 320px the chat's tag floor leaves the name about 100px and
+     `lookup_knowledge` wraps to four lines — so here the tag sizes to itself and is pulled to the
+     duration rail instead. The rail is what stops an MCP call, which has no duration, from sliding
+     its tag into the empty fourth column; the tags then share a right edge rather than a left one,
+     which is the alignment a 320px column can actually afford. */
+  --tag-col: 0;
+  --dur-col: 3rem;
   border-color: var(--ds-n-800);
   background: var(--ds-n-900);
+}
+
+.trace__activity .tool-row__executor {
+  justify-self: end;
 }
 
 .trace__activity .tool-row:hover {

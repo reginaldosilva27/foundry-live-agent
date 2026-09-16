@@ -107,14 +107,27 @@ describe('app.css regressions', () => {
 
 /** Spec 014 AC9 — the calls align, in every surface that renders one. */
 describe('the tool row grid', () => {
-  it('declares fixed columns so the executor tags line up down the list', () => {
+  it('gives the tag and duration columns a floor, so rows align across the list', () => {
     const row = css.split('.tool-row {')[1].split('}')[0]
 
     expect(row).toContain('display: grid')
-    expect(row).toMatch(/grid-template-columns:/)
-    // The name column is the one that flexes; every other column is sized by its content, which
-    // is what makes two rows with different name lengths agree on where the tag starts.
-    expect(row).toMatch(/grid-template-columns:[^;]*1fr/)
+    // Each row is its own grid container, so `auto` tracks cannot align between rows: sized to
+    // their own content, a `bff` tag and a `microsoft_learn` tag start at different x, and an MCP
+    // call — which carries no duration — lets its tag slide into the empty duration column. A
+    // minimum on both tracks is what actually makes the columns agree down the list. Measured in
+    // a browser before and after; jsdom applies no stylesheet, so this reads the rule.
+    const columns = row.match(/grid-template-columns:([^;]*)/)![1]
+    expect(columns).toMatch(/1fr/)
+    // Two floored tracks: the tag and the duration. The floors are custom properties so the 320px
+    // trace panel can lower them — at the chat's floors, `lookup_knowledge` wraps to four lines in
+    // there — which is why this looks for the fallback rather than a literal length.
+    expect(columns.match(/minmax\(var\(--(?:tag|dur)-col,\s*[\d.]+rem\)/g) ?? []).toHaveLength(2)
+  })
+
+  it('lowers those floors inside the trace panel, which is 320px wide', () => {
+    const panel = css.split('.trace__activity .tool-row {')[1].split('}')[0]
+    expect(panel).toMatch(/--tag-col:/)
+    expect(panel).toMatch(/--dur-col:/)
   })
 
   it('keeps the bar out of the row height when a call has no duration', () => {

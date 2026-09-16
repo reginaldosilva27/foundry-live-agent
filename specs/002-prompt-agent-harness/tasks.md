@@ -10,13 +10,13 @@
 - [x] **T2 — GREEN**: `tools/datetime_tool.py`, `tools/knowledge_tool.py` (+ `KnowledgeSource`
       Protocol and `LocalMarkdownKnowledge`), `tools/registry.py`, and the markdown corpus
 - [x] **T3 — RED**: `tests/test_agent_spec.py` for AC7
-- [x] **T4 — GREEN**: `harness/_shared/agent_spec.py` + `harness/prompt-agent/agent.yaml`
+- [x] **T4 — GREEN**: `harness/_shared/agent_spec.py` + `harness/prompt_agent/agent.yaml`
 - [x] **T5**: `scripts/apply_agent.py` — written, not yet runnable
 - [x] **T6**: `scripts/spike.py` — the O-1/O-3/O-8/O-9 probe, ready to run
 - [x] **T7**: `harness/langgraph/` scaffold — README documenting the intended design, `adapter.py`
       raising `NotImplementedError`, satisfying the Protocol so it can be registered but not used
 - [x] **T8 — gates**: `ruff check` · `ruff format --check` · `pytest -q` green
-- [x] **T9 — docs (§4)**: `harness/prompt-agent/README.md` — what Foundry runs vs. what we run
+- [x] **T9 — docs (§4)**: `harness/prompt_agent/README.md` — what Foundry runs vs. what we run
 
 ## Pass 2 — ran 2026-09-15
 

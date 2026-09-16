@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - No `AgentEvent` change (§9) and no harness change: everything rendered was already on `Turn`.
 
 ### Changed
+- **One rule for the model's name (§4).** The shortening that turns a `<connection>/<model>` BYOM
+  deployment into `gpt-5.5` lived inside `Sidebar`, so spec 014's panel rendered the raw name — four
+  wrapped lines of `ai-admin2354ai223634534-project/gpt-5.5` beside a sidebar saying `gpt-5.5`, and
+  the chat's meta line showed the raw name too. `modelName` now lives in `components/format.ts` with
+  the other shared formatters, and all three callers use it.
 - **An answer's markdown headings are chat headings, not page headings.** Unstyled, `h1` took the
   browser's 2em, so a section title inside a message rendered larger than the product name in the
   sidebar. The scale now starts just above body text and compresses fast.
@@ -34,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   note it is.
 
 ### Fixed
+- **The tool-row grid did not actually align.** Each row is its own grid container, so `auto` tracks
+  size to their own row and cannot agree across rows: a `bff` tag and a `microsoft_learn` tag started
+  at different x, and an MCP call — which carries no duration — let its tag slide into the empty
+  fourth column. The test written for this asserted that the CSS *declared* grid columns, which is
+  mechanism rather than behaviour, so it passed against a layout that was still ragged; only a
+  screenshot caught it. Both tracks now carry a floor, and because the chat's floors wrap
+  `lookup_knowledge` over four lines inside a 320px panel, the floors are custom properties the panel
+  lowers.
 - **Keyboard focus was invisible everywhere.** 1425 lines of CSS contained no `:focus-visible` rule
   at all, and every control carries its own background — Dataside blue, ink, transparent-on-ink —
   against which the user-agent ring barely shows. One rule now covers every control, stated once.
