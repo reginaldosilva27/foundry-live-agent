@@ -39,24 +39,53 @@ export type Message = UserMessage | AgentMessage | VoiceSessionMessage
 export interface AgentStream {
   messages: Message[]
   streaming: boolean
+  /** Foundry's id for this conversation, once it has given us one. Read-only: the app stores it
+   *  beside the transcript so reopening can resume rather than start over (spec 021). */
+  conversationId?: string
   /** `agent` names who answers; absent means the BFF's configured default (spec 019). */
   send: (text: string, agent?: string) => Promise<void>
   /** Drop finished messages into the conversation — how a voice session lands here (spec 007). */
   append: (messages: Message[]) => void
+  /**
+   * Put a stored conversation back: its drawing, and Foundry's id for it (spec 021).
+   *
+   * The id is the half that matters. Without it this would be a screenshot — the next message
+   * would open a conversation Foundry has never heard of, and the agent would have forgotten
+   * everything the reader can still see on screen.
+   */
+  restore: (messages: Message[], conversationId?: string) => void
   reset: () => void
 }
 
 export function useAgentStream(): AgentStream {
   const [messages, setMessages] = useState<Message[]>([])
   const [streaming, setStreaming] = useState(false)
-  // Foundry owns conversation state; we only carry the id it gave us (§8).
+  // Foundry owns conversation state; we only carry the id it gave us (§8). The ref is what the
+  // streaming closure reads; the state is what callers see — one value, two consumers.
   const conversationId = useRef<string | undefined>(undefined)
+  const [conversation, setConversation] = useState<string | undefined>(undefined)
   const nextId = useRef(0)
 
-  const reset = useCallback(() => {
-    conversationId.current = undefined
-    setMessages([])
+  const remember = useCallback((id: string | undefined) => {
+    conversationId.current = id
+    setConversation(id)
   }, [])
+
+  const reset = useCallback(() => {
+    remember(undefined)
+    setMessages([])
+  }, [remember])
+
+  const restore = useCallback(
+    (incoming: Message[], id?: string) => {
+      // Turn ids are minted from a counter, and a restored transcript already contains some. Move
+      // past the highest one so the next turn cannot collide with a turn already on screen.
+      nextId.current = Math.max(nextId.current, ...incoming.map(turnNumber).map((n) => n + 1))
+      remember(id)
+      setMessages(incoming)
+    },
+    [remember],
+  )
 
   const send = useCallback(async (text: string, agent?: string) => {
     const id = `turn_${nextId.current++}`
@@ -102,7 +131,7 @@ export function useAgentStream(): AgentStream {
         if (done) break
         for (const event of parse(decoder.decode(value, { stream: true }))) {
           if (isTraceIds(event) && event.conversation_id) {
-            conversationId.current = event.conversation_id
+            remember(event.conversation_id)
           }
           const terminal = isTerminal(event)
           apply((turn) => reduceTurn(turn, event), terminal)
@@ -123,13 +152,19 @@ export function useAgentStream(): AgentStream {
     } finally {
       setStreaming(false)
     }
-  }, [])
+  }, [remember])
 
   const append = useCallback((incoming: Message[]) => {
     if (incoming.length > 0) setMessages((prev) => [...prev, ...incoming])
   }, [])
 
-  return { messages, streaming, send, append, reset }
+  return { messages, streaming, conversationId: conversation, send, append, restore, reset }
+}
+
+/** The counter inside a minted message id (`turn_7`, `turn_7_user`), or -1 for anything else. */
+function turnNumber(message: Message): number {
+  const match = /^turn_(\d+)/.exec(message.id)
+  return match ? Number(match[1]) : -1
 }
 
 function isTerminal(event: unknown): boolean {

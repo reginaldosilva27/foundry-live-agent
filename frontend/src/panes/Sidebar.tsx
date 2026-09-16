@@ -1,61 +1,150 @@
 /**
- * The dark left column: brand, the agents panel, and a mono footer describing what we are
- * connected to.
+ * The dark left column: brand, the two views, who is answering, what this browser kept, and a mono
+ * footer describing what we are connected to.
+ *
+ * Spec 021 gave it structure and took something away. The **full agent listing left** — ten agents
+ * with a kind, a version, a status and a harness never fit in 248px, and the tenth was being cut in
+ * half by the language switch. What stays is the one fact the reader needs everywhere: which agent
+ * is answering. The listing is a screen now (`AgentsScreen`), and `Sidebar.test.tsx` asserts it has
+ * not crept back.
  *
  * The footer names the model and nothing else. The Foundry project id is a deployment detail no
  * reader acts on, and `model` arrives as `<connection>/<model>` — where the connection is usually
  * the project again. Whether that connection routes through the gateway is the part worth showing,
  * and the line below already says it.
- *
- * The mock's list of past sessions is gone (design-system note M9). There is nowhere to persist a
- * conversation to in this release, so a list of them would be a drawing of a feature rather than a
- * feature (constitution §5) — the note under **New session** still says so. Spec 019 gave that
- * space something real to hold: the project's actual agents, read from the service.
  */
-import { AgentPicker } from './AgentPicker'
+import { Favourites } from './Favourites'
+import { HistoryList } from './HistoryList'
+import { AgentsIcon, ChatIcon, PanelIcon, PlusIcon } from '../components/Icon'
+import { Monogram } from '../components/Monogram'
 import { modelName } from '../components/format'
 import { useT } from '../i18n/context'
 import { LANGS, type Lang } from '../i18n/strings'
+import { useCollapsed } from '../state/ui'
 import type { BffConfig } from '../config'
 import type { AgentsState } from '../state/agents'
+import type { HistoryState } from '../state/history'
+import type { AgentRow } from '../types/agents'
+
+/** The two things the main column can show. Two booleans' worth of app, hence no router. */
+export type View = 'chat' | 'agents'
 
 interface Props {
   config: BffConfig | null
+  /** `GET /config` failed, which is not the same as not having answered yet (AC3). */
+  configFailed: boolean
   agents: AgentsState
+  /** The starred agents, already resolved against the listing (spec 022). */
+  favourites: AgentRow[]
   lang: Lang
+  view: View
+  history: HistoryState
+  /** The stored conversation currently on screen, if this session opened one. */
+  activeId: string | null
   onLang: (lang: Lang) => void
   onNewSession: () => void
+  onView: (view: View) => void
+  onOpenConversation: (id: string) => void
+  onSelectAgent: (name: string) => void
 }
 
-export function Sidebar({ config, agents, lang, onLang, onNewSession }: Props) {
+export function Sidebar({
+  config,
+  configFailed,
+  agents,
+  favourites,
+  lang,
+  view,
+  history,
+  activeId,
+  onLang,
+  onNewSession,
+  onView,
+  onOpenConversation,
+  onSelectAgent,
+}: Props) {
   const s = useT()
+  const [collapsed, toggleCollapsed] = useCollapsed()
+
+  /** The configured agent answers until someone chooses otherwise (019 AC4, AC12). */
+  const answering = agents.selected ?? config?.agent_name
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" data-collapsed={collapsed}>
       <div className="sidebar__brand">
         <img src="/icon-foundry-live-agent-branco.svg" alt="" width="22" height="22" />
         <span className="sidebar__product">{s('app.name')}</span>
+        <button
+          type="button"
+          className="sidebar__collapse"
+          title={s(collapsed ? 'nav.expand' : 'nav.collapse')}
+          aria-label={s(collapsed ? 'nav.expand' : 'nav.collapse')}
+          onClick={toggleCollapsed}
+        >
+          <PanelIcon size={17} />
+        </button>
       </div>
 
       <button type="button" className="sidebar__new" onClick={onNewSession}>
-        {s('sidebar.newSession')}
+        <PlusIcon size={16} />
+        <span className="sidebar__label">{s('sidebar.newSession')}</span>
       </button>
 
-      <p className="sidebar__note">{s('sidebar.noHistory')}</p>
+      <nav className="sidebar__nav" aria-label={s('app.name')}>
+        {(
+          [
+            ['chat', ChatIcon, 'nav.chat'],
+            ['agents', AgentsIcon, 'nav.agents'],
+          ] as const
+        ).map(([id, Icon, key]) => (
+          <button
+            key={id}
+            type="button"
+            className="sidebar__nav-item"
+            aria-current={view === id ? 'page' : undefined}
+            // Collapsed, the label leaves the layout but not the accessibility tree (AC2).
+            aria-label={s(key)}
+            title={s(key)}
+            onClick={() => onView(id)}
+          >
+            <Icon size={17} />
+            <span className="sidebar__label">{s(key)}</span>
+          </button>
+        ))}
+      </nav>
 
-      <AgentPicker
-        agents={agents.agents}
-        error={agents.error}
-        loading={agents.loading}
-        // The configured agent answers until someone chooses otherwise, so the mark follows the
-        // selection first and `GET /config` second (AC4, AC12).
-        answering={agents.selected ?? config?.agent_name}
-        switched={agents.switched}
-        configuredAgent={config?.agent_name}
-        onSelect={agents.select}
+      {answering && (
+        <div className="sidebar__section">
+          <button
+            type="button"
+            className="answering"
+            data-testid="answering-agent"
+            onClick={() => onView('agents')}
+          >
+            <Monogram name={answering} size={26} />
+            <span className="answering__naming">
+              <span className="answering__name">{answering}</span>
+              <span className="answering__state">{s('agents.answering')}</span>
+            </span>
+          </button>
+          {agents.switched && (
+            <p className="agents__switched" role="status">
+              {s('agents.switched').replace('{name}', agents.switched)}
+            </p>
+          )}
+        </div>
+      )}
+
+      <Favourites rows={favourites} answering={answering} onSelect={onSelectAgent} />
+
+      <HistoryList
+        conversations={history.conversations}
+        storing={history.storing}
+        activeId={activeId}
+        onOpen={onOpenConversation}
+        onRename={history.rename}
+        onRemove={history.remove}
       />
-
-      <div className="sidebar__spacer" />
 
       <div className="sidebar__lang" role="group" aria-label={s('sidebar.language')}>
         {LANGS.map((code) => (
@@ -74,7 +163,7 @@ export function Sidebar({ config, agents, lang, onLang, onNewSession }: Props) {
       <footer className="sidebar__footer">
         <p data-testid="sidebar-model">
           <span className="sidebar__key">{s('sidebar.modelLabel')}</span>
-          {modelName(config?.model)}
+          {config ? modelName(config.model) : s(configFailed ? 'config.unavailable' : 'config.loading')}
         </p>
         {config && (
           <p className="sidebar__gateway">

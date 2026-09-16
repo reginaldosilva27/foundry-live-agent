@@ -74,6 +74,8 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 018 | [The second harness — a LangGraph graph running as a Foundry hosted agent](018-hosted-agent-harness/spec.md) | 4 | ✅ done |
 | 019 | [The agents screen — pick which Foundry agent answers](019-agent-picker/spec.md) | 4 | ✅ done |
 | 020 | [Side by side — one question, two agents, two streams](020-side-by-side/spec.md) | 4 | 🔍 clarified |
+| 021 | [The shell, elaborated — navigation, an agents screen, answer actions, local history](021-ui-shell/spec.md) | 4 | ✅ done |
+| 022 | [Favourite agents — the two you actually use, in the rail](022-agent-favourites/spec.md) | 4 | ✅ done |
 
 The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
 screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),
@@ -105,12 +107,16 @@ changeable decision. Current order, chosen because **seeing Voice Live work is t
 
 ```
 000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ✅ → 015…017 ✅
-  → 018 ✅ → 019 ✅ → 020 🔍
+  → 018 ✅ → 019 ✅ → 021 ✅ → 022 ✅ → 020 🔍
 ```
 
 018 → 019 → 020 is a dependency chain, not a preference: 019's picker has nothing to pick between
 until 018 exists, and 020 cannot run two agents at once while exactly one of them is a startup
 constant.
+
+**021 jumps ahead of 020** for the same kind of reason: side by side needs a shell that can hold two
+streams, name who is in each, and keep the comparison afterwards. Building that inside a
+single-view shell means building it twice.
 
 Voice was meant to come before the text UI, on the grounds that it needs only the agent plus a
 control channel. It did not: spec 002 sat blocked on Azure access for eleven days, so 003 and 004

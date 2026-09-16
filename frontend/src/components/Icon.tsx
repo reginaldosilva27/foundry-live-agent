@@ -105,3 +105,90 @@ export const CopyIcon = (p: IconProps) =>
     p,
   )
 
+
+// --- The shell's navigation and actions (spec 021) --------------------------
+
+export const ChatIcon = (p: IconProps) =>
+  svg(<path d="M20.5 12.5a7.5 7.5 0 0 1-7.5 7.5H8l-4 3v-4.2A7.5 7.5 0 0 1 3 12.5 7.5 7.5 0 0 1 10.5 5h2.5a7.5 7.5 0 0 1 7.5 7.5Z" />, p)
+
+export const AgentsIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="9" cy="8.5" r="3.5" />
+      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+      <path d="M16 5.5a3.5 3.5 0 0 1 0 6.9" />
+      <path d="M17.5 14.5a6.5 6.5 0 0 1 4 5.5" />
+    </>,
+    p,
+  )
+
+export const PanelIcon = (p: IconProps) =>
+  svg(
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="10" y1="4" x2="10" y2="20" />
+    </>,
+    p,
+  )
+
+export const SearchIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <line x1="15.5" y1="15.5" x2="20.5" y2="20.5" />
+    </>,
+    p,
+  )
+
+export const DownloadIcon = (p: IconProps) =>
+  svg(
+    <>
+      <line x1="12" y1="3.5" x2="12" y2="15" />
+      <polyline points="7.5 10.5 12 15 16.5 10.5" />
+      <path d="M4 17.5v1.5A1.5 1.5 0 0 0 5.5 20.5h13a1.5 1.5 0 0 0 1.5-1.5v-1.5" />
+    </>,
+    p,
+  )
+
+export const TrashIcon = (p: IconProps) =>
+  svg(
+    <>
+      <line x1="4" y1="6.5" x2="20" y2="6.5" />
+      <path d="M6.5 6.5 7.5 20a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13.5" />
+      <path d="M9.5 6.5V4.6A1.1 1.1 0 0 1 10.6 3.5h2.8a1.1 1.1 0 0 1 1.1 1.1V6.5" />
+    </>,
+    p,
+  )
+
+export const PencilIcon = (p: IconProps) =>
+  svg(
+    <>
+      <path d="M4 20h4L20 8a2.5 2.5 0 0 0-3.5-3.5L4 16.5V20Z" />
+      <line x1="15" y1="6" x2="18.5" y2="9.5" />
+    </>,
+    p,
+  )
+
+export const ChevronDownIcon = (p: IconProps) => svg(<polyline points="5 9 12 16 19 9" />, p)
+
+export const PlusIcon = (p: IconProps) =>
+  svg(
+    <>
+      <line x1="12" y1="4.5" x2="12" y2="19.5" />
+      <line x1="4.5" y1="12" x2="19.5" y2="12" />
+    </>,
+    p,
+  )
+
+/**
+ * The favourite mark (spec 022). One component, two states: the outline is the same polygon the
+ * filled one is, so a starred card does not shift by a pixel.
+ */
+export const StarIcon = ({ filled, ...p }: IconProps & { filled?: boolean }) =>
+  svg(
+    <polygon
+      points="12 3.6 14.6 9.2 20.7 10 16.3 14.2 17.4 20.3 12 17.3 6.6 20.3 7.7 14.2 3.3 10 9.4 9.2"
+      fill={filled ? 'currentColor' : 'none'}
+    />,
+    p,
+  )

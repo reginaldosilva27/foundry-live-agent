@@ -107,6 +107,17 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
    Unconfirmable values are verified against the live service and recorded as fixtures, or marked as
    open questions — never guessed silently.
 
+**The browser keeps a drawing, never the conversation (spec 021).** `localStorage` holds up to 25
+past conversations — the frames this browser already rendered — beside Foundry's `conversation_id`
+for each, plus the rail's collapsed flag and the starred agent **names** (spec 022, resolved against
+`GET /agents` on every render so a favourite never outlives the listing). Reopening one restores the drawing *and the pointer*, so
+the next turn continues that Foundry conversation. Three rules make that legal under §8, and each
+is a test: it never travels (`POST /chat` stays `message · conversation_id · agent`), nothing
+derives a decision from it, and Foundry stays the owner. A conversation's title comes from the first
+thing the person typed — **never** from asking a model to name it, which would be the app running
+inference of its own. The agents listing now lives on its own screen; the rail keeps only the agent
+that is answering.
+
 **Which agent answers is chosen on the screen (spec 019).** The sidebar lists the project's agents
 from `GET {project_endpoint}/agents?api-version=v1` and a turn carries `agent` on `POST /chat`.
 Three rules that are easy to break:

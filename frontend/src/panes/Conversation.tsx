@@ -1,5 +1,6 @@
 /** The centre column: the empty state, then the turns, scrolled to the newest. */
 import { useEffect, useRef } from 'react'
+import { AnswerActions } from '../components/AnswerActions'
 import { ErrorCard } from '../components/ErrorCard'
 import { formatClock } from '../components/format'
 import { Markdown } from '../components/Markdown'
@@ -15,6 +16,8 @@ import { EmptyState } from './EmptyState'
 interface Props {
   messages: Message[]
   model?: string
+  /** Who is answering — it goes into the Markdown a reader downloads (spec 021). */
+  agent?: string
   onSuggestion: (text: string) => void
   /** Open the trace panel for a turn, optionally on one of its calls (spec 009). */
   onOpenTrace: (turnId: string, callId?: string) => void
@@ -74,7 +77,7 @@ function LiveLine({ turn }: { turn: Turn }) {
 /** How far from the bottom still counts as "following the stream". */
 const STICKY_PX = 120
 
-export function Conversation({ messages, model, onSuggestion, onOpenTrace }: Props) {
+export function Conversation({ messages, model, agent, onSuggestion, onOpenTrace }: Props) {
   const s = useT()
   const column = useRef<HTMLDivElement>(null)
 
@@ -138,14 +141,26 @@ export function Conversation({ messages, model, onSuggestion, onOpenTrace }: Pro
                 {message.turn.error && <ErrorCard error={message.turn.error} />}
 
                 {message.turn.status !== 'streaming' && (
-                  <MetaLine
-                    turn={message.turn}
-                    model={model}
-                    latencyMs={
-                      message.endedAt ? message.endedAt - message.startedAt : undefined
-                    }
-                    onOpenTrace={() => onOpenTrace(message.id)}
-                  />
+                  <>
+                    <AnswerActions
+                      turn={message.turn}
+                      question={questionFor(messages, message.id)}
+                      agent={agent}
+                      model={model}
+                      latencyMs={
+                        message.endedAt ? message.endedAt - message.startedAt : undefined
+                      }
+                      onOpenTrace={() => onOpenTrace(message.id)}
+                    />
+                    <MetaLine
+                      turn={message.turn}
+                      model={model}
+                      latencyMs={
+                        message.endedAt ? message.endedAt - message.startedAt : undefined
+                      }
+                      onOpenTrace={() => onOpenTrace(message.id)}
+                    />
+                  </>
                 )}
               </div>
             </section>
@@ -154,4 +169,21 @@ export function Conversation({ messages, model, onSuggestion, onOpenTrace }: Pro
       </div>
     </div>
   )
+}
+
+/**
+ * The question a turn is answering: the last user message before it.
+ *
+ * Read from the transcript rather than stored on the turn, because that is where it already is —
+ * and a copy would be a second home for the same fact (§4). A turn with nothing before it (a voice
+ * session replayed into the chat) reports an empty question, and the export falls back to the
+ * product name.
+ */
+function questionFor(messages: Message[], turnId: string): string {
+  const index = messages.findIndex((message) => message.id === turnId)
+  for (let at = index - 1; at >= 0; at--) {
+    const message = messages[at]
+    if (message.role === 'user') return message.text
+  }
+  return ''
 }

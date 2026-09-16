@@ -5,11 +5,13 @@
  * because what is under test is the *rule*: stick to the bottom while the reader is there, and
  * leave them alone once they have scrolled up.
  */
-import { act, render } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Conversation } from './Conversation'
 import { emptyTurn, type Turn } from '../state/turn'
 import type { Message } from '../hooks/useAgentStream'
+import { t } from '../i18n/strings'
 
 function agentTurn(id: string, text: string, status: Turn['status'] = 'streaming'): Message {
   return { role: 'agent', id, turn: { ...emptyTurn(), text, status }, startedAt: 0 }
@@ -191,5 +193,93 @@ describe('the live line while a turn works (spec 015)', () => {
 
     rerender(<Conversation {...props} messages={[calling(1, 'lookup_knowledge')]} />)
     expect(container.querySelector('[data-testid="turn-pending"]')).not.toHaveTextContent('12s')
+  })
+})
+
+/**
+ * Spec 021 AC9 · AC12 · AC13 — the action row under a finished turn.
+ *
+ * The row is the difference between an answer you can read and one you can use. It appears when the
+ * turn settles, never while it streams: three controls flickering into place beside a caret would
+ * be noise, and two of them would have nothing to act on yet.
+ */
+describe('the answer actions (spec 021)', () => {
+  const question: Message = { role: 'user', id: 't1_user', text: 'what time is it' }
+
+  it('shows nothing to act on while the turn is still streaming', () => {
+    render(<Conversation {...props} messages={[question, agentTurn('t1', 'It is')]} />)
+
+    expect(screen.queryByTestId('answer-actions')).toBeNull()
+  })
+
+  it('offers copy, download and trace once the turn is done', () => {
+    render(
+      <Conversation {...props} messages={[question, agentTurn('t1', 'It is 19:00.', 'done')]} />,
+    )
+
+    const actions = screen.getByTestId('answer-actions')
+    expect(within(actions).getAllByRole('button')).toHaveLength(3)
+  })
+
+  it('opens the trace panel on that turn', async () => {
+    const onOpenTrace = vi.fn()
+    render(
+      <Conversation
+        {...props}
+        onOpenTrace={onOpenTrace}
+        messages={[question, agentTurn('t1', 'It is 19:00.', 'done')]}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: t('answer.trace', 'en') }))
+
+    expect(onOpenTrace).toHaveBeenCalledWith('t1')
+  })
+
+  it('leaves a failed turn with its trace and nothing to copy', () => {
+    const failed: Message = {
+      role: 'agent',
+      id: 't1',
+      startedAt: 0,
+      turn: { ...emptyTurn(), status: 'error', error: { message: 'no deployment' } },
+    }
+    render(<Conversation {...props} messages={[question, failed]} />)
+
+    const actions = screen.getByTestId('answer-actions')
+    expect(within(actions).getAllByRole('button')).toHaveLength(1)
+    expect(within(actions).getByRole('button', { name: t('answer.trace', 'en') })).toBeInTheDocument()
+  })
+
+  it('exports the question that caused the turn, not the one before it', async () => {
+    const blobs: Blob[] = []
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn((blob: Blob) => {
+        blobs.push(blob)
+        return 'blob:fake'
+      }),
+      revokeObjectURL: vi.fn(),
+    })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    render(
+      <Conversation
+        {...props}
+        messages={[
+          { role: 'user', id: 't0_user', text: 'an earlier question' },
+          agentTurn('t0', 'an earlier answer', 'done'),
+          question,
+          agentTurn('t1', 'It is 19:00.', 'done'),
+        ]}
+      />,
+    )
+
+    await userEvent.click(screen.getAllByRole('button', { name: t('answer.download', 'en') })[1])
+
+    const text = await blobs[0].text()
+    expect(text).toContain('what time is it')
+    expect(text).not.toContain('an earlier question')
+    click.mockRestore()
+    vi.unstubAllGlobals()
   })
 })

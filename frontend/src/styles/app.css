@@ -118,7 +118,20 @@ button:disabled {
 .trace__turn-step:focus-visible,
 .trace__retry:focus-visible,
 .composer__mic:focus-visible,
-.composer__send:focus-visible {
+.composer__send:focus-visible,
+/* Spec 021 */
+.sidebar__nav-item:focus-visible,
+.sidebar__collapse:focus-visible,
+.answering:focus-visible,
+.history__open:focus-visible,
+.history__action:focus-visible,
+.agent-card:focus-visible,
+.agent-chip__button:focus-visible,
+.agent-chip__item:focus-visible,
+.answer-actions__button:focus-visible,
+.agent-card__choose:focus-visible,
+.agent-card__star:focus-visible,
+.favourites__row:focus-visible {
   outline: 2px solid var(--ds-blue);
   outline-offset: 2px;
 }
@@ -132,7 +145,14 @@ button:disabled {
 .trace .tool-row:focus-visible,
 .trace .copy-row__button:focus-visible,
 .trace__turn-step:focus-visible,
-.trace__retry:focus-visible {
+.trace__retry:focus-visible,
+/* Spec 021 — the rail is ink too. */
+.sidebar__nav-item:focus-visible,
+.sidebar__collapse:focus-visible,
+.answering:focus-visible,
+.history__open:focus-visible,
+.history__action:focus-visible,
+.favourites__row:focus-visible {
   outline-color: var(--ds-blue-500);
 }
 
@@ -145,8 +165,13 @@ button:disabled {
 
 /* ---------- Layout (AC1) ---------- */
 .app {
+  /* The rail's width is a property so one declaration collapses it — the sidebar owns the state
+     (`data-collapsed`) and the grid follows, rather than the boolean being threaded through the
+     component tree to a place that only needs it for a column width. */
+  --rail: 248px;
+
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr) 320px;
+  grid-template-columns: var(--rail) minmax(0, 1fr) 320px;
   /* The row must be declared. Left implicit it is `auto`, and a grid item's default
      `min-height: auto` then lets `.main` grow past the viewport: the document scrolls instead of
      the conversation, and the hidden overflow on `body` makes that scroll unreachable — it stops
@@ -156,12 +181,17 @@ button:disabled {
 }
 
 .app[data-traces-open='false'] {
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+}
+
+.app:has(.sidebar[data-collapsed='true']) {
+  --rail: 64px;
 }
 
 .main {
   display: grid;
   grid-template-rows: 60px minmax(0, 1fr) auto;
+  padding-bottom: var(--sp-5);
   min-width: 0;
   /* Same reason, one level down: without it this item is floored at its content height and the
      `minmax(0, 1fr)` row above never gets to cap the conversation. */
@@ -173,7 +203,7 @@ button:disabled {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   padding: var(--sp-5) var(--sp-4);
   background: var(--ds-ink);
   color: var(--fg-on-inverse);
@@ -186,6 +216,91 @@ button:disabled {
   gap: var(--sp-2);
 }
 
+.sidebar__collapse {
+  display: grid;
+  margin-left: auto;
+  padding: var(--sp-1);
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ds-n-500);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.sidebar__collapse:hover {
+  color: var(--ds-n-200);
+}
+
+/* --- Navigation (spec 021) ----------------------------------------------- */
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ds-n-300);
+  font-size: var(--fs-body-s);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.sidebar__nav-item:hover {
+  background: var(--ds-ink-2);
+  color: var(--ds-n-100);
+}
+
+.sidebar__nav-item[aria-current='page'] {
+  background: var(--ds-ink-2);
+  color: var(--ds-white);
+  font-weight: var(--fw-semibold);
+}
+
+/* The mark stays blue on the current row — the rail is ink, so the accent is the only thing that
+   reads as "you are here" without adding a second background. */
+.sidebar__nav-item[aria-current='page'] svg {
+  color: var(--ds-blue);
+}
+
+/* --- Collapsed, the rail is icons only ------------------------------------
+   The labels leave the layout, not the accessibility tree: every control carries `aria-label`
+   (AC2), so a screen reader hears the same rail a sighted reader sees expanded. */
+.sidebar[data-collapsed='true'] {
+  padding: var(--sp-5) var(--sp-2);
+  align-items: center;
+}
+
+.sidebar[data-collapsed='true'] .sidebar__label,
+.sidebar[data-collapsed='true'] .sidebar__product,
+.sidebar[data-collapsed='true'] .history,
+.sidebar[data-collapsed='true'] .answering__naming,
+.sidebar[data-collapsed='true'] .agents__switched,
+.sidebar[data-collapsed='true'] .sidebar__section-title,
+.sidebar[data-collapsed='true'] .sidebar__footer,
+.sidebar[data-collapsed='true'] .sidebar__lang {
+  display: none;
+}
+
+.sidebar[data-collapsed='true'] .sidebar__brand,
+.sidebar[data-collapsed='true'] .sidebar__nav-item,
+.sidebar[data-collapsed='true'] .sidebar__new,
+.sidebar[data-collapsed='true'] .answering {
+  justify-content: center;
+  padding-inline: var(--sp-2);
+}
+
+.sidebar[data-collapsed='true'] .sidebar__collapse {
+  margin: 0;
+}
+
 .sidebar__product {
   font-size: var(--fs-body-s);
   font-weight: var(--fw-semibold);
@@ -193,6 +308,10 @@ button:disabled {
 }
 
 .sidebar__new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-4);
   border: 0;
   border-radius: var(--r-pill);
@@ -216,16 +335,6 @@ button:disabled {
   color: var(--ds-n-500);
 }
 
-.sidebar__session {
-  margin: 0;
-  padding: var(--sp-2) var(--sp-3);
-  border-left: 2px solid var(--ds-blue);
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
-  background: var(--ds-ink-2);
-  font-size: var(--fs-body-s);
-  color: var(--ds-n-200);
-}
-
 .sidebar__note {
   margin: var(--sp-2) 0 0;
   font-size: var(--fs-caption);
@@ -233,75 +342,199 @@ button:disabled {
   color: var(--ds-n-500);
 }
 
-/* --- The agents panel (spec 019) -----------------------------------------
-   The project is read, not curated, so the list is as long as the project is — it scrolls inside
-   the sidebar rather than pushing the language switcher and the footer off the bottom. */
+/* --- Who is answering, in the rail (spec 021) ----------------------------
+   The full listing left for its own screen: ten agents with a kind, a version, a status and a
+   harness never fitted in 248px, and the tenth was being cut in half by the language switch. What
+   stays is the fact the reader needs on every screen — who answers. */
 
-.agents {
+.answering {
   display: flex;
-  min-height: 0;
-  flex-direction: column;
-}
-
-.agents__list {
-  display: flex;
-  overflow-y: auto;
-  margin: 0;
-  padding: 0;
-  flex-direction: column;
-  gap: var(--sp-1);
-  list-style: none;
-}
-
-.agents__row {
-  display: grid;
+  align-items: center;
   width: 100%;
-  padding: var(--sp-2) var(--sp-3);
-  border: 0;
-  border-left: 2px solid transparent;
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
-  background: transparent;
-  gap: 2px;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid var(--ds-n-800);
+  border-radius: var(--r-md);
+  background: var(--ds-ink-2);
   text-align: left;
-  transition: background var(--dur-fast) var(--ease-out);
+  transition: border-color var(--dur-fast) var(--ease-out);
 }
 
-.agents__row:hover:not(:disabled) {
-  background: var(--ds-ink-2);
+.answering:hover {
+  border-color: var(--ds-blue);
 }
 
-.agents__row[aria-pressed='true'] {
-  border-left-color: var(--ds-blue);
-  background: var(--ds-ink-2);
+.answering__naming {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
-/* Dimmed, never hidden: the row is in the project whether or not this build can drive it, and the
-   reason under it says which (AC5). */
-.agents__row:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.agents__name {
+.answering__name {
   font-size: var(--fs-body-s);
-  color: var(--ds-n-200);
+  color: var(--ds-n-100);
   overflow-wrap: anywhere;
 }
 
-.agents__answering {
+.answering__state {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   letter-spacing: var(--ls-wide);
   color: var(--ds-blue);
 }
 
-.agents__meta {
+/* --- The mark an agent gets (spec 021) ------------------------------------
+   Two letters from the agent's own name on a brand tint. No illustration, no emoji — the brand
+   rules both out, and there is nothing true to draw anyway. */
+
+.monogram {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--ds-blue);
+  color: var(--ds-white);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
+  line-height: 1;
+}
+
+.monogram[data-tint='1'] {
+  background: var(--ds-blue-700);
+}
+
+.monogram[data-tint='2'] {
+  background: var(--ds-n-700);
+}
+
+.monogram[data-tint='3'] {
+  background: var(--ds-blue-500);
+}
+
+/* --- History, kept in this browser (spec 021) -----------------------------
+   The region scrolls inside itself. Without `min-height: 0` a flex child refuses to shrink below
+   its content, and a long history pushes the language switch and the footer off the bottom — the
+   exact failure the agent list used to have. */
+
+.history {
   display: flex;
-  flex-wrap: wrap;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
   gap: var(--sp-2);
+}
+
+.history__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history:has(.history__group) .history__group:first-of-type {
+  margin-top: var(--sp-1);
+}
+
+.history__heading {
+  margin: var(--sp-2) 0 var(--sp-1);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  color: var(--ds-n-600);
+}
+
+.history__list {
+  display: flex;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.history__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border-radius: var(--r-sm);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.history__row:hover {
+  background: var(--ds-ink-2);
+}
+
+.history__open {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--sp-2);
+  border: 0;
+  background: transparent;
+  color: var(--ds-n-300);
+  font-size: var(--fs-body-s);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history__open[aria-current='true'] {
+  color: var(--ds-blue-500);
+  font-weight: var(--fw-semibold);
+}
+
+/* The two row actions appear on hover or focus. They are destructive-adjacent and permanently
+   visible they would read as the point of the row, which is the conversation. */
+.history__actions {
+  display: flex;
+  opacity: 0;
+  gap: 2px;
+  padding-right: var(--sp-1);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.history__row:hover .history__actions,
+.history__row:focus-within .history__actions {
+  opacity: 1;
+}
+
+.history__action {
+  display: grid;
+  padding: var(--sp-1);
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
   color: var(--ds-n-500);
+}
+
+.history__action:hover {
+  color: var(--ds-n-100);
+}
+
+.history__rename {
+  flex: 1;
+  padding: 2px;
+}
+
+.history__rename-input {
+  width: 100%;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--ds-blue);
+  border-radius: var(--r-sm);
+  background: var(--ds-ink);
+  color: var(--ds-n-100);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+}
+
+/* Said once, quietly, and never dropped: this is a drawing this browser kept, not Foundry's
+   conversation store (§5). */
+.history__note {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--ds-n-600);
 }
 
 .agents__reason,
@@ -322,12 +555,13 @@ button:disabled {
 }
 
 .agents__switched {
+  display: flex;
+  gap: var(--sp-2);
   margin-top: var(--sp-2);
-  color: var(--ds-blue);
-}
-
-.sidebar__spacer {
-  flex: 1;
+  padding-left: var(--sp-2);
+  border-left: 2px solid var(--ds-blue-700);
+  font-size: var(--fs-caption);
+  color: var(--ds-n-500);
 }
 
 .sidebar__lang {
@@ -1119,31 +1353,40 @@ button:disabled {
 }
 
 /* ---------- Composer ---------- */
+/* One card holding the question and the chip that says who will answer it (spec 021). Before, the
+   input was a lone pill and the agent was named 900px away in the rail — which is the wrong place
+   for the one decision this app exists to make visible. */
 .composer {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--sp-2);
   max-width: 780px;
   width: 100%;
   margin: 0 auto;
-  padding: var(--sp-4) var(--sp-5) var(--sp-6);
-}
-
-.composer__input {
-  flex: 1;
-  min-width: 0;
-  padding: var(--sp-3) var(--sp-4);
+  padding: var(--sp-3);
   border: 1px solid var(--border-1);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-lg);
   background: var(--bg-1);
-  font: inherit;
-  font-size: var(--fs-body-s);
-  color: var(--fg-1);
+  box-shadow: var(--shadow-1);
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 
-.composer__input:focus {
+.composer:focus-within {
   border-color: var(--ds-blue);
+}
+
+.composer__input {
+  width: 100%;
+  min-width: 0;
+  padding: var(--sp-3);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.composer__input:focus {
   outline: none;
 }
 
@@ -1154,9 +1397,10 @@ button:disabled {
 .composer__mic,
 .composer__send {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--border-1);
   border-radius: var(--r-pill);
   background: var(--bg-1);
@@ -2053,4 +2297,459 @@ button:disabled {
   .sidebar {
     display: none;
   }
+}
+
+
+/* ---------- The agents screen (spec 021) ----------------------------------
+   The listing that used to be squeezed into the rail. Cards rather than rows because an agent is
+   five facts, not one: a mark, a name, what kind it is, which version is served, and which harness
+   this build would drive it with. */
+
+.agents-screen {
+  display: flex;
+  min-height: 0;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-6) var(--sp-6) var(--sp-8);
+}
+
+.agents-screen__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.agents-screen__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+}
+
+.agents-screen__count {
+  margin: var(--sp-1) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agents-screen__search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 260px;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  color: var(--fg-4);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.agents-screen__search:focus-within {
+  border-color: var(--ds-blue);
+}
+
+.agents-screen__search-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  outline: none;
+}
+
+.agents-screen__note {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.agents-screen__error {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+}
+
+.agents-screen__fallback {
+  margin: var(--sp-2) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+}
+
+.agents-grid {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  list-style: none;
+}
+
+/* A container, not a control (spec 022): the star cannot nest inside a button, so the card holds
+   two — the star, and the selectable region that is everything else. */
+.agent-card {
+  position: relative;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-lg);
+  background: var(--bg-1);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.agent-card:hover:has(.agent-card__choose:not(:disabled)) {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+
+.agent-card[data-answering='true'] {
+  border-color: var(--ds-blue);
+  box-shadow: var(--shadow-accent);
+}
+
+.agent-card__choose {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  /* The star sits in this corner; the name stops short of it rather than running underneath. */
+  padding-right: var(--sp-8);
+  border: 0;
+  border-radius: var(--r-lg);
+  background: transparent;
+  text-align: left;
+}
+
+/* Dimmed, never hidden: the agent is in the project whether or not this build can drive it, and
+   the reason under it says which (019 AC5). */
+.agent-card__choose:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.agent-card__star {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  z-index: 1;
+  display: grid;
+  padding: var(--sp-1);
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--fg-4);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.agent-card__star:hover {
+  color: var(--ds-blue);
+}
+
+/* Starred is the only state that earns colour: the outline is the same polygon, so nothing moves. */
+.agent-card__star[aria-pressed='true'] {
+  color: var(--ds-blue);
+}
+
+.agent-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.agent-card__naming {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.agent-card__name {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+  overflow-wrap: anywhere;
+}
+
+.agent-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agent-card__answering {
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--ds-blue-100);
+  color: var(--ds-blue-700);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  white-space: nowrap;
+}
+
+.agent-card__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin-top: auto;
+}
+
+.agent-card__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.agent-card__model {
+  display: flex;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
+}
+
+.agent-card__key {
+  color: var(--fg-4);
+}
+
+.agent-card__reason {
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--fg-3);
+}
+
+/* ---------- The answer's action row (spec 021) ---------------------------- */
+
+.answer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+
+.answer-actions__button {
+  display: grid;
+  padding: var(--sp-2);
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--fg-4);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.answer-actions__button:hover {
+  background: var(--bg-2);
+  color: var(--ds-blue);
+}
+
+.answer-actions__feedback {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ds-success);
+}
+
+/* ---------- The composer's agent chip (spec 021) --------------------------- */
+
+.agent-chip {
+  position: relative;
+}
+
+.agent-chip__button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3) var(--sp-1) var(--sp-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  font-size: var(--fs-body-s);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.agent-chip__button:hover,
+.agent-chip__button[aria-expanded='true'] {
+  border-color: var(--ds-blue);
+  color: var(--ds-blue-700);
+}
+
+.agent-chip__name {
+  overflow: hidden;
+  max-width: 220px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-chip__menu {
+  position: absolute;
+  bottom: calc(100% + var(--sp-2));
+  left: 0;
+  z-index: 2;
+  display: flex;
+  min-width: 260px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--sp-1);
+  flex-direction: column;
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-3);
+  list-style: none;
+}
+
+.agent-chip__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--fg-1);
+  font-size: var(--fs-body-s);
+  text-align: left;
+}
+
+.agent-chip__item:hover {
+  background: var(--bg-2);
+}
+
+.agent-chip__item[aria-current='true'] {
+  color: var(--ds-blue-700);
+  font-weight: var(--fw-semibold);
+}
+
+.agent-chip__item--all {
+  /* The menu scrolls once a project has ten agents in it, and the way out of a shortcut should not
+     be the thing you have to scroll to find. */
+  position: sticky;
+  bottom: 0;
+  margin-top: var(--sp-1);
+  border-top: 1px solid var(--border-1);
+  border-radius: 0;
+  background: var(--bg-1);
+  color: var(--fg-link);
+  font-size: var(--fs-caption);
+}
+
+/* Why this conversation cannot be continued — in place of an input that would fail on send. */
+.composer__blocked {
+  margin: 0 0 var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: var(--bg-2);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--fg-2);
+}
+
+.composer__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-1) var(--sp-1);
+}
+
+.composer__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+
+/* ---------- Favourites in the rail (spec 022) -----------------------------
+   The project lists ten agents and two of them are the point. This is the shortcut back to those
+   two from anywhere; the agents screen stays the place that shows all ten. */
+
+.favourites {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.favourites__list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.favourites__row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ds-n-300);
+  font-size: var(--fs-body-s);
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.favourites__row:hover:not(:disabled) {
+  background: var(--ds-ink-2);
+}
+
+.favourites__row[aria-current='true'] {
+  color: var(--ds-blue-500);
+}
+
+/* Starred and still not drivable by this build — the rail says so the same way the card does. */
+.favourites__row:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.favourites__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Collapsed, the group is marks only — each button keeps its name in the accessibility tree. */
+.sidebar[data-collapsed='true'] .favourites__name,
+.sidebar[data-collapsed='true'] .favourites .sidebar__section-title {
+  display: none;
+}
+
+.sidebar[data-collapsed='true'] .favourites__row {
+  justify-content: center;
 }

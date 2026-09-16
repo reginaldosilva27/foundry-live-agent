@@ -90,6 +90,42 @@ Agent turns render as a vertical stack under a 22px avatar:
 
 Four keyframes carry the whole thing: `caret`, `spin`, `vbar`, `pulse`.
 
+## What spec 021 added to the layout contract
+
+The 004 contract above is the mock's. Spec 021 kept its three columns, its palette and its type, and
+gave the first and second columns structure the mock had no reason to have — taken from a working
+product the author uses, and reskinned to this design system on the way in. Nothing about the brand
+moved: ink rail, Poppins, `#0074FF`, SVG icons, no emoji, no illustration.
+
+```
+┌──────────────┬────────────────────────────────────┬──────────────┐
+│ brand ▸ ◧    │ Header  60px                       │ Trace panel  │
+│ + New session│────────────────────────────────────│ 320px        │
+│ ▸ Chat       │  Chat view          Agents view    │              │
+│ ▸ Agents     │  ┌──────────────┐   ┌────┬────┬──┐ │              │
+│ [FL] answering│  │ turn         │   │card│card│..│ │              │
+│ HISTORY      │  │  ⧉ ⤓ ∿  meta │   └────┴────┴──┘ │              │
+│  Today       │  └──────────────┘                  │              │
+│  Last 7 days │  ┌──────────────┐                  │              │
+│  Older       │  │ composer card│                  │              │
+│ en/pt        │  │ [FL] agent ▾ │                  │              │
+│ model·gateway│  └──────────────┘                  │              │
+└──────────────┴────────────────────────────────────┴──────────────┘
+```
+
+| Element | Rule |
+|---|---|
+| **Rail width** | `--rail`: 248px, 64px collapsed. The sidebar owns the state (`data-collapsed`); `.app:has(…)` reads it, so no boolean is threaded through the tree for a column width |
+| **Collapsed** | Icons only. Every control keeps its `aria-label`: the labels leave the layout, not the accessibility tree |
+| **Monogram** | Two letters from the agent's own name on one of four brand tints, hashed from the name so an agent is the same colour on every surface. Never a picture, never an emoji |
+| **Agent card** | `--r-lg`, one per agent, `auto-fill minmax(268px, 1fr)`: mark, name, kind, `v<n> · <status>`, model, harness badge. Dimmed and inert when the build cannot drive it, with its reason under it (019, unchanged) |
+| **Answer actions** | Copy · Download · Trace, above the meta line, only on a settled turn. A failed turn keeps Trace alone |
+| **Composer** | One card: the input row, then the agent chip. Focus ring on the card, not the input |
+| **History** | Grouped Today / Last 7 days / Older, scrolling inside the rail (`min-height: 0`), with one line saying it is local to this browser — shown only once something is in it |
+| **Composer rows** | The question on its own line, then one row: the agent chip left, mic and send right. The two controls beside the input read as a second, unrelated bar |
+| **Star** (spec 022) | Top-right of each card, SVG outline → filled, `--ds-blue` when set. The card is a container: the star and the selectable region are two controls, so starring never switches agent |
+| **Favourites** (spec 022) | A rail group under the answering agent: monogram + name, dimmed when the build cannot drive it, marks only when collapsed. Absent entirely when nothing is starred |
+
 ## Where the design and the implementation disagree
 
 > Numbered **M1–M9** (M for *mock*). Not to be confused with `PLAN.md` §8's **D-1–D-6**, which are
@@ -110,7 +146,7 @@ Listing them here so nobody "fixes" the code to match the mock.
 | M6 ✅ | Every tool card looks alike | **App-executed and Foundry-executed tools look different** | Confirmed 2026-09-04. `executor` is the repo's central teaching point (§8): a tool the BFF ran and one Foundry ran are not the same event. A small mono tag (`bff` / `foundry`) sits on each card. |
 | M7 ✅ | No MCP-specific treatment | `mcp_call` carries a `server_label` | An MCP call should be attributed to its server, not rendered as a generic tool |
 | M8 ⏳ | Voice: `gpt-4o-realtime · WebRTC` | Voice Live attached to the **same agent**, over WebRTC | The point is one agent definition, two modalities — the label should say the agent, not a raw model |
-| M9 ✅ | Session list with history | No persistence in Phase 1 | Either stub it honestly or drop it until there is somewhere to persist to (§5) |
+| M9 ✅ | Session list with history | Dropped in Phase 1; **built in spec 021**, local to the browser | There was nowhere to persist to, so the space carried an honest note instead. Spec 021 found somewhere — this browser — and the list says so in as many words: *kept in this browser only, not the Foundry conversation store* |
 
 M6 is the one that matters most. The mock renders every tool call identically, which is exactly the
 distinction this repository exists to make visible.

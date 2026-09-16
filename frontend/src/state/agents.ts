@@ -10,7 +10,9 @@
  * reads model output, and nothing switches agents on its own.
  *
  * The choice lives in React state and nowhere else. A reload returns to the BFF's configured agent
- * (AC10), which matches the session list beside it — also not persisted, and honest about it.
+ * (AC10). Spec 021 added one way back into a past choice — reopening a stored conversation adopts
+ * the agent it was held with — and `adopt` is deliberately not `select`: restoring a conversation
+ * is not switching away from one.
  */
 import { useCallback, useEffect, useState } from 'react'
 import { BFF_URL } from '../config'
@@ -28,6 +30,14 @@ export interface AgentsState {
   /** The agent the last selection switched to, so the screen can say so (AC7). */
   switched: string | null
   select: (name: string) => void
+  /**
+   * Take on an agent without treating it as a switch (spec 021).
+   *
+   * Reopening a stored conversation restores the agent it was held with. That is not a person
+   * changing their mind, so it must not start a new conversation — which is exactly what `select`
+   * does, and rightly. Same field, different event.
+   */
+  adopt: (name: string | null) => void
   clearNotice: () => void
 }
 
@@ -76,9 +86,14 @@ export function useAgents({ onSwitch, bffUrl = BFF_URL }: AgentsOptions): Agents
     [agents, onSwitch, selected],
   )
 
+  const adopt = useCallback((name: string | null) => {
+    setSelected(name)
+    setSwitched(null)
+  }, [])
+
   const clearNotice = useCallback(() => setSwitched(null), [])
 
   const selectedRow = agents.find((agent) => agent.name === selected) ?? null
 
-  return { agents, error, loading, selected, selectedRow, switched, select, clearNotice }
+  return { agents, error, loading, selected, selectedRow, switched, select, adopt, clearNotice }
 }

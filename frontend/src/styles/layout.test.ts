@@ -14,7 +14,11 @@ const css = readFileSync(join(import.meta.dirname, 'app.css'), 'utf8')
 
 describe('app.css', () => {
   it('lays the shell out as sidebar, main column and trace panel', () => {
-    expect(css).toMatch(/\.app\s*\{[^}]*grid-template-columns:\s*248px minmax\(0, 1fr\) 320px/)
+    // The rail's width is a custom property so spec 021's collapse is one declaration rather than a
+    // boolean threaded down to a column width. The three columns are still the contract.
+    expect(css).toMatch(/\.app\s*\{[^}]*--rail:\s*248px/)
+    expect(css).toMatch(/grid-template-columns:\s*var\(--rail\) minmax\(0, 1fr\) 320px/)
+    expect(css).toMatch(/\.app:has\(\.sidebar\[data-collapsed='true'\]\)\s*\{[^}]*--rail:\s*64px/)
   })
 
   it('caps the shell at the viewport so the conversation is what scrolls', () => {
@@ -46,6 +50,23 @@ describe('app.css', () => {
     const card = css.split('.voice-card {')[1].split('}')[0]
     expect(card).not.toContain('overflow-y: auto')
     expect(card).toContain('max-height')
+  })
+
+  /**
+   * Spec 021 AC25 — two regions that must scroll inside themselves.
+   *
+   * This is the defect the spec opens on: the agent list grew with the project and pushed the
+   * language switch and the footer off the bottom of the rail. A flex child refuses to shrink below
+   * its content without `min-height: 0`, so the rule is only half-written without it.
+   */
+  it('scrolls the history inside the rail, and the agents screen inside the main column', () => {
+    const history = css.split('.history {')[1].split('}')[0]
+    expect(history).toContain('min-height: 0')
+    expect(css.split('.history__list {')[1].split('}')[0]).toContain('overflow-y: auto')
+
+    const screen = css.split('.agents-screen {')[1].split('}')[0]
+    expect(screen).toContain('overflow-y: auto')
+    expect(screen).toContain('min-height: 0')
   })
 
   it('writes no colour of its own — every value comes from a design-system token', () => {
@@ -98,6 +119,17 @@ describe('app.css regressions', () => {
       // Spec 014 added these two.
       '.copy-row__button',
       '.trace__turn-step',
+      // Spec 021 added the rail's navigation, the cards and the two new menus.
+      '.sidebar__nav-item',
+      '.sidebar__collapse',
+      '.history__open',
+      '.agent-card__choose',
+      '.agent-chip__button',
+      '.agent-chip__item',
+      '.answer-actions__button',
+      // Spec 022.
+      '.agent-card__star',
+      '.favourites__row',
     ]
     const ringed = css.match(/^[^{}]*:focus-visible[^{}]*\{/gm)?.join('\n') ?? ''
 

@@ -21,10 +21,6 @@ export const strings = {
 
   // --- Sidebar -------------------------------------------------------------
   'sidebar.newSession': { en: 'New session', pt: 'Nova sessão' },
-  'sidebar.noHistory': {
-    en: 'Nothing is stored. This release has nowhere to persist a conversation to.',
-    pt: 'Nada é armazenado. Esta versão não tem onde persistir uma conversa.',
-  },
   'sidebar.modelLabel': { en: 'model', pt: 'modelo' },
   'sidebar.transport': { en: 'streaming over SSE', pt: 'streaming via SSE' },
   'sidebar.gatewayOn': { en: 'through the AI Gateway', pt: 'através do AI Gateway' },
@@ -87,6 +83,58 @@ export const strings = {
     en: 'Showing the configured agent only',
     pt: 'Mostrando apenas o agente configurado',
   },
+  // --- Agents screen (spec 021) --------------------------------------------
+  'agents.searchLabel': { en: 'Search agents', pt: 'Buscar agentes' },
+  'agents.noMatches': { en: 'No agent matches that.', pt: 'Nenhum agente corresponde.' },
+  'agents.count': { en: '{n} in this project', pt: '{n} neste projeto' },
+  'agents.model': { en: 'model', pt: 'modelo' },
+  'agents.answeringCard': { en: 'Answering', pt: 'Respondendo' },
+  // Favourites (spec 022). A mark this browser keeps — nothing is written to the project.
+  'agents.favourite': {
+    en: 'Add {name} to favourites',
+    pt: 'Adicionar {name} aos favoritos',
+  },
+  'agents.unfavourite': {
+    en: 'Remove {name} from favourites',
+    pt: 'Remover {name} dos favoritos',
+  },
+  'favourites.title': { en: 'Favourites', pt: 'Favoritos' },
+  // A conversation restored from this browser whose agent the project no longer offers. It stays
+  // readable; it does not quietly get answered by somebody else (AC18).
+  'agents.blocked': {
+    en: 'The agent that held this conversation is not available. Start a new session to keep going.',
+    pt: 'O agente que conduziu esta conversa não está disponível. Inicie uma nova sessão para continuar.',
+  },
+
+  // --- Navigation and history (spec 021) -----------------------------------
+  // The rail has two views and a collapse. Everything it says about a conversation it stored is
+  // said here: the browser keeps a render cache, and the note under the list admits exactly that.
+  'nav.chat': { en: 'Chat', pt: 'Conversa' },
+  'nav.agents': { en: 'Agents', pt: 'Agentes' },
+  'nav.collapse': { en: 'Collapse sidebar', pt: 'Recolher barra lateral' },
+  'nav.expand': { en: 'Expand sidebar', pt: 'Expandir barra lateral' },
+  'history.title': { en: 'History', pt: 'Histórico' },
+  'history.today': { en: 'Today', pt: 'Hoje' },
+  'history.week': { en: 'Last 7 days', pt: 'Últimos 7 dias' },
+  'history.older': { en: 'Older', pt: 'Mais antigas' },
+  'history.empty': {
+    en: 'Conversations you have will show up here.',
+    pt: 'As conversas que você tiver aparecem aqui.',
+  },
+  // The honest half (§5). This is a drawing this browser kept, not Foundry's conversation store —
+  // and the reader is told which one they are looking at.
+  'history.local': {
+    en: 'Kept in this browser only — not the Foundry conversation store.',
+    pt: 'Guardado só neste navegador — não é o armazenamento de conversas do Foundry.',
+  },
+  'history.unavailable': {
+    en: 'This browser is not storing history.',
+    pt: 'Este navegador não está guardando histórico.',
+  },
+  'history.rename': { en: 'Rename', pt: 'Renomear' },
+  'history.delete': { en: 'Delete', pt: 'Excluir' },
+  'history.untitled': { en: 'Untitled conversation', pt: 'Conversa sem título' },
+  'history.open': { en: 'Open conversation', pt: 'Abrir conversa' },
 
   // --- Header --------------------------------------------------------------
   'header.foundryPill': { en: 'Microsoft Foundry', pt: 'Microsoft Foundry' },
@@ -157,6 +205,13 @@ export const strings = {
   'composer.placeholder': { en: 'Ask the agent something', pt: 'Pergunte algo ao agente' },
   'composer.send': { en: 'Send', pt: 'Enviar' },
   'composer.voiceInput': { en: 'Voice input', pt: 'Entrada por voz' },
+  // The chip names who is about to answer, where the question is being typed (spec 021).
+  'composer.answeringWith': { en: 'Answering with {name}', pt: 'Respondendo com {name}' },
+  'composer.chooseAgent': {
+    en: 'Choose which agent answers',
+    pt: 'Escolher qual agente responde',
+  },
+  'composer.allAgents': { en: 'See all agents', pt: 'Ver todos os agentes' },
 
   // --- Conversation --------------------------------------------------------
   'turn.you': { en: 'You', pt: 'Você' },
@@ -209,6 +264,16 @@ export const strings = {
   'meta.agentVersion': { en: 'version', pt: 'versão' },
   'meta.viewTrace': { en: 'view trace', pt: 'ver rastro' },
 
+  // --- Answer actions and the Markdown export (spec 021) -------------------
+  'answer.copy': { en: 'Copy answer', pt: 'Copiar resposta' },
+  'answer.download': { en: 'Download as Markdown', pt: 'Baixar em Markdown' },
+  'answer.trace': { en: 'Open trace', pt: 'Abrir rastro' },
+  'export.question': { en: 'Question', pt: 'Pergunta' },
+  'export.answer': { en: 'Answer', pt: 'Resposta' },
+  'export.calls': { en: 'Calls', pt: 'Chamadas' },
+  'export.noCalls': { en: 'This turn made no calls.', pt: 'Este turno não fez chamadas.' },
+  'export.noAnswer': { en: '(no answer text)', pt: '(sem texto de resposta)' },
+
   // --- Errors --------------------------------------------------------------
   'error.title': { en: 'The turn failed', pt: 'O turno falhou' },
   'error.hint': {
@@ -237,9 +302,11 @@ export const strings = {
   'trace.turnPosition': { en: 'turn {n} of {total}', pt: 'turno {n} de {total}' },
   'trace.previousTurn': { en: 'Previous turn', pt: 'Turno anterior' },
   'trace.nextTurn': { en: 'Next turn', pt: 'Próximo turno' },
-  'trace.copy': { en: 'Copy', pt: 'Copiar' },
-  'trace.copied': { en: 'copied', pt: 'copiado' },
-  'trace.copyFailed': { en: 'could not copy', pt: 'não foi possível copiar' },
+  // Copying is one behaviour with two callers — the trace panel's identifiers and the answer's
+  // action row — so the words live outside either of them (§4, spec 021).
+  'copy.label': { en: 'Copy', pt: 'Copiar' },
+  'copy.copied': { en: 'copied', pt: 'copiado' },
+  'copy.failed': { en: 'could not copy', pt: 'não foi possível copiar' },
   'trace.numbersTitle': { en: 'Run', pt: 'Execução' },
   'trace.otelTraceId': { en: 'otel trace id', pt: 'otel trace id' },
   'trace.spansPending': {

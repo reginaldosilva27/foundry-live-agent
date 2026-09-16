@@ -1,21 +1,30 @@
 /**
- * The three-column shell: sidebar, main column, trace panel (AC1).
+ * The three-column shell: sidebar, main column, trace panel (spec 004 AC1).
  *
  * Everything the screen shows is derived from two sources and nothing else — `GET /config` and the
- * `AgentEvent` stream. There is no state here that Foundry also holds, which is the frontend half
- * of constitution §8.
+ * `AgentEvent` stream. Spec 021 added a third that is not a source of truth at all: this browser's
+ * own record of conversations it has already drawn. It is never read as truth, never sent back, and
+ * never used to decide anything — the pointer beside it, Foundry's `conversation_id`, is what makes
+ * reopening a resumption. That is the frontend half of constitution §8 intact.
+ *
+ * The main column shows one of two views. Two booleans' worth of navigation, so no router: nothing
+ * here is addressable, and a URL scheme would have to be redesigned for spec 020 anyway.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AgentChip } from './panes/AgentChip'
+import { AgentsScreen } from './panes/AgentsScreen'
 import { Composer } from './panes/Composer'
 import { Conversation } from './panes/Conversation'
 import { Header } from './panes/Header'
-import { Sidebar } from './panes/Sidebar'
+import { Sidebar, type View } from './panes/Sidebar'
 import { TraceDrawer } from './panes/TraceDrawer'
 import { VoiceOverlay } from './panes/VoiceOverlay'
 import { LangContext } from './i18n/context'
-import { detectLang, type Lang } from './i18n/strings'
+import { detectLang, t as translate, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
 import { useAgents } from './state/agents'
+import { favouriteRows, useFavourites } from './state/favourites'
+import { titleFrom, useHistory } from './state/history'
 import { useConfig } from './hooks/useConfig'
 import { useTrace } from './hooks/useTrace'
 import { useVoiceSession } from './hooks/useVoiceSession'
@@ -29,12 +38,17 @@ export default function App() {
   const [lang, setLang] = useState<Lang>(() =>
     detectLang(typeof navigator === 'undefined' ? [] : navigator.languages),
   )
+  const [view, setView] = useState<View>('chat')
   const [tracesOpen, setTracesOpen] = useState(false)
+  /** The stored conversation on screen, if this session opened or saved one (spec 021). */
+  const [activeId, setActiveId] = useState<string | null>(null)
   // Which turn the trace panel is showing, and which of its calls to bring into view. Empty means
   // the newest turn, which is what the header's Traces button opens (spec 009).
   const [trace, setTrace] = useState<{ turnId?: string; callId?: string }>({})
   const { config, failed } = useConfig()
-  const { messages, streaming, send, append, reset } = useAgentStream()
+  const { messages, streaming, conversationId, send, append, restore, reset } = useAgentStream()
+  const history = useHistory()
+  const favourites = useFavourites()
 
   /**
    * Switching agents starts a new conversation (AC7).
@@ -45,6 +59,7 @@ export default function App() {
    */
   const newConversation = useCallback(() => {
     reset()
+    setActiveId(null)
     setTrace({})
     setTracesOpen(false)
   }, [reset])
@@ -55,12 +70,28 @@ export default function App() {
 
   /** Every turn names the chosen agent, or nothing at all — which is the configured one (AC12). */
   const { clearNotice, selected: selectedAgent, selectedRow } = agents
+  /** Who answers, as the screen says it: the selection, else the agent the BFF is configured with. */
+  const answering = selectedAgent ?? config?.agent_name
   const sendToSelected = useCallback(
     (text: string) => {
       clearNotice()
       return send(text, selectedAgent ?? undefined)
     },
     [clearNotice, selectedAgent, send],
+  )
+
+  /**
+   * Choosing an agent, from wherever it was chosen.
+   *
+   * The card and the rail's favourites both land here so they cannot drift: `select` starts a new
+   * conversation (019 AC7), and the reader is put back in the chat where that conversation is.
+   */
+  const selectAgent = useCallback(
+    (name: string) => {
+      agents.select(name)
+      setView('chat')
+    },
+    [agents],
   )
 
   const startVoiceSession = useCallback(
@@ -74,6 +105,74 @@ export default function App() {
     const seconds = elapsed
     append(voiceMessages(await voice.stop(), seconds))
   }, [append, elapsed, voice])
+
+  /**
+   * Keep this browser's record of the conversation up to date (spec 021 AC16).
+   *
+   * Written when a turn settles, not on every token: a record that is rewritten sixty times a
+   * second buys nothing and costs a synchronous `localStorage` write per frame. The title is taken
+   * once, from the first thing the person typed, and never overwritten — a reader who renamed a
+   * conversation has said what it is called.
+   *
+   * Deliberately keyed on `streaming` alone. The effect runs on the render where the turn settled,
+   * and closes over that render's messages, which are the finished ones.
+   */
+  const settled = useRef(false)
+  useEffect(() => {
+    const justFinished = settled.current && !streaming
+    settled.current = streaming
+    if (!justFinished || messages.length === 0) return
+
+    const id = activeId ?? `c_${Date.now()}`
+    if (!activeId) setActiveId(id)
+
+    const first = messages.find((message) => message.role === 'user')
+    history.save({
+      id,
+      conversationId,
+      agent: selectedAgent,
+      title:
+        history.conversations.find((c) => c.id === id)?.title ??
+        titleFrom(first?.role === 'user' ? first.text : '', translate('history.untitled', lang)),
+      updatedAt: Date.now(),
+      messages,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on the settling edge only
+  }, [streaming])
+
+  /**
+   * Reopen a stored conversation: its drawing, its Foundry id, and the agent that held it.
+   *
+   * `adopt` rather than `select` on purpose — restoring a conversation is not switching away from
+   * one, and `select` would reset the very conversation being restored (019 AC7).
+   */
+  const openConversation = useCallback(
+    (id: string) => {
+      const stored = history.conversations.find((conversation) => conversation.id === id)
+      if (!stored) return
+      restore(stored.messages, stored.conversationId)
+      agents.adopt(stored.agent)
+      setActiveId(id)
+      setTrace({})
+      setView('chat')
+    },
+    [agents, history.conversations, restore],
+  )
+
+  /**
+   * Why the restored conversation cannot be continued, when it cannot (AC18).
+   *
+   * Only when the listing is in: an app that could not read the project does not know that an agent
+   * is missing, and refusing on a guess would be worse than letting the BFF answer for itself.
+   */
+  const blocked = useMemo(() => {
+    const stored = activeId
+      ? history.conversations.find((conversation) => conversation.id === activeId)
+      : undefined
+    if (!stored?.agent || agents.loading || agents.error) return undefined
+    const row = agents.agents.find((agent) => agent.name === stored.agent)
+    return row?.selectable ? undefined : translate('agents.blocked', lang)
+  }, [activeId, agents.agents, agents.error, agents.loading, history.conversations, lang])
 
   /**
    * The turn the panel is on, and where it sits in the session (spec 014 AC4).
@@ -129,9 +228,17 @@ export default function App() {
       <div className="app" data-traces-open={tracesOpen}>
         <Sidebar
           config={config}
+          configFailed={failed}
           agents={agents}
+          favourites={favouriteRows(agents.agents, favourites.names)}
+          onSelectAgent={selectAgent}
           lang={lang}
+          view={view}
+          history={history}
+          activeId={activeId}
           onLang={setLang}
+          onView={setView}
+          onOpenConversation={openConversation}
           onNewSession={() => {
             clearNotice()
             newConversation()
@@ -153,18 +260,43 @@ export default function App() {
             }}
             onVoice={startVoiceSession}
           />
-          <Conversation
-            messages={messages}
-            model={config?.model}
-            onSuggestion={sendToSelected}
-            onOpenTrace={openTrace}
-          />
-          <Composer
-            disabled={streaming}
-            voiceEnabled={config?.voice?.enabled ?? false}
-            onSend={sendToSelected}
-            onVoice={startVoiceSession}
-          />
+          {view === 'agents' ? (
+            <AgentsScreen
+              agents={agents.agents}
+              error={agents.error}
+              loading={agents.loading}
+              answering={answering}
+              configuredAgent={config?.agent_name}
+              favourites={favourites.names}
+              onSelect={selectAgent}
+              onFavourite={favourites.toggle}
+            />
+          ) : (
+            <>
+              <Conversation
+                messages={messages}
+                model={config?.model}
+                agent={answering}
+                onSuggestion={sendToSelected}
+                onOpenTrace={openTrace}
+              />
+              <Composer
+                disabled={streaming}
+                voiceEnabled={config?.voice?.enabled ?? false}
+                blocked={blocked}
+                chip={
+                  <AgentChip
+                    agents={agents.agents}
+                    answering={answering}
+                    onSelect={agents.select}
+                    onSeeAll={() => setView('agents')}
+                  />
+                }
+                onSend={sendToSelected}
+                onVoice={startVoiceSession}
+              />
+            </>
+          )}
 
           {voice.error && <VoiceFailure code={voice.error} />}
         </main>

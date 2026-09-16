@@ -1,0 +1,105 @@
+/**
+ * Spec 021 AC11 — a turn you can take out of the browser.
+ *
+ * The document is the whole turn, not just its last paragraph: the question that caused it, the
+ * answer, every call it made and who ran each one, and the numbers underneath. An export that
+ * dropped the calls would lose the one thing this app exists to show.
+ */
+import { describe, expect, it } from 'vitest'
+import { exportFilename, turnToMarkdown } from './exportTurn'
+import { t } from '../i18n/strings'
+import { reduceEvents } from './turn'
+
+const s = (key: Parameters<typeof t>[0]) => t(key, 'en')
+
+const turn = reduceEvents([
+  { type: 'reasoning_summary', text: 'Checking the clock.' },
+  {
+    type: 'tool_call',
+    call_id: 'call_1',
+    name: 'get_current_datetime',
+    arguments: '{"timezone":"America/Sao_Paulo"}',
+    executor: 'bff',
+  },
+  { type: 'tool_result', call_id: 'call_1', output: '2026-09-16T12:00:00', duration_ms: 12 },
+  {
+    type: 'mcp_call',
+    server_label: 'microsoft_learn',
+    name: 'search_docs',
+    arguments: '{"q":"foundry"}',
+    output: 'a doc',
+  },
+  { type: 'text_delta', text: 'It is noon in Sao Paulo.' },
+  { type: 'usage', input_tokens: 100, output_tokens: 20, reasoning_tokens: 64 },
+  { type: 'trace_ids', response_id: 'resp_42' },
+  { type: 'done' },
+])
+
+const document = turnToMarkdown(
+  {
+    question: 'What time is it in Sao Paulo?',
+    turn,
+    agent: 'foundry-live-agent',
+    model: 'foundry-analytics-demo/gpt-5.5',
+    latencyMs: 2400,
+    at: new Date('2026-09-16T12:00:00Z').getTime(),
+  },
+  s,
+)
+
+describe('turnToMarkdown', () => {
+  it('opens with the question that caused the turn', () => {
+    expect(document).toContain('What time is it in Sao Paulo?')
+  })
+
+  it('carries the answer', () => {
+    expect(document).toContain('It is noon in Sao Paulo.')
+  })
+
+  it('names the agent that answered', () => {
+    expect(document).toContain('foundry-live-agent')
+  })
+
+  it('lists every call, with who ran it and how it ended', () => {
+    expect(document).toContain('get_current_datetime')
+    expect(document).toContain('bff')
+    expect(document).toContain('{"timezone":"America/Sao_Paulo"}')
+
+    // An MCP call is attributed to its server, not rendered as one of ours (design note M7).
+    expect(document).toContain('search_docs')
+    expect(document).toContain('microsoft_learn')
+  })
+
+  it('ends with the numbers: model, tokens and latency', () => {
+    expect(document).toContain('gpt-5.5')
+    expect(document).toContain('120')
+    expect(document).toContain('2.4 s')
+  })
+
+  it('says a turn made no calls rather than printing an empty heading', () => {
+    const quiet = turnToMarkdown(
+      { question: 'Hi', turn: reduceEvents([{ type: 'text_delta', text: 'Hello.' }]) },
+      s,
+    )
+    expect(quiet).toContain('Hello.')
+    expect(quiet).toContain(t('export.noCalls', 'en'))
+  })
+
+  it('is valid Markdown for a turn with nothing but an answer', () => {
+    const bare = turnToMarkdown({ question: 'Hi', turn: reduceEvents([]) }, s)
+    expect(bare.startsWith('# ')).toBe(true)
+  })
+})
+
+describe('exportFilename', () => {
+  it('names the file after the question, safely', () => {
+    const name = exportFilename('What time is it in São Paulo?', new Date('2026-09-16T12:00:00Z'))
+    expect(name).toMatch(/^foundry-live-agent-what-time-is-it-in-s-o-paulo-2026-09-16\.md$/)
+  })
+
+  it('falls back to the product name when the title reduces to nothing', () => {
+    expect(exportFilename('？？？', new Date('2026-09-16T12:00:00Z'))).toBe(
+      'foundry-live-agent-2026-09-16.md',
+    )
+  })
+})

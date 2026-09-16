@@ -71,6 +71,40 @@ Three properties worth knowing, each of which is a decision rather than an accid
   agents on its own, and nothing reads model output to decide. The violation would be the app
   choosing; a person choosing is what a settings screen is.
 
+## What the browser keeps, and what it must never keep (spec 021)
+
+Since 2026-09-16 the shell has two views, an action row under each answer, and a list of past
+conversations down the left. The last of those is the one that needed an argument, because "state
+the platform already holds" is exactly what §8 forbids the app to duplicate.
+
+What this browser stores is **not the conversation**. Foundry owns that, keyed by
+`conversation_id`. `localStorage` holds two things beside it:
+
+| Key | What it is |
+|---|---|
+| `fla.history.v1` | Up to 25 conversations: the frames this browser already received and drew, plus Foundry's id for each, the agent that held it, a title and a timestamp |
+| `fla.ui.v1` | Whether the rail is collapsed |
+| `fla.favourites.v1` | Agent **names** the reader starred (spec 022) — resolved against `GET /agents` on every render, so a favourite never outlives the project's own answer about what exists and what this build can drive |
+
+```
+reopen a conversation ──> restore(messages, conversation_id) ──> POST /chat { message, conversation_id, agent }
+                              │                                                          │
+                              └─ the DRAWING, rendered                                   └─ Foundry supplies the context
+```
+
+Three properties keep the render cache on the right side of §8, and each is an acceptance criterion
+in spec 021 rather than a promise:
+
+- **It never travels.** The request body is `message · conversation_id · agent` and nothing else —
+  `ChatRequest` refuses history by construction, and spec 021 did not change it.
+- **Nothing derives a decision from it.** No re-prompt, no replay into the model, no tool chosen
+  from it. It is rendered, and that is all.
+- **Foundry stays the owner.** Continuing a restored conversation hands Foundry *its own id*; if the
+  drawing and the conversation ever disagree, Foundry wins, because Foundry is the one being asked.
+
+A conversation's title is taken from the first thing the person typed. Asking a model to name the
+thread would be this app running inference of its own — the precise thing §8 exists to stop.
+
 ## Planned outline
 
 | Section | Filled by |
