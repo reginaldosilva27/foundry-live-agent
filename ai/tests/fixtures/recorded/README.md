@@ -12,11 +12,22 @@ built on top of it (constitution §5).
 | `voice-live-no-urls-20260916.jsonl` | 173 frames, spec 017. A voice turn driven by **real audio** (macOS `say` into `input_audio_buffer.append`, so the user item is speech and gets transcribed) with the session's `role: system` context item. The agent answers the question and **says no URL**. |
 | `voice-live-urls-spoken-20260916.jsonl` | 207 frames — **the negative control**, and the reason the pair is worth two files. Same agent version, same spoken question, same audio; only the context item removed. The URL is read out loud again. |
 | `prompt-agent-written-citations-20260916.jsonl` | 360 events. The same question in the text path on the same agent version, where no context item is sent: the written answer still cites `https://…`. Proves spec 017 made citations conditional rather than deleting them. |
+| `langgraph-hosted-learn-20260916.jsonl` | 475 events, spec 018. The **hosted agent** asked the same Microsoft Learn question as the prompt-agent recordings. Read it beside `prompt-agent-turn-20260915.jsonl`: same question, same instructions, same model, and **no `mcp_call` at all** — the container holds the MCP session, so the Learn search arrives as ordinary tool calls named `microsoft_docs_search` / `microsoft_docs_fetch`, each already paired with its `function_call_output`. One `response.completed`, `usage: null`, no reasoning summaries. The pair **is** spec 018's finding. |
+| `langgraph-hosted-function-20260916.jsonl` | 162 events. The same agent running the two function tools the BFF executes for the prompt agent — `get_current_datetime` and `lookup_knowledge` — inside the container, with their real output. Proof that `executor: "foundry"` is reached by a tool this repository implements, not only by a remote one. |
+| `langgraph-hosted-voice-20260916.jsonl` | 1 control-channel frame, and it is the whole of AC9: `session.created` from Voice Live **attached to the hosted agent**. It reports the hosted agent as its `model`, echoes the agent definition, and carries `instructions: null` — unsupported with a custom agent, on this harness too. Voice works on both harnesses. |
 | `voice-live-preamble-20260916.jsonl` | 86 control-channel frames. The same probe over Voice Live: `session.updated` negotiating **`pt-BR-Thalita:DragonHDLatestNeural`** with `modalities ["audio","text"]`, the spoken preamble as `response.audio_transcript.delta` (*"Vou verificar isso na internet agora."*), `response.audio.delta` frames proving the HD voice actually rendered, and only then `response.function_call_arguments.done`. |
 
 Both were captured on **2026-09-15** against project `ai-admin2354ai223634534-project` (resource
 `ai-admin2354ai223634534338`, eastus2) on model `gpt-5.5`, by `ai/scripts/spike.py` and a follow-up
-reasoning probe. The findings they answer — O-1, O-3, O-8, O-9 — are written up in
+reasoning probe.
+
+The three **`langgraph-hosted-*-20260916`** recordings were taken on **2026-09-16** against the same
+project, on agent `foundry-live-agent-hosted` **version 1** — a container Foundry runs — by
+`ai/scripts/spike_hosted.py` and `ai/scripts/spike_hosted_voice.py`. Re-record with
+`just hosted-record`. What they answer is written up in
+[`../../../../docs/REFERENCES.md`](../../../../docs/REFERENCES.md) under *Hosted agents*, and
+compared with the prompt agent in
+[`../../../../docs/harness-comparison.md`](../../../../docs/harness-comparison.md). The findings they answer — O-1, O-3, O-8, O-9 — are written up in
 [`docs/REFERENCES.md`](../../../../docs/REFERENCES.md).
 
 The two **`…-preamble-20260916`** recordings were taken the same day against the same project, on

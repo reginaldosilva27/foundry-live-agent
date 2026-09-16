@@ -183,7 +183,9 @@ and its replacement `azure.yaml` describes **hosted** agents, not prompt agents.
 `ai/harness/<h>/agent.yaml` as **our own small, documented schema** (`schema_version:
 foundry-live-agent/v1`), applied by `ai/scripts/apply_agent.py` through the Agent Service SDK. This
 keeps "agent definition as code" without teaching a schema Microsoft retired;
-`docs/harness-comparison.md` explains the deprecation and shows the `azure.yaml` shape Phase 4 uses.
+`docs/harness-comparison.md` explains the deprecation and shows both files side by side. Since
+**spec 018** the `azure.yaml` is real: `ai/azure.yaml`, generated from
+`ai/harness/langgraph/agent.yaml` so the two cannot disagree (§4).
 
 **Tools: direct integration, not a Toolbox.** Function calling *cannot* live in a Toolbox, so a
 Toolbox would split our three tools across two mechanisms for no pedagogical gain. Toolbox is

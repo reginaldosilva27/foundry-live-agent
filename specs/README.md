@@ -71,7 +71,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 015 | [The turn shows its steps when the model shows no reasoning](015-steps-narration/spec.md) | 3 | ✅ done |
 | 016 | [The agent speaks while it works — and sounds better doing it](016-speaks-while-it-works/spec.md) | 3 | ✅ done |
 | 017 | [A spoken answer does not read URLs out loud](017-no-urls-out-loud/spec.md) | 3 | ✅ done |
-| 018 | [The second harness — a LangGraph graph running as a Foundry hosted agent](018-hosted-agent-harness/spec.md) | 4 | 📋 planned |
+| 018 | [The second harness — a LangGraph graph running as a Foundry hosted agent](018-hosted-agent-harness/spec.md) | 4 | ✅ done |
 | 019 | [The agents screen — pick which Foundry agent answers](019-agent-picker/spec.md) | 4 | 🔍 clarified |
 | 020 | [Side by side — one question, two agents, two streams](020-side-by-side/spec.md) | 4 | 🔍 clarified |
 
@@ -105,7 +105,7 @@ changeable decision. Current order, chosen because **seeing Voice Live work is t
 
 ```
 000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ✅ → 015…017 ✅
-  → 018 📋 → 019 🔍 → 020 🔍
+  → 018 ✅ → 019 🔍 → 020 🔍
 ```
 
 018 → 019 → 020 is a dependency chain, not a preference: 019's picker has nothing to pick between

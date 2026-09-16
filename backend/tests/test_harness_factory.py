@@ -119,3 +119,87 @@ async def test_the_client_is_built_once_rather_than_per_leg(monkeypatch):
     await drain(adapter, {"conversation_id": "conv_1"})
 
     assert len(built) == 1
+
+
+# --- the second harness (spec 018, AC1) -----------------------------------
+#
+# Until spec 018 the factory's langgraph branch returned an object whose constructor raised, and a
+# test here asserted exactly that. It now returns a working adapter, so the assertion inverts: the
+# scaffold's sentinel must be gone and no NotImplementedError may be reachable on the request path.
+
+
+HOSTED_CALL = {
+    "type": "response.output_item.done",
+    "item": {
+        "type": "function_call",
+        "call_id": "call_h1",
+        "name": "get_current_datetime",
+        "arguments": '{"timezone":"UTC"}',
+    },
+}
+HOSTED_OUTPUT = {
+    "type": "response.output_item.done",
+    "item": {
+        "type": "function_call_output",
+        "call_id": "call_h1",
+        "output": '{"iso":"2026-09-16T12:00:00Z"}',
+    },
+}
+HOSTED_COMPLETED = {"type": "response.completed", "response": {"id": "caresp_1"}}
+
+
+def hosted_settings(**overrides):
+    values = {
+        "project_endpoint": "https://example.services.ai.azure.com/api/projects/proj",
+        "project_name": "proj",
+        "model": "gpt-5.5",
+        "harness": "langgraph",
+    }
+    return load_settings(**{**values, **overrides})
+
+
+def test_the_langgraph_harness_builds_a_working_adapter():
+    """AC1 — `AGENT_HARNESS=langgraph` no longer fails by design."""
+    from harness._shared.contract import HarnessAdapter
+
+    adapter = build_harness(hosted_settings(), stream_factory=lambda *_: iter(()))
+
+    assert isinstance(adapter, HarnessAdapter)
+
+
+def test_the_langgraph_harness_takes_its_agent_name_from_its_own_definition():
+    """The hosted agent cannot share a name with the prompt agent in one project, and adding an
+    env var that can disagree with the definition would be a second source of truth (§4). AGENT_NAME
+    stays the prompt agent's."""
+    adapter = build_harness(hosted_settings(), stream_factory=lambda *_: iter(()))
+
+    assert adapter.voice_attachment_params()["agent_name"] == "foundry-live-agent-hosted"
+
+
+@pytest.mark.asyncio
+async def test_the_langgraph_harness_streams_a_turn_the_app_never_has_to_answer():
+    """The structural difference, through the factory: tool calls arrive already answered."""
+    legs = [[HOSTED_CALL, HOSTED_OUTPUT, HOSTED_COMPLETED]]
+    adapter = build_harness(hosted_settings(), stream_factory=lambda *_: iter(legs.pop(0)))
+
+    events = await drain(adapter, {})
+
+    assert [e["type"] for e in events][-1] == "done"
+    calls = [e for e in events if e["type"] == "tool_call"]
+    assert [e["executor"] for e in calls] == ["foundry"]
+    assert [e["call_id"] for e in events if e["type"] == "tool_result"] == ["call_h1"]
+
+
+def test_the_scaffold_sentinel_is_gone_from_the_shipped_package():
+    """AC1's second half. The old module said "not implemented" in a sentence; a stale copy of that
+    sentence would be the most confusing thing a reader of a working harness could find."""
+    from pathlib import Path
+
+    package = Path(harness_factory.__file__).resolve().parents[2] / "ai" / "harness" / "langgraph"
+    for source in package.rglob("*.py"):
+        assert "documented scaffold, not an implementation" not in source.read_text(), source
+
+
+def test_an_unknown_harness_still_fails_at_startup():
+    with pytest.raises(ValueError, match="unknown harness"):
+        build_harness(hosted_settings(harness="telepathy"))

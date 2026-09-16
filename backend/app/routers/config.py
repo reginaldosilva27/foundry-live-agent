@@ -4,9 +4,26 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 from harness._shared.contract import EVENT_TYPES
-from harness.prompt_agent.events import mapping_report
 
 router = APIRouter()
+
+# Each harness normalises a different raw stream, so each has its own mapping report. Importing one
+# unconditionally made `/config` describe the prompt agent's coverage no matter which harness was
+# running — a small bug that only a second harness could expose, which is spec 018 doing its job.
+_MAPPING_REPORTS = {
+    "prompt-agent": "harness.prompt_agent.events",
+    "langgraph": "harness.langgraph.events",
+}
+
+
+def _mapping_report(harness: str) -> dict:
+    """The selected harness's observed-vs-inferred split, or an honest blank for an unknown one."""
+    from importlib import import_module
+
+    module = _MAPPING_REPORTS.get(harness)
+    if module is None:
+        return {"total": 0, "verified": 0, "unverified": [], "note": f"unknown harness {harness!r}"}
+    return import_module(module).mapping_report()
 
 
 @router.get("/config")
@@ -42,5 +59,5 @@ async def config(request: Request) -> dict:
             "webrtc_api_version": settings.voice_webrtc_api_version,
         },
         "event_types": sorted(EVENT_TYPES),
-        "event_mapping": mapping_report(),
+        "event_mapping": _mapping_report(settings.harness),
     }

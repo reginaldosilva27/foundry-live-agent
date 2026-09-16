@@ -118,9 +118,30 @@ def test_health_does_not_touch_azure():
 # --- AC11 ------------------------------------------------------------------
 
 
-def test_the_langgraph_harness_fails_at_startup_with_an_explanation():
-    with pytest.raises(NotImplementedError, match="scaffold"):
-        create_app(harness="langgraph")
+def test_the_langgraph_harness_starts_the_app():
+    """Spec 018 AC1 — inverted. Until spec 018 this asserted the opposite: `AGENT_HARNESS=langgraph`
+    raised `NotImplementedError` at startup because the harness was a documented scaffold. It is now
+    a deployed hosted agent, so the app must simply start.
+
+    The stream is injected, as it is for the prompt agent: building the real one would need a
+    credential, and the point of the injection seam is that the whole app is testable without one.
+    """
+    app = create_app(harness="langgraph", stream_factory=lambda *_: iter(()))
+
+    assert app.state.settings.harness == "langgraph"
+
+
+def test_config_reports_the_selected_harness_mapping_not_the_other_ones():
+    """A bug only a second harness could expose: `/config` imported the prompt agent's mapping
+    report unconditionally, so it described the wrong normaliser whenever another harness ran."""
+    app = create_app(harness="langgraph", stream_factory=lambda *_: iter(()))
+    with TestClient(app) as test_client:
+        body = test_client.get("/config").json()
+
+    from harness.langgraph.events import mapping_report
+
+    assert body["harness"] == "langgraph"
+    assert body["event_mapping"]["total"] == mapping_report()["total"]
 
 
 def test_an_unknown_harness_name_is_rejected():

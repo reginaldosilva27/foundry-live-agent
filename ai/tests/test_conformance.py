@@ -5,6 +5,10 @@ the suite passes a well-behaved adapter and catches a misbehaving one. They are 
 Foundry behaviour (constitution §5).
 """
 
+import json
+from collections.abc import Iterator
+from pathlib import Path
+
 import pytest
 
 from harness._shared.contract import ConformanceError, HarnessAdapter
@@ -82,3 +86,104 @@ async def test_conformance_rejects_an_object_that_is_not_an_adapter():
 
 def test_scripted_adapter_satisfies_the_protocol():
     assert isinstance(ScriptedAdapter([]), HarnessAdapter)
+
+
+# --- the second harness proves itself here (spec 018, AC2) ----------------
+#
+# This is the whole claim of spec 001, finally tested. `specs/README.md` promised:
+#
+#   > The HarnessAdapter contract tests are written once, parameterised over adapters, and replay
+#   > recorded fixtures. When the LangGraph harness is built later, it proves itself against that
+#   > same suite WITHOUT editing it.
+#
+# `tests/conformance.py` is byte-identical to its state before spec 018. The only change this spec
+# made on the conformance side is the registration below — a new entry in the parameterisation,
+# which is exactly what "parameterised over adapters" was supposed to mean.
+#
+# The two adapters are structurally different in the way that matters: the prompt agent loops over
+# several legs and answers function calls; the hosted agent opens one stream and answers nothing.
+# An abstraction with one implementation is shaped like that implementation and nobody can tell —
+# this is how we can tell.
+
+FIXTURES = Path(__file__).parent / "fixtures" / "recorded"
+
+
+def _recorded(path: Path) -> list[dict]:
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def _prompt_agent_adapter():
+    """The prompt agent, replaying a real Foundry turn split into its legs."""
+    from harness.prompt_agent.adapter import PromptAgentAdapter
+    from tests.test_recorded_turn import WITH_REASONING, legs
+
+    remaining = legs(WITH_REASONING)
+
+    def stream_factory(_inputs, _state) -> Iterator[dict]:
+        return iter(remaining.pop(0))
+
+    def executor(name: str, arguments: str) -> tuple[str, int, str | None]:
+        return json.dumps({"replayed": name}), 5, None
+
+    return PromptAgentAdapter(
+        stream_factory=stream_factory,
+        executor=executor,
+        agent_name="foundry-live-agent",
+        project_name="test-project",
+    )
+
+
+def _langgraph_adapter():
+    """The hosted agent, replaying a real container turn. One leg, no tool round trip."""
+    from harness.langgraph.adapter import LangGraphAdapter
+
+    recorded = _recorded(FIXTURES / "langgraph-hosted-learn-20260916.jsonl")
+
+    def stream_factory(_messages, _state) -> Iterator[dict]:
+        return iter(recorded)
+
+    return LangGraphAdapter(
+        stream_factory=stream_factory,
+        agent_name="foundry-live-agent-hosted",
+        project_name="test-project",
+    )
+
+
+REAL_ADAPTERS = {
+    "prompt-agent": _prompt_agent_adapter,
+    "langgraph": _langgraph_adapter,
+}
+
+
+@pytest.mark.parametrize("harness", sorted(REAL_ADAPTERS))
+async def test_every_shipped_harness_conforms(harness):
+    """One suite, two harnesses, no edit between them (AC2)."""
+    events = await run_conformance(REAL_ADAPTERS[harness]())
+    assert events, f"{harness} produced an empty stream"
+    assert events[-1]["type"] == "done"
+
+
+@pytest.mark.parametrize("harness", sorted(REAL_ADAPTERS))
+def test_every_shipped_harness_satisfies_the_protocol(harness):
+    assert isinstance(REAL_ADAPTERS[harness](), HarnessAdapter)
+
+
+async def test_the_two_harnesses_differ_in_exactly_one_visible_way():
+    """The point of having two, asserted rather than described (spec 018).
+
+    Both produce tool calls answered by tool results. The prompt agent's are `executor: "app"` —
+    the BFF ran them — and the hosted agent's are `executor: "foundry"`, because the container did.
+    Everything else the contract carries is the same shape.
+    """
+    prompt = await run_conformance(_prompt_agent_adapter())
+    hosted = await run_conformance(_langgraph_adapter())
+
+    def executors(events):
+        return {e["executor"] for e in events if e["type"] == "tool_call"}
+
+    assert executors(prompt) == {"app"}
+    assert executors(hosted) == {"foundry"}
+
+    # And the difference the harnesses inherit from WHO holds the MCP session (decision 5).
+    assert any(e["type"] == "mcp_call" for e in prompt)
+    assert not any(e["type"] == "mcp_call" for e in hosted)

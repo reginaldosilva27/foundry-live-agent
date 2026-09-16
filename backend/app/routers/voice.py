@@ -45,11 +45,21 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
     settings = request.app.state.settings
     from harness._shared.voice_events import attachment_query
 
+    # ASK THE HARNESS, don't read the environment (spec 018, AC9). `voice_attachment_params()` is
+    # part of the §9 Protocol for exactly this: which agent a voice session attaches to is the
+    # harness's answer, not the BFF's. Reading `settings.agent_name` here was harmless while one
+    # harness existed and wrong the moment a second one named a different agent — a voice session
+    # on the hosted harness would have quietly driven the prompt agent instead.
+    #
+    # Voice Live attaching to a hosted agent was verified live on 2026-09-16: the session reports
+    # the hosted agent as its `model` and echoes its definition (docs/REFERENCES.md).
+    attachment = request.app.state.harness.voice_attachment_params()
+
     socket = await connect(
         attachment_query(
-            agent=settings.agent_name,
-            project=settings.project_name,
-            version=settings.agent_version,
+            agent=attachment["agent_name"],
+            project=attachment.get("project_name") or settings.project_name,
+            version=attachment.get("agent_version"),
         )
     )
     session = VoiceSession(uuid.uuid4().hex, socket, session_config=settings.voice_session_config)

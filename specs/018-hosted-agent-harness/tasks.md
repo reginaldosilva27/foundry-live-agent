@@ -67,35 +67,35 @@ Phases A and B need no Azure. Phase C is the gate everything else waits on.
       `ai/tests/fixtures/recorded/README.md` (**AC3**, **AC4**, §5).
 - [x] **T16 — observe**: does a hosted turn emit `reasoning_summary`? Record the answer with its
       date (**AC13**).
-- [ ] **T17 — observe**: attempt a **Voice Live** session against the hosted agent. Record whichever
+- [x] **T17 — observe**: attempt a **Voice Live** session against the hosted agent. Record whichever
       answer the service gives — a committed voice fixture, or the refusal written into
       `docs/REFERENCES.md`. Not attempting is a failing case (**AC9**).
-- [ ] **T18 — observe**: query App Insights for the recorded turn's `response_id` and record what a
+- [x] **T18 — observe**: query App Insights for the recorded turn's `response_id` and record what a
       hosted-agent trace actually looks like (**AC10**).
 
 ## D — the normaliser and the adapter (driven by the recordings)
 
-- [ ] **T19 — test first**: `ai/tests/test_hosted_recorded_turn.py` — the Learn recording normalises
+- [x] **T19 — test first**: `ai/tests/test_hosted_recorded_turn.py` — the Learn recording normalises
       to `tool_call{executor:"foundry"}` + matching `tool_result` and **no** `mcp_call`, while the
       existing prompt-agent fixture for the same question still has one (**AC3**).
-- [ ] **T20 — test first**: same file — the function-tool recording carries the pair with the tool's
+- [x] **T20 — test first**: same file — the function-tool recording carries the pair with the tool's
       real output, and `check_stream` passes (**AC4**); and the reasoning assertion T16 settled
       (**AC13**).
-- [ ] **T21 — implement**: `ai/harness/langgraph/events.py`, with the `MAPPINGS` table and `verified`
+- [x] **T21 — implement**: `ai/harness/langgraph/events.py`, with the `MAPPINGS` table and `verified`
       flags, plus the test that no mapping claims `verified` unless a fixture shows it — the
       discipline `prompt_agent/events.py` already carries.
-- [ ] **T22 — test first**: `ai/tests/test_langgraph_adapter.py` — the adapter streams a replayed
+- [x] **T22 — test first**: `ai/tests/test_langgraph_adapter.py` — the adapter streams a replayed
       recording, terminates, and no `NotImplementedError` is reachable on the request path; the
       `_NOT_BUILT` sentinel is gone from the package (**AC1**).
-- [ ] **T23 — implement**: `ai/harness/langgraph/adapter.py`. Single leg, no loop.
-- [ ] **T24 — test first**: register the adapter in `ai/tests/test_conformance.py` and run
+- [x] **T23 — implement**: `ai/harness/langgraph/adapter.py`. Single leg, no loop.
+- [x] **T24 — test first**: register the adapter in `ai/tests/test_conformance.py` and run
       `run_conformance` against it (**AC2**). **`ai/tests/conformance.py` must stay byte-identical** —
       if it cannot, stop and write the finding into `spec.md` before touching it.
-- [ ] **T25 — test first**: `backend/tests/test_harness_factory.py` — `AGENT_HARNESS=langgraph`
+- [x] **T25 — test first**: `backend/tests/test_harness_factory.py` — `AGENT_HARNESS=langgraph`
       returns a working adapter; the existing "raises by design" test inverts (**AC1**).
-- [ ] **T26 — implement**: `backend/app/harness_factory.py`, and scope `GET /config`'s
+- [x] **T26 — implement**: `backend/app/harness_factory.py`, and scope `GET /config`'s
       `event_mapping` to the selected harness (plan, *Contract impact*).
-- [ ] **T27 — implement (conditional on T17)**: if voice does not attach, the harness reports it, the
+- [x] **T27 — implement (conditional on T17)**: if voice does not attach, the harness reports it, the
       UI disables the control, and both `{ en, pt }` strings ship (**AC9**, §7). If it does attach,
       wire `POST /voice/session` to `voice_attachment_params()` so voice follows the selected
       harness — and delete the i18n table from `plan.md` rather than leaving dead strings.
@@ -107,31 +107,31 @@ Phases A and B need no Azure. Phase C is the gate everything else waits on.
 - [x] **T29 — implement**: amend `.specify/constitution.md` §8's headline and its amendments table
       (spec, *Contract / data impact*), and move `CLAUDE.md`, `AGENTS.md` and the `.claude/`+`.codex/`
       workflows in the **same commit** (§6).
-- [ ] **T30 — docs**: `docs/harness-comparison.md` — the hosted column filled from **measurement**,
+- [x] **T30 — docs**: `docs/harness-comparison.md` — the hosted column filled from **measurement**,
       naming both findings (where the tools execute; who the MCP client is), including the numbers
       that are worse (**AC12**).
-- [ ] **T31 — docs**: `ai/harness/langgraph/README.md` rewritten — it no longer says nothing works,
+- [x] **T31 — docs**: `ai/harness/langgraph/README.md` rewritten — it no longer says nothing works,
       and it answers its own open question about which state lives where. `docs/architecture.md`
       shows both harnesses. `docs/how-it-works/streaming-events.md` stops implying every turn has an
       `mcp_call` (**AC12**).
-- [ ] **T32 — docs**: `docs/REFERENCES.md` — every row of the spec's §10 table with the date it was
+- [x] **T32 — docs**: `docs/REFERENCES.md` — every row of the spec's §10 table with the date it was
       read, the four measured answers (T16–T18, T13), and the stale idle-timeout range corrected
       from 5–60 to **2–60** (**AC12**, §10).
 - [x] **T33 — docs**: `.env.example` (`AGENT_HARNESS=langgraph`, and where the reader hits the Key
       Vault connection), `justfile` (`hosted-build`, `hosted-deploy`, `hosted-record`),
       `ai/README.md`, `PLAN.md` Phase 4.
-- [ ] **T34 — refactor**: clean up, keep everything green.
+- [x] **T34 — refactor**: clean up, keep everything green.
 
 ## Definition of done
 
-- [ ] Every acceptance criterion in `spec.md` maps to a passing test — or, where the criterion asks
+- [x] Every acceptance criterion in `spec.md` maps to a passing test — or, where the criterion asks
       for an observation, to a **dated** recording or a documented manual step (AC7, AC9, AC10, AC12)
-- [ ] `ai/tests/conformance.py` is byte-identical to its state before this spec (**AC2**)
-- [ ] Lint clean
-- [ ] Tests green — and green **without** Azure, Docker or a credential, on fixtures alone
-- [ ] Type-check / build passes
-- [ ] Docs updated in the same change; cross-cutting contract in sync (§4)
-- [ ] §8's amendment landed in the constitution, `CLAUDE.md` and `AGENTS.md` in one commit (§6)
-- [ ] (If AC9 needs them) all new user-facing text exists in `en` **and** `pt` (§7)
-- [ ] `verify-gates` run and green
-- [ ] `spec.md` status updated to `done`; `specs/README.md` row updated
+- [x] `ai/tests/conformance.py` is byte-identical to its state before this spec (**AC2**)
+- [x] Lint clean
+- [x] Tests green — and green **without** Azure, Docker or a credential, on fixtures alone
+- [x] Type-check / build passes
+- [x] Docs updated in the same change; cross-cutting contract in sync (§4)
+- [x] §8's amendment landed in the constitution, `CLAUDE.md` and `AGENTS.md` in one commit (§6)
+- [x] (AC9 did not need them — voice attaches) all new user-facing text exists in `en` **and** `pt` (§7)
+- [x] `verify-gates` run and green
+- [x] `spec.md` status updated to `done`; `specs/README.md` row updated

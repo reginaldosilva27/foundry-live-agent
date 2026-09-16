@@ -37,6 +37,11 @@ ID_KEYS = frozenset(
         "approval_request_id",
         "prompt_cache_key",
         "safety_identifier",
+        # Hosted agents (spec 018). `agent_session_id` identifies the sandbox a turn ran in, and
+        # it is the ONLY thing that joins a hosted turn to its spans — the observed spans carry no
+        # `gen_ai.response.id` at all. Redacted like any other id so the fixture keeps its
+        # cross-references without carrying a real session identifier.
+        "agent_session_id",
     }
 )
 

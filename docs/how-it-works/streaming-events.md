@@ -5,8 +5,27 @@ which become UI. Three hops, one schema.
 
 ```
 Foundry raw stream ──normalise()──> AgentEvent ──format_event()──> SSE frame ──> React
-                    (ai/harness/prompt_agent/events.py)   (backend/app/sse.py)
+                    (ai/harness/<harness>/events.py)      (backend/app/sse.py)
 ```
+
+**Every mapping on this page is the *prompt agent's*.** Since spec 018 there are two harnesses, and
+they normalise different raw streams: `ai/harness/langgraph/events.py` has its own table and its own
+`verified` flags, and `GET /config` reports whichever one is running. The **nine-event vocabulary is
+the same for both** — that is §9's whole claim, and a second harness is how it got tested.
+
+Two things this page describes that the **hosted agent never produces**, both findings rather than
+gaps (see [harness-comparison.md](../harness-comparison.md)):
+
+- **`mcp_call`.** With a prompt agent Foundry is the MCP client; with a hosted agent the container
+  is, so the same Learn search arrives as ordinary tool calls. **Nothing in the app may read a
+  missing `mcp_call` as an error.**
+- **`usage`.** A hosted turn's `response.completed` carries `usage: null`. The contract always
+  allowed `usage` to be absent — `check_stream` forbids a second one, never requires a first — so a
+  cost line must render "not reported", never zero.
+
+And one it produces differently: a hosted `function_call` is a **report of a call the container
+already made and answered**, arriving with its `function_call_output` in the same stream, not a
+request waiting on the app.
 
 ## Why SSE and not WebSocket
 

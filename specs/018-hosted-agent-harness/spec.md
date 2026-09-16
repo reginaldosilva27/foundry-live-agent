@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 018-hosted-agent-harness |
-| **Status** | planned |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 
@@ -92,8 +92,16 @@ container reads the value from an Azure Key Vault using the agent identity Found
 ## User-facing behavior
 
 From the browser, **almost nothing looks different** — and that is the deliverable. With the hosted
-agent selected, the user asks the same question, watches the same reasoning card, the same tool
-rows, the same MCP attribution, the same usage figures and the same trace link.
+agent selected, the user asks the same question, watches the same tool rows and reads the same
+answer.
+
+> **Corrected 2026-09-16, from measurement.** This paragraph originally promised "the same reasoning
+> card, the same MCP attribution, the same usage figures and the same trace link", and three of
+> those four turned out to be false. A hosted turn emits **no reasoning summary** (AC13's answer),
+> **no `usage`** at all, and **no `mcp_call`** — and its spans carry no `gen_ai.response.id`, so the
+> trace link resolves to nothing. None of that breaks the contract: every one of those events was
+> always optional. It does mean the app must render three absences as absences rather than as zeros
+> or errors, and spec 020's comparison has more to say than expected.
 
 The one difference is the one that matters: the executor tag on each tool row reads `foundry`
 instead of `bff`. The row is otherwise identical, because the tool is identical.
@@ -101,11 +109,14 @@ instead of `bff`. The row is otherwise identical, because the tool is identical.
 What the user can also see, if they look:
 
 - The harness badge in the header names the hosted harness instead of the prompt one.
+- The reasoning card never fills, and the token count is absent rather than zero.
 - The numbers differ — time to first token, total duration, and cost, because container compute is
   now on the bill. Those differences are the lesson, and spec 020 puts them side by side.
 
-**i18n (§7).** Any new string this spec introduces — a harness label, a "voice unavailable for this
-agent" reason — ships `{ en, pt }`. Most of the surface is already bilingual and unchanged.
+**i18n (§7).** Any new string this spec introduces ships `{ en, pt }`. In the end it introduced
+**none**: the "voice unavailable for this agent" reason was contingent on AC9, and Voice Live
+attaches to a hosted agent (verified 2026-09-16), so no refusal string exists to translate. The
+harness badge renders the harness name verbatim, which is a proper noun and correctly untranslated.
 
 ## Acceptance criteria
 

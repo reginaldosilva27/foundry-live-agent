@@ -13,6 +13,35 @@ The agent — instructions, model and tools — lives in **Microsoft Foundry**. 
 everything around it: identity, streaming, tool execution, tracing, voice and a UI. See the diagram
 in [`../README.md`](../README.md).
 
+## Two harnesses, one contract (spec 018)
+
+Since 2026-09-16 there are **two** agents in Foundry, behind one `AgentEvent` contract, running the
+same model, instructions and tools from one file (`ai/harness/_shared/agent_core.yaml`):
+
+```
+                     ┌── prompt agent ──────────────────────────────────────┐
+                     │  Foundry runs the loop.                              │
+Browser ──SSE──> BFF │  It emits a function call and WAITS; the BFF runs    │
+   │             │   │  the tool and answers. Two legs per turn.            │
+   │             │   │  Microsoft Learn is Foundry's MCP client → mcp_call  │
+   │             │   └──────────────────────────────────────────────────────┘
+   │             │   ┌── hosted agent (LangGraph) ──────────────────────────┐
+   │             └──>│  OUR CONTAINER runs the loop, on Foundry.            │
+   │                 │  It calls its own tools and answers them. One leg.   │
+   └──WebRTC────────>│  The container is the MCP client → no mcp_call       │
+      (Voice Live,   │  ai/harness/langgraph/agent/ — 1 vCPU / 2 GiB        │
+       both agents)  └──────────────────────────────────────────────────────┘
+```
+
+**Which half is "the app" matters, and §8 was amended to say it properly.** The BFF and the browser
+contain no agent-loop logic — that is unchanged. But a hosted agent's loop *is* in this repository,
+in `ai/harness/langgraph/agent/`, because that directory is where an agent is **authored** before
+being deployed to Foundry. Inside one harness: the **adapter** is imported by the BFF and contains no
+loop; the **agent** runs on Foundry and is nothing but loop.
+
+What the two cost each other is measured, not described, in
+[`harness-comparison.md`](harness-comparison.md).
+
 ## Planned outline
 
 | Section | Filled by |

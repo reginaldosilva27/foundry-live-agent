@@ -7,15 +7,29 @@ explanation, not surface as a confusing failure on the first user message.
 
 from __future__ import annotations
 
-from collections.abc import Callable, MutableMapping
+import json
+from collections.abc import Callable, Mapping, MutableMapping
+from pathlib import Path
 from typing import Any
 
+import harness._shared
 from harness._shared.contract import HarnessAdapter
 
 from app.settings import Settings
 from app.tool_executor import execute
 
 __all__ = ["build_harness"]
+
+# Observed 2026-09-16: the hosted agent endpoint REQUIRES this, and the documented URL shape
+# omits it — `400 BadRequest — Missing required query parameter: api-version` without it.
+HOSTED_API_VERSION = "v1"
+_AZURE_AI_SCOPE = "https://ai.azure.com/.default"
+
+# The hosted agent's definition. `ai/` is on the path; this resolves the same file
+# `just hosted-config` generates azure.yaml from.
+_HOSTED_AGENT_YAML = (
+    Path(harness._shared.__file__).resolve().parent.parent / "langgraph" / "agent.yaml"
+)
 
 
 def _executor(name: str, arguments: str) -> tuple[str, int, str | None]:
@@ -42,9 +56,20 @@ def build_harness(settings: Settings, stream_factory: Callable[..., Any] | None 
         return adapter
 
     if name == "langgraph":
+        from harness._shared.agent_spec import load_agent_spec
         from harness.langgraph.adapter import LangGraphAdapter
 
-        return LangGraphAdapter()  # raises NotImplementedError, by design
+        # The agent's NAME comes from its own definition, not from AGENT_NAME. A hosted agent
+        # cannot share a name with the prompt agent in one project, and an env var that can
+        # disagree with the definition would be a second source of truth (§4). AGENT_NAME stays
+        # the prompt agent's; spec 019 generalises selection.
+        spec = load_agent_spec(_HOSTED_AGENT_YAML)
+        return LangGraphAdapter(
+            stream_factory=stream_factory or _hosted_stream_factory(settings, spec.name),
+            agent_name=spec.name,
+            project_name=settings.project_name,
+            agent_version=settings.agent_version,
+        )
 
     raise ValueError(
         f"unknown harness {name!r}; AGENT_HARNESS must be 'prompt-agent' or 'langgraph'"
@@ -117,3 +142,72 @@ def _foundry_stream_factory(settings: Settings) -> Callable[..., Any]:
             yield event.model_dump() if hasattr(event, "model_dump") else dict(event)
 
     return factory
+
+
+def _hosted_stream_factory(settings: Settings, agent_name: str) -> Callable[..., Any]:
+    """The real stream for a hosted agent: its OWN endpoint, not the project's Responses API.
+
+    A hosted agent is reached at
+    `{project_endpoint}/agents/{name}/endpoint/protocols/openai/responses`, live as soon as it is
+    deployed — publishing is not required. Two details cost a turn each to discover, so they are
+    written down rather than left in a commit message (§10, observed 2026-09-16):
+
+    - **`api-version=v1` is required** and the documented endpoint shape omits it. Without it the
+      service answers `400 BadRequest — Missing required query parameter: api-version`. `azd deploy`
+      prints the URL with it, which is the accurate source.
+    - **There is no tool round trip**, so unlike the prompt agent's factory there is no conversation
+      to create and bind. The container owns its loop; one request is the whole turn. Continuing a
+      thread is `previous_response_id` or a `conversation` id, which spec 019 will wire up.
+    """
+    import httpx
+
+    def factory(messages, conversation_state: MutableMapping[str, Any]):
+        from azure.identity import DefaultAzureCredential
+
+        from app.settings import require_live_settings
+
+        require_live_settings(settings)
+        endpoint = settings.project_endpoint.rstrip("/")
+        url = (
+            f"{endpoint}/agents/{agent_name}/endpoint/protocols/openai/responses"
+            f"?api-version={HOSTED_API_VERSION}"
+        )
+        token = DefaultAzureCredential().get_token(_AZURE_AI_SCOPE).token
+
+        body: dict[str, Any] = {"input": _as_input(messages), "stream": True}
+        if previous := conversation_state.get("response_id"):
+            body["previous_response_id"] = previous
+
+        with (
+            httpx.Client(timeout=300.0) as client,
+            client.stream(
+                "POST",
+                url,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "text/event-stream",
+                },
+                json=body,
+            ) as response,
+        ):
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if not line.startswith("data:"):
+                    continue
+                payload = line[5:].strip()
+                if payload and payload != "[DONE]":
+                    yield json.loads(payload)
+
+    return factory
+
+
+def _as_input(messages: list[Mapping[str, Any]]) -> str | list[Mapping[str, Any]]:
+    """The turn's input. A lone user message goes as a plain string, which is what the recorded
+    turns were driven with; anything richer goes through as items."""
+    if len(messages) == 1 and messages[0].get("role", "user") == "user":
+        return str(messages[0]["content"])
+    return [
+        {"type": "message", "role": m.get("role", "user"), "content": m["content"]}
+        for m in messages
+    ]

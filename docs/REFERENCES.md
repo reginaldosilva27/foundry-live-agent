@@ -15,7 +15,7 @@ signal than the date I read it.
 |---|---|---|
 | What is Foundry Agent Service? | https://learn.microsoft.com/en-us/azure/foundry/agents/overview | Prompt vs. hosted agent comparison table; agent types; toolboxes; publishing (M365 Copilot, Teams, Entra Agent Registry); OpenResponses / Activity / Invocations / A2A protocols. Updated 2026-08-27. |
 | What is Microsoft Foundry? | https://learn.microsoft.com/en-us/azure/foundry/what-is-foundry | **The migration table**: Assistants API (v0.5/v1) → **Responses API (Agents v2)**; Threads/Messages/Runs/Assistants → **Conversations/Items/Responses/Agent Versions**; monthly `api-version` → **v1 stable routes** (`/openai/v1/`); multiple SDKs → **`azure-ai-projects` 2.x**. Updated 2026-08-27. |
-| Hosted agents | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents | Container contract; Responses / Invocations / Invocations-WS / Activity / A2A protocols; per-session VM-isolated sandbox; `$HOME` + `/files` persistence; **idle timeout 5–60 min, default 15**; session deleted after 30 days; immutable versions; sandbox sizes (0.5/1/2 vCPU); LangGraph named as a supported framework; region list incl. Brazil South. Updated 2026-08-27. |
+| Hosted agents | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents | Container contract; Responses / Invocations / Invocations-WS / Activity / A2A protocols; per-session VM-isolated sandbox; `$HOME` + `/files` persistence; **idle timeout 2–60 min, default 15** (was written 5–60 here until 2026-09-16; the doc says 2–60); session deleted after 30 days; immutable versions; sandbox sizes (0.5/1/2 vCPU); LangGraph named as a supported framework; region list incl. Brazil South. Updated 2026-08-27. |
 | Toolbox overview | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/toolbox-overview | Toolbox = curated tools behind one MCP-compatible endpoint. **Supported-tools table: Function calling is ❌ in Toolbox — "client-side execution" — ✅ direct only.** Tool search and Skills (preview). Updated 2026-07-31. |
 | agent.yaml schema reference | https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/agent-yaml-reference | **`agent.manifest.yaml` and `agent.yaml` are DEPRECATED**; superseded by a single `azure.yaml` as of Foundry `azd` extensions **`azure.ai.agents` 1.0.0-beta.1**. AgentDefinition kinds: `prompt`, `hosted`, `workflow`. Retained for reference only. Updated 2026-07-07. |
 | Agent tracing overview | https://learn.microsoft.com/en-us/azure/foundry/observability/concepts/trace-agent-concept | Tracing **GA for prompt and hosted agents**; stored in Application Insights; OpenTelemetry GenAI semantic conventions. Span names: `invoke_agent`, `invoke_workflow`, `plan`, `execute_tool`, memory ops. Attributes: `gen_ai.tool.definitions`, `gen_ai.tool.call.arguments`, `gen_ai.tool.call.result`. Requires Log Analytics reader. Updated 2026-08-28. |
@@ -399,6 +399,51 @@ from connecting Application Insights to the project.
 
 ---
 
+## Hosted agents — spec 018, read and verified 2026-09-16
+
+The docs read for this spec, then what the live service actually did. Where the two disagree, the
+observation wins and says so (§10). Everything below was produced against
+`foundry-live-agent-hosted` version 1, project `ai-admin2354ai223634534-project` (eastus2).
+
+### Documentation
+
+| Source | What it settles |
+|---|---|
+| [Hosted agents](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents) | Three sandbox sizes (0.5/1 · 1/2 · 2/4 vCPU/GiB); billing is CPU+memory across **active sessions**, so oversizing multiplies by concurrency; idle timeout 2–60 min, 15 default; Responses endpoint shape; dedicated Entra agent identity per agent; "don't put secrets in container images or environment variables"; 31 regions incl. East US 2 and Brazil South. Updated 2026-09-14. |
+| [LangGraph hosted agents](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-hosted-agents) | `pip install -U "langchain-azure-ai[hosting]>=1.2.9"`; `ResponsesHostServer(graph).run(port=...)`, default port 8088, `PORT` honoured; **no checkpointer → the host replays Responses history into the graph**, with one → current input only, keyed by conversation thread; interrupts surface as `function_call` named `__hosted_agent_adapter_interrupt__`; platform injects `FOUNDRY_PROJECT_ENDPOINT`, `FOUNDRY_MODEL_NAME`, `APPLICATIONINSIGHTS_CONNECTION_STRING`; deploy needs Docker and **Foundry Project Manager**. Updated 2026-08-31. |
+| [Author azure.yaml](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/author-azure-yaml) · [azure.yaml reference](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/azure-yaml-reference) | `azure.ai.project` + `azure.ai.agent` services; `protocols: [{protocol: responses, version: 2.0.0}]`; `container.resources.cpu` `"0.25"`–`"4.0"`, `memory` `0.5Gi`–`8.0Gi`; **`FOUNDRY_` and `AGENT_` are reserved prefixes** and `FOUNDRY_PROJECT_ENDPOINT` must not be declared in `env`; model deployment passed as `MICROSOFT_FOUNDRY_MODEL_DEPLOYMENT_NAME`; `azure.ai.agents` ≥ 1.0.0-beta.8, `azure.ai.projects` ≥ 1.0.0-beta.4, azd ≥ 1.27.1. |
+| [azd azure.yaml schema](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/azd-schema) | `docker.path` and `docker.context` are valid on an `azure.ai.agent` service — which is what lets the build context be `ai/` while the Dockerfile sits with the agent code. |
+| [Hosted agent permissions](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agent-permissions) | "The agent has implicit access to core capabilities within its own project… No explicit role assignment is needed for the standard case." **Contradicted live — see below.** `Foundry User` at project scope is the least-privilege role that grants model inferencing. |
+| [Set up a Key Vault connection](https://learn.microsoft.com/en-us/azure/foundry/how-to/set-up-key-vault-connection) | A Foundry **Key Vault connection** is a BYO vault for Foundry's *own* connection secrets: **one per Foundry resource**, creatable only on a resource with **no existing connections**. It is not a channel for an application secret. Spec 018's AC7 was written from this page's title and amended once the page was read. |
+
+### Two documents disagreeing with each other
+
+| Question | Concept doc | `azure.yaml` reference | What we do |
+|---|---|---|---|
+| Sandbox sizes | three fixed combinations | `cpu` `"0.25"`–`"4.0"`, `memory` `0.5Gi`–`8.0Gi` | Enforce the three in `agent_spec.py`. 1 vCPU / 2 GiB satisfies both. |
+| Model deployment variable | LangGraph guide's code reads `FOUNDRY_MODEL_NAME` | reserves `FOUNDRY_*` and passes `MICROSOFT_FOUNDRY_MODEL_DEPLOYMENT_NAME` | `agent/host.py` reads **both**, platform value first, agent definition last. |
+
+### Verified against the live service
+
+| Finding | Evidence |
+|---|---|
+| **TWO identities need a role, not one.** Granting only the agent identity made turns succeed for ~30 minutes and then fail again with the generic `401 — Principal does not have access to API/Operation`. The **project's managed identity had no role on the account at all**: the project proxies inference to the account deployment with its own identity, and the permissions doc says that assignment "might be created automatically when the project is created, depending on the permissions of the user creating it" — here it was not. Granting it `Foundry User` at **account** scope fixed it for good. | observed 2026-09-16, twice |
+| **The agent identity does NOT have implicit model access.** First turn failed: `401 PermissionDenied — The principal <agent-oid> lacks the required data action Microsoft.CognitiveServices/accounts/OpenAI/deployments/chat/completions/action`. Fixed by granting **Foundry User** at the **project** scope to the agent identity. Because that identity does not exist until after the first deploy, the real sequence is deploy → assign → wait → works. | `langgraph-hosted-*-20260916.jsonl`, and the failing runs that preceded them |
+| **The Responses endpoint requires `?api-version=v1`.** The documented URL shape omits it; without it the service answers `400 BadRequest — Missing required query parameter: api-version`. `azd deploy` prints the URL **with** it. | observed 2026-09-16 |
+| **`azure.yaml` needs `infra: provider: microsoft.foundry`.** Without it azd falls back to its bicep provider and fails looking for `infra/main.bicep`. The value is what `azd ai agent init` writes itself. | generated by the extension, 2026-09-16 |
+| **`AZURE_AI_PROJECT_ID` must be set in the azd environment** for an existing Foundry project — `azd provision` refuses without it. Not in the `azure.yaml` reference. | observed 2026-09-16 |
+| **No `idle timeout` key exists in `azure.yaml`.** The timeout is configurable per agent version (2–60 min, 15 default), but the `azure.ai.agent` field reference documents no field for it. **Open question O-18-1**; `build_hosted_config.py` states the value in a comment rather than inventing a key. | azure.yaml reference, 2026-09-16 |
+| **The container is the MCP client, and Learn exposes three tools**: `microsoft_docs_search`, `microsoft_code_sample_search`, `microsoft_docs_fetch`. This harness therefore emits **no `mcp_call`** at all. | `langgraph-hosted-learn-20260916.jsonl` |
+| **A `function_call` here is a report, not a request.** `function_call` and `function_call_output` arrive with the same `call_id` in one stream: the container already ran the tool. `function_call_output` carries **no `name`**, so the normaliser must keep a call_id → name map. | same fixture |
+| **One `response.completed` per turn**, not two. No usage summing, no held-back `done` — the prompt agent needs both. | both fixtures |
+| **`response.completed` carries `usage: null`.** The hosted agent reports no tokens. The contract always permitted an absent `usage`; the cost line must render "not reported", never zero. | both fixtures |
+| **No reasoning summaries.** `reasoning` is a prompt-agent *definition* field; this loop produces none. | both fixtures |
+| **Voice Live attaches to a hosted agent.** Same `agent_name` + `agent_project_name` query; `session.created` reports the hosted agent as its `model` and echoes its definition, and `instructions` is `null` as with any custom agent. | `langgraph-hosted-voice-20260916.jsonl` |
+| **Hosted traces carry no `gen_ai.response.id`.** Queried live: zero spans have it. They key on `microsoft.session.id`, which equals the response's `agent_session_id` — 29 spans matched the recorded turn that way. Spans include `invoke_agent LangGraph`, `invoke_agent tools_condition`, `execute_tool microsoft_docs_search`, `chat gpt-5.5` and `POST /api/mcp`. **The trace panel's join (spec 005) finds nothing for this harness**; fixing it means putting `agent_session_id` on `trace_ids`, which is an `AgentEvent` change and needs its own spec (§9). | App Insights `ai-admin2354ai223634534-project-appinsights-2442`, 2026-09-16 |
+| **A hosted agent traces MORE than a prompt agent.** A function tool the BFF runs leaves no span (§8 visible in telemetry); the container's `execute_tool get_current_datetime` is a span, because the container is instrumented. | same query |
+| **`pip` 25.0.1 cannot resolve `langchain-azure-ai`** — `InvalidVersion: Invalid version: 'hosting'`, with or without the extra, pinned or not. pip 26 resolves it cleanly; the Dockerfile upgrades pip first. | reproduced in a clean `python:3.12-slim`, 2026-09-16 |
+| **`azd` can reuse the `az` CLI credential**: `azd config set auth.useAzCliAuth true`, avoiding a separate interactive `azd auth login`. | observed 2026-09-16 |
+
 ## Versions this repo pins
 
 | Thing | Value | Source |
@@ -416,3 +461,9 @@ from connecting Application Insights to the project.
 | Learn MCP server | `https://learn.microsoft.com/api/mcp` | Microsoft Learn MCP docs |
 | Web search endpoint | `https://api.tavily.com/search`, `search_depth: basic`, `max_results: 5`, 10s timeout | Tavily `/search` reference |
 | Python | 3.12 | project decision |
+| Hosted agent Responses route | `{project_endpoint}/agents/{name}/endpoint/protocols/openai/responses?api-version=v1` | **observed 2026-09-16** — the doc omits the api-version |
+| Hosted agent sandbox | 1 vCPU / 2 GiB, idle 15 min (the default) | stated once in `ai/harness/langgraph/agent.yaml` |
+| Hosted agent protocol | `responses`, version `2.0.0` | azure.yaml reference |
+| Hosting package | `langchain-azure-ai[hosting]>=1.2.9`, pip **≥ 26** | LangGraph hosted-agents guide + observed 2026-09-16 |
+| azd extensions | `azure.ai.agents` ≥ 1.0.0-beta.8, `azure.ai.projects` ≥ 1.0.0-beta.4, azd ≥ 1.27.1 | azure.yaml reference |
+| Hosted agent trace join | `microsoft.session.id` == `agent_session_id` (**not** `gen_ai.response.id`) | observed 2026-09-16 |

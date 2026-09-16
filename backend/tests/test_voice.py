@@ -497,3 +497,34 @@ async def test_the_context_item_is_the_only_thing_the_bff_puts_in_the_conversati
 
     assert roles.count("system") == 1
     assert set(roles) <= {"system", "function_call_output"}
+
+
+# --- voice follows the selected harness (spec 018, AC9) -------------------
+
+
+def test_the_voice_session_attaches_to_the_harness_agent_not_the_env_var():
+    """Verified live 2026-09-16: Voice Live attaches to a hosted agent exactly as to a prompt
+    agent — same `agent_name` + `agent_project_name` query, only the agent named changes.
+
+    Until spec 018 the router read `settings.agent_name` directly, which was harmless while one
+    harness existed and wrong the moment a second one named a different agent: a voice session on
+    `AGENT_HARNESS=langgraph` would have silently driven the PROMPT agent, and the comparison this
+    repository exists to show would have been a lie told by the microphone.
+
+    The adapter already answers this question — `voice_attachment_params()` is part of the §9
+    Protocol for precisely this reason — so the router asks it.
+    """
+    from app.main import create_app
+
+    app = create_app(
+        harness="langgraph",
+        stream_factory=lambda *_: iter(()),
+        project_endpoint="https://example.services.ai.azure.com/api/projects/proj",
+        project_name="proj",
+        model="gpt-5.5",
+    )
+
+    params = app.state.harness.voice_attachment_params()
+
+    assert params["agent_name"] == "foundry-live-agent-hosted"
+    assert params["project_name"] == "proj"
