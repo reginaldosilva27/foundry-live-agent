@@ -15,6 +15,10 @@ dependencies = [
     # The Voice Live control channel. One small dependency, and the alternative — a hand-rolled
     # WebSocket client — is exactly the kind of thing that looks fine until a close frame arrives.
     "websockets>=13",
+    # Reading the agent's spans back out of Application Insights (spec 005). `LogsQueryClient`
+    # only; `MetricsClient` moved to its own package at 2.0.0. Imported lazily in app/traces.py, so
+    # a deployment that configures no tracing never loads it.
+    "azure-monitor-query>=2.0.0",
 ]
 
 [project.optional-dependencies]

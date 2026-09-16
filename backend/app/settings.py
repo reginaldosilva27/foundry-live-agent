@@ -48,6 +48,11 @@ class Settings:
     speech_resource_id: str = ""
     speech_voice_en: str = "en-US-AvaMultilingualNeural"
     speech_voice_pt: str = "pt-BR-ThalitaMultilingualNeural"
+    # Where the agent's spans land (spec 005). The ARM resource id, not the connection string:
+    # `LogsQueryClient.query_resource` addresses a resource, while the connection string carries an
+    # `ApplicationId` for a different API. It cannot be derived from anything else we hold, so it is
+    # its own variable — and unset simply means the trace panel says tracing is not configured.
+    appinsights_resource_id: str = ""
 
     @property
     def voice_enabled(self) -> bool:
@@ -81,6 +86,10 @@ class Settings:
         return self.speech_voice_pt if lang == "pt" else self.speech_voice_en
 
     @property
+    def tracing_enabled(self) -> bool:
+        return bool(self.appinsights_resource_id)
+
+    @property
     def uses_gateway(self) -> bool:
         """A `<connection>/<model>` name routes through the bring-your-own-model gateway.
 
@@ -112,6 +121,7 @@ def load_settings(**overrides: object) -> Settings:
         "speech_resource_id": os.environ.get("SPEECH_RESOURCE_ID", ""),
         "speech_voice_en": os.environ.get("SPEECH_VOICE_EN", "en-US-AvaMultilingualNeural"),
         "speech_voice_pt": os.environ.get("SPEECH_VOICE_PT", "pt-BR-ThalitaMultilingualNeural"),
+        "appinsights_resource_id": os.environ.get("APPLICATIONINSIGHTS_RESOURCE_ID", ""),
     }
     values.update({k: v for k, v in overrides.items() if v is not None})
     return Settings(**values)  # type: ignore[arg-type]

@@ -18,9 +18,11 @@ import { useEffect, useMemo, useRef } from 'react'
 import { CopyRow } from '../components/CopyRow'
 import { ChevronIcon, CloseIcon, ExternalIcon } from '../components/Icon'
 import { ToolRow } from '../components/ToolRow'
+import { SpanTree } from '../components/SpanTree'
 import { TraceNumbers } from '../components/TraceNumbers'
 import { useT } from '../i18n/context'
 import { longestDuration, type Turn } from '../state/turn'
+import type { Trace } from '../types/trace'
 
 interface Props {
   turn?: Turn
@@ -30,6 +32,12 @@ interface Props {
   /** Model and latency come from the app, which is the only place that holds both. */
   model?: string
   latencyMs?: number
+  /** The run's spans, once read. Absent while nothing has been asked for (spec 005). */
+  trace?: Trace
+  /** Whether this deployment's inference routes through the gateway, from `GET /config`. */
+  usesGateway?: boolean
+  /** Ask for the spans again — the answer to `pending`, which is the common case. */
+  onRetryTrace?: () => void
   /** The call to bring into view, when the reader opened the panel by pressing its row. */
   selectedCall?: string
   /** Move to the adjacent turn. `-1` is older, `1` is newer. */
@@ -90,6 +98,9 @@ export function TraceDrawer({
   position,
   model,
   latencyMs,
+  trace,
+  usesGateway,
+  onRetryTrace,
   selectedCall,
   onStep,
   onOpenCall,
@@ -123,7 +134,7 @@ export function TraceDrawer({
         <>
           <section className="trace__run">
             <h3 className="trace__subtitle">{s('trace.numbersTitle')}</h3>
-            <TraceNumbers turn={turn} model={model} latencyMs={latencyMs} />
+            <TraceNumbers turn={turn} model={model} latencyMs={latencyMs} trace={trace} />
           </section>
 
           <section className="trace__ids">
@@ -131,20 +142,22 @@ export function TraceDrawer({
             {turn.trace.conversationId && (
               <CopyRow label={s('trace.conversationId')} value={turn.trace.conversationId} />
             )}
-            {/* Reserved for spec 005. Rendered whether or not a harness emits them yet, because a
-                field that is silently absent and one that is deliberately pending look identical
-                from the screen (§5). No flag: presence alone decides which way it renders, so the
-                day a harness sends one it needs no change here. */}
-            <CopyRow
-              label={s('trace.otelTraceId')}
-              value={turn.trace.otelTraceId}
-              pending={s('trace.pendingTracing')}
-            />
-            <CopyRow
-              label={s('trace.gatewayRequestId')}
-              value={turn.trace.gatewayRequestId}
-              pending={s('trace.pendingTracing')}
-            />
+            {/* Real now, and read from the spans rather than from the stream: no harness emits it,
+                and none needs to — `gen_ai.response.id` on every span is the join (spec 005, O-B). */}
+            {trace?.status === 'ok' && trace.otel_trace_id && (
+              <CopyRow label={s('trace.otelTraceId')} value={trace.otel_trace_id} />
+            )}
+
+            {/* No `gateway request id` field. APIM has no diagnostic settings, so there is no such
+                id to show — and a labelled empty box claims there could be one. What is true is
+                that the run went through the gateway and the gateway did not write it down, which
+                is worth more than a blank (spec 005, AC7\u2033). */}
+            <div className="trace__gateway" data-testid="trace-gateway">
+              <span className="copy-row__label">{s('trace.gatewayTitle')}</span>
+              <p className="trace__gateway-note">
+                {usesGateway ? s('trace.gatewayCarried') : s('trace.gatewayNone')}
+              </p>
+            </div>
           </section>
 
           <section className="trace__activity" data-testid="trace-activity">
@@ -170,8 +183,31 @@ export function TraceDrawer({
             )}
           </section>
 
+          <section className="trace__spans">
+            <h3 className="trace__subtitle">{s('trace.spansTitle')}</h3>
+            {trace?.status === 'ok' ? (
+              <SpanTree spans={trace.spans} />
+            ) : (
+              <p className="trace__empty" data-testid="trace-spans-state">
+                {trace?.status === 'pending'
+                  ? s('trace.spansPending')
+                  : trace?.status === 'unavailable'
+                    ? s('trace.spansUnavailable')
+                    : trace?.status === 'denied'
+                      ? `${s('trace.spansDenied')} ${trace.message ?? ''}`
+                      : trace?.status === 'failed'
+                        ? `${s('trace.spansFailed')} ${trace.message ?? ''}`
+                        : s('trace.spansLoading')}
+              </p>
+            )}
+            {trace?.status === 'pending' && onRetryTrace && (
+              <button type="button" className="trace__retry" onClick={onRetryTrace}>
+                {s('trace.spansRetry')}
+              </button>
+            )}
+          </section>
+
           <footer className="trace__foot">
-            <p className="trace__spans-note">{s('trace.spansFooter')}</p>
             <a
               className="trace__portal"
               href="https://ai.azure.com"

@@ -15,9 +15,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.harness_factory import build_harness
-from app.routers import chat, config, health, speech, voice
+from app.routers import chat, config, health, speech, traces, voice
 from app.settings import load_settings
 from app.speech import build_synthesizer
+from app.traces import build_trace_reader
 from app.voice_connect import build_connect
 
 __all__ = ["create_app"]
@@ -27,13 +28,15 @@ def create_app(
     stream_factory: Callable[..., Any] | None = None,
     voice_connect: Callable[..., Any] | None = None,
     synthesize: Callable[..., Any] | None = None,
+    trace_query: Callable[..., Any] | None = None,
     **settings_overrides: object,
 ) -> FastAPI:
     """Build the app.
 
     ``stream_factory`` injects a raw Foundry stream, ``voice_connect`` a Voice Live control
-    channel, and ``synthesize`` a text-to-speech call. Production leaves all three unset; tests
-    pass a replay, which exercises the identical code path with no credential.
+    channel, ``synthesize`` a text-to-speech call, and ``trace_query`` a log query. Production
+    leaves all four unset; tests pass a replay, which exercises the identical code path with no
+    credential.
 
     The harness is resolved **here, at startup**, so a bad ``AGENT_HARNESS`` stops the process
     with an explanation instead of failing on someone's first message.
@@ -60,6 +63,9 @@ def create_app(
     # `None` when the BFF has no speech configuration — the routers turn that into an answer that
     # says so, rather than into a failure on the first sentence (spec 008, AC9).
     app.state.synthesize = synthesize or build_synthesizer(settings)
+    # `None` when no Application Insights resource is configured — the trace route turns that into
+    # "unavailable", so the app runs complete and normal without tracing (spec 005, AC19).
+    app.state.read_trace = trace_query or build_trace_reader(settings)
     # Voice sessions live in this process, so the BFF is single-replica for voice. Said out loud
     # in docs/how-it-works/voice-live-lifecycle.md rather than solved: a session store is a
     # different feature, and pretending otherwise would be the kind of drawing-of-a-feature §5
@@ -75,7 +81,14 @@ def create_app(
         allow_headers=["*"],
     )
 
-    for router in (chat.router, config.router, health.router, speech.router, voice.router):
+    for router in (
+        chat.router,
+        config.router,
+        health.router,
+        speech.router,
+        traces.router,
+        voice.router,
+    ):
         app.include_router(router)
     return app
 

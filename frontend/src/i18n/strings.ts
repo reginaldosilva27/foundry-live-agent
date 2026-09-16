@@ -153,6 +153,8 @@ export const strings = {
   'meta.tokens': { en: 'tokens', pt: 'tokens' },
   'meta.reasoningTokens': { en: 'reasoning', pt: 'raciocínio' },
   'meta.latency': { en: 'latency', pt: 'latência' },
+  'meta.cachedTokens': { en: 'cached', pt: 'cache' },
+  'meta.agentVersion': { en: 'version', pt: 'versão' },
   'meta.viewTrace': { en: 'view trace', pt: 'ver rastro' },
 
   // --- Errors --------------------------------------------------------------
@@ -186,16 +188,35 @@ export const strings = {
   'trace.copy': { en: 'Copy', pt: 'Copiar' },
   'trace.copied': { en: 'copied', pt: 'copiado' },
   'trace.copyFailed': { en: 'could not copy', pt: 'não foi possível copiar' },
-  'trace.otelTraceId': { en: 'otel trace id', pt: 'otel trace id' },
-  'trace.gatewayRequestId': { en: 'gateway request id', pt: 'gateway request id' },
-  'trace.pendingTracing': {
-    en: 'arrives with the tracing spec',
-    pt: 'chega com a spec de tracing',
-  },
   'trace.numbersTitle': { en: 'Run', pt: 'Execução' },
-  'trace.spansFooter': {
-    en: 'Spans come from Application Insights, which the tracing spec adds.',
-    pt: 'Spans vêm do Application Insights, que a spec de tracing adiciona.',
+  'trace.otelTraceId': { en: 'otel trace id', pt: 'otel trace id' },
+  'trace.spansPending': {
+    en: 'Spans have not arrived yet.',
+    pt: 'Os spans ainda não chegaram.',
+  },
+  'trace.spansRetry': { en: 'Check again', pt: 'Verificar de novo' },
+  'trace.spansUnavailable': {
+    en: 'Tracing is not configured on this deployment.',
+    pt: 'O tracing não está configurado neste ambiente.',
+  },
+  'trace.spansDenied': {
+    en: 'No permission to read the workspace. Log Analytics Reader is required.',
+    pt: 'Sem permissão para ler o workspace. É necessário Log Analytics Reader.',
+  },
+  'trace.spansFailed': { en: 'The trace query failed.', pt: 'A consulta do rastro falhou.' },
+  'trace.spansLoading': { en: 'Reading the spans…', pt: 'Lendo os spans…' },
+  'trace.clientSideNote': {
+    en: 'Foundry traces what Foundry runs. Tools this app executes leave no span.',
+    pt: 'O Foundry rastreia o que o Foundry executa. Ferramentas que este app executa não deixam span.',
+  },
+  'trace.gatewayTitle': { en: 'gateway', pt: 'gateway' },
+  'trace.gatewayCarried': {
+    en: 'This run went through the gateway, which does not record requests. Enabling GatewayLogs would correlate them.',
+    pt: 'Esta execução passou pelo gateway, que não registra requisições. Habilitar GatewayLogs permitiria correlacioná-las.',
+  },
+  'trace.gatewayNone': {
+    en: 'This run did not go through a gateway.',
+    pt: 'Esta execução não passou por um gateway.',
   },
   'trace.openPortal': { en: 'Open in the Foundry portal', pt: 'Abrir no portal do Foundry' },
 
@@ -224,7 +245,7 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'trace.conversationId',
   'trace.spansTitle',
   'trace.otelTraceId',
-  'trace.gatewayRequestId',
+  'trace.gatewayTitle',
 ]
 
 export function t(key: StringKey, lang: Lang): string {

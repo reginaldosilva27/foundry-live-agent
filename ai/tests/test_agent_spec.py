@@ -126,8 +126,14 @@ def test_rejects_a_reasoning_summary_foundry_does_not_accept(tmp_path):
 
 def test_the_shipped_agent_asks_for_reasoning_summaries():
     """Without this the activity panel's reasoning card is permanently empty — the recorded
-    contrast between the two fixtures is exactly this one setting."""
+    contrast between the two fixtures is exactly this one setting.
+
+    `detailed`, not `auto`, since 2026-09-16: observed on agent version 4, a turn with seven
+    tool-calling legs emitted a `reasoning` item on most of them and a summary on none, because
+    `auto` leaves the choice to the model and on short legs it declines. The assertion names the
+    value rather than merely checking presence, because *which* value is the whole finding.
+    """
     from pathlib import Path
 
     shipped = Path(__file__).resolve().parent.parent / "harness" / "prompt_agent" / "agent.yaml"
-    assert load_agent_spec(shipped).reasoning == {"summary": "auto"}
+    assert load_agent_spec(shipped).reasoning == {"summary": "detailed"}

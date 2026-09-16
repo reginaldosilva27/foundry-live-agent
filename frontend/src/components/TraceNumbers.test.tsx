@@ -41,3 +41,56 @@ describe('the run numbers', () => {
     expect(row).not.toHaveTextContent(/reasoning|racioc/i)
   })
 })
+
+/** Spec 005 AC16, AC18 — what the spans know that the event stream never reported. */
+describe('what the spans add', () => {
+  it('shows prompt-cache tokens when the spans report them (AC16)', () => {
+    render(
+      <TraceNumbers
+        turn={settled}
+        model="gpt-5.5"
+        trace={{
+          status: 'ok',
+          spans: [],
+          usage: { input_tokens: 3145, output_tokens: 851, cached_tokens: 2620 },
+        }}
+      />,
+    )
+
+    const row = screen.getByTestId('trace-numbers')
+    expect(row).toHaveTextContent('2620')
+    expect(row).toHaveTextContent(/cached|cache/i)
+  })
+
+  it('omits the cache figure when the spans do not report one (AC16)', () => {
+    render(
+      <TraceNumbers
+        turn={settled}
+        model="gpt-5.5"
+        trace={{ status: 'ok', spans: [], usage: { input_tokens: 10, output_tokens: 2 } }}
+      />,
+    )
+
+    expect(screen.getByTestId('trace-numbers')).not.toHaveTextContent(/cached|cache/i)
+  })
+
+  it('prefers the model snapshot the spans name over the configured one (AC18)', () => {
+    render(
+      <TraceNumbers
+        turn={settled}
+        model="gpt-5.5"
+        trace={{ status: 'ok', spans: [], model: 'gpt-5.5-2026-04-24', agent_version: '3' }}
+      />,
+    )
+
+    const row = screen.getByTestId('trace-numbers')
+    expect(row).toHaveTextContent('gpt-5.5-2026-04-24')
+    expect(row).toHaveTextContent('3')
+  })
+
+  it('falls back to the configured model when there is no trace', () => {
+    render(<TraceNumbers turn={settled} model="gpt-5.5" />)
+
+    expect(screen.getByTestId('trace-numbers')).toHaveTextContent('gpt-5.5')
+  })
+})

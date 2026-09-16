@@ -58,7 +58,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 002 | [Prompt-agent harness — agent as code + the client-side tools](002-prompt-agent-harness/spec.md) | 1 | ✅ done |
 | 003 | [BFF — streaming chat and the function-call round trip](003-bff-streaming/spec.md) | 1 | ✅ done |
 | 004 | [Frontend shell — three panes, streaming, and the two kinds of tool](004-frontend-shell/spec.md) | 1 | ✅ done |
-| 005 | [Real spans, from Application Insights](005-traces/spec.md) | 2 | 🔍 clarified |
+| 005 | [Real spans, from Application Insights](005-traces/spec.md) | 2 | ✅ done |
 | 006 | [Voice mode — Voice Live attached to the same prompt agent](006-voice-mode/spec.md) | 3 | ✅ done |
 | 007 | [The voice conversation lands in the chat](007-voice-transcript-in-chat/spec.md) | 3 | ✅ done |
 | 008 | [Spoken answers in the text chat](008-spoken-answers/spec.md) | 3 | ✅ done |
@@ -68,6 +68,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 012 | [The voice session is configured — voice, turn detection, input audio](012-voice-session-config/spec.md) | 3 | ✅ done |
 | 013 | [The agent can search the live web](013-web-search-tool/spec.md) | 3 | ✅ done |
 | 014 | [The trace panel becomes an instrument](014-trace-panel/spec.md) | 3 | ✅ done |
+| 015 | [The turn shows its steps when the model shows no reasoning](015-steps-narration/spec.md) | 3 | ✏️ draft |
 
 The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
 screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),
@@ -98,7 +99,7 @@ Spec numbers are an append-only record and are **never** renumbered. Execution o
 changeable decision. Current order, chosen because **seeing Voice Live work is the stated priority**:
 
 ```
-000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 🔍
+000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ✅
 ```
 
 Voice was meant to come before the text UI, on the grounds that it needs only the agent plus a

@@ -145,25 +145,7 @@ describe('the trace panel as an instrument', () => {
     expect(screen.getByRole('button', { name: /next turn|próximo turno/i })).toBeDisabled()
   })
 
-  it('names the ids reserved for the tracing spec rather than dropping them (AC8)', () => {
-    render(<TraceDrawer turn={settled} open position={{ index: 0, total: 1 }} onClose={() => {}} />)
-
-    const panel = screen.getByTestId('trace-panel')
-    expect(panel).toHaveTextContent(/otel trace id/i)
-    expect(panel).toHaveTextContent(/gateway request id/i)
-    expect(panel).toHaveTextContent(/arrives with the tracing spec|chega com a spec de tracing/i)
-  })
-
-  it('renders a reserved id as an ordinary one once a harness emits it (AC8)', () => {
-    const traced: Turn = {
-      ...settled,
-      trace: { ...settled.trace!, otelTraceId: '4bf92f3577b34da6a3ce929d0e0e4736' },
-    }
-    render(<TraceDrawer turn={traced} open position={{ index: 0, total: 1 }} onClose={() => {}} />)
-
-    expect(screen.getByTestId('trace-panel')).toHaveTextContent('4bf92f3577b34da6a3ce929d0e0e4736')
-  })
-
+  
   it('scales the duration bars against the longest call in the turn (AC6)', () => {
     const measure = (callId: string, durationMs: number): Activity => ({
       kind: 'tool',
@@ -182,12 +164,128 @@ describe('the trace panel as an instrument', () => {
     expect(bars[1]).toHaveStyle({ '--bar': '25%' })
   })
 
-  it('replaces the empty Spans section with one line saying where spans come from', () => {
+  it('gives Spans a real section again, now that there are spans (supersedes spec 014)', () => {
+    // Spec 014 turned the empty "Spans" heading into a footnote, because the section's only
+    // content was its own absence. Spec 005 gave it content, so the heading comes back — and the
+    // footnote that said spans "come from Application Insights, which the tracing spec adds" is
+    // gone, because the tracing spec added them.
     render(<TraceDrawer turn={settled} open position={{ index: 0, total: 1 }} onClose={() => {}} />)
 
-    expect(screen.getByTestId('trace-panel')).toHaveTextContent(
-      /Application Insights/i,
+    const panel = screen.getByTestId('trace-panel')
+    expect(panel).not.toHaveTextContent(/which the tracing spec adds|que a spec de tracing adiciona/i)
+    expect(screen.getByTestId('trace-spans-state')).toBeInTheDocument()
+  })
+})
+
+/** Spec 005 — the trace id is real, the gateway states, and each status says its own thing. */
+describe('the panel with a trace', () => {
+  const settled: Turn = {
+    ...turn,
+    usage: { inputTokens: 120, outputTokens: 34, reasoningTokens: 64 },
+  }
+  const position = { index: 0, total: 1 }
+
+  it('renders the otel trace id as an ordinary copyable id (AC6\u2032)', () => {
+    render(
+      <TraceDrawer
+        turn={settled}
+        open
+        position={position}
+        trace={{ status: 'ok', spans: [], otel_trace_id: 'b3802f27f525fbe79b1b8cac00c25450' }}
+        onClose={() => {}}
+      />,
     )
-    expect(screen.queryByRole('heading', { name: /^spans$/i })).toBeNull()
+
+    expect(screen.getByTestId('trace-panel')).toHaveTextContent('b3802f27f525fbe79b1b8cac00c25450')
+  })
+
+  it('renders no gateway request id field at all (AC7\u2033)', () => {
+    // There is no such id and no way to get one without APIM diagnostics. A labelled empty box
+    // claims there could be; the line below states what is true instead.
+    render(
+      <TraceDrawer turn={settled} open position={position} usesGateway onClose={() => {}} />,
+    )
+
+    expect(screen.getByTestId('trace-panel')).not.toHaveTextContent(/gateway request id/i)
+  })
+
+  it('says the gateway carried the run but does not record it (AC7\u2033)', () => {
+    render(
+      <TraceDrawer turn={settled} open position={position} usesGateway onClose={() => {}} />,
+    )
+
+    expect(screen.getByTestId('trace-panel')).toHaveTextContent(
+      /went through the gateway|passou pelo gateway/i,
+    )
+  })
+
+  it('says so when the run did not go through a gateway (AC7\u2033)', () => {
+    render(<TraceDrawer turn={settled} open position={position} onClose={() => {}} />)
+
+    expect(screen.getByTestId('trace-panel')).toHaveTextContent(
+      /did not go through a gateway|não passou por um gateway/i,
+    )
+  })
+
+  it.each([
+    ['pending', /have not arrived yet|ainda não chegaram/i],
+    ['unavailable', /not configured|não está configurado/i],
+    ['denied', /Log Analytics Reader/i],
+    ['failed', /query failed|consulta do rastro falhou/i],
+  ])('renders its own message for %s (AC3, AC4, AC5)', (status, pattern) => {
+    render(
+      <TraceDrawer
+        turn={settled}
+        open
+        position={position}
+        trace={{ status: status as 'pending', spans: [], message: 'Log Analytics Reader' }}
+        onClose={() => {}}
+      />,
+    )
+
+    expect(screen.getByTestId('trace-panel')).toHaveTextContent(pattern)
+  })
+
+  it('offers a retry while the spans have not landed (AC15)', () => {
+    const onRetry = vi.fn()
+    render(
+      <TraceDrawer
+        turn={settled}
+        open
+        position={position}
+        trace={{ status: 'pending', spans: [] }}
+        onRetryTrace={onRetry}
+        onClose={() => {}}
+      />,
+    )
+
+    screen.getByRole('button', { name: /check again|verificar de novo/i }).click()
+    expect(onRetry).toHaveBeenCalled()
+  })
+
+  it('draws the span tree when the spans are there (AC2)', () => {
+    render(
+      <TraceDrawer
+        turn={settled}
+        open
+        position={position}
+        trace={{
+          status: 'ok',
+          spans: [
+            {
+              name: 'invoke_agent foundry-live-agent:3',
+              span_id: 'a',
+              parent_id: 'outside',
+              duration_ms: 8865,
+              start_ms: 0,
+              kind: 'agent',
+            },
+          ],
+        }}
+        onClose={() => {}}
+      />,
+    )
+
+    expect(screen.getByTestId('span-tree')).toHaveTextContent('invoke_agent')
   })
 })

@@ -16,6 +16,7 @@ import { LangContext } from './i18n/context'
 import { detectLang, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
 import { useConfig } from './hooks/useConfig'
+import { useTrace } from './hooks/useTrace'
 import { useSpokenAnswers } from './hooks/useSpokenAnswers'
 import { useVoiceSession } from './hooks/useVoiceSession'
 import type { VoiceErrorCode } from './voice/session'
@@ -71,6 +72,16 @@ export default function App() {
     },
     [shown],
   )
+
+  /**
+   * The spans of whichever turn the panel is on (spec 005).
+   *
+   * Fetched only while the panel is open: a closed panel querying a workspace would bill for a
+   * question nobody asked. Named `spanTrace` because `trace` above is the panel's *position*.
+   */
+  const shownResponseId =
+    tracesOpen && shownTurn?.role === 'agent' ? shownTurn.turn.trace?.responseId : undefined
+  const { trace: spanTrace, retry: retryTrace } = useTrace(shownResponseId)
 
   const openTrace = useCallback((turnId?: string, callId?: string) => {
     setTrace({ turnId, callId })
@@ -145,6 +156,13 @@ export default function App() {
           latencyMs={
             shownTurn?.endedAt ? shownTurn.endedAt - shownTurn.startedAt : undefined
           }
+          trace={
+            config?.tracing?.enabled === false
+              ? { status: 'unavailable' as const, spans: [] }
+              : spanTrace
+          }
+          usesGateway={config?.uses_gateway ?? false}
+          onRetryTrace={retryTrace}
           onStep={stepTurn}
           onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
           onClose={() => setTracesOpen(false)}

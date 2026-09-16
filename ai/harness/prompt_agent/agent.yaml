@@ -30,8 +30,13 @@ model: gpt-5.5
 # instead gets HTTP 400 `invalid_payload` — "Not allowed when agent is specified". Without this
 # block the model still spends reasoning tokens (68 + 342 in the recorded turn) and still emits
 # `reasoning` output items, but every one of them carries `summary: []` and the card stays empty.
+#
+# `detailed`, not `auto`. Observed 2026-09-16 on version 4, which carried `summary: auto`: a turn
+# with seven tool-calling legs emitted a `reasoning` item on most of them and a summary on none —
+# `auto` leaves the choice to the model, and on short legs it chooses not to. `concise` is not an
+# option here: the GPT-5 series rejects it (docs/REFERENCES.md, reasoning models row).
 reasoning:
-  summary: auto
+  summary: detailed
 
 instructions: |
   You are the reference agent for the foundry-live-agent project. You are precise, concise, and

@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Spec 005 — the trace panel reads real spans.** `GET /trace/{response_id}` queries Application
+  Insights with the BFF's own identity and the panel renders what comes back. The `otel trace id`
+  stops being a promise and becomes a copyable id; the run gains a waterfall with a **real time
+  axis**, which spec 014's bars deliberately could not have, because spans carry start offsets and
+  the event stream does not.
+  - **Three things the event stream never reported now show**: prompt-cache tokens (one measured run
+    read 10 812 of 16 380 prompt tokens from cache), the duration of a Foundry-side MCP call — which
+    the panel used to say "carries no duration", because the *stream* has none — and the exact model
+    snapshot and agent version that ran.
+  - **The waterfall's gaps are the argument.** A run whose tools this app executed shows the model
+    call starting seconds in with nothing drawn before it, because Foundry traces only what Foundry
+    runs. The tree says so in words, so the gap reads as constitution §8 and not as lost data.
+  - **Four answers, not one.** `pending` (ingestion is staggered, so this is the common case and it
+    offers a retry), `denied` (naming Log Analytics Reader), `failed` (with the reason) and
+    `unavailable`. A checkout with no `APPLICATIONINSIGHTS_RESOURCE_ID` runs the entire app normally.
+  - **No `gateway request id` field, by decision.** APIM emits at 100 % sampling into no destination,
+    so no such id exists; the panel states that the run went through the gateway and the gateway did
+    not record it, rather than showing a labelled empty box. No new Azure ingestion was enabled.
+  - No `AgentEvent` change (§9): the trace id reaches the panel from the query, not the stream.
 - **Tracing is connected, and the spike answered spec 005's open questions.** Application Insights
   is attached to the Foundry project; two runs were fired through the BFF and their spans read back
   out. Eight spans across three traces are recorded in

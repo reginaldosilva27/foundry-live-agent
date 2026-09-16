@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 005-traces |
-| **Status** | clarified |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 
@@ -217,3 +217,43 @@ documented manual step, not shipped as unverified IaC (§5).
 - Voice Live session tracing.
 - Cost in currency.
 - Any span-based alerting, aggregation across turns, or historical comparison.
+
+## Second clarify pass — 2026-09-16, after the gateway was inspected
+
+**The gateway is already carrying the traffic, and will not be logged.** The project's
+`ApiManagement` connection and the `<connection>/<model>` deployment name mean agent inference
+already routes through `apim-foundry-belake`; `GET /config` reports `uses_gateway: true` off that.
+APIM is emitting at 100 % sampling into no destination, and the owner has decided **not** to add a
+diagnostic setting, because it bills Log Analytics ingestion for a field.
+
+That is a decision, not a gap, so the panel states it rather than showing an absence:
+
+- **AC7″ replaces AC7′.** Given a run that routed through the gateway, the panel names the gateway
+  and says it does not record requests, and what enabling that would require. Given a run that did
+  not route through one, it says that instead. **No `gateway request id` field is rendered at all**
+  — there is no id, and a labelled empty box claims there could be one.
+
+**The spans already ingested carry more than the span tree**, and none of it costs anything new.
+Measured on this project's own runs:
+
+| Attribute | What the app shows today |
+|---|---|
+| `gen_ai.usage.cached_tokens` | **nothing** — yet one run read 10 812 of 16 380 prompt tokens from cache (66 %), another 2 620 of 3 145 (83 %) |
+| `execute_tool` span duration | **nothing** — the panel says an MCP call "carries no duration", because the *event stream* has none. The span has `106.2 ms`. |
+| `gen_ai.response.model` | `gpt-5.5` — the span says `gpt-5.5-2026-04-24`, the deployed snapshot |
+| `gen_ai.agent.version` | nothing — the span says `3` |
+
+So this pass widens the spec's goal from "draw the span tree" to **"show what the run actually cost
+and did"**, which is the same query and the same round trip.
+
+### Acceptance criteria added by this pass
+
+- **AC16** — Given a turn's spans, when the panel renders them, then prompt-cache tokens are shown
+  alongside input and output tokens whenever the spans report them, and omitted when they do not.
+- **AC17** — Given an MCP call whose `execute_tool` span was found, when the panel renders that
+  call, then it shows the span's duration in place of "carries no duration".
+- **AC18** — Given a turn's spans, when the panel renders the run, then it shows the model snapshot
+  and agent version the spans report, which may be more specific than `GET /config`'s.
+- **AC19** — Given the BFF has no Application Insights resource configured, when the panel asks for
+  a trace, then it answers *unavailable* and **the app is otherwise unaffected** — no error, no
+  empty section, no failed request in the console.

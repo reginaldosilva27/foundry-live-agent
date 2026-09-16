@@ -26,6 +26,14 @@ async def config(request: Request) -> dict:
         "uses_gateway": settings.uses_gateway,
         "project_name": settings.project_name,
         "speech": {"enabled": request.app.state.synthesize is not None},
+        # Whether spans can be read, never where they live: the resource id is a deployment
+        # detail the browser has no use for (spec 005, AC9). `gateway_logged` is false until an
+        # APIM diagnostic setting exists, which is a deliberate non-goal of spec 005's first pass —
+        # so the panel's gateway line is driven by config rather than hardcoded.
+        "tracing": {
+            "enabled": request.app.state.read_trace is not None,
+            "gateway_logged": False,
+        },
         "voice": {
             "enabled": request.app.state.voice_connect is not None,
             # Two endpoints, two api-versions — observed 2026-09-15. Reported rather than hidden:

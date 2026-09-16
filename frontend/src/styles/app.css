@@ -116,6 +116,7 @@ button:disabled {
 .reasoning-card__toggle:focus-visible,
 .copy-row__button:focus-visible,
 .trace__turn-step:focus-visible,
+.trace__retry:focus-visible,
 .composer__mic:focus-visible,
 .composer__send:focus-visible {
   outline: 2px solid var(--ds-blue);
@@ -130,7 +131,8 @@ button:disabled {
 .log__close:focus-visible,
 .trace .tool-row:focus-visible,
 .trace .copy-row__button:focus-visible,
-.trace__turn-step:focus-visible {
+.trace__turn-step:focus-visible,
+.trace__retry:focus-visible {
   outline-color: var(--ds-blue-500);
 }
 
@@ -1279,7 +1281,16 @@ button:disabled {
   color: var(--ds-n-600);
 }
 
-/* Where the empty "Spans" section used to be: one line, at the weight of a footnote. */
+/* The spans, once spec 005 gave the section something to hold. It sits in the flow like every
+   other section — it was briefly inside the footer, which pushed it to the bottom of the column
+   and left a screen-high gap under the activity list. */
+.trace__spans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* Only the portal link is pinned to the bottom. */
 .trace__foot {
   display: flex;
   flex-direction: column;
@@ -1310,6 +1321,110 @@ button:disabled {
 
 .trace__activity .tool-row[data-executor='foundry'] .tool-row__bar::before {
   background: var(--ds-n-500);
+}
+
+
+/* The span waterfall (spec 005). Unlike the tool rows' bars, these sit on a shared axis: the spans
+   carry start offsets, so `--start` is a real position on a real clock and not a comparison. */
+.span-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.span-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px var(--sp-2);
+  padding: var(--sp-1) 0;
+}
+
+.span-row__name {
+  min-width: 0;
+  color: var(--ds-n-200);
+  overflow-wrap: anywhere;
+}
+
+.span-row__duration {
+  color: var(--ds-n-500);
+  white-space: nowrap;
+}
+
+/* The track is the whole run; the filled part is where this span sat in it. A span that started
+   four seconds in starts its bar four seconds in — which is the claim spec 014's bars could not
+   make, because the event stream carries no clock. */
+.span-row__bar {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: var(--ds-n-800);
+}
+
+.span-row__bar::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: var(--start, 0%);
+  width: var(--width, 0%);
+  min-width: 2px;
+  border-radius: inherit;
+  background: var(--ds-n-500);
+}
+
+/* Who ran it, in the same two colours the tool rows use: the accent is Foundry executing. */
+.span-row[data-kind='agent'] .span-row__bar::before {
+  background: var(--ds-blue);
+}
+
+.span-row[data-kind='model'] .span-row__bar::before {
+  background: var(--ds-blue-500);
+}
+
+.span-row[data-kind='tool'] .span-row__bar::before {
+  background: var(--ds-success);
+}
+
+/* Not decoration: a run whose tools this app executed shows a gap with nothing drawn in it, and
+   without this line that gap reads as lost data rather than as constitution §8. */
+.span-tree__note {
+  margin: var(--sp-2) 0 0;
+  font-family: var(--font-sans);
+  line-height: var(--lh-base);
+  color: var(--ds-n-500);
+}
+
+.trace__gateway {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trace__gateway-note {
+  margin: 0;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px dashed var(--ds-n-800);
+  border-radius: var(--r-sm);
+  font-family: var(--font-sans);
+  line-height: var(--lh-base);
+  color: var(--ds-n-500);
+}
+
+.trace__retry {
+  align-self: flex-start;
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--ds-n-700);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ds-n-200);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.trace__retry:hover {
+  border-color: var(--ds-n-500);
 }
 
 /* ---------- Call reader (spec 010) ---------- */

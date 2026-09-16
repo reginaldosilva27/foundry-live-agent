@@ -14,6 +14,8 @@ export interface BffConfig {
   agent_version: string | null
   model: string
   uses_gateway: boolean
+  /** Whether this BFF can read spans, and whether the gateway writes any (spec 005). */
+  tracing?: { enabled: boolean; gateway_logged: boolean }
   project_name: string
   speech: {
     enabled: boolean

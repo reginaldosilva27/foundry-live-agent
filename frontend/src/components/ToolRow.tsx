@@ -29,11 +29,18 @@ interface Props {
    * the comparison is the caller's to make, because only the caller can see the whole turn.
    */
   durationRatio?: number
+  /**
+   * The duration Foundry's span reports for this call (spec 005 AC17).
+   *
+   * An MCP call arrives already finished, so the event stream carries no duration for it — but the
+   * `execute_tool` span does. Given one, the row stops saying it has none.
+   */
+  spanDurationMs?: number
   /** Omitted where there is nothing to open — the voice overlay has no trace panel beside it. */
   onOpen?: () => void
 }
 
-export function ToolRow({ activity, durationRatio, onOpen }: Props) {
+export function ToolRow({ activity, durationRatio, spanDurationMs, onOpen }: Props) {
   const s = useT()
   const executor = activity.kind === 'tool' ? activity.executor : 'foundry'
   const tag = activity.kind === 'mcp' ? activity.serverLabel : EXECUTOR_TAG[executor]
@@ -44,7 +51,7 @@ export function ToolRow({ activity, durationRatio, onOpen }: Props) {
         ? s('tool.executedHere')
         : s('tool.executedInFoundry')
 
-  const duration = activity.kind === 'tool' ? activity.durationMs : undefined
+  const duration = (activity.kind === 'tool' ? activity.durationMs : undefined) ?? spanDurationMs
   const bar = duration !== undefined && durationRatio !== undefined
 
   // A button only where pressing it does something. In the voice overlay it is a statement, not
@@ -80,14 +87,15 @@ export function ToolRow({ activity, durationRatio, onOpen }: Props) {
           : activity.status === 'failed'
             ? s('tool.failed')
             : duration !== undefined
-              ? formatMs(duration)
+              ? // A span's duration is a float; the row is a place for a number, not a measurement.
+                formatMs(Math.round(duration))
               : ''}
       </span>
 
       {/* The bar's only claim is "this call took this much of the longest one". It is given no
           axis, no gridline and no start offset, because the events carry durations and not a
-          clock — a timeline drawn from these numbers would be invented (§5). Real spans arrive
-          with spec 005. */}
+          clock — a timeline drawn from these numbers would be invented (§5). The span tree in the
+          trace panel is the one with a real axis, because spans carry offsets (spec 005). */}
       {bar && (
         <span
           className="tool-row__bar"

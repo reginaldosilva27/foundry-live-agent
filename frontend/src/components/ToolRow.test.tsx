@@ -113,3 +113,23 @@ describe('the duration bar', () => {
     expect(screen.queryByTestId('tool-bar')).toBeNull()
   })
 })
+
+/** Spec 005 AC17 — the duration an MCP call never had in the event stream. */
+describe('a duration that came from a span', () => {
+  it('shows it instead of saying the call carries none', () => {
+    render(<ToolRow activity={mcpCall} spanDurationMs={106.2} onOpen={() => {}} />)
+
+    expect(screen.getByTestId('tool-row')).toHaveTextContent('106 ms')
+    expect(screen.getByTestId('tool-row')).not.toHaveTextContent(
+      /carries no duration|não carrega duração/i,
+    )
+  })
+
+  it('still says so when no span was found for it', () => {
+    render(<ToolRow activity={mcpCall} onOpen={() => {}} />)
+
+    expect(screen.getByTestId('tool-row')).toHaveTextContent(
+      /carries no duration|não carrega duração/i,
+    )
+  })
+})

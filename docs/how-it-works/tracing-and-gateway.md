@@ -1,7 +1,7 @@
 # Tracing and the gateway
 
-> **Status: stub — filled by spec 005.** Written when the code exists, so that it describes
-> behaviour that actually runs (constitution §5) and stays in sync with it (§4).
+> **Filled by spec 005**, 2026-09-16. Everything below was measured against the live service; the
+> spans are recorded in `ai/tests/fixtures/recorded/appinsights-spans-20260916.jsonl`.
 
 Where spans come from, what the APIM gateway records, and the two things neither one tells you.
 
@@ -75,3 +75,41 @@ Two more facts that bite, both recorded in [`../REFERENCES.md`](../REFERENCES.md
 `ApiManagementGatewayLogs` reach no workspace. That is a separate provisioning step, and until it is
 taken the trace panel says so rather than showing an empty field.
 
+## How the app reads them
+
+`GET /trace/{response_id}` — the browser asks by the id it already holds from the `trace_ids` event,
+and the BFF does the rest with its own identity. The join is `gen_ai.response.id`, and one KQL
+resolves the operation and returns its spans together, so the answer can never be half-ingested:
+
+```kql
+let op = toscalar(
+    dependencies
+    | where tostring(customDimensions['gen_ai.response.id']) == '<response id>'
+    | take 1 | project operation_Id
+);
+dependencies | where operation_Id == op
+```
+
+Four answers, each distinguishable on screen, because they need different actions: `ok`, `pending`
+(ingestion is staggered — this is the common case, not a failure), `denied` (which names Log
+Analytics Reader) and `failed`. A BFF with no `APPLICATIONINSIGHTS_RESOURCE_ID` answers
+`unavailable` and the rest of the app is untouched.
+
+What the panel gained that the event stream never carried:
+
+| | |
+|---|---|
+| **Prompt cache** | `gen_ai.usage.cached_tokens` — one measured run read 10 812 of 16 380 prompt tokens from cache |
+| **MCP durations** | the `execute_tool` span has one; the event stream does not |
+| **Model snapshot** | `gpt-5.5-2026-04-24`, against a configured `gpt-5.5` |
+| **Agent version** | which version of the definition actually ran |
+| **A real axis** | spans carry start offsets, so the bars say *when* and not only *how long* |
+
+## The gateway line
+
+There is **no `gateway request id` field**, and that is a decision rather than an omission. APIM
+emits at 100 % sampling into no destination — it has no diagnostic settings — so no such id exists
+to show, and a labelled empty box would claim one could. The panel states what is true instead:
+that the run went through the gateway and the gateway did not write it down, or that it did not go
+through one at all. Enabling it is `GatewayLogs` (and `GatewayLlmLogs`) to the workspace the
+project's Application Insights already sits on, which bills ingestion — see `REFERENCES.md`.
