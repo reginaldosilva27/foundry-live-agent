@@ -128,6 +128,9 @@ describe('the tool row grid', () => {
     const panel = css.split('.trace__activity .tool-row {')[1].split('}')[0]
     expect(panel).toMatch(/--tag-col:/)
     expect(panel).toMatch(/--dur-col:/)
+    // The ordinal's floor too: measured in a browser, keeping it cost `lookup_knowledge` its last
+    // characters in a 320px column — an aligned number is not worth an unreadable name.
+    expect(panel).toMatch(/--step-col:\s*0/)
   })
 
   // Spec 015 AC4. The subject is the one cell whose length nobody controls — a Learn URL or a
@@ -144,6 +147,39 @@ describe('the tool row grid', () => {
     // A grid track only truncates if it is allowed to shrink below its content.
     const name = css.split('.tool-row__name {')[1].split('}')[0]
     expect(name).toMatch(/min-width:\s*0/)
+  })
+
+  // A tool name is an identifier: `lookup_knowledge` broken across lines as `lookup_kn / owledge`
+  // is not a shorter name, it is an unreadable one. Reported from the running app, where the name
+  // shared a flex track with the subject, inherited `overflow-wrap: anywhere`, and was shredded one
+  // character per line inside the 320px trace panel.
+  it('never breaks a tool name mid-word', () => {
+    const name = css.split('.tool-row__name {')[1].split('}')[0]
+    expect(name).not.toContain('overflow-wrap')
+
+    const tool = css.split('.tool-row__tool {')[1].split('}')[0]
+    expect(tool).toMatch(/white-space:\s*nowrap/)
+    // Not wrapped, but not overflowing either: at 320px a nowrapped name that cannot shrink paints
+    // itself straight across the executor badge, which a browser showed and this file cannot.
+    expect(tool).toMatch(/text-overflow:\s*ellipsis/)
+    expect(tool).toMatch(/min-width:\s*0/)
+
+    // The subject takes what is left over rather than squeezing the name for room.
+    const subject = css.split('.tool-row__subject {')[1].split('}')[0]
+    expect(subject).toMatch(/flex:\s*1 1 0/)
+  })
+
+  it('gives the subject a line of its own where the column is too narrow to share one', () => {
+    // 320px, minus the tag and duration rails, is not enough for a name and a query side by side —
+    // the two just take turns being ellipsised. The panel stacks them instead. It has to be a flex
+    // wrap and not `grid-column: 1 / -1`: the subject is a child of the name's cell, not of the
+    // row's grid, so a grid placement on it is inert. jsdom lays nothing out, so that mistake
+    // passed a test before a browser showed it.
+    const name = css.split('.trace__activity .tool-row__name {')[1].split('}')[0]
+    expect(name).toMatch(/flex-wrap:\s*wrap/)
+
+    const subject = css.split('.trace__activity .tool-row__subject {')[1].split('}')[0]
+    expect(subject).toMatch(/flex-basis:\s*100%/)
   })
 
   it('gives the ordinal a floor of its own, like every other fixed column', () => {

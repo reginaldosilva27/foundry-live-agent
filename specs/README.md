@@ -69,7 +69,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 013 | [The agent can search the live web](013-web-search-tool/spec.md) | 3 | ✅ done |
 | 014 | [The trace panel becomes an instrument](014-trace-panel/spec.md) | 3 | ✅ done |
 | 015 | [The turn shows its steps when the model shows no reasoning](015-steps-narration/spec.md) | 3 | ✅ done |
-| 016 | [The agent speaks while it works — and sounds better doing it](016-speaks-while-it-works/spec.md) | 3 | 🚧 in-progress |
+| 016 | [The agent speaks while it works — and sounds better doing it](016-speaks-while-it-works/spec.md) | 3 | ✅ done |
 
 The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
 screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),

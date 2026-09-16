@@ -83,12 +83,18 @@ spec's code plus the spike's observations.
 
 ## Open questions (clarify before planning)
 
-- [ ] **The raw Foundry event names for text and function calls are still unobserved.** The spike
+- [x] **The raw Foundry event names for text and function calls are still unobserved.** The spike
       reached `response.mcp_list_tools.completed` and then died on a gateway 404 caused by the
       reference environment (no model deployment, and a Base URL one segment short). The normaliser
       is therefore written as a **declarative mapping table** with each entry marked verified or
       unverified, and a test asserts that every mapped name appears in a recorded fixture once one
       exists. Nothing is silently guessed (§10).
+      → **Resolved 2026-09-15** by spec 002's closing pass, and this checkbox simply outlived it:
+      the 310-event recording exists, `tests/test_recorded_turn.py` replays it through the
+      normaliser, and `unmapped_types` asserts nothing arrived that the table does not know. Three
+      of the inferred names were wrong and were corrected against the recording — the episode that
+      `specs/README.md` calls "§10 learned the expensive way". Two later recordings (2026-09-16,
+      spec 016) still add no unmapped type.
 - [x] SSE or WebSocket? → **SSE.** Confirmed with the user. `EventSource` is GET-only, so the client
       uses `fetch` + `ReadableStream`; WebSocket is reserved for the Voice Live control channel.
 - [x] Who owns the tool-execution loop, the router or the adapter? → **The router.** The adapter's

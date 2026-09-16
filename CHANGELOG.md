@@ -24,7 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The lever is the agent's instructions because it is the only legal one: `instructions` is
   unsupported on a Voice Live session with a custom agent, and having the BFF speak a filler would
   put words in the agent's mouth (§8). An instruction biases a model rather than compelling it, so
-  the claim stands or falls on a recorded live turn (spec 016 AC3/AC4), not on the unit test.
+  the claim stands or falls on a recorded live turn — and it stands: **observed 2026-09-16 on agent
+  version 6, in both modalities.** Text — *"Vou verificar na web e confirmar a data atual para
+  identificar o jogo mais recente."* — then the calls. Voice — *"Vou verificar isso na internet
+  agora."* — then the calls. Both recordings are committed
+  (`prompt-agent-preamble-20260916.jsonl`, `voice-live-preamble-20260916.jsonl`) and the same
+  assertion run against the 2026-09-15 recordings fails, which is what makes them a before/after.
+  - **It narrates once per leg, not once per turn** — better than the instruction asked for: a turn
+    that searches again after reading the first result opens the second leg with its own sentence,
+    so every silence gets covered instead of only the first.
 
 ### Changed
 - **The reasoning card stops blaming the deployment.** It said the model emitted no summaries and to
@@ -38,6 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   picked `pt-BR-Luana:MAI-Voice-2-Flash` from the documentation for latency. HD is slower to first
   audio; that trade is the point of the preamble above, and `VOICELIVE_VOICE` is the one-line way
   back. A test now fails if the code default and `.env.example` ever disagree (§4).
+  - **Verified on the wire, not inferred** (2026-09-16): a live session against this project's own
+    resource in eastus2 negotiated the HD voice **and produced audio frames with it**, which is a
+    stronger claim than spec 012 could make — that one only ever saw the name echoed back, and a
+    voice that is accepted but mute sounds exactly like one that works. The how-to's HD region list
+    names `eastus`; eastus2 serves it anyway.
 - **Spec 005 — the trace panel reads real spans.** `GET /trace/{response_id}` queries Application
   Insights with the BFF's own identity and the panel renders what comes back. The `otel trace id`
   stops being a promise and becomes a copyable id; the run gains a waterfall with a **real time

@@ -85,3 +85,27 @@
   a row without one flowed its tag a track to the left and undid spec 014 AC9. The tag and duration
   cells are now placed, not flowed.
 - **T16 was expected to be green on the first run and was not** — see above.
+
+## What a browser showed that the tests did not
+
+Reported from the running app and fixed the same day. `styles/layout.test.ts` reads CSS *rules*;
+jsdom lays nothing out, so none of this could fail there — the rows were rendered against the real
+stylesheet in a headless browser at 900px and 320px, and measured.
+
+- **The tool name was being shredded.** `lookup_knowledge` came out as `lookup_kn` / `owledge` in
+  the chat and one character per line in the trace panel: the name kept `overflow-wrap: anywhere`
+  from before, and now shared a flex track with a subject that grew. The name is an identifier and
+  is never broken — it has its own element, never wraps, and ellipsises only when even the whole
+  cell is too narrow.
+- **Then it overflowed instead.** A nowrapped name that cannot shrink painted itself straight across
+  the `bff` badge at 320px. Fixed by letting it shrink with an ellipsis, while the subject — basis
+  zero — takes only what is left rather than squeezing it.
+- **`grid-column: 1 / -1` on the subject did nothing**, and the layout test happily passed it: the
+  subject is a child of the name's *cell*, not of the row's grid. The panel stacks them with a flex
+  wrap instead.
+- **The ordinal column cost the panel 26px it did not have**, which is what ellipsised
+  `lookup_knowledge` there. Its floor is 0 in the panel and the name is set one step down: 116px
+  wanted against 122px of track, measured.
+
+The lesson worth keeping: a layout rule that a test can only read is a rule a browser still has to
+confirm. Three of these four were wrong in a way the suite called green.

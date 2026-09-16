@@ -93,7 +93,11 @@ export function ToolRow({ activity, durationRatio, spanDurationMs, showStep, onO
       )}
 
       <span className="tool-row__name">
-        {activity.name}
+        {/* Titled because in the 320px trace panel a long name is ellipsised, and the row's own
+            title is about what pressing it does. */}
+        <span className="tool-row__tool" title={activity.name}>
+          {activity.name}
+        </span>
         {/* What the call asked for — the query, the timezone, the url. Seven searches of one tool
             are seven different questions, and until this was drawn they were seven identical rows
             (spec 015). It shares the name's column: together they are one phrase, and keeping them

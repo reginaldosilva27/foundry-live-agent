@@ -168,6 +168,27 @@ Three things about that block are worth knowing (spec 012):
 - **Blank configuration sends nothing.** With every `VOICELIVE_*` variable empty the frame is just
   `type` and `sdp_offer`, exactly as the recorded fixtures captured it.
 
+## The gap while a tool runs
+
+A function-call round trip is silent by construction: the model emits the call instead of speech,
+and speech resumes when the output comes back. On screen that is four tool rows filling in; in the
+ear it is a person who stopped talking. Nothing in this app can fix that — `instructions` is not
+supported on a session with a custom agent, and a filler the BFF spoke would be the app putting
+words in the agent's mouth (§8).
+
+So the fix lives in the agent definition (spec 016): *before you call a tool that takes a moment,
+say one short sentence about what you are about to look up.* Observed on agent version 6,
+2026-09-16, and recorded in `ai/tests/fixtures/recorded/voice-live-preamble-20260916.jsonl`:
+
+```
+response.audio_transcript.delta   "Vou verificar isso na internet agora."
+response.function_call_arguments.done   search_web({"query": "último jogo do Corinthians …"})
+```
+
+The model narrates **once per leg**, so a turn that searches again after reading the first result
+opens the second leg with its own sentence. An instruction biases a model rather than compelling
+it, which is why that ordering is asserted against a recording and not merely written down.
+
 ## What the overlay shows, and what it does not
 
 During a session the card shows the conversation newest-first and **one line per tool call** — the

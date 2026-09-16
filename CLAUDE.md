@@ -113,6 +113,10 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
 - Foundry's own `agent.yaml` is **deprecated**; ours (`ai/harness/*/agent.yaml`) is our schema,
   labelled as such.
 - **Voice Live never passes through the AI Gateway**, and the gateway does not log tool traces.
+- **A tool round trip is silent, and only the agent definition can fill it.** `instructions` is
+  **not supported** on a Voice Live session with a custom agent, so how the agent behaves during a
+  turn — including the spoken preamble before a tool call (spec 016) — is changed in
+  `ai/harness/*/agent.yaml` and applied, never per session and never by the BFF speaking for it.
 - **Reasoning summaries are configured on the agent definition, not per request.** Sending
   `reasoning` alongside an `agent_reference` is rejected: *"Not allowed when agent is specified."*
   Without it the card is empty forever, though the model still spends reasoning tokens. And

@@ -896,14 +896,29 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: var(--fs-body-s);
   color: var(--fg-1);
-  overflow-wrap: anywhere;
+}
+
+/* The name holds its width against the subject, and still gives way to the row. A tool name is an
+   identifier — broken across lines it stops being readable at all (`lookup_kn` / `owledge`), which
+   is what happened when it shared this flex track with a growing subject and still carried
+   `overflow-wrap: anywhere`. So: never wrapped, never broken, but ellipsised where even the whole
+   cell is too narrow — the alternative, observed at 320px, is the name painting itself across the
+   executor badge. */
+.tool-row__tool {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* What the call asked for, beside what was called. In the page font, not mono: the name is an
    identifier and the subject is content, and the two read as one phrase when they are set
    differently. It is the one cell whose length nobody controls — a Learn URL, a sentence of a
    query — so it truncates rather than pushing the executor column off its x (spec 015 AC4). */
+/* Basis zero: the subject takes what is left over and never squeezes the name to get it. */
 .tool-row__subject {
+  flex: 1 1 0;
   min-width: 0;
   font-family: var(--font-sans);
   font-size: var(--fs-body-s);
@@ -1161,8 +1176,19 @@ button:disabled {
      which is the alignment a 320px column can actually afford. */
   --tag-col: 0;
   --dur-col: 3rem;
+  /* The ordinal gets no floor here either. 320px has 26px less to give than the chat does, and an
+     aligned ordinal column bought at the price of an ellipsised tool name is a bad trade: measured,
+     the floor alone cost `lookup_knowledge` the room it needs. Calls are single digits in practice,
+     so they line up anyway. */
+  --step-col: 0;
   border-color: var(--ds-n-800);
   background: var(--ds-n-900);
+}
+
+/* And the name is set one step down, which is what finally fits it: 116px wanted against 122px of
+   track. At body size it wanted 135px and lost its last three characters. */
+.trace__activity .tool-row__tool {
+  font-size: var(--fs-caption);
 }
 
 .trace__activity .tool-row__executor {
@@ -1173,8 +1199,19 @@ button:disabled {
   background: var(--ds-n-800);
 }
 
+/* 320px, less the tag and duration rails, cannot hold a name and a query side by side: they take
+   turns being ellipsised until neither says anything. Here the subject drops under the name. It
+   wraps *within* the name's cell rather than spanning the row, because the subject is a child of
+   that cell and not of the row's grid — `grid-column` on it would be inert. */
 .trace__activity .tool-row__name {
+  flex-wrap: wrap;
   color: var(--ds-n-100);
+}
+
+.trace__activity .tool-row__subject {
+  flex-basis: 100%;
+  font-size: var(--fs-caption);
+  color: var(--ds-n-400);
 }
 
 .trace__activity .tool-row__meta {

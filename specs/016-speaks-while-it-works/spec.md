@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 016-speaks-while-it-works |
-| **Status** | in-progress |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 
@@ -121,10 +121,13 @@ answered by AC3/AC4 rather than by a conversation.
       unsupported with a custom agent), and the line is wanted in chat too. (User, 2026-09-16.)
 - [x] Which Portuguese voice? → **`pt-BR-Thalita:DragonHDLatestNeural`**, chosen by listening,
       accepting the HD latency trade. (User, 2026-09-16.)
-- [ ] Does `gpt-5.5` actually emit speech before a function call under this instruction, on both
-      the Responses API and Voice Live? Unknown until AC3/AC4 are recorded. **If it does not, this
-      spec fails honestly** — the finding gets written down and the instruction reverted, rather
-      than the app faking the sentence (§5).
+- [x] Does `gpt-5.5` actually emit speech before a function call under this instruction, on both
+      the Responses API and Voice Live? → **Yes, in both**, recorded 2026-09-16 against agent
+      version 6 and committed as `prompt-agent-preamble-20260916.jsonl` and
+      `voice-live-preamble-20260916.jsonl`. Text: *"Vou verificar na web e confirmar a data atual
+      para identificar o jogo mais recente."* Voice: *"Vou verificar isso na internet agora."*
+      Unasked-for finding: it narrates **once per leg**, not once per turn — better than the rule,
+      because each leg is its own silence.
 
 ## Out of scope / deferred
 

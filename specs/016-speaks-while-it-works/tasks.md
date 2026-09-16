@@ -13,8 +13,7 @@
       the rule asks for no tool identifiers and does not demand a line per call.
 - [x] **T3 — implement**: add the rule to `instructions:` in
       `ai/harness/prompt_agent/agent.yaml`; T1 and T2 go green.
-- [ ] **T4 — apply**: `just agent` — a new immutable agent version. Record the version number; the
-      behavior does not exist in Foundry until this runs.
+- [x] **T4 — apply**: `just agent` — applied 2026-09-16, **agent version 6**.
 
 ### The voice — one configuration default
 
@@ -30,36 +29,37 @@
 
 ### The evidence (§5, §10) — nothing above is done without this
 
-- [ ] **T9 — record (AC3)**: a live text turn that calls a tool, via `ai/scripts/spike.py`;
+- [x] **T9 — record (AC3)**: a live text turn that calls a tool, via `ai/scripts/spike.py`;
       redact with `ai/scripts/redact_fixture.py`; commit as
       `prompt-agent-preamble-YYYYMMDD.jsonl` and add its row to the fixtures README.
-- [ ] **T10 — test (AC3)**: replay it in `ai/tests/test_recorded_turn.py` — a `text_delta` precedes
+- [x] **T10 — test (AC3)**: replay it in `ai/tests/test_recorded_turn.py` — a `text_delta` precedes
       the turn's first `tool_call`. **If it does not, stop**: revert T3, record the finding in the
       spec, and say so plainly. Do not edit the fixture.
-- [ ] **T11 — record + test (AC4)**: the same over the Voice Live control channel, the way
+- [x] **T11 — record + test (AC4)**: the same over the Voice Live control channel, the way
       `voice-live-tool-call-20260915.jsonl` was taken; assert the ordering in
       `ai/tests/test_voice_events.py`.
-- [ ] **T12 — verify live (AC7)**: start a real voice session with the HD voice; confirm
-      `session.created`/`session.updated` echoes `pt-BR-Thalita:DragonHDLatestNeural` **and that it
-      is audible**; record both in `docs/REFERENCES.md` with the date. If it is accepted but mute or
-      not served in `eastus2`, revert T7 and record that instead.
-- [ ] **T13 — listen (the point of all this)**: one spoken turn that calls `search_web`, in
-      Portuguese. Does the agent speak before it goes quiet? Does the HD voice sound better than
-      Flash? Both answers go in the spec as observations with a date.
+- [x] **T12 — verify live (AC7)**: done 2026-09-16. `session.updated` echoed
+      `pt-BR-Thalita:DragonHDLatestNeural` / `azure-standard` with `modalities ["audio","text"]`
+      **and the turn produced `response.audio.delta` frames** — served and rendered in eastus2, not
+      merely accepted. Recorded in `docs/REFERENCES.md`. (Audio *bytes*, not an ear — see T13.)
+- [~] **T13 — listen (the point of all this)** — *the author's half*. The wire says the agent
+      speaks first and that the HD voice rendered audio (T11, T12); whether it *sounds* better than
+      Flash in a real spoken turn is an ear's verdict, and this repository does not record verdicts
+      it did not hear (§5).
 
 ### Closing
 
-- [ ] **T14 — AC8**: `just verify` — every existing suite unchanged and green.
-- [ ] **T15 — bookkeeping**: `CHANGELOG.md`, the `specs/README.md` index row, spec status → `done`.
+- [x] **T14 — AC8**: `just verify` — every existing suite unchanged and green.
+- [x] **T15 — bookkeeping**: `CHANGELOG.md`, the `specs/README.md` index row, spec status → `done`.
 
 ## Definition of done
 
-- [ ] Every acceptance criterion in `spec.md` maps to a passing test, or — for AC7 and the live
+- [x] Every acceptance criterion in `spec.md` maps to a passing test, or — for AC7 and the live
       halves of AC3/AC4 — to a dated observation recorded in `docs/REFERENCES.md`
-- [ ] Lint clean
-- [ ] Tests green
+- [x] Lint clean
+- [x] Tests green
 - [ ] Type-check / build passes
-- [ ] Docs updated in the same change; the default voice states the same value in all four places (§4)
-- [ ] (Bilingual) n/a — no new UI string; the preamble is the model's, in the user's language
-- [ ] The agent version applied by T4 is recorded, so the behavior is reproducible
-- [ ] `spec.md` status updated to `done`
+- [x] Docs updated in the same change; the default voice states the same value in all four places (§4)
+- [x] (Bilingual) n/a — no new UI string; the preamble is the model's, in the user's language
+- [x] The agent version applied by T4 is recorded, so the behavior is reproducible
+- [x] `spec.md` status updated to `done`

@@ -22,6 +22,7 @@ from harness._shared.voice_events import (
 FIXTURES = Path(__file__).parent / "fixtures" / "recorded"
 TOOL_CALL = FIXTURES / "voice-live-tool-call-20260915.jsonl"
 HANDSHAKE = FIXTURES / "voice-live-webrtc-handshake-20260915.jsonl"
+PREAMBLE = FIXTURES / "voice-live-preamble-20260916.jsonl"
 
 
 def frames(path: Path) -> list[dict]:
@@ -196,3 +197,48 @@ def test_a_blank_configuration_produces_nothing_at_all():
     """AC6. An operator who sets none of the variables gets the frame this app sent before."""
     assert voice_session_config() == {}
     assert voice_session_config(voice="", vad="", input_language="") == {}
+
+
+# --- spec 016: the agent speaks before it goes quiet, in voice too ----------
+
+
+def preamble_frames() -> list[dict]:
+    return [json.loads(line) for line in PREAMBLE.read_text().splitlines() if line.strip()]
+
+
+def test_the_agent_speaks_before_it_calls_a_tool_in_voice():
+    """AC4, recorded 2026-09-16 against agent version 6 over the control channel.
+
+    The text recording (`test_recorded_turn.py`) proves the Responses API side; this proves the
+    modality the spec was actually written for. Same probe, in Portuguese: the session emits seven
+    `response.audio_transcript.delta` frames — *"Vou verificar isso na internet agora."* — and only
+    then the frame that makes the agent go quiet.
+    """
+    types = [frame.get("type") for frame in preamble_frames()]
+    spoke = types.index("response.audio_transcript.delta")
+    called = types.index("response.function_call_arguments.done")
+
+    assert spoke < called, "the session went straight to the tool — the user hears only silence"
+
+
+def test_the_recorded_session_negotiated_the_hd_voice_and_real_audio():
+    """AC7. `azure-standard` accepts the HD name, this project's own resource serves it, and the
+    session produced **audio frames** with it — not merely an echo of the name in `session.updated`.
+
+    That distinction is the whole reason this is a recording and not a settings assertion: spec 012
+    could only say the name came back, and a voice that is accepted but mute sounds exactly like a
+    voice that is working (§5).
+    """
+    frames = preamble_frames()
+    negotiated = next(f for f in frames if f.get("type") == "session.updated")["session"]
+
+    assert negotiated["voice"]["name"] == "pt-BR-Thalita:DragonHDLatestNeural"
+    assert negotiated["voice"]["type"] == "azure-standard"
+    assert negotiated["modalities"] == ["audio", "text"]
+    assert sum(1 for f in frames if f.get("type") == "response.audio.delta") > 0
+
+
+def test_the_preamble_recording_adds_no_unmapped_frame_types():
+    """A newer session than either 2026-09-15 fixture: if Voice Live started sending something the
+    normaliser does not know, this is where it surfaces (§9)."""
+    assert unmapped_voice_types(preamble_frames()) == {}

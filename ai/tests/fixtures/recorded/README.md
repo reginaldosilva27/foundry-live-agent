@@ -8,11 +8,25 @@ built on top of it (constitution §5).
 |---|---|
 | `prompt-agent-turn-20260915.jsonl` | 310 events. One whole turn with reasoning summaries, two function calls the app executes, two MCP calls Foundry executes, streamed answer text, and the function-call round trip. The canonical recording. |
 | `prompt-agent-no-reasoning-20260915.jsonl` | 131 events. The same agent, same tools, same probe — with `reasoning` absent from the definition. Kept for the contrast: not one summary event. |
+| `prompt-agent-preamble-20260916.jsonl` | 437 events, three legs. The turn spec 016 exists for: asked in Portuguese for Corinthians' last match, the agent **says what it is about to do before it calls a tool** — *"Vou verificar na web e confirmar a data atual para identificar o jogo mais recente."* — then calls `get_current_datetime` and `search_web`. The 2026-09-15 recordings go straight to the tool, which is what makes the pair a before/after. |
+| `voice-live-preamble-20260916.jsonl` | 86 control-channel frames. The same probe over Voice Live: `session.updated` negotiating **`pt-BR-Thalita:DragonHDLatestNeural`** with `modalities ["audio","text"]`, the spoken preamble as `response.audio_transcript.delta` (*"Vou verificar isso na internet agora."*), `response.audio.delta` frames proving the HD voice actually rendered, and only then `response.function_call_arguments.done`. |
 
 Both were captured on **2026-09-15** against project `ai-admin2354ai223634534-project` (resource
 `ai-admin2354ai223634534338`, eastus2) on model `gpt-5.5`, by `ai/scripts/spike.py` and a follow-up
 reasoning probe. The findings they answer — O-1, O-3, O-8, O-9 — are written up in
 [`docs/REFERENCES.md`](../../../../docs/REFERENCES.md).
+
+The two **`…-preamble-20260916`** recordings were taken the same day against the same project, on
+agent version **6** — the first version carrying spec 016's narration rule. Both were captured by
+one-off scripts rather than `spike.py`, because they had to talk to the *shipped* agent by
+`agent_reference` (text) and by `agent_name` + `agent_project_name` (voice) rather than to a
+throwaway spike agent. Re-record by asking the shipped agent anything that needs a tool.
+
+**One edit was made to the voice recording, and it is the only one**: the base64 payload of each
+`response.audio.delta` was blanked to `""`. The frames are kept where they happened — their
+presence is the evidence that the HD voice produced audio — but 6 frames of PCM do not belong in
+git. Nothing else was touched: no frame removed, no order changed, no field rewritten beyond the
+identifier redaction every fixture here gets.
 
 The synthetic event sequences inside `tests/test_events.py` are a different thing: inline unit-test
 inputs for our own validator. They assert what `validate_event` and `check_stream` do, and make no

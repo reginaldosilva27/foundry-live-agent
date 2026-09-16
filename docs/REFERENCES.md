@@ -147,11 +147,29 @@ from connecting Application Insights to the project.
 > naturalness. This is a judgement by ear, recorded as one: no measurement of latency was taken,
 > and no claim is made about any other locale.
 >
-> **Still unverified for the HD default.** The 2026-09-15 probe saw that name *echoed* in
-> `session.updated` from this project's own resource (eastus2), which shows the service accepts it —
-> **not** that it renders audio there, and the HD region list in the how-to names `eastus`. Spec 016
-> AC7 exists for exactly this gap; until a live session is confirmed audible with it, the default is
-> doc-and-echo evidence, not wire-verified audio (§5).
+> **HD verified on the wire, 2026-09-16 (spec 016 AC7).** A live session against this project's
+> own resource (`ai-admin2354ai223634534338`, eastus2) over `/voice-live/realtime`,
+> `api-version=2026-04-10`, sending the app's own `session.update`: `session.created` came back
+> `voice en-US-AvaNeural`, and `session.updated` echoed
+> **`pt-BR-Thalita:DragonHDLatestNeural` / `azure-standard`** with `modalities ["audio","text"]` —
+> then the turn produced `response.audio.delta` frames. So the HD tier is **served and rendered**
+> here, not merely accepted, despite the how-to's region list naming `eastus`. Recorded in
+> `ai/tests/fixtures/recorded/voice-live-preamble-20260916.jsonl`.
+>
+> The echoed `voice` object also carries the fields this app does not set — `temperature`, `rate`,
+> `pitch`, `style`, `locale`, `prefer_locales`, `custom_lexicon_url`, all `null`. Useful to know
+> they exist on `azure-standard`; none is configured by this repo.
+
+> **The preamble, observed 2026-09-16 (spec 016 AC3/AC4).** With the narration rule in agent
+> version 6, `gpt-5.5` speaks **before** the function call in both modalities: `text_delta` at
+> index 93 vs. the first function call at 112 in the Responses recording, and
+> `response.audio_transcript.delta` at 10 vs. `response.function_call_arguments.done` at 30 over
+> the voice control channel. Two things worth writing down because they were not asked for:
+> the model narrates **once per leg** rather than once per turn (leg 1 covered two calls with one
+> sentence; leg 2 opened with *"Encontrei indícios do adversário; vou checar uma fonte adicional
+> para confirmar a data da partida."*), which is better for voice than what the instruction asked
+> for — every silence gets covered. And the sentences came out in Portuguese without the rule
+> naming a language beyond "the one you are answering in".
 
 > **The session configuration is doc-shaped, not wire-verified.** The two rows above describe what
 > the documentation says. The committed voice fixtures were recorded *before* this configuration

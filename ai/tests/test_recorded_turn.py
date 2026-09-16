@@ -23,6 +23,7 @@ from harness.prompt_agent.events import normalise, unmapped_types
 FIXTURES = Path(__file__).parent / "fixtures" / "recorded"
 WITH_REASONING = FIXTURES / "prompt-agent-turn-20260915.jsonl"
 WITHOUT_REASONING = FIXTURES / "prompt-agent-no-reasoning-20260915.jsonl"
+PREAMBLE = FIXTURES / "prompt-agent-preamble-20260916.jsonl"
 
 
 def events(path: Path) -> list[dict]:
@@ -104,6 +105,8 @@ def test_the_normaliser_knows_every_event_type_foundry_sent():
     """Nothing in a real stream may land in the unmapped bucket."""
     assert unmapped_types(events(WITH_REASONING)) == {}
     assert unmapped_types(events(WITHOUT_REASONING)) == {}
+    # A later recording, on a newer agent version: still nothing the table does not know.
+    assert unmapped_types(events(PREAMBLE)) == {}
 
 
 def test_an_mcp_call_carries_the_server_that_ran_it_and_its_output():
@@ -163,3 +166,58 @@ async def test_usage_is_the_whole_turn_not_the_last_leg():
     assert usage["input_tokens"] == 1091 + 17520
     assert usage["output_tokens"] == 132 + 754
     assert usage["reasoning_tokens"] == 68 + 342
+
+
+# --- spec 016 AC3: the agent speaks before it goes quiet --------------------
+
+
+async def test_the_agent_speaks_before_it_calls_a_tool():
+    """The whole point of spec 016, and the only test that can prove it.
+
+    An instruction is a request to a model, not a guarantee — the unit test on `agent.yaml` proves
+    the rule was written, and this one proves `gpt-5.5` obeyed it. Recorded 2026-09-16 against
+    agent version 6, asking in Portuguese for Corinthians' last match: the turn opens with
+    *"Vou verificar na web e confirmar a data atual para identificar o jogo mais recente."*
+    and only then calls a tool.
+
+    If a future definition loses the rule, this fails with the fixture untouched — which is the
+    correct failure, because the fixture is a claim about Foundry and never edited to pass (§5).
+    """
+    types = [event["type"] for event in await collect(replay(PREAMBLE))]
+
+    assert types.index("text_delta") < types.index("tool_call"), (
+        "the turn went straight to the tool — in voice mode that is unexplained silence"
+    )
+
+
+async def test_the_preamble_is_one_short_sentence_and_names_no_tool():
+    """AC2 as the model actually performed it, not as the instruction asked for it."""
+    events_ = await collect(replay(PREAMBLE))
+    spoken = "".join(
+        event["text"]
+        for event in events_[: [e["type"] for e in events_].index("tool_call")]
+        if event["type"] == "text_delta"
+    )
+
+    assert 0 < len(spoken) < 200, f"a preamble of {len(spoken)} chars is not a short sentence"
+    assert spoken.count(".") == 1, "one sentence, not a paragraph"
+    for identifier in ("search_web", "get_current_datetime", "lookup_knowledge"):
+        assert identifier not in spoken
+
+
+def test_the_recording_covers_a_multi_leg_turn():
+    """A guard on the fixture: three legs and three function calls, so 'once, not per call' is
+    something this recording can actually speak to.
+
+    What it says, observed: the agent narrates **once per leg**, not once per call — leg 1 covers
+    two calls with one sentence. That is not what the instruction literally asks for, and it is
+    better than what it asks for: each leg is a separate silence to fill.
+    """
+    calls = [
+        e["item"]
+        for e in events(PREAMBLE)
+        if e["type"] == "response.output_item.done" and e["item"]["type"] == "function_call"
+    ]
+
+    assert len(legs(PREAMBLE)) == 3
+    assert len(calls) == 3
