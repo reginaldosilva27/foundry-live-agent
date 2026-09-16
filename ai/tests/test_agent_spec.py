@@ -177,3 +177,27 @@ def test_the_narration_rule_stays_out_of_jargon_and_off_repeat():
     for identifier in ("search_web", "lookup_knowledge", "get_current_datetime", "microsoft_learn"):
         assert identifier not in rule, f"the preamble must not name {identifier} out loud"
     assert "once" in rule.lower(), "a line per call in a seven-call turn is a running commentary"
+
+
+# --- no URLs in a spoken answer (spec 017) --------------------------------
+#
+# The rule that belongs here does NOT exist, and that is the finding. A first attempt put
+# "when the conversation is spoken, leave the sources out" in the instructions; the model read the
+# URL aloud anyway, because it cannot tell. Asked directly, over real audio in and audio out, it
+# answered *"Estou trocando texto escrito com você."* An instruction conditioned on the modality is
+# conditioned on nothing, so the condition moved to the only place that knows it: the session
+# (`spoken_context_item`, `ai/harness/_shared/voice_events.py`).
+
+
+def test_the_written_citation_rule_survives():
+    """spec 017 AC2 — the guard against 'fixing' this by deleting citations.
+
+    Without an unconditional citation rule for written answers, a web search becomes
+    indistinguishable from the model's own memory — the exact failure spec 013 exists to prevent.
+    """
+    instructions = load_agent_spec(SHIPPED).instructions
+    search_rule = next(
+        line for line in instructions.splitlines() if "Always cite the URLs it returns" in line
+    )
+
+    assert search_rule, "the written citation rule was removed instead of made conditional"

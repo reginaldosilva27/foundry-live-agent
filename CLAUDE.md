@@ -90,7 +90,10 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
 1. **§8 — no agent loop in `backend/` or `frontend/`.** They never choose *which* tool to call,
    re-prompt the model, loop on model output, or duplicate state Foundry owns. Executing a function
    tool Foundry asked for, and submitting its output, is the documented client-side contract and is
-   fine. Test: *"would this still be true if the harness were swapped?"*
+   fine. Test: *"would this still be true if the harness were swapped?"* **One bounded exception**
+   (amended 2026-09-16, spec 017): a voice session states one static fact about the transport — that
+   the conversation is spoken — because the agent cannot perceive it and `instructions` is
+   unsupported with a custom agent. One item, one sentence, once; not a licence to prompt.
 2. **§9 — `ai/harness/_shared/contract.py` is the boundary.** Every harness emits only
    `reasoning_summary · text_delta · tool_call · tool_result · mcp_call · usage · trace_ids · error ·
    done`; the BFF and frontend consume only those. Contract tests are parameterised over adapters, so
@@ -117,6 +120,11 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
   **not supported** on a Voice Live session with a custom agent, so how the agent behaves during a
   turn — including the spoken preamble before a tool call (spec 016) — is changed in
   `ai/harness/*/agent.yaml` and applied, never per session and never by the BFF speaking for it.
+- **The agent does not know it is speaking.** Voice Live transcribes before the model and
+  synthesizes after it; asked over real audio, `gpt-5.5` answers *"Estou trocando texto escrito com
+  você."* So an instruction conditioned on the modality is conditioned on nothing — that is why the
+  voice session sends one `role: system` context item saying so (spec 017), the single **bounded**
+  exception §8 carries.
 - **Reasoning summaries are configured on the agent definition, not per request.** Sending
   `reasoning` alongside an `agent_reference` is rejected: *"Not allowed when agent is specified."*
   Without it the card is empty forever, though the model still spends reasoning tokens. And

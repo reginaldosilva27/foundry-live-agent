@@ -24,7 +24,12 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Protocol
 
 from harness._shared.contract import AgentEvent
-from harness._shared.voice_events import is_function_call, normalise_voice, tool_output_frame
+from harness._shared.voice_events import (
+    is_function_call,
+    normalise_voice,
+    spoken_context_item,
+    tool_output_frame,
+)
 
 from app.tool_executor import execute
 
@@ -87,6 +92,13 @@ class VoiceSession:
             # extra round trip, and no window in which the session runs with the wrong voice.
             frame["session"] = self._session_config
         await self._socket.send(json.dumps(frame))
+
+        # The agent cannot tell that it is speaking — Voice Live transcribes before the model and
+        # synthesizes after it, and asked directly the model says it is exchanging written text
+        # (observed 2026-09-16). So the session states the one fact only it knows. This is session
+        # context about the transport, not instructions and not an agent loop: see
+        # `spoken_context_item` and constitution §8, amended for exactly this case.
+        await self._socket.send(json.dumps(spoken_context_item()))
 
         try:
             async with asyncio.timeout(NEGOTIATION_TIMEOUT):

@@ -15,6 +15,7 @@ from harness._shared.voice_events import (
     attachment_query,
     is_function_call,
     normalise_voice,
+    spoken_context_item,
     unmapped_voice_types,
     voice_session_config,
 )
@@ -23,6 +24,8 @@ FIXTURES = Path(__file__).parent / "fixtures" / "recorded"
 TOOL_CALL = FIXTURES / "voice-live-tool-call-20260915.jsonl"
 HANDSHAKE = FIXTURES / "voice-live-webrtc-handshake-20260915.jsonl"
 PREAMBLE = FIXTURES / "voice-live-preamble-20260916.jsonl"
+NO_URLS = FIXTURES / "voice-live-no-urls-20260916.jsonl"
+URLS_SPOKEN = FIXTURES / "voice-live-urls-spoken-20260916.jsonl"
 
 
 def frames(path: Path) -> list[dict]:
@@ -242,3 +245,82 @@ def test_the_preamble_recording_adds_no_unmapped_frame_types():
     """A newer session than either 2026-09-15 fixture: if Voice Live started sending something the
     normaliser does not know, this is where it surfaces (§9)."""
     assert unmapped_voice_types(preamble_frames()) == {}
+
+
+# --- spec 017: telling the agent what it cannot perceive --------------------
+
+
+def test_the_spoken_context_item_says_the_conversation_is_heard_not_read():
+    """The agent cannot tell. Observed 2026-09-16 with real audio in and audio out, asked directly:
+    *"Estou trocando texto escrito com você."* The Voice Live cascade transcribes before the model
+    and synthesizes after it, so there is no modality signal in the model's input at all.
+
+    So the session states it. One item, at session open, about the **transport** — not about which
+    tool to call and not derived from anything the model said (constitution §8, amended).
+    """
+    frame = spoken_context_item()
+
+    assert frame["type"] == "conversation.item.create"
+    assert frame["item"]["role"] == "system"
+    text = frame["item"]["content"][0]["text"].lower()
+    assert "spoken" in text, "the item exists to state the one fact the agent cannot observe"
+    assert "url" in text, "and the one consequence that fact has for the answer"
+
+
+def test_the_spoken_context_item_carries_no_tool_and_no_state():
+    """§8's line, asserted rather than trusted: this item states a property of the channel. If it
+    ever grows a tool name, a plan, or conversation state Foundry owns, that is the violation."""
+    text = frame_text = spoken_context_item()["item"]["content"][0]["text"]
+
+    for identifier in ("search_web", "lookup_knowledge", "get_current_datetime", "microsoft_learn"):
+        assert identifier not in text
+    assert len(frame_text) < 400, "session context, not a second agent definition"
+
+
+# --- spec 017, proved by a controlled pair ---------------------------------
+
+
+def spoken(path) -> str:
+    """Everything the agent actually said in a recording."""
+    frames = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    return " ".join(
+        f.get("transcript", "") for f in frames if f.get("type") == "response.audio_transcript.done"
+    )
+
+
+def test_the_spoken_answer_carries_no_url():
+    """AC3, recorded 2026-09-16 on agent version 8, driven by **real audio** — macOS `say` into
+    `input_audio_buffer.append`, so the user item is speech and gets transcribed, not a text item
+    dressed up as one. The agent answers the question and stops."""
+    said = spoken(NO_URLS)
+
+    assert "http" not in said
+    assert "www." not in said
+
+
+def test_without_the_context_item_the_same_agent_reads_the_url_out_loud():
+    """The control. Same agent version, same probe, same audio — only the session item removed, and
+    the URL comes back. That is what makes AC3 a claim about **this change** rather than about the
+    weather: a fixture where the fix is absent and the failure reappears."""
+    assert "http" in spoken(URLS_SPOKEN)
+
+
+def test_the_spoken_answer_still_answers():
+    """AC5. Suppressing the sources must not suppress the answer — a rule that produced silence
+    would pass the assertion above and fail the user."""
+    said = spoken(NO_URLS)
+
+    assert len(said) > 80
+    assert "Corinthians" in said
+
+
+def test_the_preamble_survived_the_new_rule():
+    """AC6. Each behavioural rule competes for the model's attention with the ones before it, so
+    spec 016's ordering is re-asserted on the newest recording rather than assumed to have held."""
+    types = [
+        json.loads(line).get("type") for line in NO_URLS.read_text().splitlines() if line.strip()
+    ]
+
+    assert types.index("response.audio_transcript.delta") < types.index(
+        "response.function_call_arguments.done"
+    )

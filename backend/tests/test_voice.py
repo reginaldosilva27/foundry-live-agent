@@ -175,13 +175,25 @@ def test_a_function_call_on_the_control_channel_is_executed_and_submitted():
     socket = FakeSocket(RECORDED)
     app, _ = app_with(socket)
 
-    with TestClient(app) as client:
-        open_session(client)
-        asyncio.run(
-            drain(socket, lambda sent: any(f["type"] == "conversation.item.create" for f in sent))
+    def submitted(sent):
+        # Specifically the tool output — a session now also opens with a `system` context item
+        # (spec 017), and "the first conversation item" stopped meaning "the answer".
+        return any(
+            f["item"].get("type") == "function_call_output"
+            for f in sent
+            if f["type"] == "conversation.item.create"
         )
 
-    answer = next(f for f in socket.sent if f["type"] == "conversation.item.create")
+    with TestClient(app) as client:
+        open_session(client)
+        asyncio.run(drain(socket, submitted))
+
+    answer = next(
+        f
+        for f in socket.sent
+        if f["type"] == "conversation.item.create"
+        and f["item"].get("type") == "function_call_output"
+    )
     item = answer["item"]
     assert item["type"] == "function_call_output"
     assert item["call_id"] == next(
@@ -443,3 +455,45 @@ def test_the_documented_default_voice_matches_the_code_default(monkeypatch):
     assert load_settings(project_endpoint="e", project_name="p", model="m").voicelive_voice == (
         documented
     )
+
+
+# --- spec 017: the session says what the agent cannot perceive --------------
+
+
+async def test_the_session_tells_the_agent_it_is_being_listened_to():
+    """AC3's mechanism. Observed 2026-09-16: the model, asked with real audio in and audio out,
+    answers *"Estou trocando texto escrito com você."* — it has no idea it is speaking. So the
+    session says so, once, when it opens, and the spoken answer stops reading URLs aloud.
+
+    Sent as its own frame after the offer rather than inside it: the `session` object has no field
+    for this (`instructions` is unsupported with a custom agent), and the conversation does.
+    """
+    socket = FakeSocket(RECORDED)
+    session = VoiceSession("s-spoken", socket)
+
+    await session.negotiate(SDP_OFFER)
+    await session.close()
+
+    item = next(f for f in socket.sent if f["type"] == "conversation.item.create")
+    assert item["item"]["role"] == "system"
+    assert "spoken" in item["item"]["content"][0]["text"].lower()
+    # Order matters: the agent must know before it answers anything.
+    assert socket.sent.index(item) > 0
+    assert socket.sent[0]["type"] == "rtc.call.sdp.create"
+
+
+async def test_the_context_item_is_the_only_thing_the_bff_puts_in_the_conversation():
+    """§8, asserted. The BFF may state a fact about the transport; it may not hold a conversation.
+    Anything else this session writes into the conversation is a tool output Foundry asked for."""
+    socket = FakeSocket(RECORDED)
+    session = VoiceSession("s-quiet", socket)
+
+    await session.negotiate(SDP_OFFER)
+    await asyncio.sleep(0)
+    await session.close()
+
+    items = [f for f in socket.sent if f["type"] == "conversation.item.create"]
+    roles = [f["item"].get("role") or f["item"]["type"] for f in items]
+
+    assert roles.count("system") == 1
+    assert set(roles) <= {"system", "function_call_output"}

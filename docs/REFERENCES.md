@@ -118,6 +118,7 @@ from connecting Application Insights to the project.
 | How to use the Voice Live API | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-how-to | WebSocket endpoint **`wss://<resource>.services.ai.azure.com/voice-live/realtime?api-version=2026-04-10`** (older resources: `.cognitiveservices.azure.com`); agent mode uses `agent_id`/`project_id` query params in place of `model`. Entra scope **`https://ai.azure.com/.default`** (legacy `https://cognitiveservices.azure.com/.default`); roles **Cognitive Services User** + **Foundry User** (renamed from Azure AI User). `session.update` shape; `azure_semantic_vad` / `azure_semantic_vad_multilingual`; `interrupt_response` (barge-in, default true); `remove_filler_words`; `input_audio_echo_cancellation`; **Live-Reference AEC requires api-version `2026-07-15`**. **`instructions` is NOT supported with a custom agent.** Tip: prefer WebRTC for browser clients. Updated 2026-08-18. |
 | Voice Live with WebRTC | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-webrtc | **Public preview.** Control-channel endpoint **`/voice-live/realtime/calls`**, sample uses `api-version=2026-01-01-preview`. Three channels: WS control, WebRTC RTP media, data channel `voice-live-events`. `rtc.call.sdp.create` → `rtc.call.sdp.created`; `rtc.call.error`. **"Function and tool call events are routed to the control WebSocket so they can reach your backend for processing"** — the basis for the §3.4 design. Updated 2026-06-28. |
 | Quickstart: Voice Agent with Foundry Agent Service (new) | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-agents-quickstart | Agent attachment via **`agent_name` + `project_name`** (+ optional `agent_version`, `conversation_id`, `foundry_resource_override`, `authentication_identity_client_id`) on `azure.ai.voicelive.aio.connect(...)`; sample `api_version="2026-01-01-preview"`. **Entra only — key auth unsupported in agent mode.** |
+| Voice Live: HD (Dragon HD) voices | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/high-definition-voices | Naming is **`voicename:basemodel:version`**, e.g. `pt-BR-Thalita:DragonHDLatestNeural` — persona and original locale before the colon, `LatestNeural` to track the latest base model. Two HD families: **DragonHD** (30+ fine-tuned voices) and **DragonHDOmni** (700+, multilingual with automatic language detection, `…:DragonHDOmniLatestNeural`), plus DragonHD **Flash** (zh-CN/en-US only). DragonHD supports `temperature` and a subset of SSML; `<prosody>` and `<emphasis>` are **not** supported. Latency < 300 ms (same band as non-HD; Azure OpenAI HD voices are > 500 ms). **The published DragonHD table lists no `pt-BR` voice** — see the observation below. Read 2026-09-16 (spec 017). |
 | Voice Live API overview | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live | Supported models incl. `gpt-5.4`, `gpt-5.2`, `gpt-5`, `gpt-realtime-1.5`, `azure-realtime`; pricing tiers pro/basic/lite; token estimates (~10 tok/s input audio, ~20 tok/s output). Updated 2026-08-26. |
 | Voice Live API reference 2026-06-01-preview | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-api-reference-2026-06-01-preview | Located but not read in full; noted because it is a **third** api-version alongside `2026-04-10` and `2026-01-01-preview`. |
 | Text to speech REST API | https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech | **`POST {endpoint}/cognitiveservices/v1`**, body is **SSML**. Required headers: `Authorization`, `Content-Type: application/ssml+xml`, **`X-Microsoft-OutputFormat`**, `User-Agent`. Streaming format used here: **`audio-24khz-48kbitrate-mono-mp3`**. Audio is truncated at 10 minutes. `415` means the content type was wrong. Doc dated 2026-05-21, read 2026-09-15 (spec 008). |
@@ -141,6 +142,28 @@ from connecting Application Insights to the project.
 > back echoed in `session.updated`. **Accepted is not the same as good**: which one sounds least
 > synthetic is a listening test, and this repository does not claim to have run one.
 
+> **What actually produces the voice, read 2026-09-16.** The Voice Live overview's model table
+> settles it: every `gpt-5.x` row reads *"+ audio input through Azure speech to text + audio output
+> through **Azure text to speech voices** including custom voice"*. So this project's spoken turn is
+> a **cascade** — Azure STT → `gpt-5.5` → Azure TTS — and the voice is a TTS persona, not the model
+> speaking. Only `azure-realtime` (with its dedicated `azure-realtime-native` voices) and the
+> `gpt-realtime*` family generate audio natively. The same page notes `gpt-5.5` *"is supported and
+> tested with Voice Live but isn't pre-deployed"* — it runs as a deployment in the Foundry resource,
+> which is what this project does.
+>
+> **Consequence worth stating:** anything unpleasant about *what* is said — a URL read slash by
+> slash — is the model's text, not the voice's rendering, and no voice change fixes it (spec 017).
+
+> **A gap between the doc and the wire (2026-09-16, unresolved).** The HD voices page lists 28
+> DragonHD voices and **none of them is `pt-BR`**; the locales are en-US, de-DE, es-ES, fr-FR, ja-JP
+> and zh-CN. Yet `pt-BR-Thalita:DragonHDLatestNeural` is echoed by `session.updated` and produces
+> `response.audio.delta` frames on this project's resource. Three readings are possible and this
+> repository does not pick one without evidence: the table is incomplete, the service resolves the
+> persona through a different HD family, or it falls back silently to a non-HD voice. **A silent
+> fallback would be invisible**, which is precisely why it is written down. `DragonHDOmni`
+> (`pt-BR-Thalita:DragonHDOmniLatestNeural`) is the documented HD family that does cover pt-BR and
+> is the obvious thing to probe next.
+
 > **The listening test, run 2026-09-16 (spec 016).** `pt-BR-Luana:MAI-Voice-2-Flash` was judged not
 > good enough in Portuguese by this project's author, listening to real sessions, and the default
 > moved to **`pt-BR-Thalita:DragonHDLatestNeural`** — the HD tier, accepting slower first audio for
@@ -159,6 +182,19 @@ from connecting Application Insights to the project.
 > The echoed `voice` object also carries the fields this app does not set — `temperature`, `rate`,
 > `pitch`, `style`, `locale`, `prefer_locales`, `custom_lexicon_url`, all `null`. Useful to know
 > they exist on `azure-standard`; none is configured by this repo.
+
+> **The agent cannot perceive the modality — observed 2026-09-16 (spec 017).** Asked over a real
+> audio turn (synthesized speech into `input_audio_buffer.append`, transcribed by the service,
+> answered as audio): *"nesta conversa você está me ouvindo por voz, ou trocando texto escrito
+> comigo?"* → **"Estou trocando texto escrito com você."** Twice, once with a text item driving the
+> session and once with real audio. This follows from the cascade above — the model's input is a
+> transcript and its output is text — and it kills any instruction conditioned on the modality.
+>
+> **What works instead:** one `conversation.item.create` with `role: "system"`, sent when the
+> session opens. Accepted by Voice Live **with a custom agent** (where `instructions` is not), and
+> the spoken answer then stops reading URLs. The A/B is committed:
+> `voice-live-no-urls-20260916.jsonl` (with the item) against
+> `voice-live-urls-spoken-20260916.jsonl` (same agent version 8, same question, item removed).
 
 > **The preamble, observed 2026-09-16 (spec 016 AC3/AC4).** With the narration rule in agent
 > version 6, `gpt-5.5` speaks **before** the function call in both modalities: `text_delta` at

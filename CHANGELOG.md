@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Spec 017 — a spoken answer no longer reads URLs out loud.** In voice, the agent used to finish a
+  web-search answer by reading `https://www.sofascore.com/pt/football/team/corinthians/1957` slash
+  by slash. It now answers and stops; the **written** chat still cites every URL, unchanged.
+  - **The finding that cost the first design:** the agent cannot tell it is speaking. Put the rule
+    in the agent definition (version 7) and the URL came out anyway; asked directly over a real
+    audio turn, `gpt-5.5` answers *"Estou trocando texto escrito com você."* Voice Live transcribes
+    before the model and synthesizes after it, so a rule conditioned on the modality is conditioned
+    on nothing. Version 8 removed that rule again.
+  - **What works:** the voice session sends one `conversation.item.create` with `role: system` when
+    it opens, stating that the conversation is spoken. Accepted with a custom agent, where
+    `instructions` is not. Proved by an A/B on the same agent version — same spoken question, item
+    present vs. removed — committed as two fixtures, plus a text recording showing the written
+    citations survived.
+  - **This required amending the constitution**, which §8 forbade in its own words ("rewrites
+    instructions at request time"). The exception is narrow and written down: one static sentence
+    about the *transport*, once per session, no tool, no state, no reaction to model output — and
+    it passes §8's own "would this still be true if the harness were swapped?" test. Tests assert
+    the boundary rather than trusting it.
+
 - **Spec 015 — a turn shows its steps when the model shows no reasoning.** Seven calls to
   `lookup_knowledge` used to render as seven identical rows under a card announcing that there was
   no reasoning summary. Each row now carries the **argument that distinguishes it** — the query, the

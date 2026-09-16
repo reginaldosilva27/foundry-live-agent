@@ -88,6 +88,21 @@ Executing a function tool Foundry asked for, and submitting its output, is **not
 that is the documented client-side contract. When in doubt, ask: *"would this still be true if the
 harness were swapped?"* If yes, it belongs in the app; if no, it belongs in Foundry.
 
+**One narrow exception, added 2026-09-16 (spec 017): session context the platform has no other
+channel for.** A voice session may state, once when it opens, a *static fact about the transport*
+that the agent cannot observe — concretely, that the conversation is spoken. It is allowed because:
+
+- the agent genuinely cannot see it (verified: asked over real audio, the model answers that it is
+  exchanging written text), and Voice Live's documented field for this, `instructions`, is
+  unsupported with a custom agent;
+- it passes §8's own test — swap the harness and it is still true, because it describes the channel
+  and not the agent;
+- it is bounded: **one item, one sentence, sent once**, naming no tool, making no plan, and reading
+  nothing the model produced.
+
+It is **not** a licence to prompt the agent from the app. Anything that varies per request, reacts
+to model output, or carries tool or planning content is still a §8 violation.
+
 ### 9. The `AgentEvent` protocol is the contract
 `ai/harness/_shared/contract.py` is the single boundary between any harness and the rest of the app.
 The typed event set is `reasoning_summary · text_delta · tool_call · tool_result · mcp_call · usage ·
@@ -145,6 +160,7 @@ This document changes only by intent, not by accident:
 | §7 kept (not deleted) | Public-facing UI with a Brazilian audience — bilingual is a project goal, not optional |
 | `infra/` gate: Terraform → **Bicep** | The brief specifies Bicep + azd |
 | Added §8, §9, §10 | The repo's educational value depends on these invariants holding under review |
+| §8 exception: session context for the voice transport (2026-09-16) | The agent cannot perceive that it is being spoken to, and Voice Live's `instructions` field is unsupported with a custom agent — so a fact about the channel had nowhere else to live. Bounded to one static sentence; spec 017 |
 
 ---
 

@@ -189,6 +189,34 @@ The model narrates **once per leg**, so a turn that searches again after reading
 opens the second leg with its own sentence. An instruction biases a model rather than compelling
 it, which is why that ordering is asserted against a recording and not merely written down.
 
+## The one thing the session tells the agent
+
+The agent does not know it is speaking. Voice Live transcribes before the model and synthesizes
+after it, so the model's input is a transcript and its output is text — and asked in as many words,
+over a real audio turn, `gpt-5.5` answers *"Estou trocando texto escrito com você."*
+
+That matters because a written answer should cite its sources and a spoken one must not: a voice
+reads `https://www.sofascore.com/pt/football/team/corinthians/1957` slash by slash, to a listener
+who cannot write it down. An instruction conditioned on the modality is conditioned on nothing.
+
+So the session says it — one frame, right after the offer:
+
+```json
+{ "type": "conversation.item.create",
+  "item": { "type": "message", "role": "system",
+            "content": [{ "type": "input_text",
+                          "text": "This conversation is spoken: the person is listening to you, not reading. …" }] } }
+```
+
+**This is the single bounded exception to §8** (constitution, amended 2026-09-16): a static fact
+about the *transport*, sent once, naming no tool and reading nothing the model said. It exists
+because `instructions` — the documented field for this — is unsupported with a custom agent, and
+because §8's own test says yes: swap the harness and the conversation is still spoken.
+
+The proof is a pair of recordings on the same agent version, differing only in this frame:
+`voice-live-no-urls-20260916.jsonl` answers and stops; `voice-live-urls-spoken-20260916.jsonl`
+reads the address out loud.
+
 ## What the overlay shows, and what it does not
 
 During a session the card shows the conversation newest-first and **one line per tool call** — the

@@ -35,6 +35,7 @@ __all__ = [
     "attachment_query",
     "is_function_call",
     "normalise_voice",
+    "spoken_context_item",
     "tool_output_frame",
     "unmapped_voice_types",
     "voice_session_config",
@@ -140,6 +141,41 @@ def voice_session_config(
         config["input_audio_transcription"] = {"model": "azure-speech", "language": input_language}
 
     return config
+
+
+SPOKEN_CONTEXT = (
+    "This conversation is spoken: the person is listening to you, not reading. "
+    "Never say a URL, a web address or a list of sources out loud — give the answer and stop. "
+    "If they ask where it came from, name the source in a few words, without the address."
+)
+
+
+def spoken_context_item() -> dict[str, Any]:
+    """The one thing a Voice Live session must tell the agent, because the agent cannot see it.
+
+    **The model does not know it is being spoken to.** Observed 2026-09-16 with real audio in and
+    real audio out, asked in as many words: *"Estou trocando texto escrito com você."* Voice Live
+    transcribes before the model and synthesizes after it, so nothing in the model's input says
+    "you are being listened to" — and an instruction conditioned on the modality is therefore
+    conditioned on nothing. The agent definition cannot fix this; only the session can say it.
+
+    Why this does not put an agent loop in the BFF (constitution §8, amended 2026-09-16): it is one
+    static sentence about the **transport**, sent once when the session opens. It names no tool,
+    makes no plan, reads nothing the model said, and would be equally true of any harness attached
+    to Voice Live — which is §8's own "would this still be true if the harness were swapped?" test.
+    `instructions`, the documented field for this, is unsupported with a custom agent.
+
+    Verified accepted on the live service the same day: with it, the spoken answer to a
+    `search_web` question ends at the answer; without it, it reads the URL slash by slash.
+    """
+    return {
+        "type": "conversation.item.create",
+        "item": {
+            "type": "message",
+            "role": "system",
+            "content": [{"type": "input_text", "text": SPOKEN_CONTEXT}],
+        },
+    }
 
 
 def is_function_call(frame: Mapping[str, Any]) -> bool:

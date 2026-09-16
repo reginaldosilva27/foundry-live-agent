@@ -24,6 +24,7 @@ FIXTURES = Path(__file__).parent / "fixtures" / "recorded"
 WITH_REASONING = FIXTURES / "prompt-agent-turn-20260915.jsonl"
 WITHOUT_REASONING = FIXTURES / "prompt-agent-no-reasoning-20260915.jsonl"
 PREAMBLE = FIXTURES / "prompt-agent-preamble-20260916.jsonl"
+WRITTEN = FIXTURES / "prompt-agent-written-citations-20260916.jsonl"
 
 
 def events(path: Path) -> list[dict]:
@@ -221,3 +222,21 @@ def test_the_recording_covers_a_multi_leg_turn():
 
     assert len(legs(PREAMBLE)) == 3
     assert len(calls) == 3
+
+
+# --- spec 017 AC4: the written answer keeps its sources --------------------
+
+
+def test_the_written_answer_still_cites_its_sources():
+    """The other half of the pair. Spec 017 suppresses URLs **in speech**, and the way to be sure it
+    did not simply delete citations everywhere is to record the same question in the other modality
+    and find them still there.
+
+    Recorded 2026-09-16 on agent version 8 — the same version as the voice recording, with no
+    session context item, because the text path sends none.
+    """
+    answer = "".join(
+        event["text"] for event in events(WRITTEN) if event["type"] == "response.output_text.done"
+    )
+
+    assert "https://" in answer, "the written chat lost its citations — spec 013's whole point"
