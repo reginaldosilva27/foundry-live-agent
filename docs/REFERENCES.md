@@ -67,6 +67,8 @@ incomplete, not merely as present or absent.
 no `ApiManagementGatewayLogs` reach any workspace. Enabling them is a separate provisioning step
 from connecting Application Insights to the project.
 
+| Azure Monitor Query for Python | https://learn.microsoft.com/en-us/python/api/overview/azure/monitor-query-readme | Package **`azure-monitor-query`**, current **2.0.0**; Python **3.9+**. `LogsQueryClient` from `azure.monitor.query` (async in `azure.monitor.query.aio`, needs `aiohttp`), authenticated with `DefaultAzureCredential` from `azure-identity` — no key, which suits §*zero secrets*. **`query_resource(resource_id, query, timespan=…)`** queries an Azure resource directly, with **no workspace id** — the shape spec 005 needs, since the App Insights resource id is what the Foundry connection already names. Returns `LogsQueryResult` or `LogsQueryPartialResult` (`.status`, `.tables`, `.partial_error`); throttling surfaces as `LogsQueryError` with code `ThrottledError`; `server_timeout` defaults to 180 s, max 600. **`MetricsClient` was removed in 2.0.0** — metrics live in `azure-monitor-querymetrics`. Read 2026-09-16. |
+
 ## AI Gateway
 
 | Page | URL | Taken from it |
