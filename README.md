@@ -51,7 +51,8 @@ your container does (a *hosted agent* running LangGraph). Both sit behind one co
 
 | | |
 |---|---|
-| 🔌 **One contract, two harnesses** | `HarnessAdapter` + a typed `AgentEvent` stream. `prompt-agent` ships; `langgraph` is scaffolded. |
+| 🔌 **One contract, two harnesses** | `HarnessAdapter` + a typed `AgentEvent` stream. **Both ship**: `prompt-agent` and a LangGraph container Foundry hosts. |
+| 🧭 **Pick the agent from the screen** | The sidebar lists the agents that are *actually in your Foundry project* — kind, served version, status — and you choose which one answers, with no restart. Agents this build has no harness for are listed and dimmed, with the reason. |
 | 🛠️ **Four tools, two owners** | Microsoft Learn MCP runs *in Foundry*; three function tools — the clock, the project's own knowledge base and live web search — run *in the BFF*, because Foundry asks and stops. One line per call in the chat, the payload in the trace panel. |
 | 🔍 **Traces you can see** | An Application Insights span tree in a drawer: agent run › model calls › tool calls, with durations and tokens. |
 | 🗣️ **Voice on the same agent** | Voice Live attaches to the *same* definition — one agent, one tool set, one trace store, two modalities.  The voice, the turn detector and noise suppression are configured per deployment. |
@@ -172,17 +173,28 @@ One shot is still missing, and it is missing for a reason rather than out of neg
 
 ## 🔌 Harnesses
 
-| | **prompt-agent** (ships now) | **langgraph** (planned) |
+| | **prompt-agent** (ships) | **langgraph** (ships) |
 |---|---|---|
 | Who runs the loop | Foundry | Your container, hosted by Foundry |
 | Agent definition | `agent.yaml` → Agent Service SDK | `azure.yaml` → `azd` |
-| Tools | Declared on the agent | Declared in the Responses call / a Toolbox |
-| You maintain | Nothing at runtime | Your graph |
+| Who runs the function tools | The BFF — Foundry asks and stops | The container, itself |
+| Who is the MCP client | Foundry | The container — so **no `mcp_call`** |
+| You maintain | Nothing at runtime | Your graph, and its image |
 | Best for | Getting it working, and most production agents | Custom orchestration |
 
-`AGENT_HARNESS=prompt-agent|langgraph` switches between them; the badge in the settings panel shows
-which is live. `langgraph` is a **documented scaffold** — it raises `NotImplementedError` rather than
-pretending to work. Trade-offs: [`docs/harness-comparison.md`](docs/harness-comparison.md).
+Both run the **same model, the same instructions and the same four tools**, from one file
+(`ai/harness/_shared/agent_core.yaml`), so what differs between them is the harness and nothing
+else. Pick one from the **Agents** panel in the sidebar and the next message goes to it; a new
+conversation starts, because a Foundry conversation belongs to one agent. `AGENT_HARNESS` and
+`AGENT_NAME` still decide who answers before anyone chooses — they are the default, not the law.
+
+The panel lists the whole project, so it will also show agents this repo did not write. A **prompt**
+agent you did not write is selectable, because the prompt harness drives any prompt agent by name —
+choosing one produces a working conversation with a different agent, which is what it says on the
+row.
+
+What it costs to run each one, measured rather than documented:
+[`docs/harness-comparison.md`](docs/harness-comparison.md).
 
 ## 🧪 How we build here
 

@@ -233,6 +233,99 @@ button:disabled {
   color: var(--ds-n-500);
 }
 
+/* --- The agents panel (spec 019) -----------------------------------------
+   The project is read, not curated, so the list is as long as the project is — it scrolls inside
+   the sidebar rather than pushing the language switcher and the footer off the bottom. */
+
+.agents {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.agents__list {
+  display: flex;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: var(--sp-1);
+  list-style: none;
+}
+
+.agents__row {
+  display: grid;
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  background: transparent;
+  gap: 2px;
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.agents__row:hover:not(:disabled) {
+  background: var(--ds-ink-2);
+}
+
+.agents__row[aria-pressed='true'] {
+  border-left-color: var(--ds-blue);
+  background: var(--ds-ink-2);
+}
+
+/* Dimmed, never hidden: the row is in the project whether or not this build can drive it, and the
+   reason under it says which (AC5). */
+.agents__row:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.agents__name {
+  font-size: var(--fs-body-s);
+  color: var(--ds-n-200);
+  overflow-wrap: anywhere;
+}
+
+.agents__answering {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  color: var(--ds-blue);
+}
+
+.agents__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ds-n-500);
+}
+
+.agents__reason,
+.agents__switched,
+.agents__error {
+  margin: 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+}
+
+.agents__reason {
+  color: var(--ds-n-500);
+}
+
+.agents__error {
+  margin-bottom: var(--sp-1);
+  color: var(--fg-warning, var(--ds-n-200));
+}
+
+.agents__switched {
+  margin-top: var(--sp-2);
+  color: var(--ds-blue);
+}
+
 .sidebar__spacer {
   flex: 1;
 }

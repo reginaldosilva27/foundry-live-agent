@@ -42,6 +42,35 @@ loop; the **agent** runs on Foundry and is nothing but loop.
 What the two cost each other is measured, not described, in
 [`harness-comparison.md`](harness-comparison.md).
 
+## Choosing between them from the screen (spec 019)
+
+Which agent answers used to be an environment variable read once at process start, which meant the
+swap this repository is *about* could not be seen without restarting the server. Since 2026-09-16 the
+sidebar lists the project's agents and a person picks one.
+
+```
+Browser ──GET /agents──> BFF ──GET {project_endpoint}/agents?api-version=v1──> Foundry
+                          │                                    (audience https://ai.azure.com)
+                          └── decides SELECTABILITY here, because "which kinds can this build
+                              drive" is backend knowledge: HARNESS_FOR_KIND in harness_factory.py
+
+Browser ──POST /chat {message, agent}──> BFF ──build_harness(agent=…)──> that agent
+```
+
+Three properties worth knowing, each of which is a decision rather than an accident:
+
+- **The selection is per request, never a swapped singleton.** `app.state.harness` stays the
+  configured default and is never mutated. Replacing it on selection would be process-global mutable
+  state: one browser's choice would change another browser's turn, and a turn already streaming
+  could have its adapter swapped underneath it. Adapters are cheap — a closure and a name — while
+  the credential and the project client live in `AzureClients`, built once per process.
+- **The BFF ships no user-facing prose.** A row that cannot be chosen carries a *code* —
+  `no_harness`, `disabled`, `version_not_active` — and the frontend says it in the reader's
+  language (§7).
+- **Letting a person choose is configuration, not an agent loop (§8).** Nothing in the app switches
+  agents on its own, and nothing reads model output to decide. The violation would be the app
+  choosing; a person choosing is what a settings screen is.
+
 ## Planned outline
 
 | Section | Filled by |

@@ -21,8 +21,6 @@ export const strings = {
 
   // --- Sidebar -------------------------------------------------------------
   'sidebar.newSession': { en: 'New session', pt: 'Nova sessão' },
-  'sidebar.sessionsTitle': { en: 'Session', pt: 'Sessão' },
-  'sidebar.currentSession': { en: 'Current session', pt: 'Sessão atual' },
   'sidebar.noHistory': {
     en: 'Nothing is stored. This release has nowhere to persist a conversation to.',
     pt: 'Nada é armazenado. Esta versão não tem onde persistir uma conversa.',
@@ -32,6 +30,63 @@ export const strings = {
   'sidebar.gatewayOn': { en: 'through the AI Gateway', pt: 'através do AI Gateway' },
   'sidebar.gatewayOff': { en: 'bypassing the AI Gateway', pt: 'sem passar pelo AI Gateway' },
   'sidebar.language': { en: 'Language', pt: 'Idioma' },
+
+  // --- Agents (spec 019) ---------------------------------------------------
+  // The screen reads the Foundry project. Agent names, version numbers and model ids are DATA and
+  // are rendered verbatim (§7's proper-noun rule); everything the app says *about* them is here.
+  'agents.title': { en: 'Agents', pt: 'Agentes' },
+  'agents.loading': { en: 'Reading the project\u2026', pt: 'Lendo o projeto\u2026' },
+  'agents.answering': { en: 'answering', pt: 'respondendo' },
+  'agents.kind.prompt': { en: 'prompt', pt: 'prompt' },
+  'agents.kind.hosted': { en: 'hosted', pt: 'hospedado' },
+  'agents.kind.workflow': { en: 'workflow', pt: 'workflow' },
+  'agents.kind.unknown': { en: 'unknown kind', pt: 'tipo desconhecido' },
+  'agents.version': { en: 'v{version} \u00b7 {status}', pt: 'v{version} \u00b7 {status}' },
+  'agents.status.active': { en: 'active', pt: 'ativo' },
+  'agents.status.creating': { en: 'creating', pt: 'criando' },
+  'agents.status.failed': { en: 'failed', pt: 'falhou' },
+  'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
+  'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
+  // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  'agents.reason.no_harness': {
+    en: 'This build has no harness for this kind of agent',
+    pt: 'Esta build n\u00e3o tem harness para este tipo de agente',
+  },
+  'agents.reason.disabled': {
+    en: 'This agent is disabled in the project',
+    pt: 'Este agente est\u00e1 desabilitado no projeto',
+  },
+  'agents.reason.version_not_active': {
+    en: 'Its served version is not active yet',
+    pt: 'A vers\u00e3o publicada ainda n\u00e3o est\u00e1 ativa',
+  },
+  // Not in the plan's table, and added for a reason AC5 forces: a dimmed row with no explanation
+  // is exactly what AC5 forbids, and the BFF's reason codes can grow. `types/agents.test.ts` fails
+  // the moment the backend adds a fourth code, so this is a floor, not a place to hide one.
+  'agents.reason.unknown': {
+    en: 'This agent cannot be selected',
+    pt: 'Este agente n\u00e3o pode ser selecionado',
+  },
+  'agents.switched': {
+    en: 'New conversation started with {name}',
+    pt: 'Nova conversa iniciada com {name}',
+  },
+  'agents.error.unavailable': {
+    en: 'The project\u2019s agents could not be listed',
+    pt: 'N\u00e3o foi poss\u00edvel listar os agentes do projeto',
+  },
+  'agents.error.unconfigured': {
+    en: 'No Foundry project is configured',
+    pt: 'Nenhum projeto Foundry configurado',
+  },
+  'agents.error.forbidden': {
+    en: 'This identity cannot list the project\u2019s agents',
+    pt: 'Esta identidade n\u00e3o pode listar os agentes do projeto',
+  },
+  'agents.fallback': {
+    en: 'Showing the configured agent only',
+    pt: 'Mostrando apenas o agente configurado',
+  },
 
   // --- Header --------------------------------------------------------------
   'header.foundryPill': { en: 'Microsoft Foundry', pt: 'Microsoft Foundry' },
@@ -235,6 +290,13 @@ export type StringKey = keyof typeof strings
  */
 export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'app.name',
+  // Foundry's own vocabulary. `prompt` and `workflow` are the literal `definition.kind` values the
+  // service returns, and translating them would stop the screen matching the portal a reader has
+  // open beside it. `hosted` DOES translate, because "hospedado" is an ordinary Portuguese word
+  // that says the same thing.
+  'agents.kind.prompt',
+  'agents.kind.workflow',
+  'agents.version',
   'header.foundryPill',
   'header.harnessLabel',
   'meta.tokens',

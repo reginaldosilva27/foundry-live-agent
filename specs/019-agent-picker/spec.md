@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 019-agent-picker |
-| **Status** | clarified |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 

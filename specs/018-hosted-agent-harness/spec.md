@@ -54,7 +54,7 @@ actually give up by letting Foundry run the loop?* — is answered by a table no
 - **No agent-loop logic in `backend/` or `frontend/` (§8).** The loop moves from Foundry's prompt
   runtime into a container *Foundry runs*; it does not move into the BFF or the browser. §8 is
   **amended** by this spec so its headline stops overreaching — see *Contract / data impact*.
-- No UI for choosing between the harnesses — that is **spec 019**.
+- No UI for choosing between the harnesses — that is **spec 019** *(done, 2026-09-16)*.
 - No side-by-side comparison surface — that is **spec 020**.
 - No third harness (`agent-framework/`). Two is enough to prove the boundary.
 - No Toolbox, no Foundry IQ. The tool set is the prompt agent's tool set, unchanged.

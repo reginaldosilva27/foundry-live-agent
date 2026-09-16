@@ -528,3 +528,84 @@ def test_the_voice_session_attaches_to_the_harness_agent_not_the_env_var():
 
     assert params["agent_name"] == "foundry-live-agent-hosted"
     assert params["project_name"] == "proj"
+
+
+# --- spec 019 AC8: the session attaches to the SELECTED agent --------------
+
+
+def selectable(name: str, kind: str, **overrides):
+    from app.agents import AgentSummary
+
+    values = {
+        "name": name,
+        "kind": kind,
+        "version": "2",
+        "version_status": "active",
+        "model": "gpt-5.5",
+        "harness": "prompt-agent",
+        "selectable": True,
+        "reason": "",
+    }
+    return AgentSummary(**{**values, **overrides})
+
+
+ROWS = [
+    selectable("foundry-live-agent", "prompt"),
+    selectable("foundry-live-agent-hosted", "hosted"),
+    selectable("DatabricksGenie", "workflow", selectable=False, reason="no_harness"),
+]
+
+
+def app_with_listing(socket: FakeSocket):
+    """`app_with`, plus an injected project listing and the queries the session attached with."""
+    queries: list[dict] = []
+
+    async def connect(query: dict) -> FakeSocket:
+        queries.append(query)
+        return socket
+
+    app = create_app(
+        voice_connect=connect,
+        agent_lister=lambda: list(ROWS),
+        project_endpoint="https://example.services.ai.azure.com/api/projects/p",
+        project_name="p",
+        agent_name="foundry-live-agent",
+        model="gpt-5.5",
+    )
+    return app, queries
+
+
+def test_a_voice_session_attaches_to_the_selected_agent():
+    """AC8. Voice Live attaching to a *hosted* agent was verified live on 2026-09-16 (spec 018
+    AC9), so the selection is honoured for both kinds rather than only the configured one."""
+    app, queries = app_with_listing(FakeSocket(RECORDED))
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/voice/session", json={"sdp": SDP_OFFER, "agent": "foundry-live-agent-hosted"}
+        )
+
+    assert response.status_code == 200, response.text
+    assert queries[0]["agent_name"] == "foundry-live-agent-hosted"
+
+
+def test_a_voice_session_with_no_selection_attaches_to_the_configured_agent():
+    app, queries = app_with_listing(FakeSocket(RECORDED))
+
+    with TestClient(app) as client:
+        open_session(client)
+
+    assert queries[0]["agent_name"] == "foundry-live-agent"
+
+
+def test_a_voice_session_naming_an_agent_this_build_cannot_drive_is_refused():
+    app, queries = app_with_listing(FakeSocket(RECORDED))
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/voice/session", json={"sdp": SDP_OFFER, "agent": "DatabricksGenie"}
+        )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "no_harness"
+    assert queries == [], "nothing may be dialled for an agent we refuse"

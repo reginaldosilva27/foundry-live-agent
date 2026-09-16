@@ -15,6 +15,7 @@ import { VoiceOverlay } from './panes/VoiceOverlay'
 import { LangContext } from './i18n/context'
 import { detectLang, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
+import { useAgents } from './state/agents'
 import { useConfig } from './hooks/useConfig'
 import { useTrace } from './hooks/useTrace'
 import { useVoiceSession } from './hooks/useVoiceSession'
@@ -34,8 +35,38 @@ export default function App() {
   const [trace, setTrace] = useState<{ turnId?: string; callId?: string }>({})
   const { config, failed } = useConfig()
   const { messages, streaming, send, append, reset } = useAgentStream()
+
+  /**
+   * Switching agents starts a new conversation (AC7).
+   *
+   * A Foundry conversation belongs to one agent, so carrying its id across would be the state leak
+   * §8 is about — and the second agent would be answering about a thread it never had. Resetting
+   * here is the one place that id is dropped; `useAgentStream` owns it and nothing else reads it.
+   */
+  const newConversation = useCallback(() => {
+    reset()
+    setTrace({})
+    setTracesOpen(false)
+  }, [reset])
+
+  const agents = useAgents({ onSwitch: newConversation })
   const voice = useVoiceSession()
   const elapsed = useElapsed(voice.status === 'live')
+
+  /** Every turn names the chosen agent, or nothing at all — which is the configured one (AC12). */
+  const { clearNotice, selected: selectedAgent, selectedRow } = agents
+  const sendToSelected = useCallback(
+    (text: string) => {
+      clearNotice()
+      return send(text, selectedAgent ?? undefined)
+    },
+    [clearNotice, selectedAgent, send],
+  )
+
+  const startVoiceSession = useCallback(
+    () => void voice.start(selectedAgent ?? undefined),
+    [selectedAgent, voice],
+  )
 
   // A session that ends hands back what it produced; the chat is where it becomes readable, and
   // where it sits next to the typed turns it is meant to be compared with (spec 007).
@@ -98,18 +129,20 @@ export default function App() {
       <div className="app" data-traces-open={tracesOpen}>
         <Sidebar
           config={config}
+          agents={agents}
           lang={lang}
           onLang={setLang}
           onNewSession={() => {
-            reset()
-            setTrace({})
-            setTracesOpen(false)
+            clearNotice()
+            newConversation()
           }}
         />
 
         <main className="main">
           <Header
             config={config}
+            selectedAgent={selectedAgent}
+            selectedHarness={selectedRow?.harness ?? null}
             configFailed={failed}
             streaming={streaming}
             tracesOpen={tracesOpen}
@@ -118,19 +151,19 @@ export default function App() {
               setTrace({})
               setTracesOpen((v) => !v)
             }}
-            onVoice={() => void voice.start()}
+            onVoice={startVoiceSession}
           />
           <Conversation
             messages={messages}
             model={config?.model}
-            onSuggestion={send}
+            onSuggestion={sendToSelected}
             onOpenTrace={openTrace}
           />
           <Composer
             disabled={streaming}
             voiceEnabled={config?.voice?.enabled ?? false}
-            onSend={send}
-            onVoice={() => void voice.start()}
+            onSend={sendToSelected}
+            onVoice={startVoiceSession}
           />
 
           {voice.error && <VoiceFailure code={voice.error} />}

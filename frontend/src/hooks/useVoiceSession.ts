@@ -26,7 +26,8 @@ export interface VoiceState {
   transcript: { speaker: 'user' | 'agent'; text: string }[]
   /** Tool calls and results, in the same shape the chat's activity panel renders. */
   turn: Turn
-  start: () => Promise<void>
+  /** `agent` names who speaks; absent means the BFF's configured one (spec 019, AC8). */
+  start: (agent?: string) => Promise<void>
   /** Ends the session and hands back what it produced, in the order it happened (spec 007). */
   stop: () => Promise<VoiceLogEntry[]>
   toggleMute: () => void
@@ -67,7 +68,7 @@ export function useVoiceSession(): VoiceState {
     return entries.current
   }, [])
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (agent?: string) => {
     if (session.current) return
     setStatus('starting')
     setError(null)
@@ -76,6 +77,7 @@ export function useVoiceSession(): VoiceState {
 
     try {
       const live = await startVoice({
+        agent,
         onRemoteStream: (stream) => {
           // **Attached to the document, like the documented sample does.** A detached `new Audio()`
           // is the shape of failure that leaves a filling transcript and no sound: the element

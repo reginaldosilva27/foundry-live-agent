@@ -53,7 +53,7 @@ class FakeOpenAI:
 def harness(monkeypatch, legs: list[list[dict]], built: list | None = None):
     openai = FakeOpenAI(legs)
 
-    def build(_settings):
+    def build(*_args):
         if built is not None:
             built.append(openai)
         return openai
@@ -203,3 +203,102 @@ def test_the_scaffold_sentinel_is_gone_from_the_shipped_package():
 def test_an_unknown_harness_still_fails_at_startup():
     with pytest.raises(ValueError, match="unknown harness"):
         build_harness(hosted_settings(harness="telepathy"))
+
+
+# --- spec 019: a harness for a chosen agent --------------------------------
+
+
+def selected(name: str, kind: str):
+    from app.agents import AgentSummary
+
+    return AgentSummary(
+        name=name,
+        kind=kind,
+        version="1",
+        version_status="active",
+        model="gpt-5.5",
+        harness="prompt-agent",
+        selectable=True,
+        reason="",
+    )
+
+
+def test_a_harness_built_for_a_selected_agent_talks_to_that_agent(monkeypatch):
+    """AC6, at the only level where "runs against that agent" is literally observable: the
+    `agent_reference` the Responses call carries."""
+    openai = FakeOpenAI([[COMPLETED]])
+    monkeypatch.setattr(harness_factory, "_openai_client", lambda *_: openai)
+    settings = load_settings(
+        project_endpoint="https://example.services.ai.azure.com/api/projects/proj",
+        project_name="proj",
+        agent_name="foundry-live-agent",
+        model="conn/gpt-4o",
+        harness="prompt-agent",
+    )
+
+    adapter = build_harness(settings, agent=selected("spike-reasoning", "prompt"))
+    import asyncio
+
+    asyncio.run(drain(adapter, {}))
+
+    assert openai.requests[0]["extra_body"]["agent_reference"]["name"] == "spike-reasoning"
+
+
+def test_the_kind_decides_the_harness_not_the_configured_default():
+    """`AGENT_HARNESS` is the default, not the law (decision 5). An app configured for the prompt
+    agent still drives a selected hosted agent with the hosted harness."""
+    settings = load_settings(
+        project_endpoint="https://example.services.ai.azure.com/api/projects/proj",
+        project_name="proj",
+        agent_name="foundry-live-agent",
+        model="conn/gpt-4o",
+        harness="prompt-agent",
+    )
+
+    adapter = build_harness(
+        settings,
+        stream_factory=lambda *_: iter(()),
+        agent=selected("foundry-live-agent-hosted", "hosted"),
+    )
+
+    assert adapter.voice_attachment_params()["agent_name"] == "foundry-live-agent-hosted"
+    assert type(adapter).__name__ == "LangGraphAdapter"
+
+
+def test_a_kind_with_no_harness_is_refused_rather_than_guessed():
+    settings = hosted_settings(harness="prompt-agent", agent_name="foundry-live-agent")
+
+    with pytest.raises(ValueError, match="no harness"):
+        build_harness(settings, agent=selected("DatabricksGenie", "workflow"))
+
+
+def test_per_turn_harnesses_share_one_client_rather_than_one_each(monkeypatch):
+    """The plan's named risk. Each `DefaultAzureCredential` costs seconds to acquire a token, so a
+    harness built per turn that also built a client per turn would put that cost on every message —
+    the exact symptom spec 002 documented, reintroduced by spec 019."""
+    built: list = []
+    openai = FakeOpenAI([[COMPLETED], [COMPLETED]])
+
+    def build(*_args):
+        built.append(openai)
+        return openai
+
+    monkeypatch.setattr(harness_factory, "_openai_client", build)
+    settings = load_settings(
+        project_endpoint="https://example.services.ai.azure.com/api/projects/proj",
+        project_name="proj",
+        agent_name="foundry-live-agent",
+        model="conn/gpt-4o",
+        harness="prompt-agent",
+    )
+    clients = harness_factory.AzureClients()
+
+    import asyncio
+
+    for _turn in range(2):
+        adapter = build_harness(
+            settings, agent=selected("spike-reasoning", "prompt"), clients=clients
+        )
+        asyncio.run(drain(adapter, {}))
+
+    assert len(built) == 1

@@ -186,3 +186,141 @@ def test_no_backend_module_imports_a_specific_tool():
                 if any(bad in imported for bad in forbidden):
                     offenders.append(f"{module.relative_to(APP_DIR)} imports {imported}")
     assert not offenders, "; ".join(offenders)
+
+
+def test_config_names_the_agent_the_harness_actually_drives():
+    """Spec 018 — the header renders `agent_name`, so reporting the env var is a visible lie.
+
+    `settings.agent_name` is the PROMPT agent's (`AGENT_NAME`). The hosted harness takes its name
+    from its own definition, so with `AGENT_HARNESS=langgraph` the badge said
+    `foundry-live-agent` while every turn went to `foundry-live-agent-hosted`. Like the
+    `event_mapping` bug beside it, this is something only a second harness could expose.
+    """
+    app = create_app(harness="langgraph", stream_factory=lambda *_: iter(()))
+    with TestClient(app) as test_client:
+        body = test_client.get("/config").json()
+
+    assert body["agent_name"] == "foundry-live-agent-hosted"
+
+
+def test_config_still_names_the_prompt_agent_on_the_prompt_harness():
+    assert client().get("/config").json()["agent_name"] == "foundry-live-agent"
+
+
+# --- spec 019: a turn against a chosen agent (AC6, AC12) -------------------
+#
+# The observable is deliberately *behavioural* rather than a recorded argument. The two harnesses
+# normalise the same raw stream differently — the prompt agent's tool call arrives unanswered and
+# `executor: "app"`, the hosted agent's arrives already answered and `executor: "foundry"` — so
+# feeding one stream and reading the events proves which harness ran the turn, with nothing mocked.
+
+HOSTED_OUTPUT = {
+    "type": "response.output_item.done",
+    "item": {
+        "type": "function_call_output",
+        "call_id": "call_1",
+        "output": '{"iso":"2026-09-16T12:00:00Z"}',
+    },
+}
+
+LISTING = [
+    {
+        "name": "foundry-live-agent",
+        "kind": "prompt",
+        "version": "8",
+        "version_status": "active",
+        "model": "gpt-5.5",
+        "harness": "prompt-agent",
+        "selectable": True,
+        "reason": "",
+    },
+    {
+        "name": "foundry-live-agent-hosted",
+        "kind": "hosted",
+        "version": "2",
+        "version_status": "active",
+        "model": "gpt-5.5",
+        "harness": "langgraph",
+        "selectable": True,
+        "reason": "",
+    },
+    {
+        "name": "DatabricksGenie",
+        "kind": "workflow",
+        "version": "1",
+        "version_status": "active",
+        "model": "",
+        "harness": "",
+        "selectable": False,
+        "reason": "no_harness",
+    },
+]
+
+
+def listing_client(legs=None, lister=None, **overrides):
+    """A client whose project listing is injected, like every other Azure call in this suite."""
+    from app.agents import AgentSummary
+
+    rows = [AgentSummary(**row) for row in LISTING]
+    return client(legs, agent_lister=lister or (lambda: rows), **overrides)
+
+
+def test_a_turn_with_no_selection_runs_against_the_configured_default():
+    """AC12 in one assertion: absent `agent`, the app behaves exactly as it did before spec 019 —
+    the prompt harness, which answers the function call itself."""
+    events = stream_chat(listing_client([[CALL], [COMPLETED]]))
+
+    assert [e["executor"] for e in events if e["type"] == "tool_call"] == ["app"]
+
+
+def test_a_turn_naming_an_agent_runs_against_that_agents_harness():
+    """AC6. The same raw leg, read by the harness the selection implies: the hosted agent owns its
+    loop, so the call arrives already answered and nothing is executed here."""
+    c = listing_client([[CALL, HOSTED_OUTPUT, COMPLETED]])
+
+    events = stream_chat(c, {"message": "hi", "agent": "foundry-live-agent-hosted"})
+
+    assert [e["executor"] for e in events if e["type"] == "tool_call"] == ["foundry"]
+    assert events[-1]["type"] == "done"
+    check_stream(events)
+
+
+def test_selecting_an_agent_does_not_change_the_default_for_the_next_turn():
+    """The plan's reason for building per request rather than swapping `app.state.harness`: a
+    process-global swap would let one browser's choice decide another browser's turn."""
+    c = listing_client([[CALL, HOSTED_OUTPUT, COMPLETED], [CALL], [COMPLETED]])
+
+    stream_chat(c, {"message": "hi", "agent": "foundry-live-agent-hosted"})
+    events = stream_chat(c, {"message": "again"})
+
+    assert [e["executor"] for e in events if e["type"] == "tool_call"] == ["app"]
+
+
+def test_a_turn_naming_an_agent_this_build_cannot_drive_ends_as_an_error():
+    """T13 — refused before a harness is built, rather than built and failed somewhere downstream.
+    The code is the row's own, so the refusal says what the dimmed row said."""
+    events = stream_chat(listing_client(), {"message": "hi", "agent": "DatabricksGenie"})
+
+    assert events[-1]["type"] == "error"
+    assert events[-1]["code"] == "no_harness"
+    check_stream(events)
+
+
+def test_a_turn_naming_an_agent_the_project_does_not_have_ends_as_an_error():
+    events = stream_chat(listing_client(), {"message": "hi", "agent": "ghost"})
+
+    assert events[-1]["code"] == "unknown_agent"
+    check_stream(events)
+
+
+def test_a_selection_made_while_the_project_cannot_be_listed_says_so():
+    from app.agents import AgentsUnavailable
+
+    def unavailable():
+        raise AgentsUnavailable("forbidden", "403")
+
+    c = listing_client(lister=unavailable)
+    events = stream_chat(c, {"message": "hi", "agent": "foundry-live-agent"})
+
+    assert events[-1]["code"] == "forbidden"
+    check_stream(events)

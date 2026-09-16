@@ -444,6 +444,29 @@ observation wins and says so (§10). Everything below was produced against
 | **`pip` 25.0.1 cannot resolve `langchain-azure-ai`** — `InvalidVersion: Invalid version: 'hosting'`, with or without the extra, pinned or not. pip 26 resolves it cleanly; the Dockerfile upgrades pip first. | reproduced in a clean `python:3.12-slim`, 2026-09-16 |
 | **`azd` can reuse the `az` CLI credential**: `azd config set auth.useAzCliAuth true`, avoiding a separate interactive `azd auth login`. | observed 2026-09-16 |
 
+## Listing the project's agents — spec 019, read and verified 2026-09-16
+
+The agents screen reads the project rather than a list written in this repository. What that costs,
+and what it needs, was checked against the live project **before** the screen was designed — spec
+018's lesson (§10).
+
+### Documentation
+
+| Source | What it settles |
+|---|---|
+| [Manage hosted agents](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/manage-hosted-agent) | `project_client.agents.list()` · `agents.get(name)` · `agents.list_versions(name)` on `azure-ai-projects>=2.3.0`; REST `GET {project_endpoint}/agents?api-version=v1`, and `az rest` needs `--resource https://ai.azure.com`; version statuses `creating` · `active` · `failed` · `deleting` · `deleted`, provisioning typically 2–5 minutes; an agent can be **disabled** (endpoint offline, versions intact); an agent endpoint serves **one** version at 100% — traffic splitting is unsupported; draft versions are `draft-{timestamp}`, excluded unless `include_drafts=true`. |
+| [agent.yaml reference](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/agent-yaml-reference) | Definition kinds are `prompt`, `hosted`, `workflow`. |
+
+### Verified against the live service
+
+| Finding | Evidence |
+|---|---|
+| **`kind` is in the listing.** `data[].versions.latest.definition.kind` comes back with the list, so the screen needs no second call per agent. Spec 019's AC2 explicitly allowed for one and it is not needed. | `backend/tests/fixtures/agents-listing-20260916.json`, 10 agents |
+| **`versions` carries only `latest`.** Which matches the documented one-version-per-endpoint rule, and is why the row reports the served version rather than a version list. | same fixture |
+| **A hosted agent's definition carries no `model`.** It has `cpu`, `memory`, `container_configuration` and `environment_variables`; the deployment name is inside `environment_variables.MICROSOFT_FOUNDRY_MODEL_DEPLOYMENT_NAME`. A prompt agent's definition has `model` directly. `app/agents.py` reads both and reports `""` rather than inventing one. | same fixture |
+| **The audience is `https://ai.azure.com`, not `https://cognitiveservices.azure.com`.** The same URL with the latter answers `401 Unauthorized. Access token is missing, invalid, audience is incorrect (https://ai.azure.com), or have expired.` | observed 2026-09-16 |
+| **Listing needs `Foundry User`.** Read from the live role definitions rather than assumed: `Foundry User` and `Foundry Project Manager` grant the **same** data action, `Microsoft.CognitiveServices/*`, which covers the agents data plane; they differ only on the control plane (Project Manager adds `accounts/projects/*` and `roleAssignments/write`). So listing — a data-plane read — needs the lesser of the two, and spec 019's decision 10 expectation holds. **Not tested with an identity holding only `Foundry User`**: the signed-in identity here has both, and the conclusion is read from the role definitions, not from a denial. | `az role definition list`, 2026-09-16 |
+
 ## Versions this repo pins
 
 | Thing | Value | Source |

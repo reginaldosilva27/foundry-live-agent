@@ -12,6 +12,11 @@ import type { BffConfig } from '../config'
 
 interface Props {
   config: BffConfig | null
+  /** The agent chosen on the agents screen, or `null` for the BFF's configured one (spec 019). */
+  selectedAgent: string | null
+  /** That agent's harness. Without it the badge kept naming `AGENT_HARNESS` while the other
+   *  harness answered — the same lie spec 018 fixed one field over, on `agent_name`. */
+  selectedHarness: string | null
   configFailed: boolean
   streaming: boolean
   tracesOpen: boolean
@@ -22,6 +27,8 @@ interface Props {
 
 export function Header({
   config,
+  selectedAgent,
+  selectedHarness,
   configFailed,
   streaming,
   tracesOpen,
@@ -34,7 +41,7 @@ export function Header({
 
   return (
     <header className="header">
-      <h2 className="header__agent">{config?.agent_name ?? s('app.name')}</h2>
+      <h2 className="header__agent">{selectedAgent ?? config?.agent_name ?? s('app.name')}</h2>
       <span className="header__pill">{s('header.foundryPill')}</span>
       <span className="header__status" data-streaming={streaming}>
         <span className="dot" aria-hidden="true" />
@@ -43,7 +50,7 @@ export function Header({
 
       <div className="header__spacer" />
 
-      <HarnessBadge harness={config?.harness} failed={configFailed} />
+      <HarnessBadge harness={selectedHarness ?? config?.harness} failed={configFailed} />
 
       <button
         type="button"

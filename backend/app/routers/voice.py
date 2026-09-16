@@ -14,6 +14,8 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from app.agents import AgentsUnavailable, select_agent
+from app.harness_factory import build_harness
 from app.sse import format_event
 from app.voice_session import NegotiationError, VoiceSession
 
@@ -26,6 +28,10 @@ class SessionRequest(BaseModel):
     """The browser's half of the WebRTC negotiation."""
 
     sdp: str = Field(min_length=1, description="The browser's SDP offer")
+    #: Which agent to attach to, chosen on the agents screen (spec 019, AC8). Absent means the one
+    #: this BFF is configured with. Voice Live attaching to a *hosted* agent was verified live on
+    #: 2026-09-16 (spec 018, AC9), so both kinds honour the selection.
+    agent: str | None = None
 
 
 @router.post("/session")
@@ -45,15 +51,12 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
     settings = request.app.state.settings
     from harness._shared.voice_events import attachment_query
 
-    # ASK THE HARNESS, don't read the environment (spec 018, AC9). `voice_attachment_params()` is
-    # part of the §9 Protocol for exactly this: which agent a voice session attaches to is the
-    # harness's answer, not the BFF's. Reading `settings.agent_name` here was harmless while one
-    # harness existed and wrong the moment a second one named a different agent — a voice session
-    # on the hosted harness would have quietly driven the prompt agent instead.
-    #
-    # Voice Live attaching to a hosted agent was verified live on 2026-09-16: the session reports
-    # the hosted agent as its `model` and echoes its definition (docs/REFERENCES.md).
-    attachment = request.app.state.harness.voice_attachment_params()
+    try:
+        attachment = _attachment(request, body.agent)
+    except AgentsUnavailable as refused:
+        # Refused before anything is dialled. The detail is the agent's name and the code is the
+        # row's own, so the browser can say the same thing the dimmed row on the screen says.
+        raise HTTPException(status_code=400, detail=refused.code) from None
 
     socket = await connect(
         attachment_query(
@@ -108,3 +111,23 @@ def _require(request: Request, session_id: str) -> VoiceSession:
     if session is None:
         raise HTTPException(status_code=404, detail="No such voice session.")
     return session
+
+
+def _attachment(request: Request, agent: str | None) -> dict:
+    """Which agent this session attaches to.
+
+    ASK THE HARNESS, don't read the environment — and when a selection exists, ask the harness
+    built for *that* agent. `voice_attachment_params()` is the §9 Protocol's answer to "which agent
+    is this?", so a selected hosted agent and a selected prompt agent each answer for themselves.
+    """
+    if not agent:
+        return dict(request.app.state.harness.voice_attachment_params())
+
+    selection = select_agent(request.app.state.list_agents, agent)
+    harness = build_harness(
+        request.app.state.settings,
+        stream_factory=request.app.state.stream_factory,
+        agent=selection,
+        clients=request.app.state.clients,
+    )
+    return dict(harness.voice_attachment_params())

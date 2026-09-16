@@ -37,7 +37,12 @@ async def config(request: Request) -> dict:
     settings = request.app.state.settings
     return {
         "harness": settings.harness,
-        "agent_name": settings.agent_name,
+        # ASK THE HARNESS which agent it drives, don't report AGENT_NAME. The header renders this,
+        # and `settings.agent_name` is the PROMPT agent's: on the hosted harness the badge named
+        # `foundry-live-agent` while every turn went to `foundry-live-agent-hosted` (spec 018).
+        # `voice_attachment_params()` is the Protocol's answer to "which agent is this?" — it is
+        # named for its first caller, not limited to it.
+        "agent_name": request.app.state.harness.voice_attachment_params()["agent_name"],
         "agent_version": settings.agent_version,
         "model": settings.model,
         "uses_gateway": settings.uses_gateway,

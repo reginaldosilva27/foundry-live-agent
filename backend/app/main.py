@@ -14,8 +14,9 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.harness_factory import build_harness
-from app.routers import chat, config, health, speech, traces, voice
+from app.agents import build_agent_lister
+from app.harness_factory import AzureClients, build_harness
+from app.routers import agents, chat, config, health, speech, traces, voice
 from app.settings import load_settings
 from app.speech import build_synthesizer
 from app.traces import build_trace_reader
@@ -29,19 +30,23 @@ def create_app(
     voice_connect: Callable[..., Any] | None = None,
     synthesize: Callable[..., Any] | None = None,
     trace_query: Callable[..., Any] | None = None,
+    agent_lister: Callable[..., Any] | None = None,
     **settings_overrides: object,
 ) -> FastAPI:
     """Build the app.
 
     ``stream_factory`` injects a raw Foundry stream, ``voice_connect`` a Voice Live control
-    channel, ``synthesize`` a text-to-speech call, and ``trace_query`` a log query. Production
-    leaves all four unset; tests pass a replay, which exercises the identical code path with no
-    credential.
+    channel, ``synthesize`` a text-to-speech call, ``trace_query`` a log query and ``agent_lister``
+    the project's agent listing. Production leaves all five unset; tests pass a replay, which
+    exercises the identical code path with no credential.
 
     The harness is resolved **here, at startup**, so a bad ``AGENT_HARNESS`` stops the process
     with an explanation instead of failing on someone's first message.
     """
     settings = load_settings(**settings_overrides)
+    # One credential and one project client for the process. Spec 019 builds a harness per turn,
+    # so anything expensive has to outlive the adapter or it lands on every message.
+    clients = AzureClients()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -58,7 +63,12 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.settings = settings
-    app.state.harness = build_harness(settings, stream_factory=stream_factory)
+    app.state.clients = clients
+    # Kept so a turn that names an agent can build its own adapter with the same seam — in tests a
+    # replayed stream, in production `None`, meaning "make the real one".
+    app.state.stream_factory = stream_factory
+    # The DEFAULT, and never mutated. A selection builds its own adapter per turn (spec 019).
+    app.state.harness = build_harness(settings, stream_factory=stream_factory, clients=clients)
     app.state.voice_connect = voice_connect or build_connect(settings)
     # `None` when the BFF has no speech configuration — the routers turn that into an answer that
     # says so, rather than into a failure on the first sentence (spec 008, AC9).
@@ -66,6 +76,9 @@ def create_app(
     # `None` when no Application Insights resource is configured — the trace route turns that into
     # "unavailable", so the app runs complete and normal without tracing (spec 005, AC19).
     app.state.read_trace = trace_query or build_trace_reader(settings)
+    # Reads the project's agents for the picker (spec 019). Injectable like every other Azure call
+    # here, which is what keeps the suite credential-free.
+    app.state.list_agents = agent_lister or build_agent_lister(settings, clients.credential)
     # Voice sessions live in this process, so the BFF is single-replica for voice. Said out loud
     # in docs/how-it-works/voice-live-lifecycle.md rather than solved: a session store is a
     # different feature, and pretending otherwise would be the kind of drawing-of-a-feature §5
@@ -82,6 +95,7 @@ def create_app(
     )
 
     for router in (
+        agents.router,
         chat.router,
         config.router,
         health.router,

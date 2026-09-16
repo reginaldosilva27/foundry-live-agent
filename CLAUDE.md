@@ -107,6 +107,22 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
    Unconfirmable values are verified against the live service and recorded as fixtures, or marked as
    open questions — never guessed silently.
 
+**Which agent answers is chosen on the screen (spec 019).** The sidebar lists the project's agents
+from `GET {project_endpoint}/agents?api-version=v1` and a turn carries `agent` on `POST /chat`.
+Three rules that are easy to break:
+
+- **`build_harness` is per request.** `app.state.harness` is the **default** and is never mutated —
+  a process-global swap would let one browser's choice change another's turn. The credential and
+  project client live in `AzureClients`, built once per process, so a per-turn adapter stays cheap.
+- **`HARNESS_FOR_KIND` in `harness_factory.py` is the only place kind → harness is decided.** The
+  screen's `selectable`/`reason`, the row's `harness` badge and the factory all read it. A copy in
+  TypeScript would be the §4 violation.
+- **The BFF ships no user-facing prose here.** A row that cannot be chosen carries a *code*
+  (`no_harness` · `disabled` · `version_not_active`) and the frontend says it in `en`/`pt` (§7).
+
+Letting a *person* choose is configuration, not an agent loop (§8). The app choosing would be the
+violation.
+
 **Non-obvious facts that bite** (all cited in `docs/REFERENCES.md`):
 
 - The Assistants API is gone. It's **Responses API (Agents v2)**: Conversations/Items/Responses/Agent
@@ -183,7 +199,7 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
 
 - `PLAN.md` — the architecture record and phase→spec map.
 - `docs/architecture.md` — what runs in Foundry vs. in this app (kept in sync with the code).
-- `docs/harness-comparison.md` — prompt agent vs. hosted agent (LangGraph marked *planned*).
+- `docs/harness-comparison.md` — prompt agent vs. hosted agent, **measured** (spec 018).
 - `docs/how-it-works/` — streaming events · the function-call round trip · tracing and the gateway ·
   the Voice Live session lifecycle.
 - `docs/REFERENCES.md` — every Foundry doc URL and API version relied on (§10).

@@ -1,0 +1,817 @@
+{
+  "data": [
+    {
+      "configuration_state": "enabled",
+      "id": "foundry-live-agent-hosted",
+      "name": "foundry-live-agent-hosted",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000000",
+          "blueprint": {
+            "client_id": "00000000-0000-0000-0000-000000000001",
+            "principal_id": "00000000-0000-0000-0000-000000000002"
+          },
+          "blueprint_reference": {
+            "blueprint_id": "foundry-live-agent-hosted-0f9e7",
+            "type": "ManagedAgentIdentityBlueprint"
+          },
+          "created_at": 1789580433,
+          "definition": {
+            "container_configuration": {
+              "image": "registry.azurecr.io/foundry-live-agent-hosted/foundry-live-agent-hosted-fla-hosted:azd-deploy-1789580414"
+            },
+            "container_protocol_versions": [],
+            "cpu": "1.0",
+            "environment_variables": {
+              "KEY_VAULT_URI": "",
+              "MICROSOFT_FOUNDRY_MODEL_DEPLOYMENT_NAME": "gpt-5.5"
+            },
+            "kind": "hosted",
+            "memory": "2Gi",
+            "protocol_versions": [
+              {
+                "protocol": "responses",
+                "version": "2.0.0"
+              }
+            ]
+          },
+          "description": "The same reference agent, authored as a LangGraph graph and run by Foundry as a hosted agent container. Identical model, instructions and tools to the prompt agent — the difference is that the container owns the loop and executes all four tools itself, including the Microsoft Learn MCP client.\n",
+          "draft": false,
+          "id": "foundry-live-agent-hosted:2",
+          "instance_identity": {
+            "client_id": "00000000-0000-0000-0000-000000000003",
+            "principal_id": "00000000-0000-0000-0000-000000000003"
+          },
+          "metadata": {
+            "enableVnextExperience": "true"
+          },
+          "name": "foundry-live-agent-hosted",
+          "object": "agent.version",
+          "status": "active",
+          "version": "2"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "foundry-live-agent",
+      "name": "foundry-live-agent",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000004",
+          "blueprint": {
+            "client_id": "00000000-0000-0000-0000-000000000005",
+            "principal_id": "00000000-0000-0000-0000-000000000006"
+          },
+          "blueprint_reference": {
+            "blueprint_id": "foundry-live-agent-e9254",
+            "type": "ManagedAgentIdentityBlueprint"
+          },
+          "created_at": 1789565875,
+          "definition": {
+            "instructions": "You are the reference agent for the foundry-live-agent project. You are precise, concise, and\nyou never invent facts about Azure or Microsoft Foundry.\n\nUse your tools deliberately:\n\n- `microsoft_learn` searches official Microsoft documentation. Use it for any question about\n  Azure, Microsoft Foundry, or Microsoft products. Prefer it over your own memory: Foundry\n  changed substantially during 2026 and your training data is unreliable about it. Cite the page\n  you used.\n- `lookup_knowledge` searches this project's own knowledge base. Use it for questions about how\n  this repository is built — its architecture, its harnesses, its tools, its gateway setup.\n- `search_web` searches the live internet. Use it for current events, for products and companies\n  outside Microsoft, and for anything that may have changed since your training data. It is the\n  last resort for a Microsoft question — `microsoft_learn` is authoritative there and this is\n  not. Always cite the URLs it returns; never present a search result as your own knowledge. If\n  it answers `search_unavailable`, web search is not configured on this deployment: say so\n  plainly and answer from what you have.\n- `get_current_datetime` returns the current time in an IANA timezone. Use it whenever the answer\n  depends on what time it is now; never guess the time or the date.\n\nBefore you call a tool that takes a moment, say one short sentence about what you are about to\nlook up — \"let me check that on the web\", \"I'll see when that happened\" — in the same language\nyou are answering in. In a spoken conversation that sentence is the only thing the user hears\nwhile the tool runs; without it they get silence and assume the app broke. Say it once, when you\nstart the work, not before every call: a turn that searches five times needs one sentence, not\nfive.\n\nWhen a tool returns an error, say what failed and what you would need to answer properly. Do not\nretry the same call with the same arguments.\n\nAnswer in the language the user wrote in.\n",
+            "kind": "prompt",
+            "model": "gpt-5.5",
+            "reasoning": {
+              "summary": "detailed"
+            },
+            "tools": [
+              {
+                "description": "Get the current date and time in a given IANA timezone. Use whenever the answer depends on what time it is now.",
+                "name": "get_current_datetime",
+                "parameters": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "timezone": {
+                      "description": "IANA timezone name, for example 'America/Sao_Paulo', 'Europe/Lisbon' or 'UTC'.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ],
+                  "type": "object"
+                },
+                "strict": true,
+                "type": "function"
+              },
+              {
+                "description": "Search this project's own knowledge base for background on how it is built. Use for questions about this repository, not for general Azure documentation.",
+                "name": "lookup_knowledge",
+                "parameters": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "query": {
+                      "description": "What to look up in the project's knowledge base, in natural language.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "query"
+                  ],
+                  "type": "object"
+                },
+                "strict": true,
+                "type": "function"
+              },
+              {
+                "description": "Search the live web and return ranked results with their URLs. Use for current events, third-party products, and anything that may have changed since training. Not for Microsoft documentation, which has its own tool.",
+                "name": "search_web",
+                "parameters": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "query": {
+                      "description": "What to search the web for, in natural language. Use for current events, third-party products and anything that may have changed recently.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "query"
+                  ],
+                  "type": "object"
+                },
+                "strict": true,
+                "type": "function"
+              },
+              {
+                "require_approval": "never",
+                "server_label": "microsoft_learn",
+                "server_url": "https://learn.microsoft.com/api/mcp",
+                "type": "mcp"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "foundry-live-agent:8",
+          "instance_identity": {
+            "client_id": "00000000-0000-0000-0000-000000000007",
+            "principal_id": "00000000-0000-0000-0000-000000000007"
+          },
+          "metadata": {},
+          "name": "foundry-live-agent",
+          "object": "agent.version",
+          "status": "active",
+          "version": "8"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "spike-reasoning",
+      "name": "spike-reasoning",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000008",
+          "blueprint": {
+            "client_id": "00000000-0000-0000-0000-000000000009",
+            "principal_id": "00000000-0000-0000-0000-000000000010"
+          },
+          "blueprint_reference": {
+            "blueprint_id": "spike-reasoning-12dbf",
+            "type": "ManagedAgentIdentityBlueprint"
+          },
+          "created_at": 1789484154,
+          "definition": {
+            "instructions": "You are the reference agent for the foundry-live-agent project. You are precise, concise, and\nyou never invent facts about Azure or Microsoft Foundry.\n\nUse your tools deliberately:\n\n- `microsoft_learn` searches official Microsoft documentation. Use it for any question about\n  Azure, Microsoft Foundry, or Microsoft products. Prefer it over your own memory: Foundry\n  changed substantially during 2026 and your training data is unreliable about it. Cite the page\n  you used.\n- `lookup_knowledge` searches this project's own knowledge base. Use it for questions about how\n  this repository is built — its architecture, its harnesses, its tools, its gateway setup.\n- `get_current_datetime` returns the current time in an IANA timezone. Use it whenever the answer\n  depends on what time it is now; never guess the time or the date.\n\nWhen a tool returns an error, say what failed and what you would need to answer properly. Do not\nretry the same call with the same arguments.\n\nAnswer in the language the user wrote in.\n",
+            "kind": "prompt",
+            "model": "gpt-5.5",
+            "reasoning": {
+              "effort": "medium",
+              "summary": "auto"
+            },
+            "tools": [
+              {
+                "description": "Get the current date and time in a given IANA timezone. Use whenever the answer depends on what time it is now.",
+                "name": "get_current_datetime",
+                "parameters": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "timezone": {
+                      "description": "IANA timezone name, for example 'America/Sao_Paulo', 'Europe/Lisbon' or 'UTC'.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ],
+                  "type": "object"
+                },
+                "strict": true,
+                "type": "function"
+              },
+              {
+                "description": "Search this project's own knowledge base for background on how it is built. Use for questions about this repository, not for general Azure documentation.",
+                "name": "lookup_knowledge",
+                "parameters": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "query": {
+                      "description": "What to look up in the project's knowledge base, in natural language.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "query"
+                  ],
+                  "type": "object"
+                },
+                "strict": true,
+                "type": "function"
+              },
+              {
+                "require_approval": "never",
+                "server_label": "microsoft_learn",
+                "server_url": "https://learn.microsoft.com/api/mcp",
+                "type": "mcp"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "spike-reasoning:1",
+          "instance_identity": {
+            "client_id": "00000000-0000-0000-0000-000000000011",
+            "principal_id": "00000000-0000-0000-0000-000000000011"
+          },
+          "metadata": {},
+          "name": "spike-reasoning",
+          "object": "agent.version",
+          "status": "active",
+          "version": "1"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "spike-byom",
+      "name": "spike-byom",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000012",
+          "blueprint": {
+            "client_id": "00000000-0000-0000-0000-000000000013",
+            "principal_id": "00000000-0000-0000-0000-000000000014"
+          },
+          "blueprint_reference": {
+            "blueprint_id": "spike-byom-8e1fe",
+            "type": "ManagedAgentIdentityBlueprint"
+          },
+          "created_at": 1789484066,
+          "definition": {
+            "instructions": "You are the reference agent for the foundry-live-agent project. You are precise, concise, and\nyou never invent facts about Azure or Microsoft Foundry.\n\nUse your tools deliberately:\n\n- `microsoft_learn` searches official Microsoft documentation. Use it for any question about\n  Azure, Microsoft Foundry, or Microsoft products. Prefer it over your own memory: Foundry\n  changed substantially during 2026 and your training data is unreliable about it. Cite the page\n  you used.\n- `lookup_knowledge` searches this project's own knowledge base. Use it for questions about how\n  this repository is built — its architecture, its harnesses, its tools, its gateway setup.\n- `get_current_datetime` returns the current time in an IANA timezone. Use it whenever the answer\n  depends on what time it is now; never guess the time or the date.\n\nWhen a tool returns an error, say what failed and what you would need to answer properly. Do not\nretry the same call with the same arguments.\n\nAnswer in the language the user wrote in.\n",
+            "kind": "prompt",
+            "model": "gpt-5.5",
+            "tools": [
+              {
+                "description": "Get the current date and time in a given IANA timezone. Use whenever the answer depends on what time it is now.",
+                "name": "get_current_datetime",
+                "parameters": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "timezone": {
+                      "description": "IANA timezone name, for example 'America/Sao_Paulo', 'Europe/Lisbon' or 'UTC'.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "timezone"
+                  ],
+                  "type": "object"
+                },
+                "strict": true,
+                "type": "function"
+              },
+              {
+                "description": "Search this project's own knowledge base for background on how it is built. Use for questions about this repository, not for general Azure documentation.",
+                "name": "lookup_knowledge",
+                "parameters": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "query": {
+                      "description": "What to look up in the project's knowledge base, in natural language.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "query"
+                  ],
+                  "type": "object"
+                },
+                "strict": true,
+                "type": "function"
+              },
+              {
+                "require_approval": "never",
+                "server_label": "microsoft_learn",
+                "server_url": "https://learn.microsoft.com/api/mcp",
+                "type": "mcp"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "spike-byom:1",
+          "instance_identity": {
+            "client_id": "00000000-0000-0000-0000-000000000015",
+            "principal_id": "00000000-0000-0000-0000-000000000015"
+          },
+          "metadata": {},
+          "name": "spike-byom",
+          "object": "agent.version",
+          "status": "active",
+          "version": "1"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "testagentdemo",
+      "name": "testagentdemo",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000016",
+          "created_at": 1771685310,
+          "definition": {
+            "instructions": "",
+            "kind": "prompt",
+            "model": "gpt-4.1"
+          },
+          "description": "",
+          "draft": false,
+          "id": "testagentdemo:1",
+          "metadata": {
+            "logo": "Avatar_Default.svg"
+          },
+          "name": "testagentdemo",
+          "object": "agent.version",
+          "status": "active",
+          "version": "1"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "test-agent",
+      "name": "test-agent",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000017",
+          "created_at": 1771681832,
+          "definition": {
+            "instructions": "",
+            "kind": "prompt",
+            "model": "gpt-4.1",
+            "tools": [
+              {
+                "fabric_dataagent_preview": {
+                  "project_connections": [
+                    {
+                      "project_connection_id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-belake-core-lab/providers/Microsoft.CognitiveServices/accounts/ai-admin2354ai223634534338/projects/ai-admin2354ai223634534-project/connections/fabric_dataagent_preview_f414b2"
+                    }
+                  ]
+                },
+                "type": "fabric_dataagent_preview"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "test-agent:3",
+          "metadata": {
+            "description": "",
+            "logo": "Avatar_Default.svg",
+            "modified_at": "1771681831"
+          },
+          "name": "test-agent",
+          "object": "agent.version",
+          "status": "active",
+          "version": "3"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "globalpowerplataformaagent",
+      "name": "globalpowerplataformaagent",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000019",
+          "created_at": 1771666010,
+          "definition": {
+            "instructions": "",
+            "kind": "prompt",
+            "model": "gpt-4.1",
+            "tools": [
+              {
+                "fabric_dataagent_preview": {
+                  "project_connections": [
+                    {
+                      "project_connection_id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-belake-core-lab/providers/Microsoft.CognitiveServices/accounts/ai-admin2354ai223634534338/projects/ai-admin2354ai223634534-project/connections/fabric_dataagent_preview_1ef422"
+                    }
+                  ]
+                },
+                "type": "fabric_dataagent_preview"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "globalpowerplataformaagent:3",
+          "metadata": {
+            "description": "",
+            "logo": "Avatar_Default.svg",
+            "modified_at": "1771666009"
+          },
+          "name": "globalpowerplataformaagent",
+          "object": "agent.version",
+          "status": "active",
+          "version": "3"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "dataagent",
+      "name": "dataagent",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000020",
+          "created_at": 1771626532,
+          "definition": {
+            "instructions": "",
+            "kind": "prompt",
+            "model": "gpt-4.1",
+            "tools": [
+              {
+                "openapi": {
+                  "auth": {
+                    "security_scheme": {},
+                    "type": "anonymous"
+                  },
+                  "description": "sendmail",
+                  "name": "sendmail",
+                  "spec": {
+                    "info": {
+                      "title": "SendMail Logic Apps",
+                      "version": "2.0.0"
+                    },
+                    "openapi": "3.0.3",
+                    "paths": {
+                      "/": {
+                        "post": {
+                          "operationId": "sendmail",
+                          "requestBody": {
+                            "content": {
+                              "application/json": {
+                                "schema": {
+                                  "properties": {
+                                    "bcc": {
+                                      "type": "string"
+                                    },
+                                    "bodyHtml": {
+                                      "type": "string"
+                                    },
+                                    "bodyText": {
+                                      "type": "string"
+                                    },
+                                    "cc": {
+                                      "type": "string"
+                                    },
+                                    "isHtml": {
+                                      "type": "boolean"
+                                    },
+                                    "subject": {
+                                      "type": "string"
+                                    },
+                                    "to": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "to",
+                                    "subject"
+                                  ],
+                                  "type": "object"
+                                }
+                              }
+                            },
+                            "required": true
+                          },
+                          "responses": {
+                            "200": {
+                              "content": {
+                                "application/json": {
+                                  "schema": {
+                                    "properties": {
+                                      "message": {
+                                        "type": "string"
+                                      },
+                                      "ok": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "ok"
+                                    ],
+                                    "type": "object"
+                                  }
+                                }
+                              },
+                              "description": "Accepted"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "servers": [
+                      {
+                        "url": "https://prod-16.eastus.logic.azure.com:443/workflows/ff32f8c7c55a44479f41f0f9da5d8290/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=x_T09sWnqHhYF_k-8C12abv0EaTYkxWAAa9iYR7RTzs"
+                      }
+                    ]
+                  }
+                },
+                "type": "openapi"
+              },
+              {
+                "fabric_dataagent_preview": {
+                  "project_connections": [
+                    {
+                      "project_connection_id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-belake-core-lab/providers/Microsoft.CognitiveServices/accounts/ai-admin2354ai223634534338/projects/ai-admin2354ai223634534-project/connections/fabric_dataagent_preview_1fe57f"
+                    }
+                  ]
+                },
+                "type": "fabric_dataagent_preview"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "dataagent:9",
+          "metadata": {
+            "description": "",
+            "modified_at": "1771626531"
+          },
+          "name": "dataagent",
+          "object": "agent.version",
+          "status": "active",
+          "version": "9"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "datafabricagent",
+      "name": "datafabricagent",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000021",
+          "created_at": 1771625786,
+          "definition": {
+            "instructions": "You are an orchestration agent with access to:\n\n1) fabric_data_agent → retrieve business data\n2) sendmail → send emails\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nDATA QUESTIONS\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nIf the user asks about:\nMRR, NPS, revenue, leads, customers, pipeline,\nsales, churn, financials, KPIs, performance\n\nYou MUST call fabric_data_agent.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nEMAIL QUESTIONS\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nIf the user asks to:\nsend, notify, inform, email someone\n\nYou MUST call sendmail.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nMULTI-STEP ACTIONS\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nIf the user asks to retrieve data AND send it by email:\n\nStep 1 → call fabric_data_agent  \nStep 2 → call sendmail with the result\n\nYou are NOT allowed to call sendmail unless the user explicitly asks for an email.",
+            "kind": "prompt",
+            "model": "gpt-4.1",
+            "tools": [
+              {
+                "openapi": {
+                  "auth": {
+                    "security_scheme": {},
+                    "type": "anonymous"
+                  },
+                  "description": "sendmail",
+                  "name": "sendmail",
+                  "spec": {
+                    "info": {
+                      "description": "Envia e-mail via Azure Logic Apps (HTTP Trigger)",
+                      "title": "SendMail Logic Apps",
+                      "version": "1.0.0"
+                    },
+                    "openapi": "3.0.3",
+                    "paths": {
+                      "/workflows/ff32f8c7c55a44479f41f0f9da5d8290/triggers/When_an_HTTP_request_is_received/paths/invoke": {
+                        "post": {
+                          "operationId": "sendmail",
+                          "parameters": [
+                            {
+                              "in": "query",
+                              "name": "api-version",
+                              "required": true,
+                              "schema": {
+                                "default": "2016-10-01",
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "in": "query",
+                              "name": "sp",
+                              "required": true,
+                              "schema": {
+                                "default": "/triggers/When_an_HTTP_request_is_received/run",
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "in": "query",
+                              "name": "sv",
+                              "required": true,
+                              "schema": {
+                                "default": "1.0",
+                                "type": "string"
+                              }
+                            },
+                            {
+                              "in": "query",
+                              "name": "sig",
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "requestBody": {
+                            "content": {
+                              "application/json": {
+                                "schema": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "attachments": {
+                                      "default": [],
+                                      "items": {
+                                        "properties": {
+                                          "ContentBytes": {
+                                            "type": "string"
+                                          },
+                                          "Name": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "Name",
+                                          "ContentBytes"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      "type": "array"
+                                    },
+                                    "bcc": {
+                                      "description": "BCC separados por ;",
+                                      "type": "string"
+                                    },
+                                    "bodyHtml": {
+                                      "type": "string"
+                                    },
+                                    "bodyText": {
+                                      "type": "string"
+                                    },
+                                    "cc": {
+                                      "description": "CC separados por ;",
+                                      "type": "string"
+                                    },
+                                    "importance": {
+                                      "default": "Normal",
+                                      "enum": [
+                                        "Low",
+                                        "Normal",
+                                        "High"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "isHtml": {
+                                      "default": false,
+                                      "type": "boolean"
+                                    },
+                                    "replyTo": {
+                                      "type": "string"
+                                    },
+                                    "subject": {
+                                      "type": "string"
+                                    },
+                                    "to": {
+                                      "description": "Destinatários separados por ;",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "to",
+                                    "subject"
+                                  ],
+                                  "type": "object"
+                                }
+                              }
+                            },
+                            "required": true
+                          },
+                          "responses": {
+                            "200": {
+                              "description": "Email enviado com sucesso"
+                            },
+                            "202": {
+                              "description": "Email aceito pelo Logic Apps"
+                            },
+                            "400": {
+                              "description": "Erro de requisição"
+                            },
+                            "401": {
+                              "description": "Não autorizado"
+                            },
+                            "500": {
+                              "description": "Erro interno"
+                            }
+                          },
+                          "summary": "Enviar email via Outlook"
+                        }
+                      }
+                    },
+                    "servers": [
+                      {
+                        "url": "https://prod-16.eastus.logic.azure.com:443"
+                      }
+                    ]
+                  }
+                },
+                "type": "openapi"
+              },
+              {
+                "fabric_dataagent_preview": {
+                  "project_connections": [
+                    {
+                      "project_connection_id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-belake-core-lab/providers/Microsoft.CognitiveServices/accounts/ai-admin2354ai223634534338/projects/ai-admin2354ai223634534-project/connections/fabric_dataagent_preview_ef1b80"
+                    }
+                  ]
+                },
+                "type": "fabric_dataagent_preview"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "datafabricagent:8",
+          "metadata": {
+            "description": "",
+            "logo": "Avatar_Default.svg",
+            "modified_at": "1771625786"
+          },
+          "name": "datafabricagent",
+          "object": "agent.version",
+          "status": "active",
+          "version": "8"
+        }
+      }
+    },
+    {
+      "configuration_state": "enabled",
+      "id": "DatabricksGenie",
+      "name": "DatabricksGenie",
+      "object": "agent",
+      "state": "enabled",
+      "versions": {
+        "latest": {
+          "agent_guid": "00000000-0000-0000-0000-000000000022",
+          "created_at": 1767887074,
+          "definition": {
+            "instructions": "",
+            "kind": "prompt",
+            "model": "gpt-4.1",
+            "tools": [
+              {
+                "type": "catalog_MCP"
+              }
+            ]
+          },
+          "description": "",
+          "draft": false,
+          "id": "DatabricksGenie:1",
+          "metadata": {
+            "logo": "Avatar_Default.svg"
+          },
+          "name": "DatabricksGenie",
+          "object": "agent.version",
+          "status": "active",
+          "version": "1"
+        }
+      }
+    }
+  ],
+  "first_id": "foundry-live-agent-hosted",
+  "has_more": false,
+  "last_id": "DatabricksGenie",
+  "object": "list"
+}

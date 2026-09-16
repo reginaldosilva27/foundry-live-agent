@@ -51,7 +51,8 @@ contêiner roda (*hosted agent* com LangGraph). Os dois ficam atrás de um únic
 
 | | |
 |---|---|
-| 🔌 **Um contrato, dois harnesses** | `HarnessAdapter` + um stream tipado de `AgentEvent`. O `prompt-agent` está pronto; o `langgraph` é scaffold. |
+| 🔌 **Um contrato, dois harnesses** | `HarnessAdapter` + um stream tipado de `AgentEvent`. **Os dois estão prontos**: o `prompt-agent` e um contêiner LangGraph hospedado pelo Foundry. |
+| 🧭 **Escolha o agente pela tela** | A barra lateral lista os agentes que estão *de fato no seu projeto Foundry* — tipo, versão publicada, status — e você escolhe quem responde, sem reiniciar nada. Agentes para os quais esta build não tem harness aparecem na lista, desabilitados e com o motivo. |
 | 🛠️ **Quatro ferramentas, dois donos** | O MCP do Microsoft Learn roda *no Foundry*; três function tools — o relógio, a base de conhecimento do próprio projeto e a busca na internet — rodam *no BFF*, porque o Foundry pede e para. Uma linha por chamada no chat, o payload no painel de rastros. |
 | 🔍 **Traces visíveis** | Uma árvore de spans do Application Insights numa gaveta: execução do agente › chamadas de modelo › chamadas de ferramenta, com durações e tokens. |
 | 🗣️ **Voz no mesmo agente** | O Voice Live se conecta à *mesma* definição — um agente, um conjunto de ferramentas, um repositório de traces, duas modalidades.  A voz, o detector de turno e a supressão de ruído são configurados por implantação. |
@@ -172,17 +173,29 @@ Falta uma tela, e ela falta por um motivo, não por descuido (constituição §5
 
 ## 🔌 Harnesses
 
-| | **prompt-agent** (pronto) | **langgraph** (planejado) |
+| | **prompt-agent** (pronto) | **langgraph** (pronto) |
 |---|---|---|
 | Quem roda o loop | O Foundry | Seu contêiner, hospedado pelo Foundry |
 | Definição do agente | `agent.yaml` → SDK do Agent Service | `azure.yaml` → `azd` |
-| Ferramentas | Declaradas no agente | Declaradas na chamada Responses / num Toolbox |
-| Você mantém | Nada em runtime | Seu grafo |
+| Quem executa as function tools | O BFF — o Foundry pede e para | O próprio contêiner |
+| Quem é o cliente MCP | O Foundry | O contêiner — por isso **nenhum `mcp_call`** |
+| Você mantém | Nada em runtime | Seu grafo, e a imagem dele |
 | Melhor para | Colocar de pé, e a maioria dos agentes em produção | Orquestração customizada |
 
-`AGENT_HARNESS=prompt-agent|langgraph` alterna entre eles; o selo no painel de configurações mostra
-qual está ativo. O `langgraph` é um **scaffold documentado** — ele levanta `NotImplementedError` em
-vez de fingir que funciona. Trade-offs: [`docs/harness-comparison.md`](docs/harness-comparison.md).
+Os dois rodam o **mesmo modelo, as mesmas instruções e as mesmas quatro ferramentas**, a partir de
+um único arquivo (`ai/harness/_shared/agent_core.yaml`) — então o que difere entre eles é o harness
+e mais nada. Escolha um no painel **Agentes** da barra lateral e a próxima mensagem vai para ele;
+uma nova conversa começa, porque uma conversa do Foundry pertence a um agente só. `AGENT_HARNESS` e
+`AGENT_NAME` continuam decidindo quem responde antes de alguém escolher — eles são o padrão, não a
+lei.
+
+O painel lista o projeto inteiro, então ele também vai mostrar agentes que este repositório não
+escreveu. Um agente **prompt** que você não escreveu é selecionável, porque o harness de prompt
+dirige qualquer prompt agent pelo nome — escolher um produz uma conversa que funciona com um agente
+diferente, que é exatamente o que a linha diz.
+
+Quanto custa rodar cada um, medido e não documentado:
+[`docs/harness-comparison.md`](docs/harness-comparison.md).
 
 ## 🧪 Como construímos aqui
 

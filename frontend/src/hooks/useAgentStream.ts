@@ -39,7 +39,8 @@ export type Message = UserMessage | AgentMessage | VoiceSessionMessage
 export interface AgentStream {
   messages: Message[]
   streaming: boolean
-  send: (text: string) => Promise<void>
+  /** `agent` names who answers; absent means the BFF's configured default (spec 019). */
+  send: (text: string, agent?: string) => Promise<void>
   /** Drop finished messages into the conversation — how a voice session lands here (spec 007). */
   append: (messages: Message[]) => void
   reset: () => void
@@ -57,7 +58,7 @@ export function useAgentStream(): AgentStream {
     setMessages([])
   }, [])
 
-  const send = useCallback(async (text: string) => {
+  const send = useCallback(async (text: string, agent?: string) => {
     const id = `turn_${nextId.current++}`
     const startedAt = Date.now()
 
@@ -81,7 +82,11 @@ export function useAgentStream(): AgentStream {
       const response = await fetch(`${BFF_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, conversation_id: conversationId.current }),
+        body: JSON.stringify({
+          message: text,
+          conversation_id: conversationId.current,
+          agent,
+        }),
       })
 
       if (!response.ok || !response.body) {
