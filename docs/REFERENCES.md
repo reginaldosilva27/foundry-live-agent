@@ -29,6 +29,37 @@ signal than the date I read it.
 | Function calling | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/function-calling | **The round trip.** `FunctionTool(name, parameters, description, strict)` from `azure.ai.projects.models`; output item `type: "function_call"` with `call_id`/`name`/`arguments`; submit `FunctionCallOutput(type="function_call_output", call_id, output)`; `extra_body={"agent_reference": {"name": …, "type": "agent_reference"}}`. **Runs expire 10 minutes after creation.** Portal cannot add/update function definitions — SDK/REST only. Updated 2026-07-16. |
 | Connect agents to MCP servers | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol | `MCPTool(server_label=…, server_url=…, require_approval=…)` from `azure.ai.projects.models`; `allowed_tools` allow-list; `MCPToolboxTool` for the toolbox variant; approval flow via `McpToolCallApprovalRequestItem`. Examples consistently use `require_approval="always"`. Updated 2026-09-01. |
 
+## The gateway — verified against the live service, 2026-09-16
+
+**The agent's inference already routes through APIM.** The project carries a connection of category
+`ApiManagement` targeting `https://apim-foundry-belake.azure-api.net/<account>`, authType `ApiKey`,
+and the deployment name is `<connection>/<model>` — the shape the bring-your-own-model page
+describes. `GET /config` reports `uses_gateway: true` off that. So the *project-level* AI Gateway
+page showing **Enabled** and the agent actually using a gateway are two different facts that happen
+to both be true here; the second is what BYOM bought.
+
+**APIM is emitting telemetry and it has nowhere to land.** A logger `azuremonitor` (type
+`azureMonitor`) exists, a service-level diagnostic points at it with **100 % sampling**, and the
+resource has **zero Azure Monitor diagnostic settings** — so nothing is stored anywhere.
+
+Diagnostic log categories actually offered by this APIM instance (`az monitor diagnostic-settings
+categories list`), two of which the docs we had read never mentioned:
+
+| Category | What it carries |
+|---|---|
+| `GatewayLogs` | HTTP request records — the source of a gateway request id |
+| **`GatewayLlmLogs`** | **LLM-specific records for model traffic through the gateway** |
+| **`GatewayMCPLogs`** | **MCP traffic through the gateway** |
+| `WebSocketConnectionLogs`, `DeveloperPortalAuditLogs`, `AllMetrics` | not relevant here |
+
+**One workspace can hold both halves.** The project's Application Insights is workspace-based
+(`IngestionMode: LogAnalytics`) over
+`DefaultWorkspace-c018b72e-…`, and the Foundry spans are already readable there as
+**`AppDependencies`** — the workspace-native name for the same rows the App Insights `dependencies`
+table returns. Pointing APIM's diagnostic setting at that same workspace puts
+`ApiManagementGatewayLogs` beside them, so one `LogsQueryClient` target — and one KQL join — can
+read a run and its gateway record together.
+
 ## Agent tracing — verified against the live service, 2026-09-16
 
 The tracing page (above) lists span names `invoke_agent`, `invoke_workflow`, `plan`, `execute_tool`
