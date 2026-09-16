@@ -29,6 +29,44 @@ signal than the date I read it.
 | Function calling | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/function-calling | **The round trip.** `FunctionTool(name, parameters, description, strict)` from `azure.ai.projects.models`; output item `type: "function_call"` with `call_id`/`name`/`arguments`; submit `FunctionCallOutput(type="function_call_output", call_id, output)`; `extra_body={"agent_reference": {"name": …, "type": "agent_reference"}}`. **Runs expire 10 minutes after creation.** Portal cannot add/update function definitions — SDK/REST only. Updated 2026-07-16. |
 | Connect agents to MCP servers | https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol | `MCPTool(server_label=…, server_url=…, require_approval=…)` from `azure.ai.projects.models`; `allowed_tools` allow-list; `MCPToolboxTool` for the toolbox variant; approval flow via `McpToolCallApprovalRequestItem`. Examples consistently use `require_approval="always"`. Updated 2026-09-01. |
 
+## Agent tracing — verified against the live service, 2026-09-16
+
+The tracing page (above) lists span names `invoke_agent`, `invoke_workflow`, `plan`, `execute_tool`
+and attributes `gen_ai.tool.definitions`, `gen_ai.tool.call.arguments`, `gen_ai.tool.call.result`.
+What this project's own runs actually produce, read back from Application Insights
+`ai-admin2354ai223634534-project-appinsights-2442` and recorded in
+`ai/tests/fixtures/recorded/appinsights-spans-20260916.jsonl`:
+
+| Observed | Value |
+|---|---|
+| Table | `dependencies`. No `requests`, `traces`, `customEvents` or `exceptions` rows at all. |
+| Span names | `invoke_agent <agent>:<version>`, `chat <model>`, `execute_tool <server>.<tool>` |
+| Trace id | `operation_Id` — 32 hex, the OpenTelemetry trace id |
+| Span id / parent | `id` / `operation_ParentId` — 16 hex |
+| **Run correlation** | **`customDimensions["gen_ai.response.id"]` carries the exact `resp_…` our `trace_ids` event emits.** This is the join from a turn to its spans. |
+| Other attributes | `gen_ai.agent.{id,name,version}`, `gen_ai.conversation.id`, `gen_ai.request.model`, `gen_ai.response.{id,model}`, `gen_ai.usage.{input_tokens,output_tokens,cached_tokens}`, `gen_ai.operation.name`, `gen_ai.provider.name = microsoft.foundry`, `span_type`, `microsoft.channel.name = agent_service` |
+| `gen_ai.tool.call.arguments` / `.result` | **Not present** on any observed span. `gen_ai.tool.definitions` *is* present, on `invoke_agent`. |
+
+**Three findings that shape spec 005, none of them in the docs:**
+
+1. **A client-side function tool produces no `execute_tool` span.** A turn calling
+   `get_current_datetime` — which the BFF executes — yields exactly `invoke_agent` + `chat`. A turn
+   calling the Learn MCP server yields `invoke_agent` + `execute_tool …` per call + `chat`. Foundry
+   traces what Foundry runs, which is the §8 boundary showing up in telemetry.
+2. **One turn with a function-call round trip is *two* OTel traces**, not one — a separate
+   `operation_Id` per leg, each with its own `gen_ai.response.id`. Our UI's "turn" does not map 1:1
+   to a trace.
+3. **`invoke_agent`'s `operation_ParentId` names a span that is not in the store.** The root is
+   outside what the project can read; the readable tree is rooted at `invoke_agent`.
+
+**Ingestion is staggered.** First spans of a run were queryable under 30 s; the *other* leg of the
+same turn was not yet present at that point and was later. A trace must be treated as possibly
+incomplete, not merely as present or absent.
+
+**Gateway correlation is not available.** `apim-foundry-belake` has **zero diagnostic settings**, so
+no `ApiManagementGatewayLogs` reach any workspace. Enabling them is a separate provisioning step
+from connecting Application Insights to the project.
+
 ## AI Gateway
 
 | Page | URL | Taken from it |

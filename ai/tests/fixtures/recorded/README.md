@@ -33,3 +33,29 @@ to stable per-file counters that keep their prefix, so cross-references between 
 blanks the opaque `encrypted_content` blob on reasoning items. Nothing else is touched: event order,
 event types, arguments, tool output and token counts are exactly what Foundry sent. The `.raw.jsonl`
 suffix is gitignored, so an un-redacted capture cannot be committed by accident.
+
+## `appinsights-spans-20260916.jsonl`
+
+Eight spans read back out of Application Insights
+`ai-admin2354ai223634534-project-appinsights-2442` on **2026-09-16**, after two runs fired through
+the BFF against agent version `foundry-live-agent:3`. One row per span, as the
+`dependencies` table returns it.
+
+Three traces, chosen because together they cover the cases spec 005 has to render:
+
+| `operation_Id` | Spans | Why it is here |
+|---|---|---|
+| `6691317d…` | `invoke_agent`, `chat` | First leg of a function-call round trip |
+| `7188bc6e…` | `invoke_agent`, `chat` | **Second leg of the same turn** — a different trace id |
+| `2aa77039…` | `invoke_agent`, `execute_tool` ×2, `chat` | An MCP turn: Foundry-side tools *do* get spans |
+
+**Scrubbed**, and what that removed: the subscription id (replaced with `<subscription-id>`), the
+`_MS.*` internal pointers, and the four content-bearing attributes — `gen_ai.input.messages`,
+`gen_ai.output.messages`, `gen_ai.tool.definitions` and
+`microsoft.foundry.content_filter.results` — which carry whole conversations. Every attribute *name*
+that matters is kept, because the names are what the code reads.
+
+The recording script is not committed: this was `az monitor app-insights query` against the
+`dependencies` table plus the scrub above. Re-record by firing a turn and querying the same table —
+never by editing this file to make a test pass (§5).
+

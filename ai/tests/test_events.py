@@ -243,12 +243,17 @@ def test_verified_flags_are_honest():
     from pathlib import Path
 
     recorded = Path(__file__).parent / "fixtures" / "recorded"
-    observed = {
-        json.loads(line)["type"]
-        for fixture in recorded.glob("*.jsonl")
-        for line in fixture.read_text().splitlines()
-        if line.strip()
-    }
+
+    def rows(fixture):
+        return [json.loads(line) for line in fixture.read_text().splitlines() if line.strip()]
+
+    # Not every recording in this directory is a stream of contract events. Spec 005 added one of
+    # Application Insights spans, whose rows carry `name`/`operation_Id` and no `type` at all — so
+    # this selects the event streams by shape rather than assuming the whole directory is one.
+    streams = [f for f in sorted(recorded.glob("*.jsonl")) if all("type" in row for row in rows(f))]
+    assert streams, "no event-stream recordings to check the flags against"
+
+    observed = {row["type"] for fixture in streams for row in rows(fixture)}
     assert observed, "no recordings to check the flags against"
 
     for mapping in MAPPINGS:

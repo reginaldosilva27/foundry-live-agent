@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Tracing is connected, and the spike answered spec 005's open questions.** Application Insights
+  is attached to the Foundry project; two runs were fired through the BFF and their spans read back
+  out. Eight spans across three traces are recorded in
+  `ai/tests/fixtures/recorded/appinsights-spans-20260916.jsonl`, and what they contain is written up
+  in `docs/REFERENCES.md` and `docs/how-it-works/tracing-and-gateway.md`. Spec 005 moves from
+  `blocked` to `clarified`.
+  - **A client-side function tool leaves no `execute_tool` span.** A turn calling
+    `get_current_datetime` — which the BFF runs — yields `invoke_agent` + `chat` and nothing else;
+    the Learn MCP server yields an `execute_tool` span per call. Foundry traces what Foundry runs,
+    so the span tree is a picture of §8, and the trace panel will have to say so or the gap reads as
+    lost data.
+  - **One turn with a function-call round trip is two OpenTelemetry traces**, one per leg, each with
+    its own `gen_ai.response.id`. "One turn" is this app's idea, not the telemetry's.
+  - **The join from a turn to its spans is `gen_ai.response.id`**, which carries the exact `resp_…`
+    the `trace_ids` event already emits — so nothing has to be derived, and the harness needs no
+    change. This is what unblocked the spec.
+  - `gen_ai.tool.call.arguments` and `.result` are **absent** from every observed span although the
+    docs list them; gateway correlation is still unavailable, because the APIM instance has no
+    diagnostic settings.
 - **Spec 014 — the trace panel becomes an instrument.** The surface that argues this project's
   central claim now carries its own argument. Every identifier is a copyable row; the run's model,
   tokens, reasoning tokens and latency sit in the panel rather than only in the chat's meta line;

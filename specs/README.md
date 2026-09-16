@@ -58,7 +58,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 002 | [Prompt-agent harness — agent as code + the client-side tools](002-prompt-agent-harness/spec.md) | 1 | ✅ done |
 | 003 | [BFF — streaming chat and the function-call round trip](003-bff-streaming/spec.md) | 1 | ✅ done |
 | 004 | [Frontend shell — three panes, streaming, and the two kinds of tool](004-frontend-shell/spec.md) | 1 | ✅ done |
-| 005 | [Real spans, from Application Insights](005-traces/spec.md) | 2 | ⛔ blocked |
+| 005 | [Real spans, from Application Insights](005-traces/spec.md) | 2 | 🔍 clarified |
 | 006 | [Voice mode — Voice Live attached to the same prompt agent](006-voice-mode/spec.md) | 3 | ✅ done |
 | 007 | [The voice conversation lands in the chat](007-voice-transcript-in-chat/spec.md) | 3 | ✅ done |
 | 008 | [Spoken answers in the text chat](008-spoken-answers/spec.md) | 3 | ✅ done |
@@ -73,20 +73,24 @@ The design provenance for 004 — the Dataside design system and the `Foundry Li
 screen, read on 2026-09-04 — is recorded in [`../docs/design-system.md`](../docs/design-system.md),
 along with nine points where the mock disagrees with what we are building.
 
-## 005 is blocked, and on what
+## 005: what the spike found
 
 Spec 014 delivered the part of 005's Phase 2 deliverable that needed no second data source — the
-drawer, the identifiers, the usage and cost figures. What 005 still owns is the span tree, and that
-needs Application Insights. Verified against the live subscription on **2026-09-16**: the Foundry
-project `ai-admin2354ai223634534338` has connections of category AIServices, RemoteTool, CustomKeys,
-CognitiveSearch and ApiManagement — and **none for App Insights**. `.env` has no connection string,
-`infra/` has no Bicep, and no telemetry SDK is a dependency.
+drawer, the identifiers, the usage and cost figures. What 005 still owns is the span tree.
 
-It is `⛔ blocked` rather than `✏️ draft` because the gap is a provisioning decision on the owner's
-subscription, not an unwritten paragraph. `005-traces/spec.md` lists exactly what must exist, and
-carries four open questions — one of which (**O-B**, how a Responses run's id relates to its
-OpenTelemetry trace id) must be answered against the live service before the plan can be written,
-the way spec 002 settled O-8.
+**Unblocked 2026-09-16.** Application Insights is now connected to the Foundry project and tracing
+verified end to end: runs fired through the BFF, spans read back, and the four open questions
+answered against the live service rather than from the docs. The answers are folded into
+`005-traces/spec.md`; the recording is
+`ai/tests/fixtures/recorded/appinsights-spans-20260916.jsonl`.
+
+The spike changed the spec. A client-side function tool leaves **no** `execute_tool` span — Foundry
+traces what Foundry runs — so the span tree is a picture of §8 and the panel has to say so. One turn
+with a function-call round trip is **two** traces, not one. And the join from a turn to its spans is
+`gen_ai.response.id`, which the `trace_ids` event already carries, so nothing needs deriving.
+
+One precondition remains and it only affects gateway correlation: the APIM instance has no
+diagnostic settings, so `ApiManagementGatewayLogs` reach no workspace.
 
 ## Execution order ≠ numbering
 
@@ -94,7 +98,7 @@ Spec numbers are an append-only record and are **never** renumbered. Execution o
 changeable decision. Current order, chosen because **seeing Voice Live work is the stated priority**:
 
 ```
-000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ⛔
+000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 🔍
 ```
 
 Voice was meant to come before the text UI, on the grounds that it needs only the agent plus a

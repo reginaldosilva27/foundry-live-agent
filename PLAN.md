@@ -1,6 +1,6 @@
 # foundry-live-agent — PLAN
 
-> Status: **specs 000–004 and 006–014 done; 005 (traces) blocked on Application Insights.** Chat and voice both run against a
+> Status: **specs 000–004 and 006–014 done; 005 (traces) clarified — tracing verified live, plan next.** Chat and voice both run against a
 > live Foundry project. Voice findings observed 2026-09-15 — see §9 for what the docs got wrong.
 > Foundry API details verified against learn.microsoft.com on **2026-09-04** — every URL and API
 > version is recorded in [docs/REFERENCES.md](docs/REFERENCES.md).

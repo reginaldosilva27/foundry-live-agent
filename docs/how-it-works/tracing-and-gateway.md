@@ -41,3 +41,37 @@ The duration bars under the calls are **not spans**. Their lengths are the `dura
 time axis, no gridlines and no start offsets, because the events carry durations and not a clock.
 The waterfall with a real axis is this spec's job, from Application Insights.
 
+## What the spans actually look like (measured 2026-09-16)
+
+Tracing is connected and producing spans. Read back from Application Insights, one turn looks like
+this — and the shape carries the argument this whole project makes:
+
+```
+trace 2aa77039…                     (an MCP turn)
+  invoke_agent foundry-live-agent:3            7316.5 ms
+    execute_tool mcp_microsoft_learn…           106.2 ms   ← Foundry ran this
+    execute_tool mcp_microsoft_learn…            96.7 ms   ← and this
+    chat gpt-5.5-2026-04-24                    1422.9 ms
+
+trace 7188bc6e…                     (a function-tool turn)
+  invoke_agent foundry-live-agent:3            1063.1 ms
+    chat gpt-5.5-2026-04-24                     191.9 ms
+                                                          ← no execute_tool: the BFF ran the tool
+```
+
+**That missing span is the point.** Foundry traces what Foundry executes. A `get_current_datetime`
+the BFF ran is invisible here, and an MCP call Foundry made is not — which is constitution §8 showing
+up in telemetry rather than in prose. Anything the trace panel builds on top of this has to say so,
+or the gap reads as lost data.
+
+Two more facts that bite, both recorded in [`../REFERENCES.md`](../REFERENCES.md):
+
+- **A turn with a function-call round trip is two traces**, one per leg, each with its own
+  `gen_ai.response.id`. "One turn" is our idea, not the telemetry's.
+- **The join from a turn to its spans is `gen_ai.response.id`**, which holds the exact `resp_…` the
+  `trace_ids` event already carries. Nothing needs to be derived or guessed.
+
+**Gateway correlation is still not available**: the APIM instance has no diagnostic settings, so
+`ApiManagementGatewayLogs` reach no workspace. That is a separate provisioning step, and until it is
+taken the trace panel says so rather than showing an empty field.
+
