@@ -202,3 +202,50 @@ describe('App', () => {
     expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'Pergunte algo ao agente')
   })
 })
+
+/**
+ * Spoken answers are built and parked (spec 008).
+ *
+ * The control sat next to Voice and read as a second way into the same thing, so it was taken off
+ * the header on 2026-09-16. The feature underneath is untouched — `useSpokenAnswers`, the player and
+ * the BFF's `/speech` endpoint all still work and are still tested — but nothing in the app mounts
+ * it, and this is what says so.
+ */
+describe('the header does not offer spoken answers', () => {
+  /** Like `fakeBff`, but with speech configured and every URL recorded. */
+  function bffWithSpeech() {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(String(url))
+        if (String(url).endsWith('/config')) {
+          return new Response(JSON.stringify({ ...CONFIG, speech: { enabled: true } }), {
+            status: 200,
+          })
+        }
+        if (String(url).endsWith('/speech')) return new Response(new Blob(['audio']), { status: 200 })
+        return new Response(asSseStream(twoToolTurn), { status: 200 })
+      }),
+    )
+    return urls
+  }
+
+  it('has no speak control, and none to stop it with', async () => {
+    bffWithSpeech()
+    render(<App />)
+
+    await waitFor(() => expect(screen.getByTestId('harness-badge')).toHaveTextContent('prompt'))
+    expect(screen.queryByRole('button', { name: /^(speak|falar)$/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /stop speaking|parar de falar/i })).toBeNull()
+  })
+
+  it('asks the BFF to synthesise nothing, even with speech configured', async () => {
+    const urls = bffWithSpeech()
+    render(<App />)
+    await ask()
+
+    await waitFor(() => expect(screen.getByTestId('answer')).toHaveTextContent('19:00'))
+    expect(urls.filter((url) => url.endsWith('/speech'))).toEqual([])
+  })
+})

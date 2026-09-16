@@ -17,7 +17,6 @@ import { detectLang, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
 import { useConfig } from './hooks/useConfig'
 import { useTrace } from './hooks/useTrace'
-import { useSpokenAnswers } from './hooks/useSpokenAnswers'
 import { useVoiceSession } from './hooks/useVoiceSession'
 import type { VoiceErrorCode } from './voice/session'
 import { voiceMessages } from './state/voiceLog'
@@ -33,7 +32,6 @@ export default function App() {
   // Which turn the trace panel is showing, and which of its calls to bring into view. Empty means
   // the newest turn, which is what the header's Traces button opens (spec 009).
   const [trace, setTrace] = useState<{ turnId?: string; callId?: string }>({})
-  const [speaking, setSpeaking] = useState(false)
   const { config, failed } = useConfig()
   const { messages, streaming, send, append, reset } = useAgentStream()
   const voice = useVoiceSession()
@@ -45,8 +43,6 @@ export default function App() {
     const seconds = elapsed
     append(voiceMessages(await voice.stop(), seconds))
   }, [append, elapsed, voice])
-
-  const spoken = useSpokenAnswers(messages, lang, speaking)
 
   /**
    * The turn the panel is on, and where it sits in the session (spec 014 AC4).
@@ -118,14 +114,11 @@ export default function App() {
             streaming={streaming}
             tracesOpen={tracesOpen}
             voiceLive={voice.status === 'live'}
-            speaking={speaking}
             onToggleTraces={() => {
               setTrace({})
               setTracesOpen((v) => !v)
             }}
             onVoice={() => void voice.start()}
-            onToggleSpeaking={() => setSpeaking((v) => !v)}
-            onStopSpeaking={spoken.stop}
           />
           <Conversation
             messages={messages}

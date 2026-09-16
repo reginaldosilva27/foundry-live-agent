@@ -41,12 +41,6 @@ export const strings = {
     en: 'Voice is not configured on this server.',
     pt: 'A voz não está configurada neste servidor.',
   },
-  'header.speak': { en: 'Speak', pt: 'Falar' },
-  'header.speakUnavailable': {
-    en: 'Speech is not configured on this server.',
-    pt: 'A fala não está configurada neste servidor.',
-  },
-  'speech.stop': { en: 'Stop speaking', pt: 'Parar de falar' },
   'header.traces': { en: 'Traces', pt: 'Rastros' },
   'header.status': { en: 'Ready', pt: 'Pronto' },
   'header.statusStreaming': { en: 'Streaming', pt: 'Transmitindo' },

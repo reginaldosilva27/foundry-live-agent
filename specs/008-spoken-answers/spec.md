@@ -99,3 +99,22 @@ The endpoint is a configuration value, not a derivation, and the plan says why (
 - Per-turn "speak this one" without a global toggle.
 - Word-level highlighting of what is being read.
 - Caching synthesised audio. Every sentence is synthesised on demand, once.
+
+## Parked — 2026-09-16
+
+**The control is off the header; the feature is not removed.** Sitting next to `Voice`, a `Speak`
+toggle read as a second door into the same room: two buttons, two icons whose difference (speaker
+vs. microphone) was the only thing saying that one reads an answer aloud and the other opens a live
+session. On this deployment it was also permanently greyed out, because `SPEECH_ENDPOINT` and
+`SPEECH_RESOURCE_ID` are unset — so the first thing it taught a reader was that something was
+broken.
+
+What stays, untouched and still tested: `useSpokenAnswers`, `speech/player.ts`, `state/speech.ts`,
+the BFF's `POST /speech`, and `GET /config`'s `speech.enabled`. The acceptance criteria that were
+asserted through the button now run against the hook (`hooks/useSpokenAnswers.test.tsx`), so the
+feature cannot rot while it is parked. What went with the button: its three i18n keys and the
+speaker icon nothing else drew.
+
+Remounting is one hook call and two props on `Header`. Whether it comes back as a toggle, as a
+per-turn "read this one", or not at all, is a decision for when the question is asked again — and
+if it comes back with a different shape, that is a new spec, not a revert of this one.

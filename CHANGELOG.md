@@ -54,6 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     so every silence gets covered instead of only the first.
 
 ### Changed
+- **The `Speak` toggle is off the header** (spec 008, parked). Beside `Voice` it read as a second
+  way into the same thing, and on this deployment it was permanently disabled because the Speech
+  resource is not configured — so it announced a fault rather than a feature. The feature itself is
+  intact: the hook, the player and the BFF's `/speech` endpoint are untouched, and the acceptance
+  criteria that ran through the button now run against the hook, so nothing rots while it waits.
+  Remounting is one hook call and two props.
 - **The reasoning card stops blaming the deployment.** It said the model emitted no summaries and to
   point the deployment at a reasoning model — while the deployment *was* `gpt-5.5` with
   `reasoning.summary` configured, spending reasoning tokens on the very turn that showed the message.

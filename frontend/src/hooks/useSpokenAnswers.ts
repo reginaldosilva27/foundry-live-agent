@@ -1,6 +1,11 @@
 /**
  * Reading the agent's answers out loud, while they are still being written (spec 008).
  *
+ * **Parked, not retired.** Nothing mounts this since 2026-09-16: beside `Voice` in the header, a
+ * `Speak` toggle read as a second door into the same room, so the control came off. The hook, the
+ * player and the BFF's `/speech` endpoint are untouched and still tested — mounting it again is
+ * one call and two props. See the CHANGELOG entry and spec 008.
+ *
  * This is a **projection**, like everything else on this side: it watches the message list, cuts
  * the newest answer into sentences as it grows, and hands them to the player. It decides nothing
  * about the turn, and turning it off changes nothing about the stream.
