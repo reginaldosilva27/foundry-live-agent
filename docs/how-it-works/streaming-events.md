@@ -95,6 +95,16 @@ the model still *reasons* — the recorded turn spent 410 reasoning tokens and e
 output items — but every one of them carries `summary: []`, and the activity panel's reasoning card
 stays empty forever. The two committed fixtures are the same agent with and without that one line.
 
+And the block has to say `summary: detailed`, not `auto`. Observed 2026-09-16 on the agent's version
+4, which carried `auto`: a seven-leg turn emitted `reasoning` items and not one line of summary,
+because `auto` leaves the decision to the model and a leg whose only output is a function call has
+little to summarise. Version 5 carries `detailed`.
+
+Either way the app cannot rely on a summary arriving. That is why the activity panel numbers the
+calls and shows the argument each one carried (spec 015): those come from `tool_call` and
+`mcp_call`, which are always there, and they are what the turn has to say when the model says
+nothing.
+
 ## A synchronous client is a streaming bug
 
 The Foundry SDK's stream is **synchronous**: every `next()` is a blocking network read. Iterating it

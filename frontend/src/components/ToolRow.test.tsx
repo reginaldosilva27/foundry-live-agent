@@ -6,6 +6,7 @@ import type { Activity } from '../state/turn'
 
 const appCall: Activity = {
   kind: 'tool',
+  step: 1,
   executor: 'app',
   callId: 'call_1',
   name: 'get_current_datetime',
@@ -17,6 +18,7 @@ const appCall: Activity = {
 
 const mcpCall: Activity = {
   kind: 'mcp',
+  step: 2,
   serverLabel: 'microsoft_learn',
   name: 'microsoft_docs_search',
   arguments: '{"query":"hosted agent"}',
@@ -131,5 +133,55 @@ describe('a duration that came from a span', () => {
     expect(screen.getByTestId('tool-row')).toHaveTextContent(
       /carries no duration|não carrega duração/i,
     )
+  })
+})
+
+/** Spec 015 — the row says what the call asked for, and where it sits in the turn. */
+describe('what the call asked for (spec 015)', () => {
+  it('shows the argument that distinguishes this call (AC1)', () => {
+    render(<ToolRow activity={mcpCall} onOpen={() => {}} />)
+
+    expect(screen.getByTestId('tool-row')).toHaveTextContent('hosted agent')
+  })
+
+  it('tells two calls to the same tool apart (AC2)', () => {
+    // The turn that prompted this spec: seven `lookup_knowledge` rows, identical on screen.
+    const search = (query: string): Activity => ({
+      ...appCall,
+      name: 'lookup_knowledge',
+      arguments: JSON.stringify({ query }),
+    })
+    render(
+      <>
+        <ToolRow activity={search('the BFF')} onOpen={() => {}} />
+        <ToolRow activity={search('the harness contract')} onOpen={() => {}} />
+      </>,
+    )
+
+    const [first, second] = screen.getAllByTestId('tool-row')
+    expect(first).toHaveTextContent('the BFF')
+    expect(second).toHaveTextContent('the harness contract')
+    expect(first.textContent).not.toBe(second.textContent)
+  })
+
+  it('still renders a row when the arguments say nothing usable (AC3)', () => {
+    for (const args of ['', '{}', '{"query": "par', 'not json']) {
+      const { unmount } = render(<ToolRow activity={{ ...appCall, arguments: args }} />)
+      expect(screen.getByTestId('tool-row')).toHaveTextContent('get_current_datetime')
+      expect(screen.queryByTestId('tool-subject')).toBeNull()
+      unmount()
+    }
+  })
+
+  it('carries its ordinal when the turn made more than one call (AC5)', () => {
+    render(<ToolRow activity={{ ...appCall, step: 3 }} showStep onOpen={() => {}} />)
+
+    expect(screen.getByTestId('tool-step')).toHaveTextContent('3')
+  })
+
+  it('has no ordinal to give when the turn made a single call (AC6)', () => {
+    render(<ToolRow activity={appCall} onOpen={() => {}} />)
+
+    expect(screen.queryByTestId('tool-step')).toBeNull()
   })
 })

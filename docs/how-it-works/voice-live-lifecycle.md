@@ -146,7 +146,7 @@ before a word is spoken rather than one round trip later:
 ```json
 { "type": "rtc.call.sdp.create", "sdp_offer": "v=0…",
   "session": {
-    "voice": { "name": "pt-BR-Luana:MAI-Voice-2-Flash", "type": "azure-standard" },
+    "voice": { "name": "pt-BR-Thalita:DragonHDLatestNeural", "type": "azure-standard" },
     "turn_detection": { "type": "azure_semantic_vad_multilingual",
                         "interrupt_response": true, "remove_filler_words": true },
     "input_audio_noise_reduction": { "type": "azure_deep_noise_suppression" } } }
@@ -162,6 +162,9 @@ Three things about that block are worth knowing (spec 012):
 - **`modalities` is stated, not assumed.** The service's default varies — the committed fixtures
   show `["text"]` in one session and `["audio", "text"]` in another — and a text-only session is a
   transcript with no sound.
+- **The voice is the HD tier, and that is a listening decision** (spec 016). `azure-standard`
+  covers both tiers; HD costs first-audio latency and buys naturalness in Portuguese.
+  `VOICELIVE_VOICE` switches back to `pt-BR-Luana:MAI-Voice-2-Flash` in one line.
 - **Blank configuration sends nothing.** With every `VOICELIVE_*` variable empty the frame is just
   `type` and `sdp_offer`, exactly as the recorded fixtures captured it.
 
@@ -176,7 +179,7 @@ detail is simply not offered during one; it reaches the chat when the session en
 The BFF logs what each session actually negotiated:
 
 ```
-voice session negotiated: modalities=['audio', 'text'] voice=pt-BR-Luana:MAI-Voice-2-Flash turn_detection=azure_semantic_vad_multilingual
+voice session negotiated: modalities=['audio', 'text'] voice=pt-BR-Thalita:DragonHDLatestNeural turn_detection=azure_semantic_vad_multilingual
 ```
 
 That line is the difference between *the agent did not speak* and *the browser did not play* — the

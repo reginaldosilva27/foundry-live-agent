@@ -175,6 +175,7 @@ export function TraceDrawer({
                       durationRatio={
                         duration !== undefined && longest > 0 ? duration / longest : undefined
                       }
+                      showStep={turn.activities.length > 1}
                       onOpen={() => onOpenCall?.(id)}
                     />
                   </div>

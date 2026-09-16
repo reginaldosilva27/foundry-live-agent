@@ -468,6 +468,22 @@ button:disabled {
   color: var(--fg-2);
 }
 
+.turn__pending-step {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-4);
+}
+
+/* The only number on a turn that a clock produced rather than an event (spec 015). Set quietly:
+   it is there to prove the wait is moving, not to be read. */
+.turn__pending-elapsed {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-4);
+}
+
 .turn__pending-dots {
   display: inline-flex;
   gap: 4px;
@@ -632,17 +648,13 @@ button:disabled {
   color: var(--fg-2);
 }
 
-.reasoning-card--absent {
-  display: block;
-  padding: var(--sp-3);
-  border-style: dashed;
-  background: var(--bg-2);
-}
-
-.reasoning-card__note {
-  margin: var(--sp-1) 0 0;
+/* Not a card: one line. A dashed box with a heading gave the absence of a summary more weight on
+   screen than most summaries have, for a turn where the interesting thing is the calls below it
+   (spec 015). */
+.reasoning-absent {
+  margin: 0;
   font-size: var(--fs-caption);
-  color: var(--fg-3);
+  color: var(--fg-4);
 }
 
 /* ---------- Tool cards (AC4 — the distinction that matters) ---------- */
@@ -771,8 +783,12 @@ button:disabled {
      down the list (spec 014 AC9). A label longer than its floor still expands; that is the outlier
      paying for itself rather than every row paying for the outlier. */
   display: grid;
+  /* Five tracks now: status, ordinal, name, tag, duration (spec 015). The ordinal is drawn only
+     for a turn that made more than one call, so the last three are *placed* rather than flowed —
+     otherwise a row without an ordinal would slide its tag one track left and undo exactly the
+     alignment 014 fixed. */
   grid-template-columns:
-    auto minmax(0, 1fr)
+    auto minmax(var(--step-col, 1.25rem), auto) minmax(0, 1fr)
     minmax(var(--tag-col, 7.5rem), auto)
     minmax(var(--dur-col, 3.5rem), auto);
   align-items: center;
@@ -862,8 +878,20 @@ button:disabled {
   animation: spin 900ms linear infinite;
 }
 
+.tool-row__step {
+  grid-column: 2;
+  justify-self: end;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-4);
+}
+
 .tool-row__name {
-  flex: 1;
+  grid-column: 3;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
   min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--fs-body-s);
@@ -871,7 +899,22 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+/* What the call asked for, beside what was called. In the page font, not mono: the name is an
+   identifier and the subject is content, and the two read as one phrase when they are set
+   differently. It is the one cell whose length nobody controls — a Learn URL, a sentence of a
+   query — so it truncates rather than pushing the executor column off its x (spec 015 AC4). */
+.tool-row__subject {
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tool-row__executor {
+  grid-column: 4;
   /* The cell has a floor; the badge must not inherit it, or `bff` becomes a 7.5rem pill. Anchored
      to the cell's start so every tag begins at the same x, whatever its length. */
   justify-self: start;

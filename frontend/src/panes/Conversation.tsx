@@ -7,6 +7,7 @@ import { MessageBubble } from '../components/MessageBubble'
 import { MetaLine } from '../components/MetaLine'
 import { useT } from '../i18n/context'
 import type { Message } from '../hooks/useAgentStream'
+import { useElapsed } from '../hooks/useElapsed'
 import { turnStatus, type Turn } from '../state/turn'
 import { ActivityPanel } from './ActivityPanel'
 import { EmptyState } from './EmptyState'
@@ -26,17 +27,30 @@ interface Props {
  * avatar and blank space for as long as the model takes to start — which reads as a frozen app
  * rather than as waiting (§5). `turnStatus` decides *what* is happening; this decides how to say
  * it, and says nothing once the answer is on screen to speak for itself.
+ *
+ * It also carries a clock (spec 015). A turn with seven tool-calling legs answered every call in
+ * about a millisecond and spent all its seconds on the model in between, so a line that names the
+ * running tool and nothing else sits unchanged through the only wait worth explaining. The clock
+ * times the *current state* and restarts with it, which is why it is keyed on the status: the
+ * question is "how long has this been going on", not "how long has the turn taken".
  */
 function LiveLine({ turn }: { turn: Turn }) {
   const s = useT()
   const status = turnStatus(turn)
+  const settled = status.kind === 'answering' || status.kind === 'settled'
+  const elapsed = useElapsed(settled ? null : `${status.kind}:${status.name ?? ''}`)
 
-  if (status.kind === 'answering' || status.kind === 'settled') return null
+  if (settled) return null
 
   return (
     <p className="turn__pending" data-testid="turn-pending" aria-live="polite">
       {status.kind === 'calling' ? (
         <>
+          {status.step !== undefined && (
+            <span className="turn__pending-step">
+              {s('turn.step')} {status.step}
+            </span>
+          )}
           {s('turn.calling')}
           <span className="turn__pending-tool">{status.name}</span>
         </>
@@ -45,6 +59,9 @@ function LiveLine({ turn }: { turn: Turn }) {
       ) : (
         s('turn.pending')
       )}
+      {/* Seconds, unsuffixed by prose: it is a number, like every other number on this screen, and
+          it needs no translation. */}
+      {elapsed > 0 && <span className="turn__pending-elapsed">{elapsed}s</span>}
       <span className="turn__pending-dots" aria-hidden="true">
         <span className="turn__pending-dot" />
         <span className="turn__pending-dot" />

@@ -141,6 +141,18 @@ from connecting Application Insights to the project.
 > back echoed in `session.updated`. **Accepted is not the same as good**: which one sounds least
 > synthetic is a listening test, and this repository does not claim to have run one.
 
+> **The listening test, run 2026-09-16 (spec 016).** `pt-BR-Luana:MAI-Voice-2-Flash` was judged not
+> good enough in Portuguese by this project's author, listening to real sessions, and the default
+> moved to **`pt-BR-Thalita:DragonHDLatestNeural`** — the HD tier, accepting slower first audio for
+> naturalness. This is a judgement by ear, recorded as one: no measurement of latency was taken,
+> and no claim is made about any other locale.
+>
+> **Still unverified for the HD default.** The 2026-09-15 probe saw that name *echoed* in
+> `session.updated` from this project's own resource (eastus2), which shows the service accepts it —
+> **not** that it renders audio there, and the HD region list in the how-to names `eastus`. Spec 016
+> AC7 exists for exactly this gap; until a live session is confirmed audible with it, the default is
+> doc-and-echo evidence, not wire-verified audio (§5).
+
 > **The session configuration is doc-shaped, not wire-verified.** The two rows above describe what
 > the documentation says. The committed voice fixtures were recorded *before* this configuration
 > existed, so the replay proves this repository's end of it and not Foundry's acceptance (§5).
@@ -247,6 +259,22 @@ from connecting Application Insights to the project.
 >
 > **Token accounting.** Both legs bill separately: 1 091 + 17 520 input, 132 + 754 output, 68 + 342
 > reasoning. A turn's usage is the sum, not the last leg.
+
+> ### `reasoning.summary: auto` is not enough — observed 2026-09-16
+>
+> Agent `foundry-live-agent` version 4, model `gpt-5.5`, `reasoning: {summary: auto}` — read back
+> from the live service with `AIProjectClient.agents.get()`, so the configuration is confirmed and
+> not assumed. A turn answering *"How does this project talk to Microsoft Foundry?"* ran **seven**
+> tool-calling legs, emitted a `reasoning` output item on most of them, and produced **no summary
+> text at all**: the app's reasoning card was empty for the whole turn.
+>
+> `auto` leaves the choice to the model, and on a short leg whose only output is a function call it
+> chooses not to summarise. The fix is `summary: detailed`, applied as **version 5** and verified the
+> same way. `concise` is not an alternative on this family — the GPT-5 series rejects it (see the
+> reasoning-models row in the table below).
+>
+> The consequence for the app is recorded in spec 015: a model that declines to summarise is a
+> normal state, not a misconfiguration, so the UI must stay useful without a summary.
 
 > **Voice Live api-version status — RESOLVED 2026-09-15, and the answer is "two".** Probed with
 > `ai/scripts/spike_voice.py` against `ai-admin2354ai223634534338` (eastus2):

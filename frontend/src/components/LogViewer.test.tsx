@@ -6,6 +6,7 @@ import type { Activity } from '../state/turn'
 
 const mcpCall: Activity = {
   kind: 'mcp',
+  step: 1,
   serverLabel: 'microsoft_learn',
   name: 'microsoft_docs_search',
   arguments: '{"query":"hosted agent"}',
@@ -15,6 +16,7 @@ const mcpCall: Activity = {
 
 const failed: Activity = {
   kind: 'tool',
+  step: 2,
   executor: 'app',
   callId: 'call_1',
   name: 'get_current_datetime',

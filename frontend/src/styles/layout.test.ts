@@ -130,6 +130,28 @@ describe('the tool row grid', () => {
     expect(panel).toMatch(/--dur-col:/)
   })
 
+  // Spec 015 AC4. The subject is the one cell whose length nobody controls — a Learn URL or a
+  // sentence-long query — and it shares the `1fr` track with the tool name. Left to itself it would
+  // push the executor column, the one carrying §8, off its x on that row alone: exactly the
+  // misalignment 014 AC9 was written to stop.
+  it('truncates what a call asked for instead of letting it move the columns', () => {
+    const subject = css.split('.tool-row__subject {')[1].split('}')[0]
+
+    expect(subject).toContain('overflow: hidden')
+    expect(subject).toMatch(/text-overflow:\s*ellipsis/)
+    expect(subject).toMatch(/white-space:\s*nowrap/)
+
+    // A grid track only truncates if it is allowed to shrink below its content.
+    const name = css.split('.tool-row__name {')[1].split('}')[0]
+    expect(name).toMatch(/min-width:\s*0/)
+  })
+
+  it('gives the ordinal a floor of its own, like every other fixed column', () => {
+    const columns = css.split('.tool-row {')[1].split('}')[0].match(/grid-template-columns:([^;]*)/)![1]
+
+    expect(columns).toMatch(/minmax\(var\(--step-col,\s*[\d.]+rem\)/)
+  })
+
   it('keeps the bar out of the row height when a call has no duration', () => {
     // The chat renders rows for MCP calls, which never carry one. If the bar reserved a row in
     // the grid, every one of those would gain its height for nothing.

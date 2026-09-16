@@ -15,6 +15,7 @@ import type { McpActivity, ToolActivity } from '../state/turn'
 
 const appTool: ToolActivity = {
   kind: 'tool',
+  step: 1,
   executor: 'app',
   callId: 'call_1',
   name: 'get_current_datetime',
@@ -26,6 +27,7 @@ const appTool: ToolActivity = {
 
 const mcpCall: McpActivity = {
   kind: 'mcp',
+  step: 2,
   serverLabel: 'microsoft_learn',
   name: 'microsoft_docs_search',
   arguments: '{"query":"hosted agents"}',
@@ -117,6 +119,30 @@ describe('ReasoningCard', () => {
     render(<ReasoningCard text="" streaming={false} />)
     expect(screen.getByTestId('reasoning-absent')).toBeInTheDocument()
     expect(screen.getByTestId('reasoning-absent').textContent).not.toBe('')
+  })
+
+  // Spec 015 AC8. The copy this replaced said the model emitted none and told the reader to point
+  // the deployment at a reasoning model — while the deployment *was* `gpt-5.5` with
+  // `reasoning.summary` configured, spending reasoning tokens on the very turn that showed it.
+  it('scopes its silence to this turn, and claims nothing about the model (AC8)', () => {
+    render(<ReasoningCard text="" streaming={false} />)
+
+    const absent = screen.getByTestId('reasoning-absent')
+    expect(absent).toHaveTextContent(/this turn/i)
+    expect(absent.textContent).not.toMatch(/model emits|deployment|reasoning model/i)
+  })
+
+  it('does not dress its silence up as a card with a heading (AC8)', () => {
+    render(<ReasoningCard text="" streaming={false} />)
+
+    expect(screen.queryByText(/^no reasoning summary$/i)).toBeNull()
+  })
+
+  it('leaves a turn that did reason exactly as it was (AC9)', () => {
+    render(<ReasoningCard text="I should check the time." streaming={false} />)
+
+    expect(screen.getByTestId('reasoning-body')).toHaveTextContent('I should check the time.')
+    expect(screen.queryByTestId('reasoning-absent')).toBeNull()
   })
 
   it('stays out of the way while a turn that will produce no reasoning is still streaming', () => {

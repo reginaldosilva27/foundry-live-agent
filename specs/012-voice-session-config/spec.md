@@ -56,6 +56,9 @@ demo nobody in Brazil wants to show.
   documentation calls optimized for real-time responsiveness in Voice Live. The trade is real and
   recorded: the multilingual voice is the one documented to read both languages natively, and it is
   one environment variable away.
+  **Superseded 2026-09-16 by spec 016**: `pt-BR-Thalita:DragonHDLatestNeural`, after the listening
+  test this spec said it had not run. Flash stays documented as the low-latency way back — the
+  reasoning above is still why anyone would take it.
 - **`azure-standard` is the voice type.** `azure-realtime-native` names are for the `azure-realtime`
   model; this session attaches to an agent on a normal deployment.
 - **No input language by default.** Pinning `pt` would make the English half of the app worse;

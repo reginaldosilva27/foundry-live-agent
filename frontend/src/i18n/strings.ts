@@ -116,15 +116,18 @@ export const strings = {
   'turn.pending': { en: 'The agent is working', pt: 'O agente está trabalhando' },
   'turn.thinking': { en: 'Thinking', pt: 'Pensando' },
   'turn.calling': { en: 'Calling', pt: 'Chamando' },
+  'turn.step': { en: 'Step', pt: 'Passo' },
 
   // --- Reasoning card ------------------------------------------------------
   'reasoning.title': { en: 'Reasoning', pt: 'Raciocínio' },
   'reasoning.streaming': { en: 'thinking', pt: 'pensando' },
   'reasoning.toggle': { en: 'Show or hide the reasoning summary', pt: 'Mostrar ou ocultar o resumo do raciocínio' },
-  'reasoning.absentTitle': { en: 'No reasoning summary', pt: 'Sem resumo de raciocínio' },
+  // The turn, and only the turn. The copy this replaced told the reader their deployment had no
+  // reasoning model — which the live service contradicted: `gpt-5.5` with `reasoning.summary` set
+  // spent reasoning tokens and simply declined to summarise that turn (spec 015).
   'reasoning.absentBody': {
-    en: 'This model emits none. Point the deployment at a reasoning model to see this card fill in.',
-    pt: 'Este modelo não emite nenhum. Aponte a implantação para um modelo de raciocínio para ver este cartão preencher.',
+    en: 'No reasoning summary this turn.',
+    pt: 'Sem resumo de raciocínio neste turno.',
   },
 
   // --- Tool cards ----------------------------------------------------------

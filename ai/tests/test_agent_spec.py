@@ -1,5 +1,7 @@
 """Tests for the agent.yaml loader (spec 002, AC7)."""
 
+from pathlib import Path
+
 import pytest
 
 from harness._shared.agent_spec import AgentSpecError, load_agent_spec
@@ -137,3 +139,41 @@ def test_the_shipped_agent_asks_for_reasoning_summaries():
 
     shipped = Path(__file__).resolve().parent.parent / "harness" / "prompt_agent" / "agent.yaml"
     assert load_agent_spec(shipped).reasoning == {"summary": "detailed"}
+
+
+# --- the spoken preamble (spec 016) ---------------------------------------
+
+SHIPPED = Path(__file__).resolve().parent.parent / "harness" / "prompt_agent" / "agent.yaml"
+
+NARRATION_CUE = "before you call a tool"
+
+
+def narration_rule() -> str:
+    """The paragraph of the shipped instructions that governs the preamble.
+
+    Isolated rather than searched for across the whole text, because AC2 is about what that rule
+    does *not* say — and every tool identifier it must avoid appears legitimately elsewhere in the
+    same instructions.
+    """
+    paragraphs = load_agent_spec(SHIPPED).instructions.split("\n\n")
+    return next(p for p in paragraphs if NARRATION_CUE in p.lower())
+
+
+def test_the_shipped_agent_narrates_before_a_tool_call():
+    """spec 016 AC1 — the silence during a tool round trip is the agent's to fill.
+
+    This is a weak test and says so: it proves the instruction was *written*, not that the model
+    obeys it. Obedience is proved by a recorded live turn (AC3/AC4), because a model cannot be
+    unit-tested into behaving and this repository does not claim behavior it has not observed (§5).
+    """
+    rule = narration_rule().lower()
+    assert "one short sentence" in rule
+    assert "language" in rule, "the preamble must follow the same language rule as the answer"
+
+
+def test_the_narration_rule_stays_out_of_jargon_and_off_repeat():
+    """spec 016 AC2 — a spoken preamble that reads out identifiers is worse than silence."""
+    rule = narration_rule()
+    for identifier in ("search_web", "lookup_knowledge", "get_current_datetime", "microsoft_learn"):
+        assert identifier not in rule, f"the preamble must not name {identifier} out loud"
+    assert "once" in rule.lower(), "a line per call in a seven-call turn is a running commentary"

@@ -8,6 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Spec 015 — a turn shows its steps when the model shows no reasoning.** Seven calls to
+  `lookup_knowledge` used to render as seven identical rows under a card announcing that there was
+  no reasoning summary. Each row now carries the **argument that distinguishes it** — the query, the
+  timezone, the url — and its **ordinal in the turn**, assigned once in the turn state so the chat,
+  the trace panel and the voice overlay all number the same call the same way (the overlay lists
+  newest-first and still gets it right). The live line names the running step and times the current
+  state, because the observed turn answered every call in about a millisecond and spent all its
+  seconds on the model in between. Nothing here is invented: the ordinals and arguments are
+  functions of the event log, and the clock is declared as the one thing that is not (§5).
+- **Spec 016 — the agent speaks while it works.** A tool round trip used to be silent: the overlay
+  filled with `search_web` rows for seven seconds while the agent said nothing, which sounds exactly
+  like a broken session. The agent definition now asks for **one short sentence, in the user's
+  language, before the work starts** — said once per turn, never naming a tool identifier out loud.
+  The lever is the agent's instructions because it is the only legal one: `instructions` is
+  unsupported on a Voice Live session with a custom agent, and having the BFF speak a filler would
+  put words in the agent's mouth (§8). An instruction biases a model rather than compelling it, so
+  the claim stands or falls on a recorded live turn (spec 016 AC3/AC4), not on the unit test.
+
+### Changed
+- **The reasoning card stops blaming the deployment.** It said the model emitted no summaries and to
+  point the deployment at a reasoning model — while the deployment *was* `gpt-5.5` with
+  `reasoning.summary` configured, spending reasoning tokens on the very turn that showed the message.
+  It now says one line, scoped to that turn, and the agent definition asks for `summary: detailed`
+  rather than `auto`, which on short tool-calling legs the model declines (spec 015, and the
+  observation is recorded in `docs/REFERENCES.md`).
+- **The default Portuguese voice is now `pt-BR-Thalita:DragonHDLatestNeural`** (spec 016), the HD
+  tier, chosen by a listening test on 2026-09-16 — the one spec 012 recorded it had not run when it
+  picked `pt-BR-Luana:MAI-Voice-2-Flash` from the documentation for latency. HD is slower to first
+  audio; that trade is the point of the preamble above, and `VOICELIVE_VOICE` is the one-line way
+  back. A test now fails if the code default and `.env.example` ever disagree (§4).
 - **Spec 005 — the trace panel reads real spans.** `GET /trace/{response_id}` queries Application
   Insights with the BFF's own identity and the panel renders what comes back. The `otel trace id`
   stops being a promise and becomes a copyable id; the run gains a waterfall with a **real time

@@ -32,11 +32,13 @@ class Settings:
     # four. One shared value would silently break whichever path it was not chosen for.
     voice_webrtc_api_version: str = "2026-01-01-preview"
     voice_ws_api_version: str = "2026-04-10"
-    # How the voice session sounds and listens (spec 012). The voice is the MAI-Voice-2-Flash
-    # one the documentation calls optimized for real-time responsiveness in Voice Live — the
-    # standard neural voice it replaced was audibly robotic in Portuguese. The semantic detector is
-    # what makes barge-in configurable. Blank any of them to fall back to the service.
-    voicelive_voice: str = "pt-BR-Luana:MAI-Voice-2-Flash"
+    # How the voice session sounds and listens (spec 012, voice revised by spec 016). The HD tier,
+    # chosen by listening on 2026-09-16 — spec 012 picked MAI-Voice-2-Flash from the documentation,
+    # for latency, and recorded that nobody had listened to it. HD is slower to first audio, which
+    # is the trade; `VOICELIVE_VOICE` is the way back and `.env.example` lists the alternatives.
+    # The semantic detector is what makes barge-in configurable. Blank any of them to fall back to
+    # the service.
+    voicelive_voice: str = "pt-BR-Thalita:DragonHDLatestNeural"
     voicelive_vad: str = "azure_semantic_vad_multilingual"
     # Pinning a language would make the other half of a bilingual app worse, so it is opt-in.
     voicelive_input_language: str = ""
@@ -114,7 +116,7 @@ def load_settings(**overrides: object) -> Settings:
             "VOICELIVE_WEBRTC_API_VERSION", "2026-01-01-preview"
         ),
         "voice_ws_api_version": os.environ.get("VOICELIVE_WS_API_VERSION", "2026-04-10"),
-        "voicelive_voice": os.environ.get("VOICELIVE_VOICE", "pt-BR-Luana:MAI-Voice-2-Flash"),
+        "voicelive_voice": os.environ.get("VOICELIVE_VOICE", "pt-BR-Thalita:DragonHDLatestNeural"),
         "voicelive_vad": os.environ.get("VOICELIVE_VAD", "azure_semantic_vad_multilingual"),
         "voicelive_input_language": os.environ.get("VOICELIVE_INPUT_LANGUAGE", ""),
         "speech_endpoint": os.environ.get("SPEECH_ENDPOINT", ""),

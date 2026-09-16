@@ -11,9 +11,17 @@ import { isKnownEvent, type AgentEvent, type Executor } from '../types/events'
 
 export type ActivityStatus = 'running' | 'ok' | 'failed'
 
-/** A tool call, with the fact that matters most kept first: who ran it. */
+/**
+ * A tool call, with the fact that matters most kept first: who ran it.
+ *
+ * `step` is this call's place in the turn, counting from 1 — derived here and not sent by any
+ * harness, so it is not part of the §9 contract. It lives on the activity rather than being counted
+ * at render time because three surfaces draw these rows and one of them, the voice overlay, draws
+ * them newest-first: a number taken from the render order would disagree with itself (spec 015).
+ */
 export interface ToolActivity {
   kind: 'tool'
+  step: number
   executor: Executor
   callId: string
   name: string
@@ -27,6 +35,7 @@ export interface ToolActivity {
 /** A call Foundry made to a remote MCP server. Attributed to the server, not to us (M7). */
 export interface McpActivity {
   kind: 'mcp'
+  step: number
   serverLabel: string
   name: string
   arguments: string
@@ -86,6 +95,7 @@ export function reduceTurn(turn: Turn, raw: unknown): Turn {
           ...turn.activities,
           {
             kind: 'tool',
+            step: turn.activities.length + 1,
             executor: event.executor,
             callId: event.call_id,
             name: event.name,
@@ -105,6 +115,7 @@ export function reduceTurn(turn: Turn, raw: unknown): Turn {
           ...turn.activities,
           {
             kind: 'mcp',
+            step: turn.activities.length + 1,
             serverLabel: event.server_label,
             name: event.name,
             arguments: event.arguments,
@@ -178,6 +189,8 @@ export interface LiveStatus {
   kind: TurnStatusKind
   /** The tool being run, when one is. */
   name?: string
+  /** That call's place in the turn, so the line can say *which* step is running (spec 015). */
+  step?: number
 }
 
 /**
@@ -196,7 +209,7 @@ export function turnStatus(turn: Turn): LiveStatus {
   if (turn.text) return { kind: 'answering' }
 
   const running = turn.activities.find((activity) => activity.status === 'running')
-  if (running) return { kind: 'calling', name: running.name }
+  if (running) return { kind: 'calling', name: running.name, step: running.step }
 
   return turn.reasoning ? { kind: 'thinking' } : { kind: 'idle' }
 }

@@ -122,7 +122,10 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
 - **Voice Live never passes through the AI Gateway**, and the gateway does not log tool traces.
 - **Reasoning summaries are configured on the agent definition, not per request.** Sending
   `reasoning` alongside an `agent_reference` is rejected: *"Not allowed when agent is specified."*
-  Without it the card is empty forever, though the model still spends reasoning tokens.
+  Without it the card is empty forever, though the model still spends reasoning tokens. And
+  `summary: auto` is not enough — on short tool-calling legs the model declines to summarise, so the
+  definition says `detailed`. A turn with no summary is a normal state the UI must survive (spec
+  015), never evidence of a misconfigured deployment.
 - **`response.mcp_call.completed` carries no `item`** — only `item_id`. Read the MCP call from
   `response.output_item.done`. Same for function calls: `…arguments.done` has `name: null`.
 - **Foundry completes the leg it is waiting on**, so a turn with a tool round trip contains two

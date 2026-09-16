@@ -403,3 +403,43 @@ async def test_the_session_reports_what_it_negotiated(caplog):
     logged = " ".join(record.message for record in caplog.records)
     assert "modalities" in logged and "text" in logged
     assert "en-US-AvaNeural" in logged
+
+
+# --- spec 016: the Portuguese voice, and the four places that state it ------
+
+HD_VOICE = "pt-BR-Thalita:DragonHDLatestNeural"
+
+
+def test_the_default_session_speaks_portuguese_in_the_hd_tier():
+    """AC5. Chosen by listening on 2026-09-16, not from the documentation: spec 012 picked the
+    Flash tier for latency and recorded that nobody had listened to it yet. Somebody has now."""
+    from app.settings import load_settings
+
+    config = load_settings(
+        project_endpoint="https://x.services.ai.azure.com/api/projects/p",
+        project_name="p",
+        model="m",
+        voicelive_voice=None,  # i.e. not overridden — the default is what is under test
+    ).voice_session_config
+
+    assert config["voice"] == {"name": HD_VOICE, "type": "azure-standard"}
+
+
+def test_the_documented_default_voice_matches_the_code_default(monkeypatch):
+    """AC6. The default voice is stated in three places — the dataclass, the environment fallback
+    and `.env.example` — and a reader who changes one and not the others ships a lie. §4 says one
+    source of truth; where the language cannot enforce it, a test does."""
+    from app.settings import Settings, load_settings
+
+    monkeypatch.delenv("VOICELIVE_VOICE", raising=False)
+    env_example = (Path(__file__).resolve().parents[2] / ".env.example").read_text()
+    documented = next(
+        line.split("=", 1)[1].strip()
+        for line in env_example.splitlines()
+        if line.startswith("VOICELIVE_VOICE=")
+    )
+
+    assert Settings.voicelive_voice == documented
+    assert load_settings(project_endpoint="e", project_name="p", model="m").voicelive_voice == (
+        documented
+    )

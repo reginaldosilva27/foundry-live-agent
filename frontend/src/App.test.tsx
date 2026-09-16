@@ -110,8 +110,14 @@ describe('App', () => {
     expect(foundryRow).toHaveAttribute('data-executor', 'foundry')
     expect(within(foundryRow).getByTestId('executor-tag')).toHaveTextContent('microsoft_learn')
 
-    // Spec 009 AC1: the payload is not in the chat any more.
-    expect(screen.getByRole('main').textContent).not.toContain('America/Sao_Paulo')
+    // Spec 009 AC1: the payload is not in the chat any more. Spec 015 narrowed "payload" to what
+    // 009 was actually protecting the chat from — the *result*, a page of JSON between the question
+    // and the answer. The one argument that distinguishes a call now rides on its row, because
+    // seven calls to one tool were otherwise seven identical lines.
+    const main = screen.getByRole('main').textContent!
+    expect(main).not.toContain('"iso":"2026-09-04T19:00:00-03:00"')
+    expect(main).not.toContain('Foundry hosted agents run inside the service.')
+    expect(main).toContain('America/Sao_Paulo')
 
     expect(screen.getByTestId('meta-line')).toHaveTextContent('154')
   })
@@ -171,7 +177,10 @@ describe('App', () => {
     // Spec 010 AC7: and the reader opens on that call, which is where the payload now lives.
     expect(screen.getByTestId('log-viewer')).toHaveTextContent('get_current_datetime')
     expect(screen.getByTestId('log-arguments')).toHaveTextContent('America/Sao_Paulo')
-    expect(within(panel).getByTestId('trace-activity').textContent).not.toContain('America/Sao_Paulo')
+    // The list still refuses the result; the argument that names the call is on the row (spec 015).
+    expect(within(panel).getByTestId('trace-activity').textContent).not.toContain(
+      '"iso":"2026-09-04T19:00:00-03:00"',
+    )
   })
 
   it('renders a terminal error as an error, not as a stream that stopped', async () => {

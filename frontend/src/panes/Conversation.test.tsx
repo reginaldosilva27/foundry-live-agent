@@ -5,8 +5,8 @@
  * because what is under test is the *rule*: stick to the bottom while the reader is there, and
  * leave them alone once they have scrolled up.
  */
-import { render } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, render } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Conversation } from './Conversation'
 import { emptyTurn, type Turn } from '../state/turn'
 import type { Message } from '../hooks/useAgentStream'
@@ -66,6 +66,7 @@ describe('the conversation column', () => {
         activities: [
           {
             kind: 'tool',
+            step: 1,
             executor: 'app',
             callId: 'call_1',
             name: 'lookup_knowledge',
@@ -129,5 +130,66 @@ describe('the conversation column', () => {
     rerender(<Conversation {...props} messages={[agentTurn('t1', 'one two')]} />)
 
     expect(calls).toBe(0)
+  })
+})
+
+/** Spec 015 — a seven-leg turn has to look like progress, not like a frozen screen. */
+describe('the live line while a turn works (spec 015)', () => {
+  afterEach(() => vi.useRealTimers())
+
+  function calling(step: number, name: string): Message {
+    return {
+      role: 'agent',
+      id: 't1',
+      startedAt: 0,
+      turn: {
+        ...emptyTurn(),
+        activities: [
+          {
+            kind: 'tool',
+            step,
+            executor: 'app',
+            callId: `call_${step}`,
+            name,
+            arguments: '{"query":"the BFF"}',
+            status: 'running',
+          },
+        ],
+      },
+    }
+  }
+
+  it('says which step is running, and how long it has been (AC10)', () => {
+    vi.useFakeTimers()
+    const { container } = render(<Conversation {...props} messages={[calling(3, 'lookup_knowledge')]} />)
+
+    const line = container.querySelector('[data-testid="turn-pending"]')!
+    expect(line).toHaveTextContent('3')
+    expect(line).toHaveTextContent('lookup_knowledge')
+
+    act(() => void vi.advanceTimersByTime(7000))
+    expect(container.querySelector('[data-testid="turn-pending"]')).toHaveTextContent('7s')
+  })
+
+  // The turn that prompted the spec spent its seconds between the calls, not inside them: every
+  // call came back in a millisecond. If the clock ran only during calls it would read 0s for
+  // precisely the wait that looks broken.
+  it('times the thinking too, and starts over when the state changes (AC11)', () => {
+    vi.useFakeTimers()
+    const thinking: Message = {
+      role: 'agent',
+      id: 't1',
+      startedAt: 0,
+      turn: { ...emptyTurn(), reasoning: 'Considering.' },
+    }
+    const { container, rerender } = render(<Conversation {...props} messages={[thinking]} />)
+
+    act(() => void vi.advanceTimersByTime(12_000))
+    const line = container.querySelector('[data-testid="turn-pending"]')!
+    expect(line).toHaveTextContent(/thinking|pensando/i)
+    expect(line).toHaveTextContent('12s')
+
+    rerender(<Conversation {...props} messages={[calling(1, 'lookup_knowledge')]} />)
+    expect(container.querySelector('[data-testid="turn-pending"]')).not.toHaveTextContent('12s')
   })
 })

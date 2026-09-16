@@ -23,7 +23,16 @@ export function ActivityPanel({ turn, onOpenCall }: Props) {
       <ReasoningCard text={turn.reasoning} streaming={streaming} />
       {turn.activities.map((activity, i) => {
         const id = activity.kind === 'tool' ? activity.callId : `mcp_${i}`
-        return <ToolRow key={id} activity={activity} onOpen={() => onOpenCall(id)} />
+        return (
+          <ToolRow
+            key={id}
+            activity={activity}
+            // A lone call numbered "1" implies a second one that never came, so the ordinal
+            // appears only where there is a sequence to place it in (spec 015 AC6).
+            showStep={turn.activities.length > 1}
+            onOpen={() => onOpenCall(id)}
+          />
+        )
       })}
     </div>
   )

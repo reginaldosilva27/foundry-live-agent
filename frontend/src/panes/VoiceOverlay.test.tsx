@@ -31,6 +31,7 @@ const withCalls = {
   activities: [
     {
       kind: 'tool' as const,
+      step: 1,
       executor: 'app' as const,
       callId: 'call_1',
       name: 'get_current_datetime',
@@ -40,6 +41,7 @@ const withCalls = {
     },
     {
       kind: 'tool' as const,
+      step: 2,
       executor: 'app' as const,
       callId: 'call_2',
       name: 'lookup_knowledge',
@@ -135,5 +137,17 @@ describe('the voice card as a modal', () => {
 
     unmount()
     expect(document.activeElement).toBe(opener)
+  })
+})
+
+/** Spec 015 AC12 — the ordinal belongs to the call, not to the place it is drawn. */
+describe('the ordinal on a surface that lists newest-first', () => {
+  it('numbers each call by its place in the turn, not by its place on screen', () => {
+    render(<VoiceOverlay voice={voice({ turn: withCalls })} elapsed={12} onEnd={() => {}} />)
+
+    // The overlay reverses the list so the newest call is on top. The numbers must not reverse
+    // with it: call_2 is still the second thing the agent did.
+    const steps = screen.getAllByTestId('tool-step').map((node) => node.textContent)
+    expect(steps).toEqual(['2', '1'])
   })
 })

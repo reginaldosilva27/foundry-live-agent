@@ -1,10 +1,11 @@
 /**
  * One call, in one line — the chat's rendering of a tool call (spec 009).
  *
- * The payload is deliberately absent. An MCP search returns a page of documentation, and rendering
+ * The result is deliberately absent. An MCP search returns a page of documentation, and rendering
  * it between the question and the answer buried the answer. What stays is what the chat exists to
- * teach: that a tool ran, which one, **who executed it**, and whether it worked. The arguments and
- * the result are a press away, in the trace panel.
+ * teach: that a tool ran, which one, **who executed it**, whether it worked — and, since spec 015,
+ * the single argument that tells this call apart from the six identical-looking ones above it. The
+ * payload is still a press away, in the trace panel.
  *
  * The full card still exists — `ToolCard` — and the voice overlay still uses it, because there is
  * no trace panel beside a voice session.
@@ -15,7 +16,7 @@
  */
 import { useT } from '../i18n/context'
 import type { Activity } from '../state/turn'
-import { formatMs } from './format'
+import { callSubject, formatMs } from './format'
 import { AlertIcon, CheckIcon, SpinnerIcon } from './Icon'
 import { EXECUTOR_TAG } from './labels'
 
@@ -36,11 +37,18 @@ interface Props {
    * `execute_tool` span does. Given one, the row stops saying it has none.
    */
   spanDurationMs?: number
+  /**
+   * Whether to draw this call's ordinal (spec 015 AC5, AC6).
+   *
+   * The caller decides, because only the caller can see whether the turn made more than one call —
+   * and a lone call numbered "1" implies a second one that never came.
+   */
+  showStep?: boolean
   /** Omitted where there is nothing to open — the voice overlay has no trace panel beside it. */
   onOpen?: () => void
 }
 
-export function ToolRow({ activity, durationRatio, spanDurationMs, onOpen }: Props) {
+export function ToolRow({ activity, durationRatio, spanDurationMs, showStep, onOpen }: Props) {
   const s = useT()
   const executor = activity.kind === 'tool' ? activity.executor : 'foundry'
   const tag = activity.kind === 'mcp' ? activity.serverLabel : EXECUTOR_TAG[executor]
@@ -51,6 +59,7 @@ export function ToolRow({ activity, durationRatio, spanDurationMs, onOpen }: Pro
         ? s('tool.executedHere')
         : s('tool.executedInFoundry')
 
+  const subject = callSubject(activity.arguments)
   const duration = (activity.kind === 'tool' ? activity.durationMs : undefined) ?? spanDurationMs
   const bar = duration !== undefined && durationRatio !== undefined
 
@@ -77,7 +86,24 @@ export function ToolRow({ activity, durationRatio, spanDurationMs, onOpen }: Pro
           <CheckIcon size={13} />
         )}
       </span>
-      <span className="tool-row__name">{activity.name}</span>
+      {showStep && (
+        <span className="tool-row__step" data-testid="tool-step" aria-label={s('turn.step')}>
+          {activity.step}
+        </span>
+      )}
+
+      <span className="tool-row__name">
+        {activity.name}
+        {/* What the call asked for — the query, the timezone, the url. Seven searches of one tool
+            are seven different questions, and until this was drawn they were seven identical rows
+            (spec 015). It shares the name's column: together they are one phrase, and keeping them
+            in one track leaves the executor column where spec 014 fixed it. */}
+        {subject && (
+          <span className="tool-row__subject" data-testid="tool-subject" title={subject}>
+            {subject}
+          </span>
+        )}
+      </span>
       <span className="tool-row__executor" data-testid="executor-tag" title={where}>
         {tag}
       </span>

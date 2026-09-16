@@ -50,3 +50,35 @@ export const failedTurn: AgentEvent[] = [
 export function asSseStream(events: AgentEvent[]): string {
   return events.map((e) => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`).join('')
 }
+
+/**
+ * A turn that searches the same tool over and over, each time for something different.
+ *
+ * Shaped after a real turn observed 2026-09-16 — seven `lookup_knowledge` calls answering "How does
+ * this project talk to Microsoft Foundry?", which rendered as seven identical rows (spec 015).
+ * Hand-built contract events like everything else in this file; the recording it is modelled on is
+ * `ai/tests/fixtures/recorded/prompt-agent-turn-20260915.jsonl`.
+ */
+export const repeatedCallTurn: AgentEvent[] = [
+  ...['the BFF', 'the harness contract', 'client-side tools'].flatMap(
+    (query, index): AgentEvent[] => [
+      {
+        type: 'tool_call',
+        call_id: `call_${index + 1}`,
+        name: 'lookup_knowledge',
+        arguments: JSON.stringify({ query }),
+        executor: 'app',
+      },
+      {
+        type: 'tool_result',
+        call_id: `call_${index + 1}`,
+        name: 'lookup_knowledge',
+        output: '…',
+        duration_ms: 1,
+      },
+    ],
+  ),
+  { type: 'text_delta', text: 'Foundry owns the agent loop.' },
+  { type: 'trace_ids', response_id: 'resp_2' },
+  { type: 'done', response_id: 'resp_2' },
+]

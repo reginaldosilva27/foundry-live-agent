@@ -1,7 +1,7 @@
 /** Spec 004 AC2, AC3, AC4, AC5, AC7 — the reducer, with no DOM in sight. */
 import { describe, expect, it } from 'vitest'
 import { emptyTurn, reduceEvents, reduceTurn, turnStatus, type Activity, type Turn } from './turn'
-import { failedTurn, twoToolTurn } from '../test/fixtures'
+import { failedTurn, repeatedCallTurn, twoToolTurn } from '../test/fixtures'
 
 describe('reduceEvents', () => {
   it('concatenates reasoning fragments in order', () => {
@@ -101,6 +101,7 @@ describe('turnStatus', () => {
 
   const running: Activity = {
     kind: 'tool',
+    step: 1,
     executor: 'app',
     callId: 'call_1',
     name: 'lookup_knowledge',
@@ -121,7 +122,7 @@ describe('turnStatus', () => {
   it('names the tool while a call is in flight (AC3)', () => {
     expect(
       turnStatus(streaming({ reasoning: 'Considering.', activities: [running] })),
-    ).toEqual({ kind: 'calling', name: 'lookup_knowledge' })
+    ).toEqual({ kind: 'calling', name: 'lookup_knowledge', step: 1 })
   })
 
   it('goes back to thinking when the result comes back (AC4)', () => {
@@ -136,6 +137,10 @@ describe('turnStatus', () => {
     expect(turnStatus(streaming({ activities: [done, running] }))).toEqual({
       kind: 'calling',
       name: 'lookup_knowledge',
+      // Spec 015: the status carries the running call's place in the turn, so the live line can
+      // say which step is running. Both activities here are spread from the same literal, so both
+      // carry step 1; what is under test is that the number reported is the running call's.
+      step: 1,
     })
   })
 
@@ -150,5 +155,34 @@ describe('turnStatus', () => {
     expect(turnStatus(streaming({ status: 'error', activities: [running] }))).toEqual({
       kind: 'settled',
     })
+  })
+})
+
+describe('step numbers (spec 015)', () => {
+  it('numbers the calls in the order they arrived', () => {
+    const turn = reduceEvents(repeatedCallTurn)
+    expect(turn.activities.map((a) => a.step)).toEqual([1, 2, 3])
+  })
+
+  // The number counts what the agent did. Who ran it is the executor column's job (§8), so an MCP
+  // call takes its place in the sequence rather than leaving a gap in it.
+  it('counts app-executed and Foundry-executed calls in one unbroken sequence', () => {
+    const turn = reduceEvents(twoToolTurn)
+    expect(turn.activities.map((a) => [a.kind, a.step])).toEqual([
+      ['tool', 1],
+      ['mcp', 2],
+    ])
+  })
+
+  it('travels with the call, so a surface listing newest-first still numbers it right', () => {
+    const turn = reduceEvents(repeatedCallTurn)
+    expect([...turn.activities].reverse().map((a) => a.step)).toEqual([3, 2, 1])
+  })
+
+  // AC13: the turn is a function of the log. A clock would make it a function of when it was read.
+  it('records no timestamp anywhere in the turn', () => {
+    const turn = reduceEvents(repeatedCallTurn)
+    expect(JSON.stringify(turn)).not.toMatch(/\b1[6-9]\d{11}\b/)
+    expect(Object.keys(turn)).not.toContain('startedAt')
   })
 })

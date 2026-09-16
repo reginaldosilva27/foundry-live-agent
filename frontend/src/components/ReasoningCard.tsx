@@ -1,11 +1,15 @@
 /**
  * The summarised chain of thought, when there is one.
  *
- * The card must explain itself when it is empty (constitution §5). Behind the reference
- * environment's gateway connection the only model exposed is `gpt-4o`, which emits no reasoning
- * summaries at all — an empty box there would read as a bug in this app rather than as a property
- * of the deployment. So: while the turn is streaming the card stays out of the way, and once the
- * turn has settled with nothing to show it says why.
+ * The card must explain itself when it is empty (constitution §5) — an empty box reads as a bug in
+ * this app. While the turn is streaming it stays out of the way; once the turn has settled with
+ * nothing to show, it collapses to one line that states the fact and stops there.
+ *
+ * That line says *this turn* and nothing more, because more turned out to be false. It used to tell
+ * the reader the model emitted no summaries and to point the deployment at a reasoning model; the
+ * deployment was `gpt-5.5` with `reasoning.summary` configured, which spent reasoning tokens on the
+ * very turn that displayed the message and simply chose not to summarise (spec 015). What the agent
+ * did is told by the numbered rows underneath, from events — not by prose written here.
  */
 import { useState } from 'react'
 import { useT } from '../i18n/context'
@@ -24,10 +28,9 @@ export function ReasoningCard({ text, streaming }: Props) {
   if (!text) {
     if (streaming) return null
     return (
-      <aside className="reasoning-card reasoning-card--absent" data-testid="reasoning-absent">
-        <span className="reasoning-card__title">{s('reasoning.absentTitle')}</span>
-        <p className="reasoning-card__note">{s('reasoning.absentBody')}</p>
-      </aside>
+      <p className="reasoning-absent" data-testid="reasoning-absent">
+        {s('reasoning.absentBody')}
+      </p>
     )
   }
 

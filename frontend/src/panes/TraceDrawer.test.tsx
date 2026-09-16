@@ -11,6 +11,7 @@ const turn: Turn = {
   activities: [
     {
       kind: 'mcp',
+      step: 1,
       serverLabel: 'microsoft_learn',
       name: 'microsoft_docs_search',
       arguments: '{"query":"hosted agent"}',
@@ -19,6 +20,7 @@ const turn: Turn = {
     },
     {
       kind: 'tool',
+      step: 2,
       executor: 'app',
       callId: 'call_1',
       name: 'get_current_datetime',
@@ -38,9 +40,11 @@ describe('the trace panel', () => {
 
     const activity = screen.getByTestId('trace-activity')
     expect(within(activity).getAllByTestId('tool-row')).toHaveLength(2)
-    expect(activity.textContent).not.toContain('hosted agent')
     expect(activity.textContent).not.toContain('a page of documentation')
     expect(activity.textContent).not.toContain('no such timezone')
+    // What a call asked for is one short value and belongs on the row; what it answered is a page
+    // and belongs in the reader (spec 015 narrowing spec 010 AC1).
+    expect(activity.textContent).toContain('hosted agent')
   })
 
   it('opens a call in the reader when its row is pressed (spec 010, AC2)', () => {
@@ -149,6 +153,7 @@ describe('the trace panel as an instrument', () => {
   it('scales the duration bars against the longest call in the turn (AC6)', () => {
     const measure = (callId: string, durationMs: number): Activity => ({
       kind: 'tool',
+      step: 1,
       executor: 'app',
       callId,
       name: 'get_current_datetime',

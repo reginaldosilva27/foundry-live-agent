@@ -103,7 +103,11 @@ export function VoiceOverlay({ voice, elapsed, onEnd }: Props) {
                   There is no trace panel beside a voice session, so the detail is simply not
                   offered during one (this supersedes a non-goal of spec 009). */}
               {[...voice.turn.activities].reverse().map((activity, index) => (
-                <ToolRow key={voice.turn.activities.length - index} activity={activity} />
+                <ToolRow
+                  key={voice.turn.activities.length - index}
+                  activity={activity}
+                  showStep={voice.turn.activities.length > 1}
+                />
               ))}
             </div>
           )}

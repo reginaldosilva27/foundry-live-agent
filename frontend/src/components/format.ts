@@ -22,3 +22,28 @@ export function modelName(model?: string): string {
   return model.slice(model.lastIndexOf('/') + 1)
 }
 
+/**
+ * What a call asked for, in one value — the part that distinguishes two calls to the same tool.
+ *
+ * The rule is generic on purpose: parse the arguments and take the first string. It covers every
+ * tool we have (`query`, `timezone`, `url`) and the one nobody has written yet, and it keeps the
+ * frontend from growing a second opinion about the tools, whose definitions live in
+ * `ai/harness/_shared/tools/` (§4).
+ *
+ * It never throws. Arguments arrive as a raw JSON *string* that is still being assembled while the
+ * call streams, so half an object is a normal thing to be handed, not an error — and a row with an
+ * empty cell is worth more than a turn that fails to render.
+ */
+export function callSubject(args: string): string {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(args)
+  } catch {
+    return ''
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return ''
+  for (const value of Object.values(parsed)) {
+    if (typeof value === 'string' && value) return value
+  }
+  return ''
+}
