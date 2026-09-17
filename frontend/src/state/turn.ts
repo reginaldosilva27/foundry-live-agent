@@ -46,7 +46,14 @@ export interface McpActivity {
 
 export type Activity = ToolActivity | McpActivity
 
-export type TurnStatus = 'streaming' | 'done' | 'error'
+/**
+ * `stopped` is the reader's doing, not the stream's (spec 023).
+ *
+ * It is deliberately a fourth value rather than `done` with a flag: every surface that asks whether
+ * a turn finished has to be able to tell "Foundry finished it" from "the reader stopped listening",
+ * and the two are rendered differently (§5).
+ */
+export type TurnStatus = 'streaming' | 'done' | 'error' | 'stopped'
 
 export interface Turn {
   reasoning: string
@@ -67,6 +74,28 @@ export interface Turn {
 
 export function emptyTurn(): Turn {
   return { reasoning: '', activities: [], text: '', status: 'streaming', unknownEvents: {} }
+}
+
+/**
+ * The reader stopped listening (spec 023 AC6).
+ *
+ * Only a turn that was still running can be stopped. An abort can land after the last event has
+ * already been applied — the fetch is torn down asynchronously — and un-finishing a turn Foundry
+ * actually completed would put a lie on the screen.
+ */
+export function stopTurn(turn: Turn): Turn {
+  return turn.status === 'streaming' ? { ...turn, status: 'stopped' } : turn
+}
+
+/**
+ * Has this turn finished, by any route?
+ *
+ * One question, one answer. Four surfaces used to spell this out as `status !== 'streaming'`, which
+ * was correct and became a decision each of them was making alone the moment a fourth status
+ * existed (§4).
+ */
+export function isSettled(turn: Turn): boolean {
+  return turn.status !== 'streaming'
 }
 
 /** Apply one event, returning a new turn. Never mutates its argument. */

@@ -26,6 +26,13 @@ import type { Trace } from '../types/trace'
 
 interface Props {
   turn?: Turn
+  /**
+   * The response the address named (spec 024 AC6).
+   *
+   * A trace link is worth sending precisely because the spans live in the workspace rather than in
+   * a browser, so the panel has to render from this alone when the conversation is somebody else's.
+   */
+  responseId?: string
   open: boolean
   /** Where this turn sits in the session, so the panel can say so and offer the two arrows. */
   position?: { index: number; total: number }
@@ -45,6 +52,42 @@ interface Props {
   /** Open one call in the reader. The column lists; the reader reads (spec 010). */
   onOpenCall?: (callId: string) => void
   onClose: () => void
+}
+
+/**
+ * What the spans are doing — read, pending, unavailable, or not asked for yet.
+ *
+ * One component because two branches of the panel render it: a turn that is here, and a response id
+ * that arrived by address with no turn behind it (spec 024). Two copies would answer "what is the
+ * state of the spans" in two places (§4).
+ */
+function Spans({ trace, onRetryTrace }: { trace?: Trace; onRetryTrace?: () => void }) {
+  const s = useT()
+  return (
+    <section className="trace__spans">
+      <h3 className="trace__subtitle">{s('trace.spansTitle')}</h3>
+      {trace?.status === 'ok' ? (
+        <SpanTree spans={trace.spans} />
+      ) : (
+        <p className="trace__empty" data-testid="trace-spans-state">
+          {trace?.status === 'pending'
+            ? s('trace.spansPending')
+            : trace?.status === 'unavailable'
+              ? s('trace.spansUnavailable')
+              : trace?.status === 'denied'
+                ? `${s('trace.spansDenied')} ${trace.message ?? ''}`
+                : trace?.status === 'failed'
+                  ? `${s('trace.spansFailed')} ${trace.message ?? ''}`
+                  : s('trace.spansLoading')}
+        </p>
+      )}
+      {trace?.status === 'pending' && onRetryTrace && (
+        <button type="button" className="trace__retry" onClick={onRetryTrace}>
+          {s('trace.spansRetry')}
+        </button>
+      )}
+    </section>
+  )
 }
 
 /**
@@ -94,6 +137,7 @@ function TurnStepper({
 
 export function TraceDrawer({
   turn,
+  responseId,
   open,
   position,
   model,
@@ -120,6 +164,9 @@ export function TraceDrawer({
 
   if (!open) return null
 
+  // The reader has the identifier but not the conversation: the address brought them straight here.
+  const detached = !turn?.trace && Boolean(responseId)
+
   return (
     <aside className="trace" data-testid="trace-panel">
       <header className="trace__head">
@@ -130,7 +177,17 @@ export function TraceDrawer({
         </button>
       </header>
 
-      {turn?.trace ? (
+      {detached ? (
+        <>
+          <p className="trace__detached" data-testid="trace-detached" role="status">
+            {s('trace.conversationElsewhere')}
+          </p>
+          <section className="trace__ids">
+            <CopyRow label={s('trace.responseId')} value={responseId ?? ''} />
+          </section>
+          <Spans trace={trace} onRetryTrace={onRetryTrace} />
+        </>
+      ) : turn?.trace ? (
         <>
           <section className="trace__run">
             <h3 className="trace__subtitle">{s('trace.numbersTitle')}</h3>
@@ -184,29 +241,7 @@ export function TraceDrawer({
             )}
           </section>
 
-          <section className="trace__spans">
-            <h3 className="trace__subtitle">{s('trace.spansTitle')}</h3>
-            {trace?.status === 'ok' ? (
-              <SpanTree spans={trace.spans} />
-            ) : (
-              <p className="trace__empty" data-testid="trace-spans-state">
-                {trace?.status === 'pending'
-                  ? s('trace.spansPending')
-                  : trace?.status === 'unavailable'
-                    ? s('trace.spansUnavailable')
-                    : trace?.status === 'denied'
-                      ? `${s('trace.spansDenied')} ${trace.message ?? ''}`
-                      : trace?.status === 'failed'
-                        ? `${s('trace.spansFailed')} ${trace.message ?? ''}`
-                        : s('trace.spansLoading')}
-              </p>
-            )}
-            {trace?.status === 'pending' && onRetryTrace && (
-              <button type="button" className="trace__retry" onClick={onRetryTrace}>
-                {s('trace.spansRetry')}
-              </button>
-            )}
-          </section>
+          <Spans trace={trace} onRetryTrace={onRetryTrace} />
 
           <footer className="trace__foot">
             <a

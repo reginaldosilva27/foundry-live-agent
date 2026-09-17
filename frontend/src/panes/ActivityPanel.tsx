@@ -7,7 +7,7 @@
  */
 import { ReasoningCard } from '../components/ReasoningCard'
 import { ToolRow } from '../components/ToolRow'
-import type { Turn } from '../state/turn'
+import { isSettled, type Turn } from '../state/turn'
 
 interface Props {
   turn: Turn
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function ActivityPanel({ turn, onOpenCall }: Props) {
-  const streaming = turn.status === 'streaming'
+  const streaming = !isSettled(turn)
 
   return (
     <div className="activity">

@@ -3,30 +3,55 @@
  *
  * Spec 021 added the row above it: the chip naming who is about to answer, and — when a restored
  * conversation cannot be continued — the reason, in place of an input that would fail on send.
+ *
+ * Spec 023 made the field a real one. A question worth asking this agent is often three lines with
+ * a snippet in it, and typed into a single line it became a smear the author could not re-read
+ * before sending. The same spec gave the primary control a second job: while a turn is streaming it
+ * stops that turn, in the same position, so the hand that pressed send is already on it.
  */
 import type { ReactNode } from 'react'
-import { useState } from 'react'
-import { MicIcon, SendIcon } from '../components/Icon'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { MicIcon, SendIcon, StopIcon } from '../components/Icon'
 import { useT } from '../i18n/context'
 
 interface Props {
-  disabled: boolean
+  /** A turn is in flight: the field waits, and the primary control stops instead of sending. */
+  streaming: boolean
   voiceEnabled: boolean
   /** Why this conversation cannot be continued, if it cannot (spec 021 AC18). */
   blocked?: string
   /** The agent chip. Passed in rather than built here: the composer knows nothing about agents. */
   chip?: ReactNode
   onSend: (text: string) => void
+  /** Stop the turn in flight. The browser stops listening; Foundry's run does not stop (spec 023). */
+  onStop: () => void
   onVoice: () => void
 }
 
-export function Composer({ disabled, voiceEnabled, blocked, chip, onSend, onVoice }: Props) {
+/** Past this the field scrolls itself rather than eating the conversation. Mirrored in the CSS. */
+const MAX_HEIGHT = '40vh'
+
+export function Composer({ streaming, voiceEnabled, blocked, chip, onSend, onStop, onVoice }: Props) {
   const s = useT()
   const [value, setValue] = useState('')
-  const stopped = disabled || Boolean(blocked)
+  const field = useRef<HTMLTextAreaElement>(null)
+  const stopped = streaming || Boolean(blocked)
 
-  function submit(event: React.FormEvent) {
-    event.preventDefault()
+  /**
+   * Grow with the content.
+   *
+   * Height is reset before it is read: `scrollHeight` on an element already tall enough reports the
+   * old height, so a field that grew would never shrink again. Layout effect rather than effect, so
+   * the two writes happen in one frame and the field never flickers at the wrong size.
+   */
+  useLayoutEffect(() => {
+    const element = field.current
+    if (!element) return
+    element.style.height = 'auto'
+    element.style.height = `${element.scrollHeight}px`
+  }, [value])
+
+  function submit() {
     const text = value.trim()
     if (!text || stopped) return
     setValue('')
@@ -34,21 +59,41 @@ export function Composer({ disabled, voiceEnabled, blocked, chip, onSend, onVoic
   }
 
   return (
-    <form className="composer" onSubmit={submit}>
+    <form
+      className="composer"
+      onSubmit={(event) => {
+        event.preventDefault()
+        submit()
+      }}
+    >
       {blocked && (
         <p className="composer__blocked" role="status">
           {blocked}
         </p>
       )}
 
-      <input
+      <textarea
+        ref={field}
+        rows={1}
         className="composer__input"
+        style={{ maxHeight: MAX_HEIGHT }}
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(event) => {
+          // `Shift+Enter` breaks a line; plain `Enter` sends. `isComposing` is not optional: without
+          // it, `Enter` confirming an input method's candidate would send half a word instead.
+          if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return
+          event.preventDefault()
+          submit()
+        }}
         placeholder={s('composer.placeholder')}
         aria-label={s('composer.placeholder')}
+        aria-describedby="composer-newline-hint"
         disabled={stopped}
       />
+      <span id="composer-newline-hint" className="visually-hidden">
+        {s('composer.newline')}
+      </span>
 
       {/* One row under the question: who answers on the left, what to do with it on the right.
           The controls used to sit beside the input with the chip stranded underneath them, which
@@ -59,21 +104,33 @@ export function Composer({ disabled, voiceEnabled, blocked, chip, onSend, onVoic
           <button
             type="button"
             className="composer__mic"
-            disabled={!voiceEnabled}
+            disabled={!voiceEnabled || streaming}
             title={voiceEnabled ? undefined : s('header.voiceUnavailable')}
             aria-label={s('composer.voiceInput')}
             onClick={onVoice}
           >
             <MicIcon size={17} />
           </button>
-          <button
-            type="submit"
-            className="composer__send"
-            disabled={stopped || !value.trim()}
-            aria-label={s('composer.send')}
-          >
-            <SendIcon size={17} />
-          </button>
+          {streaming ? (
+            <button
+              type="button"
+              className="composer__stop"
+              aria-label={s('composer.stop')}
+              title={s('composer.stop')}
+              onClick={onStop}
+            >
+              <StopIcon size={17} />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="composer__send"
+              disabled={stopped || !value.trim()}
+              aria-label={s('composer.send')}
+            >
+              <SendIcon size={17} />
+            </button>
+          )}
         </div>
       </div>
     </form>

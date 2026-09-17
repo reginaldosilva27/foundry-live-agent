@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createSpeechPlayer, type SpeechPlayer } from '../speech/player'
 import { flatten, nextSentences } from '../state/speech'
+import { isSettled } from '../state/turn'
 import type { Message } from './useAgentStream'
 import type { Lang } from '../i18n/strings'
 
@@ -53,8 +54,16 @@ export function useSpokenAnswers(
 
     if (last.turn.error) return
 
+    // A turn the reader stopped has settled, and must not be read out (spec 023). Speaking the
+    // half of an answer somebody just interrupted is the opposite of what they asked for, so the
+    // sentence in progress is cut rather than finished.
+    if (last.turn.status === 'stopped') {
+      speech.stop()
+      return
+    }
+
     const { sentences, cursor: at } = nextSentences(flatten(last.turn.text), cursor.current.at, {
-      settled: last.turn.status !== 'streaming',
+      settled: isSettled(last.turn),
     })
     cursor.current = { id: last.id, at }
     speech.speak(sentences, lang)

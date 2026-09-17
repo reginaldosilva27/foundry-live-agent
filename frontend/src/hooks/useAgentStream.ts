@@ -11,7 +11,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { BFF_URL } from '../config'
 import { createFrameParser } from '../state/sse'
-import { emptyTurn, reduceTurn, type Turn } from '../state/turn'
+import { emptyTurn, reduceTurn, stopTurn, type Turn } from '../state/turn'
 
 export interface UserMessage {
   role: 'user'
@@ -44,6 +44,14 @@ export interface AgentStream {
   conversationId?: string
   /** `agent` names who answers; absent means the BFF's configured default (spec 019). */
   send: (text: string, agent?: string) => Promise<void>
+  /**
+   * Stop listening to the turn in flight (spec 023).
+   *
+   * The browser stops; the run in Foundry does not — we have no documented way to cancel it, and
+   * the screen says so rather than implying otherwise (§5). Calling this with nothing running is a
+   * no-op, so no caller has to check first.
+   */
+  stop: () => void
   /** Drop finished messages into the conversation — how a voice session lands here (spec 007). */
   append: (messages: Message[]) => void
   /**
@@ -65,6 +73,14 @@ export function useAgentStream(): AgentStream {
   const conversationId = useRef<string | undefined>(undefined)
   const [conversation, setConversation] = useState<string | undefined>(undefined)
   const nextId = useRef(0)
+  /**
+   * The turn in flight, and whether the reader stopped it (spec 023).
+   *
+   * Two pieces, because they answer different questions. The controller tears the fetch down; the
+   * flag is what the read loop checks before applying an event, since frames already decoded in the
+   * current chunk would otherwise still land after the abort (AC5).
+   */
+  const inFlight = useRef<{ controller: AbortController; aborted: boolean } | null>(null)
 
   const remember = useCallback((id: string | undefined) => {
     conversationId.current = id
@@ -87,9 +103,18 @@ export function useAgentStream(): AgentStream {
     [remember],
   )
 
+  const stop = useCallback(() => {
+    const current = inFlight.current
+    if (!current) return
+    current.aborted = true
+    current.controller.abort()
+  }, [])
+
   const send = useCallback(async (text: string, agent?: string) => {
     const id = `turn_${nextId.current++}`
     const startedAt = Date.now()
+    const flight = { controller: new AbortController(), aborted: false }
+    inFlight.current = flight
 
     setMessages((prev) => [
       ...prev,
@@ -116,6 +141,7 @@ export function useAgentStream(): AgentStream {
           conversation_id: conversationId.current,
           agent,
         }),
+        signal: flight.controller.signal,
       })
 
       if (!response.ok || !response.body) {
@@ -127,9 +153,11 @@ export function useAgentStream(): AgentStream {
       const decoder = new TextDecoder()
 
       for (;;) {
+        if (flight.aborted) break
         const { done, value } = await reader.read()
         if (done) break
         for (const event of parse(decoder.decode(value, { stream: true }))) {
+          if (flight.aborted) break
           if (isTraceIds(event) && event.conversation_id) {
             remember(event.conversation_id)
           }
@@ -138,6 +166,12 @@ export function useAgentStream(): AgentStream {
         }
       }
     } catch (cause) {
+      // A stop is not a failure. Branching on the flag rather than on the exception, because an
+      // aborted fetch surfaces in more than one shape and only we know why it was torn down.
+      if (flight.aborted) {
+        apply(stopTurn, true)
+        return
+      }
       // A dead BFF is not a contract event, so nothing upstream will produce one. Synthesising it
       // here keeps the single rule the UI relies on: a turn always ends in `done` or `error`.
       apply(
@@ -150,7 +184,15 @@ export function useAgentStream(): AgentStream {
         true,
       )
     } finally {
-      setStreaming(false)
+      // The reader may have stopped this turn and started another before this one unwound; only
+      // the turn that is still in flight gets to say the app is no longer streaming.
+      if (inFlight.current === flight) {
+        inFlight.current = null
+        setStreaming(false)
+      }
+      // The loop can also leave through its own guard, without the fetch ever throwing. Same
+      // outcome, and `stopTurn` is a no-op on a turn that had already settled.
+      if (flight.aborted) apply(stopTurn, true)
     }
   }, [remember])
 
@@ -158,7 +200,7 @@ export function useAgentStream(): AgentStream {
     if (incoming.length > 0) setMessages((prev) => [...prev, ...incoming])
   }, [])
 
-  return { messages, streaming, conversationId: conversation, send, append, restore, reset }
+  return { messages, streaming, conversationId: conversation, send, stop, append, restore, reset }
 }
 
 /** The counter inside a minted message id (`turn_7`, `turn_7_user`), or -1 for anything else. */

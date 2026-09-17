@@ -9,6 +9,14 @@ Chat com streaming · atividade do agente ao vivo · traces distribuídos · voz
 
 <br />
 
+[![A interface do foundry-live-agent — barra lateral com favoritos e histórico local, uma resposta em streaming, o selo do harness no cabeçalho e o link do trace sob a resposta](docs/assets/screenshot-chat.png)](docs/assets/screenshot-chat.png)
+
+_Uma execução real. A barra lateral carrega os agentes que você de fato usa e o histórico deste
+navegador; o cabeçalho diz qual harness respondeu; sob a resposta, o modelo, a contagem de tokens e
+o caminho para os spans dela._
+
+<br />
+
 ![Foundry](https://img.shields.io/badge/Microsoft_Foundry-Agent_Service-0078D4?style=for-the-badge)
 ![SDD](https://img.shields.io/badge/Spec--Driven-obrigat%C3%B3rio-2563eb?style=for-the-badge)
 ![TDD](https://img.shields.io/badge/Test--Driven-obrigat%C3%B3rio-16a34a?style=for-the-badge)
@@ -22,10 +30,11 @@ Chat com streaming · atividade do agente ao vivo · traces distribuídos · voz
 
 ---
 
-> **Status: chat e voz funcionando.** As specs 000–004 e 006 estão concluídas — o contrato do
-> harness, o prompt agent, o BFF, a interface e a **voz no mesmo agente**. Falta a 005 (o painel de
-> rastros). Veja [`specs/README.md`](specs/README.md); o registro de arquitetura é o
-> [`PLAN.md`](PLAN.md).
+> **Status: chat, voz, traces e escolha de agente funcionando.** As specs 000–019, 021 e 022 estão
+> concluídas — o contrato do harness, **os dois harnesses**, o BFF, a interface, a voz no mesmo
+> agente, o painel de traces e a tela de agentes. Falta a 020 (*lado a lado* — uma pergunta, dois
+> agentes, dois streams), que está clarificada e ainda não construída. Veja
+> [`specs/README.md`](specs/README.md); o registro de arquitetura é o [`PLAN.md`](PLAN.md).
 
 ## 📑 Conteúdo
 
@@ -80,7 +89,7 @@ flowchart LR
     end
 
     GW["🚪 Seu gateway APIM<br/>limites de token · políticas"]
-    MODEL["Modelo<br/>gpt-5.4"]
+    MODEL["Modelo<br/>gpt-5.5"]
     MCP["🌍 Servidor MCP<br/>do Microsoft Learn"]
 
     UI -- "SSE: AgentEvent" --> BFF
@@ -120,6 +129,148 @@ merecem atenção:
 
 Detalhes completos: [`docs/architecture.md`](docs/architecture.md) · [`PLAN.md`](PLAN.md).
 
+### 🔬 Um turno, hop a hop
+
+O mapa acima diz *quem fala com quem*. Os três desenhos abaixo dizem *em que ordem* — que é onde o
+desenho de fato mora. A diferença entre os dois harnesses é uma aresta que aparece e uma perna
+inteira que some.
+
+#### Prompt agent — o turno em duas pernas
+
+O Foundry decide qual ferramenta chamar, emite o `function_call` e **para**. O BFF executa e
+responde numa segunda requisição amarrada à *mesma* conversa.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 🌐 Navegador
+    participant A as 📦 BFF · router · adapter · executor
+    participant F as ☁️ Foundry · Responses API · gpt-5.5
+    participant X as 🌍 MS Learn · Tavily
+
+    B->>A: POST /chat { message, agent? }
+    Note over A: build_harness(agent) — por requisição —<br/>app.state.harness nunca é mutado
+    A->>F: conversations.create — só no primeiro turno
+    A->>F: responses.create stream, agent_reference
+    Note over F: o loop do agente mora aqui:<br/>o Foundry escolhe a ferramenta
+    F->>X: mcp_call → Microsoft Learn
+    X-->>F: resultado — executado pela plataforma, nós só observamos
+    F-->>A: reasoning_summary · text_delta · mcp_call
+    A-->>B: SSE: text_delta
+    F-->>A: function_call + response.completed
+    Note over A,F: a perna 1 acabou. O usage fica retido<br/>e o done não é repassado
+    Note over A: execute name, args — o registry resolve o nome —<br/>nada aqui ramifica por ferramenta
+    A->>X: search_web → Tavily
+    A-->>B: SSE: tool_result
+    A->>F: function_call_output — a MESMA conversation
+    F-->>A: text_delta … response.completed — perna 2
+    A-->>B: SSE: usage somado · trace_ids · done
+```
+
+- **As duas pernas precisam citar uma só conversa.** A segunda leva apenas itens
+  `function_call_output`; sem amarração, o Foundry responde
+  `400 — No tool call found for function call output with call_id …`.
+- **Uma chamada sem resposta trava a execução por dez minutos**, e da interface o stream
+  simplesmente para. O `check_stream` transforma esse silêncio em falha barulhenta de teste.
+- **Dois `response.completed` num turno só.** O usage é somado entre as pernas e o `done` fica
+  retido até o turno acabar de verdade — senão o contrato veria dois terminais.
+
+#### Hosted agent — o turno numa perna só
+
+O mesmo agente, autorado como um grafo LangGraph num container que o Foundry executa. Todo
+`function_call` chega **já pareado** com o seu `function_call_output`: nada a responder, nada a
+acumular, nenhum loop no adapter.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 🌐 Navegador
+    participant A as 📦 BFF · LangGraphAdapter
+    participant C as ☁️ Container no Foundry · ResponsesHostServer · o grafo
+    participant X as 🌍 MS Learn · Tavily · Key Vault
+
+    B->>A: POST /chat { agent: "…-hosted" }
+    Note over A: HARNESS_FOR_KIND mapeia hosted → langgraph<br/>o único lugar onde kind → harness é decidido
+    A->>A: get_token https://ai.azure.com/.default
+    A->>C: POST /agents/{nome}/endpoint/protocols/openai/responses<br/>?api-version=v1 — obrigatório, e a URL documentada omite
+    Note over C: o grafo: agent → tools → agent.<br/>O loop está AQUI, e é código nosso
+    C->>X: as três tools e o cliente MCP rodam no container
+    X-->>C: resultados
+    C-->>A: output_item.done — function_call e function_call_output, pareados
+    A-->>B: SSE: tool_call executor "foundry" + tool_result
+    C-->>A: response.completed — usage vem null
+    A-->>B: SSE: trace_ids · done
+```
+
+- **Nenhuma aresta sai do BFF no meio do turno.** Essa ausência é a descoberta inteira: uma
+  requisição é o turno completo, e `submit_tool_output` é estruturalmente inalcançável aqui.
+- **O Microsoft Learn não é um `mcp_call` neste caminho.** O cliente MCP é o container, então a
+  chamada é uma tool call comum do grafo.
+- **O `executor` responde a uma pergunta só** — *quem é responsável por executar e responder isto?*
+  O container é o lado da plataforma, mesmo sendo código nosso.
+- **Sem checkpointer, de propósito.** Com ele, o estado seria nosso; a aplicação passaria a guardar
+  estado que a plataforma já guarda, que é exatamente o que o §8 proíbe.
+
+#### Voz — três canais, e só um passa pelo nosso servidor
+
+O navegador faz a oferta SDP; o BFF, que tem a credencial, responde. Dali em diante o áudio é ponto
+a ponto, e o nosso servidor não está no caminho de latência de nada que a pessoa ouve.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as 🌐 Navegador
+    participant A as 📦 BFF · VoiceSession · tool_executor
+    participant V as 🗣️ Voice Live · STT → modelo → TTS
+    participant G as ☁️ O agente · a mesma definição do chat
+
+    Note over B: getUserMedia · data channel "voice-live-events"<br/>createOffer · espera o ICE terminar
+    B->>A: POST /voice/session { sdp, agent? }
+    Note over A: voice_attachment_params — pergunta ao harness,<br/>nunca lê o ambiente
+    A->>V: WS connect · agent_name + agent_project_name<br/>api-version 2026-01-01-preview · Bearer Entra
+    V->>G: anexa pelo nome — um agente, duas modalidades
+    A->>V: rtc.call.sdp.create { sdp_offer, session }
+    A->>V: conversation.item.create · role system<br/>"esta conversa é falada" — uma frase, uma vez
+    V-->>A: rtc.call.sdp.created { sdp_answer }
+    A-->>B: 200 { session_id, sdp_answer }
+    B-->>V: áudio Opus, ponto a ponto
+    V-->>B: áudio de volta + transcrições no data channel — o BFF não vê nada disto
+    B->>A: GET /voice/session/{id}/events — SSE
+    V-->>A: response.function_call_arguments.done — completo: name, call_id, arguments
+    Note over A: execute name, args — o mesmo tool_executor do chat
+    A->>V: function_call_output + response.create
+    Note over A,V: devolver não basta:<br/>o agente só retoma se for mandado
+    A-->>B: SSE: tool_result
+```
+
+Um endpoint, não três:
+
+```
+wss://<recurso>.services.ai.azure.com/voice-live/realtime/calls
+  ?api-version=2026-01-01-preview
+  &agent_name=foundry-live-agent
+  &agent_project_name=<projeto>
+```
+
+- **A voz que você ouve é text to speech do Azure, não o modelo falando.** O Voice Live transcreve
+  antes do modelo e sintetiza depois dele, então um turno falado no `gpt-5.5` é uma cascata — STT do
+  Azure → o agente → TTS do Azure. Só o `azure-realtime` e a família `gpt-realtime*` geram áudio
+  nativamente. STT e TTS são estágios *atrás* daquele único endpoint; a aplicação nunca os chama.
+- **O agente não sabe que está falando.** Perguntado ao vivo, ele responde *"Estou trocando texto
+  escrito com você."* Por isso a sessão manda um item de contexto `role: system` dizendo que a
+  conversa é falada — a única exceção limitada ao §8, e o motivo de a resposta falada parar de ler
+  URLs em voz alta.
+- **Os nomes dos parâmetros contrariam o quickstart.** Ele documenta `project_name`; o serviço quer
+  **`agent_project_name`** e reclama de um *valor* faltando, não de uma *chave* errada.
+- **Duas api-versions, uma por endpoint.** A rota `/voice-live/realtime/calls` existe **só** em
+  `2026-01-01-preview`; a rota WebSocket simples funciona nas quatro. Um valor compartilhado quebra
+  silenciosamente o caminho que não foi escolhido.
+
+Cada um destes tem uma página própria, com os frames gravados por trás:
+[o ida-e-volta de function call](docs/how-it-works/function-call-round-trip.md) ·
+[eventos de streaming](docs/how-it-works/streaming-events.md) ·
+[o ciclo de vida da sessão Voice Live](docs/how-it-works/voice-live-lifecycle.md).
+
 ## 🚀 Início rápido (10 minutos)
 
 **Pré-requisitos:** uma assinatura Azure · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) ·
@@ -156,20 +307,18 @@ Opcional — o AI Gateway é um fluxo de portal sem caminho de IaC: `just gatewa
 
 | | |
 |---|---|
-| ![A casca: barra lateral, conversa, painel de rastros](docs/assets/screenshot-chat.png) | ![Um turno que falhou renderizado como erro, com o painel de rastros aberto](docs/assets/screenshot-error-and-trace.png) |
-| _A casca de três painéis, com o selo do harness no cabeçalho_ | _Um `error` terminal aparece como erro, não como um stream que parou_ |
-| ![Uma sessão de voz ao vivo: barras de nível, transcrição, silenciar e encerrar](docs/assets/screenshot-voice.png) | |
-| _Uma sessão do Voice Live ao vivo no mesmo agente — a transcrição chega pelo data channel do WebRTC_ | |
+| ![Um turno que falhou renderizado como erro, com o painel de rastros aberto](docs/assets/screenshot-error-and-trace.png) | ![Uma sessão de voz ao vivo: barras de nível, transcrição, silenciar e encerrar](docs/assets/screenshot-voice.png) |
+| _Um `error` terminal aparece como erro, não como um stream que parou_ | _Uma sessão do Voice Live ao vivo no mesmo agente — a transcrição chega pelo data channel do WebRTC_ |
 
-As duas são capturas reais de uma execução real. A segunda mostra o que o app exibe quando o projeto
+A interface em si está no topo desta página. As duas acima são capturas reais de execuções reais, e
+a primeira mostra o que o app exibe quando o projeto
 do Foundry ainda não tem um model deployment atrás da conexão do gateway: o round trip completou, o
 gateway respondeu `404`, e o contrato transformou isso em um evento terminal em vez de silêncio.
 
-Falta uma tela, e ela falta por um motivo, não por descuido (constituição §5):
-
-| Falta | Depende de |
-|---|---|
-| `screenshot-traces.png` — a árvore de spans com durações | Spec 005 |
+Duas ressalvas honestas (constituição §5): as duas foram capturadas **antes** da
+interface atual (spec 021), então a moldura em volta delas é mais velha que a do topo desta página;
+e a árvore de spans — que existe, specs 005 e 014 — ainda não tem captura commitada. Essa falta por
+descuido, não por motivo.
 
 ## 🔌 Harnesses
 

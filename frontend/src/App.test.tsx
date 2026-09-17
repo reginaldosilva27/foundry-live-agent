@@ -6,7 +6,7 @@
  */
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { AgentEvent } from './types/events'
 import { asSseStream, failedTurn, twoToolTurn } from './test/fixtures'
@@ -43,6 +43,14 @@ function fakeBff(events: AgentEvent[], config: unknown = CONFIG) {
     }),
   )
 }
+
+// Since spec 024 the app writes its address, and jsdom keeps both the location and the stored
+// history across cases in a file. Without this, the second test mounts at the first test's
+// conversation and renders it *and* its own turn.
+beforeEach(() => {
+  localStorage.clear()
+  window.history.replaceState(null, '', '/')
+})
 
 afterEach(() => vi.unstubAllGlobals())
 

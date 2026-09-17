@@ -203,6 +203,32 @@ export const strings = {
 
   // --- Composer ------------------------------------------------------------
   'composer.placeholder': { en: 'Ask the agent something', pt: 'Pergunte algo ao agente' },
+  // --- Addresses (spec 024) ------------------------------------------------
+  // An address naming a conversation this browser never had is a normal thing to open — a link
+  // from another machine. It is stated, not redirected away from.
+  'route.conversationMissing': {
+    en: 'This browser does not have that conversation.',
+    pt: 'Este navegador não tem essa conversa.',
+  },
+  'trace.conversationElsewhere': {
+    en: 'The spans are here; the conversation is not stored in this browser.',
+    pt: 'Os spans estão aqui; a conversa não está guardada neste navegador.',
+  },
+
+  // --- Stopping a turn (spec 023) ------------------------------------------
+  // The line a stopped turn carries says two things we can verify: we interrupted, and we did not
+  // cancel anything in Foundry. Nothing about tokens or cost — that was never measured (§5).
+  'composer.stop': { en: 'Stop', pt: 'Parar' },
+  'composer.newline': {
+    en: 'Shift + Enter for a new line',
+    pt: 'Shift + Enter para nova linha',
+  },
+  'turn.stopped': {
+    en: 'Interrupted here. The run may still be finishing in Foundry.',
+    pt: 'Interrompido aqui. O run pode continuar no Foundry.',
+  },
+  'turn.stoppedShort': { en: 'interrupted', pt: 'interrompido' },
+
   'composer.send': { en: 'Send', pt: 'Enviar' },
   'composer.voiceInput': { en: 'Voice input', pt: 'Entrada por voz' },
   // The chip names who is about to answer, where the question is being typed (spec 021).

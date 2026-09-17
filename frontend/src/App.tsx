@@ -22,6 +22,7 @@ import { VoiceOverlay } from './panes/VoiceOverlay'
 import { LangContext } from './i18n/context'
 import { detectLang, t as translate, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
+import { useRoute } from './hooks/useRoute'
 import { useAgents } from './state/agents'
 import { favouriteRows, useFavourites } from './state/favourites'
 import { titleFrom, useHistory } from './state/history'
@@ -38,15 +39,30 @@ export default function App() {
   const [lang, setLang] = useState<Lang>(() =>
     detectLang(typeof navigator === 'undefined' ? [] : navigator.languages),
   )
-  const [view, setView] = useState<View>('chat')
-  const [tracesOpen, setTracesOpen] = useState(false)
+  /**
+   * The address (spec 024). `view` is derived from it rather than stored beside it: two homes for
+   * "which screen is showing" is the drift §4 is about, and the route is the one that survives a
+   * reload. `/compare` is reserved for spec 020 and renders the chat until that spec builds it.
+   */
+  const { route, navigate } = useRoute()
+  const view: View = route.name === 'agents' ? 'agents' : 'chat'
+  const setView = useCallback(
+    (next: View) => navigate({ name: next === 'agents' ? 'agents' : 'chat' }),
+    [navigate],
+  )
+  const [tracesOpen, setTracesOpen] = useState(route.name === 'trace')
+  /** The response the address names, for a turn this browser may not have at all (AC6). */
+  const routeResponseId = route.name === 'trace' ? route.responseId : undefined
+  /** An address pointing at a conversation this browser does not have (AC7). */
+  const [missing, setMissing] = useState(false)
   /** The stored conversation on screen, if this session opened or saved one (spec 021). */
   const [activeId, setActiveId] = useState<string | null>(null)
   // Which turn the trace panel is showing, and which of its calls to bring into view. Empty means
   // the newest turn, which is what the header's Traces button opens (spec 009).
   const [trace, setTrace] = useState<{ turnId?: string; callId?: string }>({})
   const { config, failed } = useConfig()
-  const { messages, streaming, conversationId, send, append, restore, reset } = useAgentStream()
+  const { messages, streaming, conversationId, send, stop, append, restore, reset } =
+    useAgentStream()
   const history = useHistory()
   const favourites = useFavourites()
 
@@ -62,7 +78,11 @@ export default function App() {
     setActiveId(null)
     setTrace({})
     setTracesOpen(false)
-  }, [reset])
+    setMissing(false)
+    // The address comes too. Left behind, it would still name the conversation being left, and the
+    // effect below would put it straight back (spec 024).
+    navigate({ name: 'chat' })
+  }, [navigate, reset])
 
   const agents = useAgents({ onSwitch: newConversation })
   const voice = useVoiceSession()
@@ -91,7 +111,7 @@ export default function App() {
       agents.select(name)
       setView('chat')
     },
-    [agents],
+    [agents, setView],
   )
 
   const startVoiceSession = useCallback(
@@ -124,7 +144,12 @@ export default function App() {
     if (!justFinished || messages.length === 0) return
 
     const id = activeId ?? `c_${Date.now()}`
-    if (!activeId) setActiveId(id)
+    if (!activeId) {
+      setActiveId(id)
+      // `replace`, not push: this is the conversation the reader is already in acquiring a name,
+      // not somewhere they navigated to. Back should leave the chat, not un-name it (spec 024).
+      navigate({ name: 'conversation', id }, { replace: true })
+    }
 
     const first = messages.find((message) => message.role === 'user')
     history.save({
@@ -147,17 +172,46 @@ export default function App() {
    * one, and `select` would reset the very conversation being restored (019 AC7).
    */
   const openConversation = useCallback(
-    (id: string) => {
-      const stored = history.conversations.find((conversation) => conversation.id === id)
-      if (!stored) return
-      restore(stored.messages, stored.conversationId)
-      agents.adopt(stored.agent)
-      setActiveId(id)
-      setTrace({})
-      setView('chat')
-    },
-    [agents, history.conversations, restore],
+    (id: string) => navigate({ name: 'conversation', id }),
+    [navigate],
   )
+
+  /**
+   * Apply the address to the screen (spec 024).
+   *
+   * The route is an **input**: it selects what is already in memory or in this browser's storage,
+   * and never fetches. An address naming a conversation this browser does not have renders the chat
+   * and says so (AC7) — it does not redirect, because rewriting the reader's address bar would lose
+   * the evidence of what they opened.
+   *
+   * Keyed on the route alone. It reacts to where the reader asked to be, not to every render that
+   * happens while they are there.
+   */
+  useEffect(() => {
+    if (route.name === 'trace') setTracesOpen(true)
+
+    if (route.name !== 'conversation') {
+      setMissing(false)
+      return
+    }
+    if (route.id === activeId) {
+      setMissing(false)
+      return
+    }
+
+    const stored = history.conversations.find((conversation) => conversation.id === route.id)
+    if (!stored) {
+      setMissing(true)
+      return
+    }
+
+    setMissing(false)
+    restore(stored.messages, stored.conversationId)
+    agents.adopt(stored.agent)
+    setActiveId(stored.id)
+    setTrace({})
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- follows the address, not the render
+  }, [route])
 
   /**
    * Why the restored conversation cannot be continued, when it cannot (AC18).
@@ -205,14 +259,30 @@ export default function App() {
    * Fetched only while the panel is open: a closed panel querying a workspace would bill for a
    * question nobody asked. Named `spanTrace` because `trace` above is the panel's *position*.
    */
-  const shownResponseId =
-    tracesOpen && shownTurn?.role === 'agent' ? shownTurn.turn.trace?.responseId : undefined
+  const turnResponseId = shownTurn?.role === 'agent' ? shownTurn.turn.trace?.responseId : undefined
+  const shownResponseId = tracesOpen ? (turnResponseId ?? routeResponseId) : undefined
   const { trace: spanTrace, retry: retryTrace } = useTrace(shownResponseId)
 
-  const openTrace = useCallback((turnId?: string, callId?: string) => {
-    setTrace({ turnId, callId })
-    setTracesOpen(true)
-  }, [])
+  /** Where the reader goes when the panel closes: back to what they were reading. */
+  const leaveTrace = useCallback(() => {
+    setTracesOpen(false)
+    if (route.name !== 'trace') return
+    navigate(activeId ? { name: 'conversation', id: activeId } : { name: 'chat' })
+  }, [activeId, navigate, route.name])
+
+  const openTrace = useCallback(
+    (turnId?: string, callId?: string) => {
+      setTrace({ turnId, callId })
+      setTracesOpen(true)
+
+      // Only a turn Foundry has already identified has an address. One still streaming does not,
+      // and the panel opens without one rather than inventing a placeholder id (§5).
+      const target = messages.find((message) => message.id === turnId)
+      const responseId = target?.role === 'agent' ? target.turn.trace?.responseId : undefined
+      if (responseId) navigate({ name: 'trace', responseId })
+    },
+    [messages, navigate],
+  )
 
   /** The call the reader is showing, resolved from the turn the panel is on (spec 010). */
   const openCall = useMemo(() => {
@@ -255,8 +325,12 @@ export default function App() {
             tracesOpen={tracesOpen}
             voiceLive={voice.status === 'live'}
             onToggleTraces={() => {
+              if (tracesOpen) {
+                leaveTrace()
+                return
+              }
               setTrace({})
-              setTracesOpen((v) => !v)
+              openTrace(shown.agentMessages[shown.agentMessages.length - 1]?.id)
             }}
             onVoice={startVoiceSession}
           />
@@ -277,11 +351,13 @@ export default function App() {
                 messages={messages}
                 model={config?.model}
                 agent={answering}
+                notice={missing ? translate('route.conversationMissing', lang) : undefined}
                 onSuggestion={sendToSelected}
                 onOpenTrace={openTrace}
               />
               <Composer
-                disabled={streaming}
+                streaming={streaming}
+                onStop={stop}
                 voiceEnabled={config?.voice?.enabled ?? false}
                 blocked={blocked}
                 chip={
@@ -307,6 +383,7 @@ export default function App() {
 
         <TraceDrawer
           turn={shownTurn?.role === 'agent' ? shownTurn.turn : undefined}
+          responseId={routeResponseId}
           selectedCall={trace.callId}
           open={tracesOpen}
           position={shown.total > 0 ? { index: shown.index, total: shown.total } : undefined}
@@ -323,7 +400,7 @@ export default function App() {
           onRetryTrace={retryTrace}
           onStep={stepTurn}
           onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
-          onClose={() => setTracesOpen(false)}
+          onClose={leaveTrace}
         />
 
         {openCall && (

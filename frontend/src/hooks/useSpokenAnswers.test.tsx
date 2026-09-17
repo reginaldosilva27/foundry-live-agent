@@ -92,3 +92,40 @@ describe('spoken answers', () => {
     expect(player.stop).toHaveBeenCalled()
   })
 })
+
+/**
+ * Spec 023 — a turn the reader stopped is not read aloud.
+ *
+ * Speaking is triggered by a turn settling, and a stopped turn has settled. Reading out the half of
+ * an answer somebody just interrupted is the opposite of what they asked for, so `stopped` is the
+ * one settled state this hook stays quiet for.
+ */
+describe('a stopped turn', () => {
+  it('is not spoken, however much text it had reached', () => {
+    const { player, spoken } = fakePlayer()
+    renderHook(() =>
+      useSpokenAnswers(
+        [agentTurn('t1', { text: 'São 13:53 em São Paulo.', status: 'stopped' })],
+        'pt',
+        true,
+        player,
+      ),
+    )
+
+    expect(spoken).toEqual([])
+  })
+
+  it('stops what was already being said when the turn is stopped', () => {
+    const { player, spoken } = fakePlayer()
+    const { rerender } = renderHook(
+      ({ messages }) => useSpokenAnswers(messages, 'pt', true, player),
+      { initialProps: { messages: [agentTurn('t1', { text: 'São 13:53. ' })] } },
+    )
+    expect(spoken).toEqual(['São 13:53.'])
+
+    rerender({ messages: [agentTurn('t1', { text: 'São 13:53. Em São', status: 'stopped' })] })
+
+    expect(player.stop).toHaveBeenCalled()
+    expect(spoken).toEqual(['São 13:53.'])
+  })
+})

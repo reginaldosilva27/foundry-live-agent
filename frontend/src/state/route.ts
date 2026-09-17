@@ -1,0 +1,76 @@
+/**
+ * The address scheme (spec 024).
+ *
+ * Four addresses and one reservation, flat rather than nested. This module is their single source
+ * of truth (§4): every link in the app is built through `buildPath`, so the scheme has one
+ * definition and `route.test.ts` proves the two halves round-trip.
+ *
+ * **The URL is an address, not state.** Nothing here reads or writes anything the app needs in
+ * order to be correct — Foundry's `conversation_id` still comes from this browser's record, and the
+ * answering agent still comes from the agents state. A route that carried either would be the
+ * duplication constitution §8 exists to prevent, and it would make a link a way to configure
+ * somebody else's app.
+ *
+ * The trace is keyed on Foundry's `response_id` rather than nested under the conversation that
+ * produced it, and that is the load-bearing decision: spans live in the workspace, so a trace link
+ * has to open for a reader who has never had the conversation.
+ */
+
+export type Route =
+  | { name: 'chat' }
+  | { name: 'agents' }
+  /** A conversation **this browser** kept (spec 021). The id is local; it is not Foundry's. */
+  | { name: 'conversation'; id: string }
+  | { name: 'trace'; responseId: string }
+  /** Reserved for spec 020. It parses; the app renders the chat until that spec builds it. */
+  | { name: 'compare' }
+
+/** Every route the app can be at, in the order they are documented. */
+export const ROUTES = ['chat', 'agents', 'conversation', 'trace', 'compare'] as const
+
+/**
+ * What address is this?
+ *
+ * Anything unrecognised is the chat. A 404 screen would be a fifth thing to translate and maintain
+ * for a scheme with four addresses, and the app is entirely usable from the chat.
+ */
+export function parseRoute(pathname: string): Route {
+  const segments = pathname.split('/').filter(Boolean).map(decode)
+
+  if (segments.length === 0) return { name: 'chat' }
+  if (segments.length === 1) {
+    if (segments[0] === 'agents') return { name: 'agents' }
+    if (segments[0] === 'compare') return { name: 'compare' }
+  }
+  if (segments.length === 2) {
+    if (segments[0] === 'c') return { name: 'conversation', id: segments[1] }
+    if (segments[0] === 'trace') return { name: 'trace', responseId: segments[1] }
+  }
+
+  return { name: 'chat' }
+}
+
+/** Where does this route live? The only place a path is spelled. */
+export function buildPath(route: Route): string {
+  switch (route.name) {
+    case 'agents':
+      return '/agents'
+    case 'compare':
+      return '/compare'
+    case 'conversation':
+      return `/c/${encodeURIComponent(route.id)}`
+    case 'trace':
+      return `/trace/${encodeURIComponent(route.responseId)}`
+    default:
+      return '/'
+  }
+}
+
+/** A malformed escape is not worth throwing over; the raw segment is the honest fallback. */
+function decode(segment: string): string {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}

@@ -131,3 +131,37 @@ thread would be this app running inference of its own — the precise thing §8 
 - **The AI Gateway does not log tool traces** — tool-level detail comes only from Foundry tracing.
 - A `function_call` Foundry emits **must** be answered, or the run hangs and expires after 10 minutes.
 - Function calling is **client-side execution** by definition and cannot live in a Toolbox.
+
+
+## Addresses (spec 024)
+
+The frontend has four addresses and one reservation. `frontend/src/state/route.ts` is their single
+source of truth — every link is built through it, and `route.test.ts` proves the parse and the build
+round-trip.
+
+| Address | Shows |
+|---|---|
+| `/` | the chat |
+| `/agents` | the agents screen |
+| `/c/<id>` | a conversation **this browser** kept (spec 021) |
+| `/trace/<response_id>` | the trace panel on that response |
+| `/compare` | reserved for spec 020; renders the chat until that spec is built |
+
+Two properties are load-bearing and are tested, not merely intended:
+
+- **The URL is an address, not state.** Nothing the app needs in order to be correct lives only in
+  it. Foundry's `conversation_id` still comes from this browser's stored record and the answering
+  agent still comes from the agents state, so `POST /chat` carries exactly `message ·
+  conversation_id · agent` after navigation, as it did before (§8).
+- **A trace is keyed on Foundry's `response_id`, not nested under a conversation.** The spans live
+  in the workspace, so the link opens for a reader who has never had the conversation — the panel
+  renders the identifier and the spans and says which half is missing. Nesting the trace under
+  `/c/<id>` would have broken exactly the case the feature exists for.
+
+An address naming a conversation this browser does not have renders the chat and says so. It does
+not redirect, because rewriting the reader's address bar would lose the evidence of what they
+opened.
+
+The `/c/<id>` in an address is **this browser's** id for its own record, not Foundry's conversation
+id. Sending that link to someone else opens an empty app that says so — correctly, since they do not
+have the record.

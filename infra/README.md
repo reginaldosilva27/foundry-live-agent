@@ -35,3 +35,19 @@ confirms what to provision"* — and the spike's answer never became a spec. The
 layer with a notice while `main.bicep` is absent, which is why the gate is green on an empty
 directory. Provisioning is a manual portal/CLI step today; spec 005 is where Application Insights
 gets a home.
+
+## Requirement for whoever builds the frontend host (spec 024)
+
+The frontend uses the **History API**, so it has real addresses: `/`, `/agents`, `/c/<id>`,
+`/trace/<response_id>`. Any host serving the built `frontend/dist` **must serve `index.html` for
+unknown paths**, or a deep link — the trace link somebody sends a colleague, which is the point of
+the feature — answers 404.
+
+Vite's dev server already does this, so `just frontend` needs nothing. This is written here rather
+than shipped as Bicep because there is no frontend deployment in this repository yet, and
+unverifiable infrastructure is a documented manual step, not IaC nobody has run (constitution §5).
+
+- **Azure Static Web Apps** — a `staticwebapp.config.json` with a `navigationFallback` to
+  `/index.html`.
+- **A container serving the build** — the server's try-files equivalent, falling back to
+  `index.html`.

@@ -102,3 +102,140 @@ describe('useAgentStream', () => {
     expect(result.current.conversationId).toBe('conv_1')
   })
 })
+
+/**
+ * Spec 023 — stopping a turn.
+ *
+ * The stream is driven by hand here rather than enqueued all at once: the whole question is what
+ * happens to events that arrive *after* the reader pressed stop, and a stream that has already
+ * closed cannot ask it.
+ */
+function drivableChat() {
+  let push: (chunk: string) => void = () => {}
+  let finish: () => void = () => {}
+  let ready: () => void = () => {}
+  const opened = new Promise<void>((resolve) => {
+    ready = resolve
+  })
+
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async (_url: string, init?: RequestInit) =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              push = (chunk) => controller.enqueue(new TextEncoder().encode(chunk))
+              finish = () => controller.close()
+              // What a real `fetch` does: aborting the signal errors the response body, so a
+              // pending `read()` rejects instead of hanging. A mock that ignored the signal would
+              // let a hook that never aborts anything pass this suite.
+              init?.signal?.addEventListener('abort', () =>
+                controller.error(new DOMException('aborted', 'AbortError')),
+              )
+              ready()
+            },
+          }),
+          { status: 200 },
+        ),
+    ),
+  )
+
+  return {
+    opened,
+    push: (chunk: string) => push(chunk),
+    finish: () => finish(),
+  }
+}
+
+describe('stopping a turn', () => {
+  it('leaves the turn stopped rather than failed — an abort is not an error', async () => {
+    const chat = drivableChat()
+    const { result } = renderHook(() => useAgentStream())
+
+    act(() => void result.current.send('what time is it'))
+    await chat.opened
+    act(() => chat.push(asSseStream(twoToolTurn.slice(0, 5))))
+
+    await waitFor(() => expect(agentTurn(result.current).activities.length).toBeGreaterThan(0))
+    act(() => result.current.stop())
+
+    await waitFor(() => expect(result.current.streaming).toBe(false))
+    expect(agentTurn(result.current).status).toBe('stopped')
+    expect(agentTurn(result.current).error).toBeUndefined()
+  })
+
+  it('keeps what had already arrived', async () => {
+    const chat = drivableChat()
+    const { result } = renderHook(() => useAgentStream())
+
+    act(() => void result.current.send('what time is it'))
+    await chat.opened
+    act(() => chat.push(asSseStream(twoToolTurn.slice(0, 4))))
+    await waitFor(() => expect(agentTurn(result.current).reasoning).not.toBe(''))
+
+    act(() => result.current.stop())
+    await waitFor(() => expect(result.current.streaming).toBe(false))
+
+    expect(agentTurn(result.current).reasoning).toBe('The user asked what time it is.')
+    expect(agentTurn(result.current).activities).toHaveLength(1)
+  })
+
+  it('applies nothing that was still in flight when the stop landed', async () => {
+    const chat = drivableChat()
+    const { result } = renderHook(() => useAgentStream())
+
+    act(() => void result.current.send('what time is it'))
+    await chat.opened
+    act(() => chat.push(asSseStream(twoToolTurn.slice(0, 4))))
+    await waitFor(() => expect(agentTurn(result.current).activities).toHaveLength(1))
+
+    // Everything the turn would have gained — the MCP call, the answer, the usage — handed to the
+    // transport in the same tick as the stop. A real abort errors the body and discards the queue,
+    // which is why "deliver more after a stop" is not a state the browser can reach; what it *can*
+    // reach is exactly this, and none of it may land.
+    act(() => {
+      chat.push(asSseStream(twoToolTurn.slice(4)))
+      result.current.stop()
+    })
+
+    await waitFor(() => expect(result.current.streaming).toBe(false))
+    expect(agentTurn(result.current).text).toBe('')
+    expect(agentTurn(result.current).usage).toBeUndefined()
+    expect(agentTurn(result.current).activities).toHaveLength(1)
+    expect(agentTurn(result.current).status).toBe('stopped')
+  })
+
+  it('carries the same conversation id into the next turn', async () => {
+    const chat = drivableChat()
+    const { result } = renderHook(() => useAgentStream())
+
+    act(() => void result.current.send('what time is it'))
+    await chat.opened
+    act(() =>
+      chat.push(
+        asSseStream([{ type: 'trace_ids', response_id: 'resp_1', conversation_id: 'conv_1' }]),
+      ),
+    )
+    await waitFor(() => expect(result.current.conversationId).toBe('conv_1'))
+
+    act(() => result.current.stop())
+    await waitFor(() => expect(result.current.streaming).toBe(false))
+
+    fakeChat()
+    await act(() => result.current.send('and now?'))
+    expect(bodyOf(vi.mocked(fetch) as never).conversation_id).toBe('conv_1')
+  })
+
+  it('does nothing when there is no turn running', () => {
+    const { result } = renderHook(() => useAgentStream())
+    expect(() => act(() => result.current.stop())).not.toThrow()
+  })
+})
+
+/** The turn of the only agent message on screen. */
+function agentTurn(stream: ReturnType<typeof useAgentStream>) {
+  const message = stream.messages.find((m) => m.role === 'agent')
+  if (message?.role !== 'agent') throw new Error('no agent message')
+  return message.turn
+}

@@ -169,6 +169,10 @@ export const PencilIcon = (p: IconProps) =>
     p,
   )
 
+/** A filled square: the universal "this is running, end it" mark (spec 023). */
+export const StopIcon = (p: IconProps) =>
+  svg(<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none" />, p)
+
 export const ChevronDownIcon = (p: IconProps) => svg(<polyline points="5 9 12 16 19 9" />, p)
 
 export const PlusIcon = (p: IconProps) =>

@@ -183,3 +183,30 @@ data: {"type":"done","response_id":"resp_1"}
 The stream always ends in `done` or `error`. Never silence — that is
 [`check_stream`](../../ai/harness/_shared/README.md)'s first invariant, and the router enforces it a
 second time at the transport layer.
+
+## Stopping a turn (spec 023)
+
+A reader can stop a turn. It is worth being precise about what that does, because the obvious
+reading of it is wrong.
+
+**What stops is the browser.** The frontend holds an `AbortController` for the turn in flight;
+pressing stop aborts the `fetch`, which errors the response body and discards anything still queued
+in it. The turn is marked `stopped` — a fourth turn status beside `streaming`, `done` and `error` —
+and keeps every event it had already received.
+
+**What does not stop is the run.** Foundry is not told anything. There is no cancellation in this
+design: no endpoint for it has been read from a doc (§10), so none is called, and the app does not
+pretend otherwise. The line under a stopped turn says exactly that much — the answer was interrupted
+here, and the run may still be finishing — and deliberately says nothing about tokens or cost,
+because nobody has measured what a run does after the browser stops listening (§5).
+
+**The stream's own invariant is unaffected.** `check_stream` still requires every stream to end in
+`done` or `error`; a stopped turn is not a stream that ended without one, it is a stream the client
+stopped reading. The BFF sees a dropped connection and nothing else.
+
+Two consequences worth knowing:
+
+- A stopped turn does not end the conversation. The next message carries the same
+  `conversation_id`, because that is Foundry's state and this app does not own it (§8).
+- A stopped turn is **not** read aloud when spoken answers are on. Speaking the half of an answer
+  somebody just interrupted is the opposite of what they asked for.

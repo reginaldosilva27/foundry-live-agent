@@ -9,7 +9,7 @@ import { MetaLine } from '../components/MetaLine'
 import { useT } from '../i18n/context'
 import type { Message } from '../hooks/useAgentStream'
 import { useElapsed } from '../hooks/useElapsed'
-import { turnStatus, type Turn } from '../state/turn'
+import { isSettled, turnStatus, type Turn } from '../state/turn'
 import { ActivityPanel } from './ActivityPanel'
 import { EmptyState } from './EmptyState'
 
@@ -18,6 +18,8 @@ interface Props {
   model?: string
   /** Who is answering — it goes into the Markdown a reader downloads (spec 021). */
   agent?: string
+  /** Something true about the address the reader opened, when there is something (spec 024). */
+  notice?: string
   onSuggestion: (text: string) => void
   /** Open the trace panel for a turn, optionally on one of its calls (spec 009). */
   onOpenTrace: (turnId: string, callId?: string) => void
@@ -77,7 +79,7 @@ function LiveLine({ turn }: { turn: Turn }) {
 /** How far from the bottom still counts as "following the stream". */
 const STICKY_PX = 120
 
-export function Conversation({ messages, model, agent, onSuggestion, onOpenTrace }: Props) {
+export function Conversation({ messages, model, agent, notice, onSuggestion, onOpenTrace }: Props) {
   const s = useT()
   const column = useRef<HTMLDivElement>(null)
 
@@ -99,6 +101,7 @@ export function Conversation({ messages, model, agent, onSuggestion, onOpenTrace
   if (messages.length === 0) {
     return (
       <div className="conversation conversation--empty" ref={column}>
+        {notice && <Notice text={notice} />}
         <EmptyState onSuggestion={onSuggestion} />
       </div>
     )
@@ -107,6 +110,7 @@ export function Conversation({ messages, model, agent, onSuggestion, onOpenTrace
   return (
     <div className="conversation" ref={column}>
       <div className="conversation__inner">
+        {notice && <Notice text={notice} />}
         {messages.map((message) =>
           message.role === 'voice-session' ? (
             <p key={message.id} className="turn__divider" data-testid="voice-divider">
@@ -140,7 +144,16 @@ export function Conversation({ messages, model, agent, onSuggestion, onOpenTrace
 
                 {message.turn.error && <ErrorCard error={message.turn.error} />}
 
-                {message.turn.status !== 'streaming' && (
+                {/* The reader stopped listening. We say the two things we can verify: it was
+                    interrupted here, and the run was never cancelled — nothing about tokens or
+                    cost, which nobody has measured (spec 023, §5). */}
+                {message.turn.status === 'stopped' && (
+                  <p className="turn__stopped" data-testid="turn-stopped" role="status">
+                    {s('turn.stopped')}
+                  </p>
+                )}
+
+                {isSettled(message.turn) && (
                   <>
                     <AnswerActions
                       turn={message.turn}
@@ -168,6 +181,15 @@ export function Conversation({ messages, model, agent, onSuggestion, onOpenTrace
         )}
       </div>
     </div>
+  )
+}
+
+/** One line about the address, not about the conversation. */
+function Notice({ text }: { text: string }) {
+  return (
+    <p className="conversation__notice" data-testid="conversation-notice" role="status">
+      {text}
+    </p>
   )
 }
 

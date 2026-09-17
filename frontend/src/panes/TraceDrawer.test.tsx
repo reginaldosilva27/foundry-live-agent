@@ -294,3 +294,54 @@ describe('the panel with a trace', () => {
     expect(screen.getByTestId('span-tree')).toHaveTextContent('invoke_agent')
   })
 })
+
+/**
+ * Spec 024 AC6 — a trace opened from an address, for a conversation this browser never had.
+ *
+ * The spans live in the workspace, not here, which is the whole reason a trace link is worth
+ * sending to somebody. So the panel has to render from a response id alone, and say plainly which
+ * half of the picture is missing rather than looking like an empty trace.
+ */
+describe('a trace opened by address', () => {
+  const open = (props = {}) =>
+    render(
+      <TraceDrawer
+        open
+        responseId="resp_elsewhere"
+        trace={{ status: 'pending', spans: [] }}
+        onClose={() => {}}
+        {...props}
+      />,
+    )
+
+  it('renders without a turn behind it', () => {
+    open()
+    expect(screen.getByTestId('trace-panel')).toBeInTheDocument()
+  })
+
+  it('shows the response id the address named', () => {
+    open()
+    expect(screen.getByText('resp_elsewhere')).toBeInTheDocument()
+  })
+
+  it('says the conversation is not stored in this browser', () => {
+    open()
+    expect(screen.getByTestId('trace-detached')).toBeInTheDocument()
+  })
+
+  it('still reports what the spans are doing', () => {
+    open()
+    expect(screen.getByTestId('trace-spans-state')).toBeInTheDocument()
+  })
+
+  it('lists no calls, because it has none — rather than an empty activity section', () => {
+    open()
+    expect(screen.queryByTestId('trace-activity')).not.toBeInTheDocument()
+  })
+
+  it('says nothing about a detached conversation once the turn is here', () => {
+    open({ turn, responseId: 'resp_1' })
+    expect(screen.queryByTestId('trace-detached')).not.toBeInTheDocument()
+    expect(screen.getByTestId('trace-activity')).toBeInTheDocument()
+  })
+})

@@ -1,0 +1,119 @@
+# Spec: Attachments on a question
+
+| | |
+|---|---|
+| **ID** | 045-attachments |
+| **Status** | draft |
+| **Author** | Reginaldo Silva |
+| **Date** | 2026-09-16 |
+
+## Problem / motivation
+
+Every question this app can ask is a string. A reader wanting the agent to look at a Bicep file, an
+error log, a screenshot of a Foundry blade or a CSV has to paste it into a one-line composer — soon a
+multi-line one (spec 023) — and hope it fits.
+
+This is the most expensive item on the UI map and it is placed last deliberately. It is the only one
+that changes the request body of `POST /chat`, and probably the contract: the app's public shape
+today is `message · conversation_id · agent`, and spec 021 made "the request stays exactly those
+three fields" a test, because that is how the browser's local record is kept from leaking into
+Foundry's state.
+
+It is also the one with a real infrastructure question underneath — where does an uploaded file live,
+who can read it, and how long does it stay — which is not a frontend question at all.
+
+The spec exists so that when it is wanted, the work starts from the right question rather than from a
+file input.
+
+## Goals
+
+- **A question can carry a file**, and the agent can use it.
+- The file's **path through the system is deliberate and stated**: what is stored, where, for how
+  long, and who can read it.
+- **The contract change, if any, is made on purpose** — specified, tested, and moved through every
+  consumer (§9).
+
+## Non-goals
+
+- **No silent contract drift.** If this needs a new `AgentEvent` or a new request field, that is
+  §9/§4 work with a spec and fixtures, not an addition made during implementation.
+- **No file storage in the browser's history.** Spec 021's record is a drawing of a conversation; it
+  is not a file store, and a base64 image in `localStorage` would exhaust it within a few turns.
+- **No client-side parsing.** The app does not read a PDF, extract text from an image, or summarise a
+  CSV before sending — that is the app deciding what the model gets to see.
+- **No multi-file, no folders, no drag-and-drop of a directory** in the first pass.
+- **No attachment during a voice session.**
+
+## User-facing behavior
+
+All new prose ships `{ en, pt }` (§7).
+
+**Attaching** is offered in the composer: one file, chosen or dropped, shown as a named chip above
+the input with its size and a way to remove it before sending.
+
+**Limits are stated before the attempt**, not after: which types and what maximum size. A file
+outside them is refused with the reason, and the composer keeps the typed question.
+
+**While it uploads**, the send is in progress and visibly so; a failure says what failed and keeps
+both the question and the file.
+
+**In the transcript**, the question renders with its attachment named — the transcript must show what
+was asked, and the file was part of what was asked.
+
+**In the stored conversation**, the attachment is a reference, never the bytes. Reopening shows the
+question with the file named; whether the file is still retrievable is a separate fact and the screen
+does not claim it is.
+
+**What the agent can do with it** depends on the agent and on the tools it has. The screen does not
+imply a capability the agent lacks: attaching a file to an agent that cannot read files should say
+so, or the feature teaches the wrong thing.
+
+## Acceptance criteria
+
+1. **AC1** — The composer accepts one file by choosing and by drop, and renders it as a named chip
+   with its size and a remove control.
+2. **AC2** — The accepted types and maximum size are stated in the UI before an attempt.
+3. **AC3** — A file outside the limits is refused with the reason, and the typed question is kept.
+4. **AC4** — A failed upload states what failed and keeps both the question and the file.
+5. **AC5** — A sent question renders in the transcript with its attachment named.
+6. **AC6** — The stored conversation record holds a reference, never file bytes (asserted).
+7. **AC7** — Reopening a stored conversation renders the attachment's name and does not claim the
+   file is retrievable unless it is.
+8. **AC8** — With the answering agent unable to accept files, attaching is unavailable and the
+   reason is stated — as a code from the BFF, translated in the frontend (§7, the 019 pattern).
+9. **AC9** — No attachment control is offered during a voice session.
+10. **AC10** — The change to `POST /chat`'s request shape is exactly what this spec declares, and the
+    existing test asserting the request's fields is updated in the same change, never loosened
+    (§4, §9).
+11. **AC11** — Every new string ships `en` + `pt`.
+
+## Contract / data impact
+
+| | |
+|---|---|
+| **`POST /chat`** | Changes shape. Spec 021's test — the request carries `message · conversation_id · agent` — exists to keep local state from leaking, and this spec must show that its reasoning still holds with a fourth field, or find another route for the upload. |
+| **`AgentEvent`** | Possibly unchanged; possibly not. Whether the agent's *use* of a file produces anything the stream must carry is the first open question, and a new event type means §9 work — a spec, fixtures, and every consumer moved. |
+| **Storage** | Where an uploaded file lives is infrastructure: a storage account, its lifetime, its access model, and Entra ID rather than a key (zero secrets). It is Bicep, and under §5 unverifiable infrastructure is documented as a manual step rather than shipped as unverified IaC. |
+| **§10** | How Foundry's Responses API accepts a file alongside a message — if it does — comes from a doc read at the time of writing, recorded in `docs/REFERENCES.md`. This is the question the whole spec waits on. |
+| **Docs** | `docs/architecture.md`, `docs/how-it-works/`, `SECURITY.md` — an upload endpoint is a new attack surface. |
+
+## Open questions (clarify before planning)
+
+- [ ] **Does the Responses API accept file input alongside a message, and how?** Until this is
+      answered from a doc, nothing else in this spec can be planned.
+- [ ] Does the file go to Foundry directly, to a storage account the agent can read, or into the
+      message as content? Three different specs wear the same name.
+- [ ] Does the hosted harness handle attachments identically to the prompt harness? If not, the
+      contract has to express the difference, and §9's "parameterised over adapters" test suite is
+      where it shows up.
+- [ ] What is retained after the conversation, and who can read it? This must be answered before an
+      upload endpoint exists, not after.
+- [ ] Is a file worth it at all for this project's subject matter, or is the real want pasting a long
+      snippet — which spec 023's composer already solves?
+
+## Out of scope / deferred
+
+- Multiple files, folders, archives.
+- Any client-side extraction or preprocessing.
+- Attachments during voice.
+- Images as output (spec 044).

@@ -119,6 +119,7 @@ button:disabled {
 .trace__retry:focus-visible,
 .composer__mic:focus-visible,
 .composer__send:focus-visible,
+.composer__stop:focus-visible,
 /* Spec 021 */
 .sidebar__nav-item:focus-visible,
 .sidebar__collapse:focus-visible,
@@ -1395,7 +1396,8 @@ button:disabled {
 }
 
 .composer__mic,
-.composer__send {
+.composer__send,
+.composer__stop {
   display: grid;
   flex: none;
   place-items: center;
@@ -2752,4 +2754,78 @@ button:disabled {
 
 .sidebar[data-collapsed='true'] .favourites__row {
   justify-content: center;
+}
+
+
+/* ---------- Stopping a turn (spec 023) ------------------------------------
+   The field is a textarea now. It grows from one row — the height is written from `scrollHeight`
+   in `Composer` — and the cap lives with it, on the element, so the two halves of one rule cannot
+   drift apart. Everything below is what a textarea needs and an input did not. */
+
+.composer__input {
+  resize: none;
+  overflow-y: auto;
+  font-family: inherit;
+  line-height: var(--lh-base);
+}
+
+/* The line under a turn the reader stopped. Not an error — it says what happened and what we do
+   not know about the run, so it reads as information rather than as a failure. */
+.turn__stopped {
+  margin: var(--sp-2) 0 0;
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--border-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+/* The stop control takes the send control's place, and its shape comes from the shared rule above.
+   Only the colour differs: outlined rather than filled, so "end this" never looks like "send". */
+.composer__stop {
+  border-color: var(--border-2);
+  color: var(--fg-2);
+}
+
+.composer__stop:hover {
+  border-color: var(--ds-danger);
+  color: var(--ds-danger);
+}
+
+.composer__stop:active {
+  transform: scale(0.96);
+}
+
+/* Screen-reader-only: the Shift+Enter hint, which sighted readers discover by doing it. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+
+/* ---------- Addresses (spec 024) ------------------------------------------
+   Two lines the app says about where the reader arrived, not about what the agent did. Both are
+   information rather than failure, so neither borrows the error treatment. */
+
+.conversation__notice {
+  margin: 0 auto var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  max-width: var(--col-max, 46rem);
+  border-radius: var(--r-sm);
+  background: var(--bg-3);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.trace__detached {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-3);
+  border-left: 2px solid var(--border-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
 }

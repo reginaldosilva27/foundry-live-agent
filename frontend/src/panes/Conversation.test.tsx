@@ -283,3 +283,56 @@ describe('the answer actions (spec 021)', () => {
     vi.unstubAllGlobals()
   })
 })
+
+/**
+ * Spec 023 AC7, AC10 — a turn the reader stopped.
+ *
+ * Three states have to be distinguishable on screen, not two: Foundry finished it, Foundry failed
+ * it, or the reader stopped listening. The third keeps everything it had reached and says the one
+ * thing we can honestly say about the run — that it may still be finishing (§5).
+ */
+describe('a stopped turn', () => {
+  it('says it was interrupted, and that the run may continue', () => {
+    render(<Conversation {...props} messages={[agentTurn('t1', 'It is 19:0', 'stopped')]} />)
+
+    expect(screen.getByText(t('turn.stopped', 'en'))).toBeInTheDocument()
+  })
+
+  it('keeps the text it had reached', () => {
+    render(<Conversation {...props} messages={[agentTurn('t1', 'It is 19:0', 'stopped')]} />)
+
+    expect(screen.getByTestId('answer')).toHaveTextContent('It is 19:0')
+  })
+
+  it('does not say it to a turn that finished, nor to one that failed', () => {
+    const { rerender } = render(
+      <Conversation {...props} messages={[agentTurn('t1', 'It is 19:00.', 'done')]} />,
+    )
+    expect(screen.queryByText(t('turn.stopped', 'en'))).not.toBeInTheDocument()
+
+    rerender(<Conversation {...props} messages={[agentTurn('t1', '', 'error')]} />)
+    expect(screen.queryByText(t('turn.stopped', 'en'))).not.toBeInTheDocument()
+  })
+
+  it('drops the streaming caret', () => {
+    const { container } = render(
+      <Conversation {...props} messages={[agentTurn('t1', 'It is 19:0', 'stopped')]} />,
+    )
+
+    expect(container.querySelector('.caret')).toBeNull()
+  })
+
+  it('offers what there is to do with it — the trace, and copying what it reached (AC10)', () => {
+    render(<Conversation {...props} messages={[agentTurn('t1', 'It is 19:0', 'stopped')]} />)
+
+    const actions = screen.getByTestId('answer-actions')
+    expect(within(actions).getByLabelText(t('answer.trace', 'en'))).toBeInTheDocument()
+    expect(within(actions).getByLabelText(t('answer.copy', 'en'))).toBeInTheDocument()
+  })
+
+  it('says nothing is pending any more', () => {
+    render(<Conversation {...props} messages={[agentTurn('t1', 'It is 19:0', 'stopped')]} />)
+
+    expect(screen.queryByTestId('turn-pending')).not.toBeInTheDocument()
+  })
+})

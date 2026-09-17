@@ -1,6 +1,15 @@
 /** Spec 004 AC2, AC3, AC4, AC5, AC7 — the reducer, with no DOM in sight. */
 import { describe, expect, it } from 'vitest'
-import { emptyTurn, reduceEvents, reduceTurn, turnStatus, type Activity, type Turn } from './turn'
+import {
+  emptyTurn,
+  isSettled,
+  reduceEvents,
+  reduceTurn,
+  stopTurn,
+  turnStatus,
+  type Activity,
+  type Turn,
+} from './turn'
 import { failedTurn, repeatedCallTurn, twoToolTurn } from '../test/fixtures'
 
 describe('reduceEvents', () => {
@@ -184,5 +193,51 @@ describe('step numbers (spec 015)', () => {
     const turn = reduceEvents(repeatedCallTurn)
     expect(JSON.stringify(turn)).not.toMatch(/\b1[6-9]\d{11}\b/)
     expect(Object.keys(turn)).not.toContain('startedAt')
+  })
+})
+
+/**
+ * Spec 023 AC6 — a stopped turn.
+ *
+ * The transition is pure and lives here rather than in the hook, because "what a stopped turn is"
+ * is a fact about a turn, not about a fetch. `stopTurn` only moves a turn that was still running:
+ * an abort that lands after the last event must not un-finish a turn Foundry already completed.
+ */
+describe('stopTurn', () => {
+  it('moves a streaming turn to stopped', () => {
+    expect(stopTurn(reduceEvents(twoToolTurn.slice(0, 4))).status).toBe('stopped')
+  })
+
+  it('keeps everything the turn had already received', () => {
+    const partial = reduceEvents(twoToolTurn.slice(0, 6))
+    const stopped = stopTurn(partial)
+
+    expect(stopped.text).toBe(partial.text)
+    expect(stopped.reasoning).toBe(partial.reasoning)
+    expect(stopped.activities).toEqual(partial.activities)
+  })
+
+  it('is a no-op on a turn that already finished', () => {
+    const done = reduceEvents(twoToolTurn)
+    expect(done.status).toBe('done')
+    expect(stopTurn(done)).toBe(done)
+  })
+
+  it('is a no-op on a turn that failed', () => {
+    const failed = reduceEvents(failedTurn)
+    expect(failed.status).toBe('error')
+    expect(stopTurn(failed)).toBe(failed)
+  })
+
+  it('reports a stopped turn as settled, so the answer actions render', () => {
+    expect(isSettled(stopTurn(reduceEvents(twoToolTurn.slice(0, 4))))).toBe(true)
+  })
+
+  it('reports a streaming turn as not settled', () => {
+    expect(isSettled(reduceEvents(twoToolTurn.slice(0, 4)))).toBe(false)
+  })
+
+  it('says nothing more is pending once a turn is stopped', () => {
+    expect(turnStatus(stopTurn(reduceEvents(twoToolTurn.slice(0, 4)))).kind).toBe('settled')
   })
 })
