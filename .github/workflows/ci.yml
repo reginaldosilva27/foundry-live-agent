@@ -28,7 +28,12 @@ jobs:
           if [ ! -f requirements.txt ] && [ ! -f pyproject.toml ]; then
             echo "::notice::backend/ not set up yet — skipping."; exit 0
           fi
-          [ -f requirements.txt ] && pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # The BFF imports the harness contract and the tools from ai/ rather than duplicating
+          # them (§4), and `pythonpath` in pyproject.toml says so — so ai/ has to be installed here
+          # too, or the import that proves §4 is what breaks CI.
+          if [ -f ../ai/pyproject.toml ]; then pip install -e ../ai; fi
+          if [ -f pyproject.toml ]; then pip install -e ".[dev]"; fi
           ruff check .
           ruff format --check .
           # Integration tests that hit real Foundry are gated by RUN_INTEGRATION_TESTS
@@ -51,7 +56,11 @@ jobs:
           if [ ! -f requirements.txt ] && [ ! -f pyproject.toml ]; then
             echo "::notice::ai/ not set up yet — skipping."; exit 0
           fi
-          [ -f requirements.txt ] && pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # `.[dev]` and not `.[azure]` or `.[hosted]`: the contract tests replay recorded fixtures
+          # and need no credential, and the hosted-graph tests skip with a reason that says why
+          # rather than silently passing (§5). Installing more would hide that skip.
+          if [ -f pyproject.toml ]; then pip install -e ".[dev]"; fi
           ruff check .
           # Contract tests replay recorded fixtures — no Azure credential needed.
           pytest -q
