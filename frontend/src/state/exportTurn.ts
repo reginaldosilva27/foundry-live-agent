@@ -20,16 +20,24 @@ export interface ExportInput {
   model?: string
   latencyMs?: number
   at?: number
+  /** Set when this turn re-asked an earlier question (spec 026). */
+  repeatOf?: { turnId: string; agent?: string }
 }
 
 type Translate = (key: StringKey) => string
 
 export function turnToMarkdown(input: ExportInput, s: Translate): string {
-  const { question, turn, agent, model, latencyMs, at } = input
+  const { question, turn, agent, model, latencyMs, at, repeatOf } = input
   const lines: string[] = [`# ${question.replace(/\s+/g, ' ').trim() || s('app.name')}`, '']
 
   const heading = [agent, at ? new Date(at).toISOString() : undefined].filter(Boolean)
   if (heading.length > 0) lines.push(`*${heading.join(' · ')}*`, '')
+
+  // An export that omits "this was asked twice" describes a conversation that did not happen
+  // (spec 026).
+  if (repeatOf) {
+    lines.push(`*${s('turn.repeatOf').replace('{agent}', repeatOf.agent ?? agent ?? '')}*`, '')
+  }
 
   lines.push(`## ${s('export.question')}`, '', question, '')
   lines.push(`## ${s('export.answer')}`, '', turn.text.trim() || s('export.noAnswer'), '')

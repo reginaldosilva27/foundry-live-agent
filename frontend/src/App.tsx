@@ -62,6 +62,8 @@ export default function App() {
   const [missing, setMissing] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const composer = useRef<HTMLTextAreaElement>(null)
+  /** A question put back for editing (spec 026). The composer owns its own text otherwise. */
+  const [draft, setDraft] = useState<{ text: string; at: number } | undefined>(undefined)
   const [collapsed, toggleCollapsed] = useCollapsed()
   /** The stored conversation on screen, if this session opened or saved one (spec 021). */
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -237,6 +239,31 @@ export default function App() {
   }, [activeId, agents.agents, agents.error, agents.loading, history.conversations, lang])
 
   /**
+   * Ask a question again, and put one back in the composer (spec 026).
+   *
+   * `repeatTurn` is the same call the composer makes, with the origin turn named so the new one can
+   * say it is a repeat. A person pressed the control; the app carries the message it was given and
+   * decides nothing (§8) — which is why `noAutoRepeat.test.ts` watches this file for a `send` that
+   * could be reached from a turn ending.
+   *
+   * `editQuestion` sends nothing at all: it fills the composer and focuses it, through the ref spec
+   * 025 already put there for the `focusComposer` command.
+   */
+  const repeatTurn = useCallback(
+    (turnId: string, question: string) => {
+      if (!question || blocked) return
+      clearNotice()
+      void send(question, selectedAgent ?? undefined, turnId)
+    },
+    [blocked, clearNotice, selectedAgent, send],
+  )
+
+  const editQuestion = useCallback((text: string) => {
+    setDraft({ text, at: Date.now() })
+    composer.current?.focus()
+  }, [])
+
+  /**
    * The turn the panel is on, and where it sits in the session (spec 014 AC4).
    *
    * Derived rather than stored: with no `turnId` the panel follows the newest turn, which is what
@@ -406,6 +433,10 @@ export default function App() {
                 notice={missing ? translate('route.conversationMissing', lang) : undefined}
                 onSuggestion={sendToSelected}
                 onOpenTrace={openTrace}
+                onRepeat={repeatTurn}
+                onEdit={editQuestion}
+                blocked={blocked}
+                streaming={streaming}
               />
               <Composer
                 streaming={streaming}
@@ -423,6 +454,7 @@ export default function App() {
                 onSend={sendToSelected}
                 onVoice={startVoiceSession}
                 inputRef={composer}
+                draft={draft}
               />
             </>
           )}

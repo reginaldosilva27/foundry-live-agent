@@ -2923,3 +2923,39 @@ button:disabled {
   font-size: var(--fs-caption);
   color: var(--fg-3);
 }
+
+
+/* ---------- Asking again (spec 026) ---------------------------------------
+   Both turns stay on screen, because that is what the conversation Foundry holds now contains. The
+   mark is what stops the second one reading as a second question. */
+
+.turn__repeat {
+  margin: 0 0 var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+/* The edit control sits beside its question, revealed on hover and always there for the keyboard. */
+.bubble__edit {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg-4);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.bubble-row:hover .bubble__edit,
+.bubble__edit:focus-visible {
+  opacity: 1;
+}
+
+.bubble__edit:hover {
+  color: var(--fg-2);
+}

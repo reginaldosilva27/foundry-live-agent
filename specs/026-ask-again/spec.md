@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 026-ask-again |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 
@@ -72,10 +72,12 @@ reader who stopped a turn is likely to want next.
    untouched.
 7. **AC7** — Repeat is offered on a stopped turn and on an errored turn; on an errored turn it is
    offered even though there is no text to copy.
-8. **AC8** — Nothing repeats without a person acting: no code path calls send from a turn's
+8. **AC8** — When the conversation is blocked because its agent is not selectable (021 AC18), both
+   controls render unavailable and carry that same reason; pressing them sends nothing.
+9. **AC9** — Nothing repeats without a person acting: no code path calls send from a turn's
    completion, failure, or empty result (asserted as a test, not only reviewed).
-9. **AC9** — Repeat and edit are unavailable while a turn is streaming.
-10. **AC10** — Every new string ships `en` + `pt`, and both controls are SVG icons.
+10. **AC10** — Repeat and edit are unavailable while a turn is streaming.
+11. **AC11** — Every new string ships `en` + `pt`, and both controls are SVG icons.
 
 ## Contract / data impact
 
@@ -86,13 +88,25 @@ reader who stopped a turn is likely to want next.
 | **Constitution §8** | AC8 is the guard. The plan must name where the "no automatic send" invariant is tested, so it cannot be lost to a later refactor. |
 | **Docs** | `docs/how-it-works/` — the function-call round trip page already explains who decides what; a paragraph here says why a person repeating is not the app looping. |
 
+## Clarified decisions (2026-09-17)
+
+- **Neither control offers to stop a running turn.** AC9 already makes both unavailable while one is
+  streaming, and since spec 023 the reader has a stop control of their own. Two ways to end a turn
+  would be a second place deciding what "interrupt this" means; the composer's control is the one.
+- **A blocked conversation blocks repeat too.** When the turn's agent is no longer selectable, 021
+  AC18 already refuses the composer with a reason; repeat would fail in exactly the same way, so it
+  renders unavailable carrying that same reason — the pattern the agents screen, the rail and the
+  palette all use. Offering a control that fails on press is what §5 rules out.
+- **The mark always names the agent**, not only when it differs. AC4 already requires it, and the
+  alternative makes absence mean "the same agent", which is an inference the reader has to perform
+  on a screen that could simply have said so.
+- **A repeat always goes to the same conversation.** Repeating into a fresh one would be the app
+  deciding to fork state Foundry owns — and a reader who wants that has **New conversation** next to
+  them. The one thing repeat means is "ask that again, here".
+
 ## Open questions (clarify before planning)
 
-- [ ] Does editing a question offer to *stop* the running turn first, if one is running?
-- [ ] Should repeat be offered when the previous turn's agent is no longer selectable (021 AC18's
-      blocked state)?
-- [ ] Does the repeat mark name the agent always, or only when it differs from the first answer's?
-- [ ] Is there any case for repeating a turn into a *new* conversation instead of the same one?
+*None — resolved above.*
 
 ## Out of scope / deferred
 

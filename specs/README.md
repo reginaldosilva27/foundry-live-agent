@@ -79,7 +79,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 023 | [The composer, and stopping a turn](023-composer-and-stop/spec.md) | 4 | ✅ done |
 | 024 | [Addressable — the app gets URLs](024-addressable/spec.md) | 4 | ✅ done |
 | 025 | [The keyboard — shortcuts and a command palette](025-keyboard/spec.md) | 4 | ✅ done |
-| 026 | [Asking again — repeat and edit a question](026-ask-again/spec.md) | 4 | ✏️ draft |
+| 026 | [Asking again — repeat and edit a question](026-ask-again/spec.md) | 4 | ✅ done |
 | 027 | [History you can search, and take with you](027-history-search-export/spec.md) | 4 | ✏️ draft |
 | 028 | [What a turn cost](028-turn-cost/spec.md) | 4 | ✏️ draft |
 | 029 | [The shape of a turn — a measured timeline](029-turn-timeline/spec.md) | 4 | ✏️ draft |

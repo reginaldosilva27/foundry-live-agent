@@ -102,3 +102,32 @@ data: {"type":"error","message":"APIError: Resource not found ModelGateway respo
 ```
 
 A terminal frame, not a hung connection. That is guarantee 3 doing its job on a real failure.
+
+## Asking again is not the app looping (spec 026)
+
+The chat has a **repeat** control, and it looks like the thing constitution §8 forbids. It is worth
+being precise about why it is not.
+
+§8 is about the **app** deciding: re-prompting the model, looping on its output, choosing what to
+send next. A person pressing repeat is a person asking again, and the app carries the message it is
+given — exactly as it carries a message typed into the composer. Which agent answers, whether a tool
+is called, how many legs the turn takes: all of that stays where it was, in Foundry.
+
+The line that must not be crossed is **automatic retry** — the app deciding, on its own, that an
+answer was bad enough to ask again. That is a permanent non-goal, not a feature that has not been
+built yet, and it has a permanent test: `frontend/src/state/noAutoRepeat.test.ts` fails if a `send`
+becomes reachable from a turn's completion, its failure, or its emptiness, and it keeps a closed list
+of the files allowed to start a turn at all.
+
+That test is a **tripwire, not a proof**. It cannot establish the absence of automatic sending in
+general; it fails loudly when someone adds the obvious version of it. The file says so in its own
+header, because a guard that is read as a proof is worse than no guard (§5).
+
+Two consequences visible on screen:
+
+- **Both turns stay.** The repeat is appended, and the original question and answer remain where
+  they were — because that is what the conversation Foundry holds now contains, and hiding one would
+  make the screen disagree with the service.
+- **The repeat names its agent.** A reader who switched agents and then repeated is asking a
+  *different* agent the same question, which is a reasonable thing to want and a misleading thing to
+  leave unsaid.

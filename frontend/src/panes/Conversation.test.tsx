@@ -30,6 +30,8 @@ const props = {
   model: 'conn/gpt-4o',
   onSuggestion: () => {},
   onOpenTrace: () => {},
+  onRepeat: () => {},
+  onEdit: () => {},
 }
 
 describe('the conversation column', () => {
@@ -212,13 +214,18 @@ describe('the answer actions (spec 021)', () => {
     expect(screen.queryByTestId('answer-actions')).toBeNull()
   })
 
-  it('offers copy, download and trace once the turn is done', () => {
+  it('offers copy, download, repeat and trace once the turn is done', () => {
+    // Named rather than counted since spec 026 added the fourth: a count tells you the number
+    // changed and not which control went missing.
     render(
       <Conversation {...props} messages={[question, agentTurn('t1', 'It is 19:00.', 'done')]} />,
     )
 
-    const actions = screen.getByTestId('answer-actions')
-    expect(within(actions).getAllByRole('button')).toHaveLength(3)
+    const actions = within(screen.getByTestId('answer-actions'))
+    for (const key of ['answer.copy', 'answer.download', 'answer.repeat', 'answer.trace'] as const) {
+      expect(actions.getByLabelText(t(key, 'en'))).toBeInTheDocument()
+    }
+    expect(actions.getAllByRole('button')).toHaveLength(4)
   })
 
   it('opens the trace panel on that turn', async () => {
@@ -245,9 +252,12 @@ describe('the answer actions (spec 021)', () => {
     }
     render(<Conversation {...props} messages={[question, failed]} />)
 
-    const actions = screen.getByTestId('answer-actions')
-    expect(within(actions).getAllByRole('button')).toHaveLength(1)
-    expect(within(actions).getByRole('button', { name: t('answer.trace', 'en') })).toBeInTheDocument()
+    // Two things to do with a failure: look at what happened, and ask again (spec 026 AC7).
+    const actions = within(screen.getByTestId('answer-actions'))
+    expect(actions.getByLabelText(t('answer.trace', 'en'))).toBeInTheDocument()
+    expect(actions.getByLabelText(t('answer.repeat', 'en'))).toBeInTheDocument()
+    expect(actions.queryByLabelText(t('answer.copy', 'en'))).not.toBeInTheDocument()
+    expect(actions.getAllByRole('button')).toHaveLength(2)
   })
 
   it('exports the question that caused the turn, not the one before it', async () => {

@@ -25,6 +25,14 @@ export interface AgentMessage {
   turn: Turn
   startedAt: number
   endedAt?: number
+  /**
+   * This turn answers a question that had been asked before (spec 026).
+   *
+   * Both turns stay on screen, because that is what the conversation Foundry holds now contains —
+   * so the second one has to say it is a repeat, and name who answered it, which may not be who
+   * answered the first.
+   */
+  repeatOf?: { turnId: string; agent?: string }
 }
 
 /** The line that opens a replayed voice session in the chat (spec 007). */
@@ -42,8 +50,11 @@ export interface AgentStream {
   /** Foundry's id for this conversation, once it has given us one. Read-only: the app stores it
    *  beside the transcript so reopening can resume rather than start over (spec 021). */
   conversationId?: string
-  /** `agent` names who answers; absent means the BFF's configured default (spec 019). */
-  send: (text: string, agent?: string) => Promise<void>
+  /**
+   * `agent` names who answers; absent means the BFF's configured default (spec 019).
+   * `repeatOf` names the turn this re-asks, when a person pressed repeat (spec 026).
+   */
+  send: (text: string, agent?: string, repeatOf?: string) => Promise<void>
   /**
    * Stop listening to the turn in flight (spec 023).
    *
@@ -110,7 +121,7 @@ export function useAgentStream(): AgentStream {
     current.controller.abort()
   }, [])
 
-  const send = useCallback(async (text: string, agent?: string) => {
+  const send = useCallback(async (text: string, agent?: string, repeatOf?: string) => {
     const id = `turn_${nextId.current++}`
     const startedAt = Date.now()
     const flight = { controller: new AbortController(), aborted: false }
@@ -119,7 +130,13 @@ export function useAgentStream(): AgentStream {
     setMessages((prev) => [
       ...prev,
       { role: 'user', id: `${id}_user`, text },
-      { role: 'agent', id, turn: emptyTurn(), startedAt },
+      {
+        role: 'agent',
+        id,
+        turn: emptyTurn(),
+        startedAt,
+        ...(repeatOf ? { repeatOf: { turnId: repeatOf, agent } } : {}),
+      },
     ])
     setStreaming(true)
 

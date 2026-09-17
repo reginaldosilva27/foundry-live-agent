@@ -173,6 +173,18 @@ export const PencilIcon = (p: IconProps) =>
 export const StopIcon = (p: IconProps) =>
   svg(<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none" />, p)
 
+/** A loop back to the start: ask that again (spec 026). */
+export const RepeatIcon = (p: IconProps) =>
+  svg(
+    <>
+      <polyline points="4 11 4 7 16 7" />
+      <polyline points="12 3 16 7 12 11" />
+      <polyline points="20 13 20 17 8 17" />
+      <polyline points="12 13 8 17 12 21" />
+    </>,
+    p,
+  )
+
 export const ChevronDownIcon = (p: IconProps) => svg(<polyline points="5 9 12 16 19 9" />, p)
 
 export const PlusIcon = (p: IconProps) =>

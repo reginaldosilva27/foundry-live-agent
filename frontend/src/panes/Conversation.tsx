@@ -23,6 +23,13 @@ interface Props {
   onSuggestion: (text: string) => void
   /** Open the trace panel for a turn, optionally on one of its calls (spec 009). */
   onOpenTrace: (turnId: string, callId?: string) => void
+  /** Ask a question again, and put one back in the composer (spec 026). */
+  onRepeat: (turnId: string, question: string) => void
+  onEdit: (text: string) => void
+  /** Why this conversation cannot be continued, if it cannot (021 AC18). */
+  blocked?: string
+  /** Nothing may be asked again while a turn is in flight (026 AC10). */
+  streaming?: boolean
 }
 
 /**
@@ -79,7 +86,18 @@ function LiveLine({ turn }: { turn: Turn }) {
 /** How far from the bottom still counts as "following the stream". */
 const STICKY_PX = 120
 
-export function Conversation({ messages, model, agent, notice, onSuggestion, onOpenTrace }: Props) {
+export function Conversation({
+  messages,
+  model,
+  agent,
+  notice,
+  onSuggestion,
+  onOpenTrace,
+  onRepeat,
+  onEdit,
+  blocked,
+  streaming,
+}: Props) {
   const s = useT()
   const column = useRef<HTMLDivElement>(null)
 
@@ -118,7 +136,11 @@ export function Conversation({ messages, model, agent, notice, onSuggestion, onO
               <span className="turn__divider-clock">{formatClock(message.seconds)}</span>
             </p>
           ) : message.role === 'user' ? (
-            <MessageBubble key={message.id} text={message.text} />
+            <MessageBubble
+              key={message.id}
+              text={message.text}
+              onEdit={streaming || blocked ? undefined : () => onEdit(message.text)}
+            />
           ) : (
             <section key={message.id} className="turn" aria-label={s('turn.agent')}>
               <div className="turn__avatar" aria-hidden="true">
@@ -126,6 +148,15 @@ export function Conversation({ messages, model, agent, notice, onSuggestion, onO
               </div>
 
               <div className="turn__stack">
+                {message.repeatOf && (
+                  <p className="turn__repeat" data-testid="turn-repeat">
+                    {s('turn.repeatOf').replace(
+                      '{agent}',
+                      message.repeatOf.agent ?? agent ?? '',
+                    )}
+                  </p>
+                )}
+
                 <ActivityPanel
                   turn={message.turn}
                   onOpenCall={(callId) => onOpenTrace(message.id, callId)}
@@ -160,6 +191,13 @@ export function Conversation({ messages, model, agent, notice, onSuggestion, onO
                       question={questionFor(messages, message.id)}
                       agent={agent}
                       model={model}
+                      repeatOf={message.repeatOf}
+                      blocked={blocked}
+                      onRepeat={
+                        streaming
+                          ? undefined
+                          : () => onRepeat(message.id, questionFor(messages, message.id))
+                      }
                       latencyMs={
                         message.endedAt ? message.endedAt - message.startedAt : undefined
                       }

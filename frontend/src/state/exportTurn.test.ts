@@ -103,3 +103,33 @@ describe('exportFilename', () => {
     )
   })
 })
+
+/** Spec 026 — an export that omits "this was asked twice" describes a conversation that did not happen. */
+describe('a repeated turn', () => {
+  it('says so, naming who answered it', () => {
+    const document_ = turnToMarkdown(
+      {
+        question: 'what time is it',
+        turn: reduceEvents([{ type: 'text_delta', text: 'It is 19:00.' }, { type: 'done' }]),
+        agent: 'foundry-live-agent',
+        repeatOf: { turnId: 'turn_0', agent: 'foundry-live-agent-hosted' },
+      },
+      (key) => t(key, 'en'),
+    )
+
+    expect(document_).toContain('foundry-live-agent-hosted')
+  })
+
+  it('says nothing about a repeat when the turn is not one', () => {
+    const document_ = turnToMarkdown(
+      {
+        question: 'what time is it',
+        turn: reduceEvents([{ type: 'text_delta', text: 'It is 19:00.' }, { type: 'done' }]),
+        agent: 'foundry-live-agent',
+      },
+      (key) => t(key, 'en'),
+    )
+
+    expect(document_).not.toContain(t('turn.repeatOf', 'en').replace(' · {agent}', ''))
+  })
+})
