@@ -168,6 +168,37 @@ describe('the rail', () => {
     expect(screen.getByText(notice)).toBeInTheDocument()
   })
 
+  /**
+   * The defect this rail keeps re-learning: the middle grows and the bottom goes with it.
+   *
+   * 021 put the overflow on the history's own list, which is one list per age group — with three
+   * groups on screen the rail painted over the language switch and the footer again (Chrome,
+   * 1440x900, seven conversations). So the rule is structural and asserted here rather than in a
+   * stylesheet a browser has to be running to apply: what grows is *inside* the scrolling region,
+   * and what must never move is outside it.
+   */
+  it('keeps the language switch and the footer out of the region that scrolls', () => {
+    const { container } = show({
+      history: {
+        ...props.history,
+        conversations: [
+          { id: 'c1', agent: null, title: 'today', updatedAt: Date.now(), messages: [] },
+          { id: 'c2', agent: null, title: 'older', updatedAt: 0, messages: [] },
+        ],
+      },
+    })
+
+    const scroll = container.querySelector('.sidebar__scroll')!
+    expect(scroll).not.toBeNull()
+    expect(scroll.contains(screen.getByRole('button', { name: /today/ }))).toBe(true)
+    expect(scroll.contains(screen.getByTestId('answering-agent'))).toBe(true)
+
+    expect(scroll.contains(screen.getByTestId('sidebar-model'))).toBe(false)
+    expect(scroll.contains(screen.getByRole('group', { name: t('sidebar.language', 'en') }))).toBe(
+      false,
+    )
+  })
+
   it('keeps the conversations this browser drew', () => {
     show({
       history: {

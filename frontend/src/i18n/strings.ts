@@ -113,7 +113,6 @@ export const strings = {
   'nav.agents': { en: 'Agents', pt: 'Agentes' },
   'nav.collapse': { en: 'Collapse sidebar', pt: 'Recolher barra lateral' },
   'nav.expand': { en: 'Expand sidebar', pt: 'Expandir barra lateral' },
-  'history.title': { en: 'History', pt: 'Histórico' },
   'history.today': { en: 'Today', pt: 'Hoje' },
   'history.week': { en: 'Last 7 days', pt: 'Últimos 7 dias' },
   'history.older': { en: 'Older', pt: 'Mais antigas' },

@@ -6,7 +6,10 @@
  * browser kept beside the conversation ids Foundry gave it. Saying so once, quietly, is the §5 part
  * of the feature.
  *
- * Grouping is `groupByAge`, which omits an empty group — a heading over nothing says nothing.
+ * Grouping is `groupByAge`, which omits an empty group — a heading over nothing says nothing. The
+ * groups are the only headings: a `HISTORY` label above `TODAY` was a second level of the same
+ * label, and in a 248px rail two rows of heading over two rows of content is what "cluttered"
+ * looks like. The date already says what the list is.
  */
 import { useState } from 'react'
 import { PencilIcon, TrashIcon } from '../components/Icon'
@@ -49,13 +52,11 @@ export function HistoryList({
 
   return (
     <div className="history">
-      <p className="sidebar__section-title">{s('history.title')}</p>
-
       {conversations.length === 0 && <p className="sidebar__note">{s('history.empty')}</p>}
 
       {groupByAge(conversations, now ?? mountedAt).map(({ group, items }) => (
         <div key={group} className="history__group">
-          <p className="history__heading">{s(GROUP_KEYS[group])}</p>
+          <p className="sidebar__section-title">{s(GROUP_KEYS[group])}</p>
           <ul className="history__list">
             {items.map((conversation) => (
               <li key={conversation.id} className="history__row">

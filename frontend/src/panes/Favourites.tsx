@@ -38,7 +38,7 @@ export function Favourites({ rows, answering, onSelect }: Props) {
               aria-current={agent.name === answering ? 'true' : undefined}
               onClick={() => onSelect(agent.name)}
             >
-              <Monogram name={agent.name} size={22} />
+              <Monogram name={agent.name} size={20} />
               <span className="favourites__name">{agent.name}</span>
             </button>
           </li>

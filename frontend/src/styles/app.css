@@ -200,21 +200,54 @@ button:disabled {
   background: var(--ds-n-50);
 }
 
-/* ---------- Sidebar ---------- */
+/* ---------- Sidebar -------------------------------------------------------
+   Three blocks: a pinned head, a scrolling middle, a pinned foot. What grows with use — the agent,
+   the favourites, the history — is in the middle and nowhere else, which is the whole of the
+   overflow rule. The horizontal padding is the rail's, the rows carry their own inset, and the two
+   together put every label in the column on one x. */
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  padding: var(--sp-5) var(--sp-4);
+  padding: var(--sp-4) var(--sp-3);
   background: var(--ds-ink);
   color: var(--fg-on-inverse);
   overflow: hidden;
+}
+
+.sidebar__head {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* The one scrolling region in the rail. `min-height: 0` is half the rule: without it a flex child
+   refuses to shrink below its content and the foot leaves the screen instead. */
+.sidebar__scroll {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ds-n-700) transparent;
+}
+
+.sidebar__foot {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--ds-n-800);
 }
 
 .sidebar__brand {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  padding: 0 var(--sp-2) var(--sp-1);
 }
 
 .sidebar__collapse {
@@ -233,7 +266,9 @@ button:disabled {
   color: var(--ds-n-200);
 }
 
-/* --- Navigation (spec 021) ----------------------------------------------- */
+/* --- Navigation (spec 021) -----------------------------------------------
+   16px mark + a 12px gap puts a nav label at the same x as a favourite's name behind its 20px
+   monogram and an 8px gap. That is why the two gaps differ: the labels are what has to line up. */
 .sidebar__nav {
   display: flex;
   flex-direction: column;
@@ -244,7 +279,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2);
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
@@ -275,7 +310,7 @@ button:disabled {
    The labels leave the layout, not the accessibility tree: every control carries `aria-label`
    (AC2), so a screen reader hears the same rail a sighted reader sees expanded. */
 .sidebar[data-collapsed='true'] {
-  padding: var(--sp-5) var(--sp-2);
+  padding: var(--sp-4) var(--sp-2);
   align-items: center;
 }
 
@@ -285,9 +320,14 @@ button:disabled {
 .sidebar[data-collapsed='true'] .answering__naming,
 .sidebar[data-collapsed='true'] .agents__switched,
 .sidebar[data-collapsed='true'] .sidebar__section-title,
-.sidebar[data-collapsed='true'] .sidebar__footer,
-.sidebar[data-collapsed='true'] .sidebar__lang {
+.sidebar[data-collapsed='true'] .sidebar__foot {
   display: none;
+}
+
+/* 64px of rail is the marks, centred, and nothing else. */
+.sidebar[data-collapsed='true'] .sidebar__head,
+.sidebar[data-collapsed='true'] .sidebar__scroll {
+  width: 100%;
 }
 
 .sidebar[data-collapsed='true'] .sidebar__brand,
@@ -296,6 +336,11 @@ button:disabled {
 .sidebar[data-collapsed='true'] .answering {
   justify-content: center;
   padding-inline: var(--sp-2);
+}
+
+.sidebar[data-collapsed='true'] .favourites,
+.sidebar[data-collapsed='true'] .sidebar__section {
+  margin-top: var(--sp-2);
 }
 
 .sidebar[data-collapsed='true'] .sidebar__collapse {
@@ -313,7 +358,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
   border: 0;
   border-radius: var(--r-pill);
   background: var(--ds-blue);
@@ -327,17 +372,22 @@ button:disabled {
   background: var(--ds-blue-500);
 }
 
+/* The rail's only label style. It used to have three — an uppercase mono `FAVOURITES`, an uppercase
+   mono `HISTORY`, and a mixed-case mono `Today` under it — which is a lot of heading for a 248px
+   column that mostly holds four rows. One treatment, and the age groups are the history's heading. */
 .sidebar__section-title {
-  margin: 0 0 var(--sp-2);
+  margin: var(--sp-4) 0 var(--sp-1);
+  padding-inline: var(--sp-2);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
-  color: var(--ds-n-500);
+  color: var(--ds-n-600);
 }
 
 .sidebar__note {
   margin: var(--sp-2) 0 0;
+  padding-inline: var(--sp-2);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
   color: var(--ds-n-500);
@@ -354,34 +404,41 @@ button:disabled {
   width: 100%;
   gap: var(--sp-2);
   padding: var(--sp-2);
-  border: 1px solid var(--ds-n-800);
-  border-radius: var(--r-md);
+  border: 0;
+  border-radius: var(--r-sm);
   background: var(--ds-ink-2);
   text-align: left;
-  transition: border-color var(--dur-fast) var(--ease-out);
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
 .answering:hover {
-  border-color: var(--ds-blue);
+  background: var(--ds-n-800);
 }
 
 .answering__naming {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 1px;
 }
 
+/* One line, ellipsised. `overflow-wrap: anywhere` let `foundry-live-agent-hosted` take three lines
+   and make the one status row in the rail the tallest thing in it. */
 .answering__name {
+  overflow: hidden;
   font-size: var(--fs-body-s);
+  line-height: var(--lh-snug);
   color: var(--ds-n-100);
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .answering__state {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
+  line-height: var(--lh-snug);
   letter-spacing: var(--ls-wide);
-  color: var(--ds-blue);
+  color: var(--ds-blue-500);
 }
 
 /* --- The mark an agent gets (spec 021) ------------------------------------
@@ -413,16 +470,13 @@ button:disabled {
 }
 
 /* --- History, kept in this browser (spec 021) -----------------------------
-   The region scrolls inside itself. Without `min-height: 0` a flex child refuses to shrink below
-   its content, and a long history pushes the language switch and the footer off the bottom — the
-   exact failure the agent list used to have. */
+   It does not scroll on its own any more: `.sidebar__scroll` above does, for the whole middle of
+   the rail. 021 put the overflow here, on a list that exists once *per age group* — three groups,
+   three scrollers, none of them able to shrink, and the footer off the bottom again. */
 
 .history {
   display: flex;
-  min-height: 0;
-  flex: 1;
   flex-direction: column;
-  gap: var(--sp-2);
 }
 
 .history__group {
@@ -431,21 +485,8 @@ button:disabled {
   gap: 2px;
 }
 
-.history:has(.history__group) .history__group:first-of-type {
-  margin-top: var(--sp-1);
-}
-
-.history__heading {
-  margin: var(--sp-2) 0 var(--sp-1);
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  letter-spacing: var(--ls-wide);
-  color: var(--ds-n-600);
-}
-
 .history__list {
   display: flex;
-  overflow-y: auto;
   margin: 0;
   padding: 0;
   flex-direction: column;
@@ -471,6 +512,7 @@ button:disabled {
   overflow: hidden;
   padding: var(--sp-2);
   border: 0;
+  border-radius: var(--r-sm);
   background: transparent;
   color: var(--ds-n-300);
   font-size: var(--fs-body-s);
@@ -532,7 +574,8 @@ button:disabled {
 /* Said once, quietly, and never dropped: this is a drawing this browser kept, not Foundry's
    conversation store (§5). */
 .history__note {
-  margin: var(--sp-2) 0 0;
+  margin: var(--sp-3) 0 0;
+  padding-inline: var(--sp-2);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
   color: var(--ds-n-600);
@@ -558,7 +601,7 @@ button:disabled {
 .agents__switched {
   display: flex;
   gap: var(--sp-2);
-  margin-top: var(--sp-2);
+  margin: var(--sp-2) var(--sp-2) 0;
   padding-left: var(--sp-2);
   border-left: 2px solid var(--ds-blue-700);
   font-size: var(--fs-caption);
@@ -568,10 +611,11 @@ button:disabled {
 .sidebar__lang {
   display: flex;
   gap: var(--sp-1);
+  padding-inline: var(--sp-2);
 }
 
 .sidebar__lang-option {
-  padding: var(--sp-1) var(--sp-3);
+  padding: 2px var(--sp-2);
   border: 1px solid var(--ds-n-700);
   border-radius: var(--r-pill);
   background: transparent;
@@ -589,12 +633,11 @@ button:disabled {
 }
 
 .sidebar__footer {
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--ds-n-800);
+  padding-inline: var(--sp-2);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  line-height: 1.7;
-  color: var(--ds-n-500);
+  line-height: var(--lh-base);
+  color: var(--ds-n-600);
   overflow-wrap: anywhere;
 }
 
@@ -604,21 +647,21 @@ button:disabled {
   color: inherit;
 }
 
+/* A 58px rail under `model` bought a column nothing else lined up with, and spent it on a gap. */
 .sidebar__key {
-  display: inline-block;
-  min-width: 58px;
-  color: var(--ds-n-600);
+  margin-right: var(--sp-2);
+  color: var(--ds-n-700);
 }
 
 .sidebar__gateway {
-  color: var(--ds-blue-500);
+  color: var(--ds-n-500);
 }
 
 .sidebar__transport {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-top: var(--sp-2) !important;
+  margin-top: var(--sp-1) !important;
 }
 
 /* ---------- Header ---------- */
@@ -2699,7 +2742,6 @@ button:disabled {
 .favourites {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
 }
 
 .favourites__list {
@@ -2716,7 +2758,7 @@ button:disabled {
   align-items: center;
   width: 100%;
   gap: var(--sp-2);
-  padding: var(--sp-1) var(--sp-2);
+  padding: var(--sp-2);
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;

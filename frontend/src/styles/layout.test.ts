@@ -58,15 +58,37 @@ describe('app.css', () => {
    * This is the defect the spec opens on: the agent list grew with the project and pushed the
    * language switch and the footer off the bottom of the rail. A flex child refuses to shrink below
    * its content without `min-height: 0`, so the rule is only half-written without it.
+   *
+   * 021 put that overflow on `.history__list`, which is one list **per age group**: with `Today`,
+   * `Last 7 days` and `Older` on screen the three lists each scrolled inside a region that could
+   * still not shrink, and the rail painted straight over the language switch and the footer —
+   * measured in Chrome at 1440x900 with seven conversations stored. The whole middle of the rail
+   * is one scrolling region now, so there is exactly one place for the overflow to live.
    */
   it('scrolls the history inside the rail, and the agents screen inside the main column', () => {
-    const history = css.split('.history {')[1].split('}')[0]
-    expect(history).toContain('min-height: 0')
-    expect(css.split('.history__list {')[1].split('}')[0]).toContain('overflow-y: auto')
+    const rail = css.split('.sidebar__scroll {')[1].split('}')[0]
+    expect(rail).toContain('overflow-y: auto')
+    expect(rail).toContain('min-height: 0')
 
     const screen = css.split('.agents-screen {')[1].split('}')[0]
     expect(screen).toContain('overflow-y: auto')
     expect(screen).toContain('min-height: 0')
+  })
+
+  /**
+   * The rail reads as one list, so it is drawn with one set of metrics: every row in it — a view,
+   * a favourite, a conversation, the agent that is answering — starts its label at the same x.
+   * Divergent paddings are what made the column look like four stacked widgets.
+   */
+  it('gives every row in the rail the same inset', () => {
+    // Anchored at the start of a line: `.answering {` is a substring of the collapsed rail's
+    // `.sidebar[data-collapsed='true'] .answering {`, and a naive split reads that one instead.
+    const rule = (selector: string) =>
+      css.match(new RegExp(`^\\${selector} \\{([^}]*)\\}`, 'm'))![1]
+
+    for (const selector of ['.sidebar__nav-item', '.favourites__row', '.history__open', '.answering']) {
+      expect(rule(selector)).toMatch(/padding: var\(--sp-2\);/)
+    }
   })
 
   it('writes no colour of its own — every value comes from a design-system token', () => {
