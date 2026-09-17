@@ -7,7 +7,7 @@
  *
  * A turn that failed keeps only **Trace**, which is the one thing there is to do with a failure.
  */
-import { ActivityIcon, CopyIcon, DownloadIcon } from './Icon'
+import { ActivityIcon, CopyIcon, DownloadIcon, RepeatIcon } from './Icon'
 import { useCopy } from '../hooks/useCopy'
 import { useT } from '../i18n/context'
 import { exportFilename, turnToMarkdown } from '../state/exportTurn'
@@ -21,14 +21,36 @@ interface Props {
   model?: string
   latencyMs?: number
   onOpenTrace: () => void
+  /**
+   * Ask the same question again (spec 026).
+   *
+   * A person pressing this is a person asking again — the app carries the message it is given and
+   * decides nothing (§8). Absent where there is nothing to repeat into, such as a voice session
+   * replayed into the chat with no question before it.
+   */
+  onRepeat?: () => void
+  /** Set when this turn re-asked an earlier question, so the export says so (spec 026). */
+  repeatOf?: { turnId: string; agent?: string }
+  /** Why this conversation cannot be continued, if it cannot (021 AC18). */
+  blocked?: string
 }
 
-export function AnswerActions({ turn, question, agent, model, latencyMs, onOpenTrace }: Props) {
+export function AnswerActions({
+  turn,
+  question,
+  agent,
+  model,
+  latencyMs,
+  onOpenTrace,
+  onRepeat,
+  repeatOf,
+  blocked,
+}: Props) {
   const s = useT()
   const { state, copy } = useCopy()
 
   const save = () => {
-    const document_ = turnToMarkdown({ question, turn, agent, model, latencyMs, at: Date.now() }, s)
+    const document_ = turnToMarkdown({ question, turn, agent, model, latencyMs, repeatOf, at: Date.now() }, s)
     saveFile(exportFilename(question, new Date()), document_)
   }
 
@@ -54,6 +76,27 @@ export function AnswerActions({ turn, question, agent, model, latencyMs, onOpenT
           >
             <DownloadIcon size={14} />
           </button>
+        </>
+      )}
+
+      {onRepeat && (
+        <>
+          <button
+            type="button"
+            className="answer-actions__button"
+            title={blocked ?? s('answer.repeat')}
+            aria-label={s('answer.repeat')}
+            aria-describedby={blocked ? 'answer-repeat-blocked' : undefined}
+            disabled={Boolean(blocked)}
+            onClick={onRepeat}
+          >
+            <RepeatIcon size={14} />
+          </button>
+          {blocked && (
+            <span id="answer-repeat-blocked" className="visually-hidden">
+              {blocked}
+            </span>
+          )}
         </>
       )}
 

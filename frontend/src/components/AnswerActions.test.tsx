@@ -31,6 +31,7 @@ function show(overrides: Record<string, unknown> = {}) {
         model="gpt-5.5"
         latencyMs={1200}
         onOpenTrace={() => {}}
+        onRepeat={() => {}}
         {...overrides}
       />
     </LangContext.Provider>,
@@ -91,5 +92,58 @@ describe('the answer actions', () => {
     await userEvent.click(screen.getByRole('button', { name: t('answer.trace', 'en') }))
 
     expect(onOpenTrace).toHaveBeenCalled()
+  })
+})
+
+/**
+ * Spec 026 AC1, AC7, AC8, AC10 — asking the same question again.
+ *
+ * Repeat is offered wherever asking again is a reasonable next move, which includes the two states
+ * where there is nothing to copy: a turn that failed, and a turn the reader stopped (spec 023).
+ */
+describe('repeat', () => {
+  it('is offered on a finished turn, with an accessible name (AC1)', () => {
+    show()
+
+    expect(screen.getByLabelText(t('answer.repeat', 'en'))).toBeInTheDocument()
+  })
+
+  it('asks the same question again when pressed (AC2)', async () => {
+    const onRepeat = vi.fn()
+    show({ onRepeat })
+
+    await userEvent.click(screen.getByLabelText(t('answer.repeat', 'en')))
+
+    expect(onRepeat).toHaveBeenCalled()
+  })
+
+  it('is offered on a turn that failed, where there is nothing to copy (AC7)', () => {
+    show({ turn: { ...turn, text: '', status: 'error', error: { message: 'the model was not found' } } })
+
+    expect(screen.getByLabelText(t('answer.repeat', 'en'))).toBeInTheDocument()
+    expect(screen.queryByLabelText(t('answer.copy', 'en'))).not.toBeInTheDocument()
+  })
+
+  it('is offered on a turn the reader stopped (AC7)', () => {
+    show({ turn: { ...turn, text: 'It is 19:0', status: 'stopped' } })
+
+    expect(screen.getByLabelText(t('answer.repeat', 'en'))).toBeInTheDocument()
+  })
+
+  it('is unavailable when the conversation cannot be continued, carrying that reason (AC8)', () => {
+    show({ blocked: 'That agent is no longer available.' })
+
+    const repeat = screen.getByLabelText(t('answer.repeat', 'en'))
+    expect(repeat).toBeDisabled()
+    expect(repeat).toHaveAccessibleDescription('That agent is no longer available.')
+  })
+
+  it('sends nothing when it is unavailable and pressed anyway (AC8)', async () => {
+    const onRepeat = vi.fn()
+    show({ blocked: 'blocked', onRepeat })
+
+    await userEvent.click(screen.getByLabelText(t('answer.repeat', 'en')))
+
+    expect(onRepeat).not.toHaveBeenCalled()
   })
 })

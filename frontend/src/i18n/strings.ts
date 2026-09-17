@@ -203,6 +203,13 @@ export const strings = {
 
   // --- Composer ------------------------------------------------------------
   'composer.placeholder': { en: 'Ask the agent something', pt: 'Pergunte algo ao agente' },
+  // --- Asking again (spec 026) ----------------------------------------------
+  // A person pressing repeat is a person asking again. The mark exists because both turns stay on
+  // screen, and without it the second reads as a second question.
+  'answer.repeat': { en: 'Ask again', pt: 'Perguntar de novo' },
+  'question.edit': { en: 'Edit this question', pt: 'Editar esta pergunta' },
+  'turn.repeatOf': { en: 'Asked again \u00b7 {agent}', pt: 'Perguntado de novo \u00b7 {agent}' },
+
   // --- The keyboard and the palette (spec 025) ------------------------------
   // Every action's label lives here and is named by `state/keys.ts`, so the palette entry, the
   // tooltip and the binding all say the same thing (§4).

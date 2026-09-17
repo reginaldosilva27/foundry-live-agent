@@ -28,6 +28,13 @@ interface Props {
   onVoice: () => void
   /** So the `focusComposer` command can reach it (spec 025). */
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
+  /**
+   * A question handed back for editing (spec 026).
+   *
+   * Carries an `at` so two edits of the *same* text are two events. The field owns its text the rest
+   * of the time; this only replaces it when a new draft arrives.
+   */
+  draft?: { text: string; at: number }
 }
 
 /** Past this the field scrolls itself rather than eating the conversation. Mirrored in the CSS. */
@@ -42,11 +49,21 @@ export function Composer({
   onStop,
   onVoice,
   inputRef,
+  draft,
 }: Props) {
   const s = useT()
   const [value, setValue] = useState('')
   const own = useRef<HTMLTextAreaElement>(null)
   const field = inputRef ?? own
+
+  // Adjusting state when a prop changes, rather than in an effect: React re-renders this component
+  // before touching the DOM, so there is no flash of the old text and no cascading render. An
+  // effect here would be synchronising with nothing external — the parent already knows.
+  const [seenDraft, setSeenDraft] = useState(draft?.at)
+  if (draft && draft.at !== seenDraft) {
+    setSeenDraft(draft.at)
+    setValue(draft.text)
+  }
   const stopped = streaming || Boolean(blocked)
 
   /**
