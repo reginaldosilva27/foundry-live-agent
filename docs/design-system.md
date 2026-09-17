@@ -168,3 +168,45 @@ Not present in the mock, needed by the specs, and **built in spec 004**:
   languages and a second one that no component contains prose. A toggle in the sidebar switches.
 - **Responsive behaviour** — below 1100px the trace panel becomes a fixed overlay; below 760px the
   sidebar drops out. Asserted as a CSS rule (jsdom applies no stylesheet), not as a measurement.
+
+## The keyboard (spec 025)
+
+`frontend/src/state/keys.ts` is the single source of truth for every binding. The handler dispatches
+from it, the palette labels itself from it, and a test scans the sources for key literals that
+escaped (§4).
+
+| Key | Does | Fires while typing? |
+|---|---|---|
+| `⌘K` / `Ctrl+K` | open the command palette | yes |
+| `⌘B` / `Ctrl+B` | collapse or expand the rail | no |
+| `/` | focus the composer | no |
+| `n` | new conversation | no |
+| `t` | open or close the trace panel | no |
+| `←` `→` | previous / next turn in the trace panel | no |
+
+Three rules hold this together, and each is a test rather than an intention:
+
+- **No chord the browser captures above the page.** `⌘⇧N` is a new incognito window and cannot be
+  prevented; a binding the app cannot honour is worse than none. `⌘K` is the one contested chord
+  that stays — the page wins while it has focus, and the palette has a visible control for when it
+  does not.
+- **A bare letter never fires while somebody is typing.** One predicate asks whether the focused
+  element is a field, tested against `input`, `textarea` and `contenteditable` directly. It is the
+  piece that would break quietly.
+- **`Escape` is not in the table.** It already has four owners — the payload reader, `useModalFocus`,
+  the agent chip's menu, the history rename — and each closes the thing the reader is actually in.
+  That is component behaviour, not an app-wide command, and a global handler would collide with all
+  four. The palette takes its own, like every other overlay.
+
+Every command also has an on-screen control: the keyboard is a faster way in, never the only one.
+
+### The command palette
+
+One field over the app reaching agents, this browser's conversations, and the app's actions. It
+**decides nothing**: every entry calls a handler the rail or a screen already calls, so choosing an
+agent from the palette and choosing it from its card are the same operation, asserted by comparing
+outcomes. Nothing here composes a prompt, picks a tool, or re-runs a turn (§8).
+
+An entry that cannot be run is **shown, dimmed, with its reason** — the code from `GET /agents`, said
+in the reader's language (§7) — and the arrows step over it, so Enter can never land on something
+that would fail. Matching folds case and accents, because half the interface is Portuguese.

@@ -26,15 +26,27 @@ interface Props {
   /** Stop the turn in flight. The browser stops listening; Foundry's run does not stop (spec 023). */
   onStop: () => void
   onVoice: () => void
+  /** So the `focusComposer` command can reach it (spec 025). */
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>
 }
 
 /** Past this the field scrolls itself rather than eating the conversation. Mirrored in the CSS. */
 const MAX_HEIGHT = '40vh'
 
-export function Composer({ streaming, voiceEnabled, blocked, chip, onSend, onStop, onVoice }: Props) {
+export function Composer({
+  streaming,
+  voiceEnabled,
+  blocked,
+  chip,
+  onSend,
+  onStop,
+  onVoice,
+  inputRef,
+}: Props) {
   const s = useT()
   const [value, setValue] = useState('')
-  const field = useRef<HTMLTextAreaElement>(null)
+  const own = useRef<HTMLTextAreaElement>(null)
+  const field = inputRef ?? own
   const stopped = streaming || Boolean(blocked)
 
   /**
@@ -49,7 +61,7 @@ export function Composer({ streaming, voiceEnabled, blocked, chip, onSend, onSto
     if (!element) return
     element.style.height = 'auto'
     element.style.height = `${element.scrollHeight}px`
-  }, [value])
+  }, [field, value])
 
   function submit() {
     const text = value.trim()

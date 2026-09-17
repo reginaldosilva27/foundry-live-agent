@@ -57,6 +57,9 @@ const props: ComponentProps<typeof Sidebar> = {
   favourites: [],
   lang: 'en',
   view: 'chat',
+  collapsed: false,
+  onToggleCollapse: () => {},
+  onOpenPalette: () => {},
   history: { conversations: [], storing: true, save: () => {}, rename: () => {}, remove: () => {} },
   activeId: null,
   onLang: () => {},
@@ -99,22 +102,26 @@ describe('the rail', () => {
 
   // --- AC2 ---------------------------------------------------------------
 
-  it('collapses to a rail, keeps every item nameable, and remembers the choice', async () => {
-    const { unmount } = show()
-    const aside = screen.getByRole('complementary')
-    expect(aside.dataset.collapsed).toBe('false')
+  it('renders collapsed when it is told to, keeping every item nameable', () => {
+    // Since spec 025 the flag lives in `App` — a keyboard command toggles it too, so it needs one
+    // owner (§4). What the rail owns is how it *looks* collapsed, and that the labels leave the
+    // layout without leaving the accessibility tree (021 AC2). Persistence is asserted where it
+    // now happens, in `App.keyboard.test.tsx`.
+    show({ collapsed: true })
 
-    await userEvent.click(screen.getByRole('button', { name: t('nav.collapse', 'en') }))
-
-    expect(aside.dataset.collapsed).toBe('true')
-    // Collapsed, the labels are gone from view but not from the accessibility tree.
+    expect(screen.getByRole('complementary').dataset.collapsed).toBe('true')
     expect(screen.getByRole('button', { name: t('nav.chat', 'en') })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: t('nav.agents', 'en') })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: t('nav.expand', 'en') })).toBeInTheDocument()
+  })
 
-    unmount()
-    show()
-    expect(screen.getByRole('complementary').dataset.collapsed).toBe('true')
+  it('asks to be collapsed rather than collapsing itself', async () => {
+    const onToggleCollapse = vi.fn()
+    show({ onToggleCollapse })
+
+    await userEvent.click(screen.getByRole('button', { name: t('nav.collapse', 'en') }))
+
+    expect(onToggleCollapse).toHaveBeenCalled()
   })
 
   // --- AC3 ---------------------------------------------------------------
