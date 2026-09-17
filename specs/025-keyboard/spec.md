@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 025-keyboard |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 
@@ -90,13 +90,30 @@ shortcut. There is no separate cheat-sheet screen to maintain.
 | **Selectability** | Still the BFF's (`HARNESS_FOR_KIND`). The palette renders `selectable` / `reason` as given — it does not re-derive them (§4). |
 | **Docs** | `docs/development-workflow.md` or the README — wherever the app's controls are described. |
 
+## Clarified decisions (2026-09-17)
+
+- **Both halves ship together.** Shortcuts are speed and the palette is discovery; they are two
+  halves of one problem, and shipping the keys without the surface that teaches them would leave the
+  feature undiscoverable by exactly the readers it is for.
+- **No chord that the browser reserves.** `⌘⇧N` was proposed and rejected during planning: it is a
+  new incognito window, captured above the page, and a binding the app cannot actually prevent is
+  worse than no binding. The rule from the goals is now a test, not an intention. Actions that need
+  no chord use a **single letter, and only when no text field has focus** — which is also what makes
+  `/` safe.
+- **The palette opens the trace panel; it does not list traces.** Spec 024 shipped, so a trace has an
+  address and the palette could enumerate them. It will not: the turns of a conversation are already
+  on screen with a trace control each, and a second list of them would be a second way to say the
+  same thing. One action, on the turn the panel is already following.
+- **The rail keeps its language switch.** The palette gains language as an action, but removing the
+  visible control would put a bilingual app's only language affordance behind a keyboard shortcut —
+  which fails §7's intent even while satisfying its letter.
+- **Conversations are matched by title only, for now.** Searching message text is spec 027's index,
+  and building a second one here would be the §4 failure. When 027 lands, the palette reads *its*
+  matcher rather than growing one.
+
 ## Open questions (clarify before planning)
 
-- [ ] The key set itself: which keys, and how do they read on a Brazilian keyboard layout?
-- [ ] Does the palette include *navigation to a trace* (which needs spec 024's addresses), or does it
-      ship after it?
-- [ ] Should the palette be the new home for the language switch, letting the rail drop it?
-- [ ] Does a conversation entry search message text (spec 027's index) or only titles?
+*None — resolved above.*
 
 ## Out of scope / deferred
 

@@ -2829,3 +2829,97 @@ button:disabled {
   font-size: var(--fs-caption);
   color: var(--fg-3);
 }
+
+
+/* ---------- The command palette (spec 025) --------------------------------
+   The app's fourth overlay, so it borrows the scrim and the focus behaviour rather than inventing
+   a fourth look. An entry that cannot be run stays visible and dimmed — hiding it would answer
+   "why is that agent missing?" with silence. */
+
+.palette__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh var(--sp-4) var(--sp-4);
+  background: rgb(10 10 10 / 45%);
+}
+
+.palette {
+  width: min(560px, 100%);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-4);
+}
+
+.palette__field {
+  padding: var(--sp-4);
+  border: 0;
+  border-bottom: 1px solid var(--border-1);
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: var(--fg-1);
+}
+
+.palette__field:focus-visible {
+  outline: none;
+}
+
+.palette__list {
+  margin: 0;
+  padding: var(--sp-2);
+  list-style: none;
+  overflow-y: auto;
+}
+
+.palette__group {
+  margin: var(--sp-3) 0 var(--sp-1);
+  padding: 0 var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+
+.palette__entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--fg-2);
+}
+
+.palette__entry[aria-selected='true'] {
+  background: var(--bg-accent-soft);
+  color: var(--fg-1);
+}
+
+.palette__entry[data-runnable='false'] {
+  cursor: default;
+  color: var(--fg-4);
+}
+
+.palette__reason {
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.palette__empty {
+  margin: 0;
+  padding: var(--sp-5);
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}

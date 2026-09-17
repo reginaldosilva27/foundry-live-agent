@@ -22,10 +22,15 @@ import { VoiceOverlay } from './panes/VoiceOverlay'
 import { LangContext } from './i18n/context'
 import { detectLang, t as translate, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
+import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
+import { CommandPalette } from './panes/CommandPalette'
+import { type Command } from './state/keys'
+import { type Entry } from './state/palette'
 import { useAgents } from './state/agents'
 import { favouriteRows, useFavourites } from './state/favourites'
 import { titleFrom, useHistory } from './state/history'
+import { useCollapsed } from './state/ui'
 import { useConfig } from './hooks/useConfig'
 import { useTrace } from './hooks/useTrace'
 import { useVoiceSession } from './hooks/useVoiceSession'
@@ -55,6 +60,9 @@ export default function App() {
   const routeResponseId = route.name === 'trace' ? route.responseId : undefined
   /** An address pointing at a conversation this browser does not have (AC7). */
   const [missing, setMissing] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const composer = useRef<HTMLTextAreaElement>(null)
+  const [collapsed, toggleCollapsed] = useCollapsed()
   /** The stored conversation on screen, if this session opened or saved one (spec 021). */
   const [activeId, setActiveId] = useState<string | null>(null)
   // Which turn the trace panel is showing, and which of its calls to bring into view. Empty means
@@ -293,6 +301,57 @@ export default function App() {
     )
   }, [shownTurn, trace.callId])
 
+  /** One place the header, the key and the palette all go through, so the three cannot drift. */
+  const toggleTraces = useCallback(() => {
+    if (tracesOpen) {
+      leaveTrace()
+      return
+    }
+    setTrace({})
+    openTrace(shown.agentMessages[shown.agentMessages.length - 1]?.id)
+  }, [leaveTrace, openTrace, shown.agentMessages, tracesOpen])
+
+  /**
+   * Run a command (spec 025).
+   *
+   * Every branch calls a handler that already existed — the rail's, the screen's, the header's. A
+   * command is a second *way in*, never a second implementation, which is what stops the palette
+   * becoming a fourth way to choose an agent that behaves slightly differently (§4).
+   */
+  const run = useCallback(
+    (command: Command) => {
+      const actions: Record<Command, () => void> = {
+        openPalette: () => setPaletteOpen(true),
+        toggleRail: toggleCollapsed,
+        focusComposer: () => composer.current?.focus(),
+        newConversation: () => {
+          clearNotice()
+          newConversation()
+        },
+        toggleTraces,
+        previousTurn: () => tracesOpen && stepTurn(-1),
+        nextTurn: () => tracesOpen && stepTurn(1),
+        startVoice: startVoiceSession,
+        switchLanguage: () => setLang((current) => (current === 'en' ? 'pt' : 'en')),
+      }
+      actions[command]()
+    },
+    [clearNotice, newConversation, startVoiceSession, stepTurn, toggleCollapsed, toggleTraces, tracesOpen],
+  )
+
+  useKeys(run)
+
+  /** What the palette chose. Agents and conversations go where the rail sends them (AC6, AC7). */
+  const runEntry = useCallback(
+    (entry: Entry) => {
+      setPaletteOpen(false)
+      if (entry.target.kind === 'agent') return selectAgent(entry.target.name)
+      if (entry.target.kind === 'conversation') return openConversation(entry.target.id)
+      run(entry.target.command)
+    },
+    [openConversation, run, selectAgent],
+  )
+
   return (
     <LangContext.Provider value={lang}>
       <div className="app" data-traces-open={tracesOpen}>
@@ -309,10 +368,10 @@ export default function App() {
           onLang={setLang}
           onView={setView}
           onOpenConversation={openConversation}
-          onNewSession={() => {
-            clearNotice()
-            newConversation()
-          }}
+          onNewSession={() => run('newConversation')}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
+          onOpenPalette={() => setPaletteOpen(true)}
         />
 
         <main className="main">
@@ -324,14 +383,7 @@ export default function App() {
             streaming={streaming}
             tracesOpen={tracesOpen}
             voiceLive={voice.status === 'live'}
-            onToggleTraces={() => {
-              if (tracesOpen) {
-                leaveTrace()
-                return
-              }
-              setTrace({})
-              openTrace(shown.agentMessages[shown.agentMessages.length - 1]?.id)
-            }}
+            onToggleTraces={toggleTraces}
             onVoice={startVoiceSession}
           />
           {view === 'agents' ? (
@@ -370,6 +422,7 @@ export default function App() {
                 }
                 onSend={sendToSelected}
                 onVoice={startVoiceSession}
+                inputRef={composer}
               />
             </>
           )}
@@ -402,6 +455,16 @@ export default function App() {
           onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
           onClose={leaveTrace}
         />
+
+        {paletteOpen && (
+          <CommandPalette
+            agents={agents.agents}
+            conversations={history.conversations}
+            voiceEnabled={config?.voice?.enabled ?? false}
+            onRun={runEntry}
+            onClose={() => setPaletteOpen(false)}
+          />
+        )}
 
         {openCall && (
           <LogViewer

@@ -203,6 +203,29 @@ export const strings = {
 
   // --- Composer ------------------------------------------------------------
   'composer.placeholder': { en: 'Ask the agent something', pt: 'Pergunte algo ao agente' },
+  // --- The keyboard and the palette (spec 025) ------------------------------
+  // Every action's label lives here and is named by `state/keys.ts`, so the palette entry, the
+  // tooltip and the binding all say the same thing (§4).
+  'palette.open': { en: 'Commands', pt: 'Comandos' },
+  'palette.placeholder': {
+    en: 'Search agents, conversations and actions',
+    pt: 'Buscar agentes, conversas e ações',
+  },
+  'palette.empty': { en: 'Nothing matches that.', pt: 'Nada corresponde a isso.' },
+  'palette.agents': { en: 'Agents', pt: 'Agentes' },
+  'palette.conversations': { en: 'Conversations', pt: 'Conversas' },
+  'palette.actions': { en: 'Actions', pt: 'Ações' },
+
+  'keys.openPalette': { en: 'Commands', pt: 'Comandos' },
+  'keys.focusComposer': { en: 'Write a question', pt: 'Escrever uma pergunta' },
+  'keys.newConversation': { en: 'New conversation', pt: 'Nova conversa' },
+  'keys.toggleTraces': { en: 'Traces', pt: 'Traces' },
+  'keys.toggleRail': { en: 'Collapse the rail', pt: 'Recolher a barra' },
+  'keys.previousTurn': { en: 'Previous turn', pt: 'Turn anterior' },
+  'keys.nextTurn': { en: 'Next turn', pt: 'Próximo turn' },
+  'keys.startVoice': { en: 'Start a voice session', pt: 'Iniciar sessão de voz' },
+  'keys.language': { en: 'Switch language', pt: 'Trocar idioma' },
+
   // --- Addresses (spec 024) ------------------------------------------------
   // An address naming a conversation this browser never had is a normal thing to open — a link
   // from another machine. It is stated, not redirected away from.
@@ -398,6 +421,10 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'trace.spansTitle',
   'trace.otelTraceId',
   'trace.gatewayTitle',
+  // The panel is called "Traces" in both languages for the same reason `trace.spansTitle` is: it is
+  // the word the portal and the docs use, and a reader matching the screen against either wants it
+  // to be the same word (spec 025).
+  'keys.toggleTraces',
 ]
 
 export function t(key: StringKey, lang: Lang): string {

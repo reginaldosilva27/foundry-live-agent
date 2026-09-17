@@ -15,12 +15,11 @@
  */
 import { Favourites } from './Favourites'
 import { HistoryList } from './HistoryList'
-import { AgentsIcon, ChatIcon, PanelIcon, PlusIcon } from '../components/Icon'
+import { AgentsIcon, ChatIcon, PanelIcon, PlusIcon, SearchIcon } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
 import { modelName } from '../components/format'
 import { useT } from '../i18n/context'
 import { LANGS, type Lang } from '../i18n/strings'
-import { useCollapsed } from '../state/ui'
 import type { BffConfig } from '../config'
 import type { AgentsState } from '../state/agents'
 import type { HistoryState } from '../state/history'
@@ -41,6 +40,11 @@ interface Props {
   history: HistoryState
   /** The stored conversation currently on screen, if this session opened one. */
   activeId: string | null
+  /** Lifted to `App` since spec 025: a keyboard command toggles it, so it needs one owner (§4). */
+  collapsed: boolean
+  onToggleCollapse: () => void
+  /** The palette's visible control — so the keyboard is never the only way in (AC3). */
+  onOpenPalette: () => void
   onLang: (lang: Lang) => void
   onNewSession: () => void
   onView: (view: View) => void
@@ -57,6 +61,9 @@ export function Sidebar({
   view,
   history,
   activeId,
+  collapsed,
+  onToggleCollapse,
+  onOpenPalette,
   onLang,
   onNewSession,
   onView,
@@ -64,7 +71,6 @@ export function Sidebar({
   onSelectAgent,
 }: Props) {
   const s = useT()
-  const [collapsed, toggleCollapsed] = useCollapsed()
 
   /** The configured agent answers until someone chooses otherwise (019 AC4, AC12). */
   const answering = agents.selected ?? config?.agent_name
@@ -79,7 +85,7 @@ export function Sidebar({
           className="sidebar__collapse"
           title={s(collapsed ? 'nav.expand' : 'nav.collapse')}
           aria-label={s(collapsed ? 'nav.expand' : 'nav.collapse')}
-          onClick={toggleCollapsed}
+          onClick={onToggleCollapse}
         >
           <PanelIcon size={17} />
         </button>
@@ -88,6 +94,11 @@ export function Sidebar({
       <button type="button" className="sidebar__new" onClick={onNewSession}>
         <PlusIcon size={16} />
         <span className="sidebar__label">{s('sidebar.newSession')}</span>
+      </button>
+
+      <button type="button" className="sidebar__nav-item" onClick={onOpenPalette}>
+        <SearchIcon size={17} />
+        <span className="sidebar__label">{s('palette.open')}</span>
       </button>
 
       <nav className="sidebar__nav" aria-label={s('app.name')}>
