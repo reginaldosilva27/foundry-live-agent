@@ -60,7 +60,15 @@ const props: ComponentProps<typeof Sidebar> = {
   collapsed: false,
   onToggleCollapse: () => {},
   onOpenPalette: () => {},
-  history: { conversations: [], storing: true, save: () => {}, rename: () => {}, remove: () => {} },
+  history: {
+    conversations: [],
+    storing: true,
+    save: () => {},
+    rename: () => {},
+    remove: () => {},
+    clear: () => {},
+    importFile: () => null,
+  },
   activeId: null,
   onLang: () => {},
   onNewSession: () => {},
@@ -216,5 +224,51 @@ describe('the rail', () => {
     })
 
     expect(screen.getByRole('button', { name: /What time is it/ })).toBeInTheDocument()
+  })
+})
+
+/** Spec 027 AC1, AC3, AC6 — the rail searches what this browser kept, and links to the screen. */
+describe('the rail searches the record', () => {
+  const kept = (id: string, title: string, text: string) => ({
+    id,
+    conversationId: `conv_${id}`,
+    agent: null,
+    title,
+    updatedAt: Date.now(),
+    messages: [{ role: 'user' as const, id: `${id}-u`, text }],
+  })
+
+  const withHistory = {
+    ...props.history,
+    conversations: [
+      kept('c1', 'Deploying to Container Apps', 'How do I deploy?'),
+      kept('c2', 'Delta Lake vacuum', 'What does vacuum do?'),
+    ],
+  }
+
+  it('narrows the list to what matches, and restores it when the field is cleared', async () => {
+    show({ history: withHistory })
+    const field = screen.getByLabelText(t('history.search', 'en'))
+
+    await userEvent.type(field, 'vacuum')
+    expect(screen.queryByText('Deploying to Container Apps')).toBeNull()
+    expect(screen.getByText('Delta Lake vacuum')).toBeInTheDocument()
+
+    await userEvent.clear(field)
+    expect(screen.getByText('Deploying to Container Apps')).toBeInTheDocument()
+    expect(screen.getByText('Delta Lake vacuum')).toBeInTheDocument()
+  })
+
+  it('offers the history screen beside the other views (AC6)', async () => {
+    const onView = vi.fn()
+    show({ history: withHistory, onView })
+
+    await userEvent.click(screen.getByRole('button', { name: t('nav.history', 'en') }))
+    expect(onView).toHaveBeenCalledWith('history')
+  })
+
+  it('hides the field when there is nothing kept to search', () => {
+    show()
+    expect(screen.queryByLabelText(t('history.search', 'en'))).toBeNull()
   })
 })

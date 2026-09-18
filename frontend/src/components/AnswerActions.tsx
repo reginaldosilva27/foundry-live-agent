@@ -10,6 +10,7 @@
 import { ActivityIcon, CopyIcon, DownloadIcon, RepeatIcon } from './Icon'
 import { useCopy } from '../hooks/useCopy'
 import { useT } from '../i18n/context'
+import { MARKDOWN, saveFile } from '../state/download'
 import { exportFilename, turnToMarkdown } from '../state/exportTurn'
 import type { Turn } from '../state/turn'
 
@@ -51,7 +52,7 @@ export function AnswerActions({
 
   const save = () => {
     const document_ = turnToMarkdown({ question, turn, agent, model, latencyMs, repeatOf, at: Date.now() }, s)
-    saveFile(exportFilename(question, new Date()), document_)
+    saveFile(exportFilename(question, new Date()), document_, MARKDOWN)
   }
 
   return (
@@ -117,19 +118,4 @@ export function AnswerActions({
       )}
     </div>
   )
-}
-
-/**
- * Hand a file to the browser.
- *
- * An object URL and a synthetic click, which is the only way a page saves a file it generated. The
- * URL is revoked immediately after: it holds the blob alive until something lets go of it.
- */
-function saveFile(name: string, content: string): void {
-  const url = URL.createObjectURL(new Blob([content], { type: 'text/markdown;charset=utf-8' }))
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = name
-  anchor.click()
-  URL.revokeObjectURL(url)
 }

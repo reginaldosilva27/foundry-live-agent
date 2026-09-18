@@ -10,15 +10,23 @@
  * groups are the only headings: a `HISTORY` label above `TODAY` was a second level of the same
  * label, and in a 248px rail two rows of heading over two rows of content is what "cluttered"
  * looks like. The date already says what the list is.
+ *
+ * Since spec 027 it takes **search results** rather than conversations. With no query every
+ * conversation is a result with nothing attached, so the unfiltered list is the same list it always
+ * was; with a query, each row carries the one thing that matched and says where it was found. It
+ * does not search — `searchConversations` does, and the rail owns the query (§4).
  */
 import { useState } from 'react'
 import { PencilIcon, TrashIcon } from '../components/Icon'
 import { useT } from '../i18n/context'
-import { groupByAge, type AgeGroup, type StoredConversation } from '../state/history'
+import { groupByAge, type AgeGroup, type MatchField, type SearchHit } from '../state/history'
 import type { StringKey } from '../i18n/strings'
 
 interface Props {
-  conversations: StoredConversation[]
+  /** What the rail is showing: every conversation, or the ones a query matched (spec 027). */
+  results: SearchHit[]
+  /** Whether a query is in the field — an empty list means two different things otherwise. */
+  searching?: boolean
   /** Whether this browser stores at all. `false` is a supported state, not an error (AC20). */
   storing: boolean
   activeId: string | null
@@ -35,8 +43,21 @@ const GROUP_KEYS: Record<AgeGroup, StringKey> = {
   older: 'history.older',
 }
 
+/**
+ * How a fragment is introduced.
+ *
+ * A title match gets none: the row already shows the title, and printing it twice in a 248px rail
+ * is the kind of noise that makes a search worth turning off. A call match gets a word, because
+ * `search_web` under a conversation title reads as something a person typed unless it is labelled.
+ */
+const MATCH_KEYS: Partial<Record<MatchField, StringKey>> = {
+  tool: 'history.matchTool',
+  mcp: 'history.matchServer',
+}
+
 export function HistoryList({
-  conversations,
+  results,
+  searching,
   storing,
   activeId,
   now,
@@ -46,15 +67,23 @@ export function HistoryList({
 }: Props) {
   const s = useT()
   const [editing, setEditing] = useState<string | null>(null)
+  // Grouping works on conversations, so the match travels alongside rather than through it — which
+  // keeps `groupByAge` the pure, spec-021 function it already was.
+  const matches = new Map(results.map((result) => [result.conversation.id, result.match]))
   // Read once, when the list mounts. Groups that drift by a few minutes over a long session are not
   // worth a timer, and reading the clock on every render is both impure and pointless.
   const [mountedAt] = useState(() => Date.now())
 
   return (
     <div className="history">
-      {conversations.length === 0 && <p className="sidebar__note">{s('history.empty')}</p>}
+      {results.length === 0 && (
+        <p className="sidebar__note">{s(searching ? 'history.searchEmpty' : 'history.empty')}</p>
+      )}
 
-      {groupByAge(conversations, now ?? mountedAt).map(({ group, items }) => (
+      {groupByAge(
+        results.map((result) => result.conversation),
+        now ?? mountedAt,
+      ).map(({ group, items }) => (
         <div key={group} className="history__group">
           <p className="sidebar__section-title">{s(GROUP_KEYS[group])}</p>
           <ul className="history__list">
@@ -76,7 +105,8 @@ export function HistoryList({
                       aria-current={conversation.id === activeId ? 'true' : undefined}
                       onClick={() => onOpen(conversation.id)}
                     >
-                      {conversation.title}
+                      <span className="history__title">{conversation.title}</span>
+                      <Fragment hit={matches.get(conversation.id)} />
                     </button>
                     <span className="history__actions">
                       <button
@@ -112,9 +142,23 @@ export function HistoryList({
       {!storing ? (
         <p className="history__note">{s('history.unavailable')}</p>
       ) : (
-        conversations.length > 0 && <p className="history__note">{s('history.local')}</p>
+        results.length > 0 && <p className="history__note">{s('history.local')}</p>
       )}
     </div>
+  )
+}
+
+/** Why this row matched, when it is not simply its title (spec 027 AC2). */
+function Fragment({ hit }: { hit?: SearchHit['match'] }) {
+  const s = useT()
+  if (!hit || hit.field === 'title') return null
+
+  const label = MATCH_KEYS[hit.field]
+  return (
+    <span className="history__fragment">
+      {label && <span className="history__fragment-label">{s(label)}</span>}
+      {hit.fragment}
+    </span>
   )
 }
 

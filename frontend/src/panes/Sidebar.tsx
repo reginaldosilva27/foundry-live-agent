@@ -21,20 +21,27 @@
  * the project again. Whether that connection routes through the gateway is the part worth showing,
  * and the line below already says it.
  */
+import { useState } from 'react'
 import { Favourites } from './Favourites'
 import { HistoryList } from './HistoryList'
-import { AgentsIcon, ChatIcon, PanelIcon, PlusIcon, SearchIcon } from '../components/Icon'
+import { AgentsIcon, ChatIcon, ClockIcon, PanelIcon, PlusIcon, SearchIcon } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
 import { modelName } from '../components/format'
 import { useT } from '../i18n/context'
 import { LANGS, type Lang } from '../i18n/strings'
+import { searchConversations } from '../state/history'
 import type { BffConfig } from '../config'
 import type { AgentsState } from '../state/agents'
 import type { HistoryState } from '../state/history'
 import type { AgentRow } from '../types/agents'
 
-/** The two things the main column can show. Two booleans' worth of app, hence no router. */
-export type View = 'chat' | 'agents'
+/**
+ * What the main column can show.
+ *
+ * Derived from the address rather than stored beside it (spec 024) — `App` maps one to the other,
+ * and `route.ts` stays the single definition of the scheme (§4).
+ */
+export type View = 'chat' | 'agents' | 'history'
 
 interface Props {
   config: BffConfig | null
@@ -79,6 +86,14 @@ export function Sidebar({
   onSelectAgent,
 }: Props) {
   const s = useT()
+  /**
+   * The query lives here because the field does (spec 027).
+   *
+   * It is not an address and it is not stored: a half-typed word is not somewhere a reader can be
+   * sent back to, and putting it in the URL would make a link carry someone else's filter.
+   */
+  const [query, setQuery] = useState('')
+  const results = searchConversations(history.conversations, query)
 
   /** The configured agent answers until someone chooses otherwise (019 AC4, AC12). */
   const answering = agents.selected ?? config?.agent_name
@@ -116,6 +131,7 @@ export function Sidebar({
             [
               ['chat', ChatIcon, 'nav.chat'],
               ['agents', AgentsIcon, 'nav.agents'],
+              ['history', ClockIcon, 'nav.history'],
             ] as const
           ).map(([id, Icon, key]) => (
             <button
@@ -161,8 +177,25 @@ export function Sidebar({
 
         <Favourites rows={favourites} answering={answering} onSelect={onSelectAgent} />
 
+        {/* The field appears with the second thing worth searching, not before: a search box over
+            an empty list is chrome that promises something the rail cannot do yet. */}
+        {history.conversations.length > 0 && (
+          <div className="history__search">
+            <SearchIcon size={14} />
+            <input
+              type="search"
+              className="history__search-input"
+              value={query}
+              aria-label={s('history.search')}
+              placeholder={s('history.search')}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </div>
+        )}
+
         <HistoryList
-          conversations={history.conversations}
+          results={results}
+          searching={query.trim().length > 0}
           storing={history.storing}
           activeId={activeId}
           onOpen={onOpenConversation}

@@ -23,9 +23,9 @@
 /**
  * What the app can be asked to do. Every one has an on-screen control as well (AC3).
  *
- * Not all of them have a key. `startVoice` and `switchLanguage` are offered by the palette and bound
- * to nothing — a chord for everything would be a chord nobody remembers, and both already have a
- * visible control. The table below is the subset that earns a key.
+ * Not all of them have a key. `startVoice`, `switchLanguage` and `openHistory` are offered by the
+ * palette and bound to nothing — a chord for everything would be a chord nobody remembers, and each
+ * already has a visible control. The table below is the subset that earns a key.
  */
 export type Command =
   | 'openPalette'
@@ -37,6 +37,7 @@ export type Command =
   | 'nextTurn'
   | 'startVoice'
   | 'switchLanguage'
+  | 'openHistory'
 
 export interface Binding {
   key: string

@@ -140,6 +140,26 @@ export const SearchIcon = (p: IconProps) =>
     p,
   )
 
+/** The history screen and its nav item (spec 027). A record is a thing with a time on it. */
+export const ClockIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 6.5 12 12 16 14" />
+    </>,
+    p,
+  )
+
+export const UploadIcon = (p: IconProps) =>
+  svg(
+    <>
+      <line x1="12" y1="20.5" x2="12" y2="9" />
+      <polyline points="7.5 13.5 12 9 16.5 13.5" />
+      <path d="M4 6.5V5A1.5 1.5 0 0 1 5.5 3.5h13A1.5 1.5 0 0 1 20 5v1.5" />
+    </>,
+    p,
+  )
+
 export const DownloadIcon = (p: IconProps) =>
   svg(
     <>

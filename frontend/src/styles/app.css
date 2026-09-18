@@ -3001,3 +3001,272 @@ button:disabled {
 .bubble__edit:hover {
   color: var(--fg-2);
 }
+
+/* ---------------------------------------------------------------------------
+   The history screen (spec 027)
+
+   Built on the agents screen's bones, because it is the same kind of thing: a
+   list the rail could not hold, on its own address. The one departure is the
+   confirmation block — the only place in the app where a control states what it
+   destroys before it does it, so it is allowed to be loud.
+   --------------------------------------------------------------------------- */
+
+.history-screen {
+  display: flex;
+  min-height: 0;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-6) var(--sp-6) var(--sp-8);
+}
+
+.history-screen__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.history-screen__title {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  gap: var(--sp-2);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+}
+
+.history-screen__count {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.history-screen__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.history-screen__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.history-screen__action:hover {
+  border-color: var(--border-accent);
+  color: var(--fg-1);
+}
+
+.history-screen__action--danger:hover {
+  border-color: var(--ds-warning);
+  color: var(--ds-warning);
+}
+
+.history-screen__report {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-left: 3px solid var(--ds-blue);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}
+
+.history-screen__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border: 1px solid var(--ds-warning);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+}
+
+.history-screen__confirm-title {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--fg-1);
+}
+
+.history-screen__confirm-body {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.history-screen__confirm-actions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.history-screen__search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  max-width: 420px;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  color: var(--fg-4);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.history-screen__search:focus-within {
+  border-color: var(--ds-blue);
+}
+
+.history-screen__search-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  outline: none;
+}
+
+.history-screen__note {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.history-screen__list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: var(--sp-1);
+  list-style: none;
+}
+
+.history-screen__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+}
+
+.history-screen__row:hover {
+  border-color: var(--border-1);
+  background: var(--bg-1);
+}
+
+.history-screen__open {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-screen__row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-screen__fragment {
+  overflow: hidden;
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-screen__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.history-screen__agent {
+  overflow: hidden;
+  max-width: 200px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The rail's own field (spec 027). Narrower than the screen's, and it sits inside the scrolling
+   region with the list it filters — a field pinned above a list it cannot see reads as a search of
+   the whole app. */
+.history__search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 var(--sp-3) var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--ds-n-800);
+  border-radius: var(--r-pill);
+  background: var(--ds-ink);
+  color: var(--ds-n-600);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.history__search:focus-within {
+  border-color: var(--ds-blue);
+}
+
+.history__search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ds-n-100);
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  outline: none;
+}
+
+.history__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Why the row matched, under the title it did not match. Two lines is the most a rail row may
+   grow to; the fragment is already clipped by `searchConversations`. */
+.history__fragment {
+  display: block;
+  overflow: hidden;
+  font-size: var(--fs-caption);
+  color: var(--ds-n-500);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history__fragment-label {
+  margin-right: var(--sp-1);
+  color: var(--ds-n-600);
+  font-family: var(--font-mono);
+  text-transform: lowercase;
+}

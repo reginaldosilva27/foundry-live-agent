@@ -25,6 +25,7 @@ import { useAgentStream } from './hooks/useAgentStream'
 import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
 import { CommandPalette } from './panes/CommandPalette'
+import { HistoryScreen } from './panes/HistoryScreen'
 import { type Command } from './state/keys'
 import { type Entry } from './state/palette'
 import { useAgents } from './state/agents'
@@ -50,9 +51,9 @@ export default function App() {
    * reload. `/compare` is reserved for spec 020 and renders the chat until that spec builds it.
    */
   const { route, navigate } = useRoute()
-  const view: View = route.name === 'agents' ? 'agents' : 'chat'
+  const view: View = route.name === 'agents' || route.name === 'history' ? route.name : 'chat'
   const setView = useCallback(
-    (next: View) => navigate({ name: next === 'agents' ? 'agents' : 'chat' }),
+    (next: View) => navigate({ name: next === 'chat' ? 'chat' : next }),
     [navigate],
   )
   const [tracesOpen, setTracesOpen] = useState(route.name === 'trace')
@@ -360,10 +361,20 @@ export default function App() {
         nextTurn: () => tracesOpen && stepTurn(1),
         startVoice: startVoiceSession,
         switchLanguage: () => setLang((current) => (current === 'en' ? 'pt' : 'en')),
+        openHistory: () => navigate({ name: 'history' }),
       }
       actions[command]()
     },
-    [clearNotice, newConversation, startVoiceSession, stepTurn, toggleCollapsed, toggleTraces, tracesOpen],
+    [
+      clearNotice,
+      navigate,
+      newConversation,
+      startVoiceSession,
+      stepTurn,
+      toggleCollapsed,
+      toggleTraces,
+      tracesOpen,
+    ],
   )
 
   useKeys(run)
@@ -413,7 +424,9 @@ export default function App() {
             onToggleTraces={toggleTraces}
             onVoice={startVoiceSession}
           />
-          {view === 'agents' ? (
+          {view === 'history' ? (
+            <HistoryScreen history={history} onOpen={openConversation} />
+          ) : view === 'agents' ? (
             <AgentsScreen
               agents={agents.agents}
               error={agents.error}

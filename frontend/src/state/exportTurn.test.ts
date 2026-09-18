@@ -6,7 +6,7 @@
  * dropped the calls would lose the one thing this app exists to show.
  */
 import { describe, expect, it } from 'vitest'
-import { exportFilename, turnToMarkdown } from './exportTurn'
+import { conversationToMarkdown, exportFilename, turnToMarkdown } from './exportTurn'
 import { t } from '../i18n/strings'
 import { reduceEvents } from './turn'
 
@@ -131,5 +131,60 @@ describe('a repeated turn', () => {
     )
 
     expect(document_).not.toContain(t('turn.repeatOf', 'en').replace(' · {agent}', ''))
+  })
+})
+
+/** Spec 027 AC7 — one document describes a conversation the way one already describes a turn. */
+describe('conversationToMarkdown', () => {
+  const stored = {
+    id: 'c_1',
+    conversationId: 'conv_abc',
+    agent: 'foundry-live-agent',
+    title: 'What time is it in Sao Paulo?',
+    updatedAt: new Date('2026-09-16T12:00:00Z').getTime(),
+    messages: [
+      { role: 'user' as const, id: 'u1', text: 'What time is it in Sao Paulo?' },
+      { role: 'agent' as const, id: 'a1', startedAt: 0, turn },
+      { role: 'user' as const, id: 'u2', text: 'And in Lisbon?' },
+      {
+        role: 'agent' as const,
+        id: 'a2',
+        startedAt: 0,
+        turn: reduceEvents([{ type: 'text_delta', text: 'It is 16:00 in Lisbon.' }, { type: 'done' }]),
+      },
+    ],
+  }
+
+  const document_ = conversationToMarkdown(stored, s)
+
+  it('opens with the conversation, named and attributed', () => {
+    expect(document_.startsWith('# What time is it in Sao Paulo?')).toBe(true)
+    expect(document_).toContain('foundry-live-agent')
+  })
+
+  it('carries the identifiers that tie it back to Foundry and to the spans', () => {
+    expect(document_).toContain('conv_abc')
+    expect(document_).toContain('resp_42')
+  })
+
+  it('renders every message in the order they happened', () => {
+    const lisbonQuestion = document_.indexOf('And in Lisbon?')
+    const saoPauloAnswer = document_.indexOf('It is noon in Sao Paulo.')
+    const lisbonAnswer = document_.indexOf('It is 16:00 in Lisbon.')
+
+    expect(saoPauloAnswer).toBeGreaterThan(-1)
+    expect(lisbonQuestion).toBeGreaterThan(saoPauloAnswer)
+    expect(lisbonAnswer).toBeGreaterThan(lisbonQuestion)
+  })
+
+  it('keeps the calls, and who ran each one — the distinction the repo exists to show', () => {
+    expect(document_).toContain('get_current_datetime')
+    expect(document_).toContain('bff')
+    expect(document_).toContain('microsoft_learn')
+  })
+
+  it('says so rather than drawing an empty document for a conversation with no turns', () => {
+    const empty = conversationToMarkdown({ ...stored, messages: [] }, s)
+    expect(empty).toContain(t('export.noAnswer', 'en'))
   })
 })

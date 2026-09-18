@@ -105,6 +105,45 @@ in spec 021 rather than a promise:
 A conversation's title is taken from the first thing the person typed. Asking a model to name the
 thread would be this app running inference of its own — the precise thing §8 exists to stop.
 
+### What leaves the browser, and what comes back (spec 027)
+
+The record is searchable and portable, and both are reads of something this browser already has.
+Nothing here calls the BFF: searching Foundry's conversations would duplicate state the service
+owns, and validating an imported pointer against the service would be this app deriving a decision
+from its own storage.
+
+**Search** (the rail's field, and the `/history` screen) matches a conversation's title, the text of
+either role's messages, and the **names** of the tools and MCP servers its turns used — because
+"which conversation called `search_web`?" is the question a reader of this repository has. Call
+arguments and outputs are deliberately not searched: a hit inside a JSON blob renders as an
+unreadable fragment.
+
+**Export** comes in two shapes, and only the second is meant to be read back:
+
+| Shape | Contents |
+|---|---|
+| One conversation, Markdown | Every turn through the same renderer the single-turn download uses: the question, the answer, every call and who ran it, and the numbers underneath |
+| The whole record, JSON | `{ version, exportedAt, conversations }` — the stored shape verbatim, including each turn's trace identifiers |
+
+The trace identifiers are **not** stripped on the way out. They are what ties a transcript back to
+spans in the workspace, which is the point of a teaching repository, and a `response_id` or an OTel
+trace id is inert without access to that workspace.
+
+**Import** merges a file into the record by our own conversation id, so the same file twice leaves
+one of each, and a stored conversation always wins over its imported twin. Past the 25-conversation
+cap the newest survive and the screen says how many were kept and how many were not — discarding
+somebody's transcripts in silence is what §5 is about. A file this build does not recognise, by
+version or by shape, is refused whole and the record is untouched.
+
+Import writes the file's `conversation_id` **verbatim and asks Foundry nothing**. That is the point:
+a pointer that survives the round trip is what makes reopening an imported conversation a
+resumption rather than a screenshot. A pointer from another project or tenant therefore fails the
+way any unusable pointer already fails — the next turn sent into it errors, and the turn-error card
+says so. There is no second failure mode and no "imported" flag on the record.
+
+The export format's single source of truth is `frontend/src/state/history.ts`, which owns the stored
+shape and the exported one together (§4).
+
 ## Planned outline
 
 | Section | Filled by |

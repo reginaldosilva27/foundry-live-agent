@@ -8,6 +8,7 @@
  * violation spec 019 warned about. Conversations arrive with the titles this browser stored.
  * Actions are named by the binding table. Everything this module does is arrange and filter.
  */
+import { fold } from './fold'
 import { BINDINGS, type Command } from './keys'
 import type { StoredConversation } from './history'
 import type { AgentRow } from '../types/agents'
@@ -31,6 +32,7 @@ export interface Entry {
 const EXTRA_ACTIONS: { command: Command; label: string }[] = [
   { command: 'startVoice', label: 'keys.startVoice' },
   { command: 'switchLanguage', label: 'keys.language' },
+  { command: 'openHistory', label: 'keys.openHistory' },
 ]
 
 export interface PaletteInput {
@@ -83,12 +85,8 @@ export function buildEntries({ agents, conversations, voiceEnabled }: PaletteInp
 }
 
 /**
- * Substring match, case- and accent-insensitive.
- *
- * Accent folding is not a nicety in a `pt` interface: a reader typing `conversacao` must find
- * `Conversação`, and typing `agentés` must find `Agentes`. `normalize('NFD')` plus stripping the
- * combining marks is the right tool for Portuguese specifically — it is not general collation, and
- * `Intl.Collator` would be the answer if this ever needed to sort rather than match.
+ * Substring match, case- and accent-insensitive — the rule lives in `fold.ts`, shared with history
+ * search so the two surfaces cannot disagree about what matches (§4).
  *
  * An entry that cannot be run still matches. Hiding it would answer "why is that agent missing?"
  * with silence, which is the thing spec 019 refused on the agents screen (§5).
@@ -97,12 +95,4 @@ export function filterEntries(entries: Entry[], query: string): Entry[] {
   const needle = fold(query)
   if (!needle) return entries
   return entries.filter((entry) => fold(entry.label).includes(needle))
-}
-
-function fold(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim()
 }

@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { HistoryList } from './HistoryList'
 import { LangContext } from '../i18n/context'
 import { t } from '../i18n/strings'
-import type { StoredConversation } from '../state/history'
+import type { SearchHit, StoredConversation } from '../state/history'
 
 const NOW = new Date('2026-09-16T15:00:00Z').getTime()
 const DAY = 24 * 60 * 60 * 1000
@@ -29,8 +29,12 @@ function conversation(over: Partial<StoredConversation> = {}): StoredConversatio
   }
 }
 
+/** The list takes search results now (spec 027); with no query every conversation is one. */
+const hit = (over: Partial<StoredConversation> = {}): SearchHit => ({ conversation: conversation(over) })
+
 const props = {
-  conversations: [conversation()],
+  results: [hit()],
+  searching: false,
   storing: true,
   activeId: null as string | null,
   now: NOW,
@@ -50,9 +54,9 @@ function show(overrides: Partial<typeof props> = {}) {
 describe('the history list', () => {
   it('groups conversations by age, with no heading over an empty group', () => {
     show({
-      conversations: [
-        conversation({ id: 'c1', title: 'today one' }),
-        conversation({ id: 'c2', title: 'older one', updatedAt: NOW - 90 * DAY }),
+      results: [
+        hit({ id: 'c1', title: 'today one' }),
+        hit({ id: 'c2', title: 'older one', updatedAt: NOW - 90 * DAY }),
       ],
     })
 
@@ -72,18 +76,18 @@ describe('the history list', () => {
   })
 
   it('invites the first conversation rather than showing an empty frame', () => {
-    show({ conversations: [] })
+    show({ results: [] })
     expect(screen.getByText(t('history.empty', 'en'))).toBeInTheDocument()
   })
 
   it('does not explain where an empty history is kept — there is nothing kept yet', () => {
     // Two grey paragraphs under an empty heading read as a warning about nothing.
-    show({ conversations: [] })
+    show({ results: [] })
     expect(screen.queryByText(t('history.local', 'en'))).toBeNull()
   })
 
   it('still says a browser is refusing storage, even with nothing in the list', () => {
-    show({ conversations: [], storing: false })
+    show({ results: [], storing: false })
     expect(screen.getByText(t('history.unavailable', 'en'))).toBeInTheDocument()
   })
 
@@ -127,5 +131,53 @@ describe('the history list', () => {
     await userEvent.click(screen.getByRole('button', { name: t('history.delete', 'en') }))
 
     expect(onRemove).toHaveBeenCalledWith('c1')
+  })
+})
+
+/** Spec 027 AC2 — a result says *why* it matched, not only that it did. */
+describe('a search result', () => {
+  it('renders a fragment of the matched message under the title', () => {
+    show({
+      results: [
+        {
+          conversation: conversation({ title: 'Deploying' }),
+          match: { field: 'message', fragment: '…how do I deploy to Container Apps?…' },
+        },
+      ],
+    })
+
+    expect(screen.getByText('Deploying')).toBeInTheDocument()
+    expect(screen.getByText('…how do I deploy to Container Apps?…')).toBeInTheDocument()
+  })
+
+  it('labels a call match, so `search_web` is not read as something a person typed', () => {
+    show({
+      results: [
+        {
+          conversation: conversation({ title: 'A conversation' }),
+          match: { field: 'tool', fragment: 'search_web' },
+        },
+      ],
+    })
+
+    expect(screen.getByText(/search_web/)).toHaveTextContent(t('history.matchTool', 'en'))
+  })
+
+  it('does not repeat the title as a fragment when the title is what matched', () => {
+    show({
+      results: [
+        {
+          conversation: conversation({ title: 'Deploying' }),
+          match: { field: 'title', fragment: 'Deploying' },
+        },
+      ],
+    })
+
+    expect(screen.getAllByText('Deploying')).toHaveLength(1)
+  })
+
+  it('says so when a query matches nothing at all', () => {
+    show({ results: [], searching: true })
+    expect(screen.getByText(t('history.searchEmpty', 'en'))).toBeInTheDocument()
   })
 })

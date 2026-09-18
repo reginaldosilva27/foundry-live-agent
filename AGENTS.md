@@ -125,6 +125,20 @@ thing the person typed — **never** from asking a model to name it, which would
 inference of its own. The agents listing now lives on its own screen; the rail keeps only the agent
 that is answering.
 
+**That record is searchable and portable, and still never travels (spec 027).** The rail's field and
+the `/history` screen match a title, either role's message text, and the **names** of the tools and
+MCP servers a turn used — not call arguments or outputs, which render as unreadable fragments.
+`/history` exports one conversation as Markdown or the whole record as versioned JSON (the stored
+shape verbatim, trace ids included — they are what tie a transcript to spans in the workspace), and
+imports one back. Three things are easy to get wrong here:
+
+- **`frontend/src/state/history.ts` owns the stored shape and the exported one together** (§4). The
+  file carries a `version`; one this build does not know is refused whole, record untouched.
+- **Import writes the file's `conversation_id` verbatim and asks Foundry nothing.** Checking whether
+  it exists would be the app deriving a decision from its own storage (021's second rule). A pointer
+  from another tenant fails through the turn-error card that already exists — no second failure mode.
+- **Search and import make no request at all**, and a test asserts the absence.
+
 **Which agent answers is chosen on the screen (spec 019).** The sidebar lists the project's agents
 from `GET {project_endpoint}/agents?api-version=v1` and a turn carries `agent` on `POST /chat`.
 Three rules that are easy to break:

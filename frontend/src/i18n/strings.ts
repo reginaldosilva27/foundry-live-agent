@@ -111,6 +111,7 @@ export const strings = {
   // said here: the browser keeps a render cache, and the note under the list admits exactly that.
   'nav.chat': { en: 'Chat', pt: 'Conversa' },
   'nav.agents': { en: 'Agents', pt: 'Agentes' },
+  'nav.history': { en: 'History', pt: 'Histórico' },
   'nav.collapse': { en: 'Collapse sidebar', pt: 'Recolher barra lateral' },
   'nav.expand': { en: 'Expand sidebar', pt: 'Expandir barra lateral' },
   'history.today': { en: 'Today', pt: 'Hoje' },
@@ -134,6 +135,43 @@ export const strings = {
   'history.delete': { en: 'Delete', pt: 'Excluir' },
   'history.untitled': { en: 'Untitled conversation', pt: 'Conversa sem título' },
   'history.open': { en: 'Open conversation', pt: 'Abrir conversa' },
+
+  // Spec 027 — searching the record, and taking it out of this browser.
+  'history.search': { en: 'Search conversations', pt: 'Buscar conversas' },
+  'history.searchEmpty': {
+    en: 'No conversation matches',
+    pt: 'Nenhuma conversa corresponde',
+  },
+  'history.matchTool': { en: 'tool', pt: 'ferramenta' },
+  'history.matchServer': { en: 'MCP server', pt: 'servidor MCP' },
+  'history.screenNote': {
+    en: '{count} conversations this browser drew. The conversations themselves live in Foundry.',
+    pt: '{count} conversas que este navegador desenhou. As conversas em si vivem no Foundry.',
+  },
+  'history.turns': { en: 'turns', pt: 'turns' },
+  'history.exportOne': { en: 'Export as Markdown', pt: 'Exportar como Markdown' },
+  'history.exportAll': { en: 'Export everything (.json)', pt: 'Exportar tudo (.json)' },
+  'history.import': { en: 'Import a file…', pt: 'Importar um arquivo…' },
+  'history.clear': { en: 'Clear the record', pt: 'Limpar o registro' },
+  'history.clearConfirmTitle': {
+    en: 'Delete the {count} conversations this browser kept?',
+    pt: 'Apagar as {count} conversas que este navegador guardou?',
+  },
+  'history.clearConfirmBody': {
+    en: 'This removes the drawings and the pointers stored here. The conversations in Foundry are not deleted.',
+    pt: 'Isso remove os desenhos e os ponteiros guardados aqui. As conversas no Foundry não são apagadas.',
+  },
+  'history.clearCancel': { en: 'Cancel', pt: 'Cancelar' },
+  'history.clearConfirm': { en: 'Delete', pt: 'Apagar' },
+  'history.imported': { en: 'Imported {kept} conversations.', pt: '{kept} conversas importadas.' },
+  'history.importedDropped': {
+    en: 'Imported {kept} conversations; {dropped} were dropped — this browser keeps {cap}.',
+    pt: '{kept} conversas importadas; {dropped} foram descartadas — este navegador guarda {cap}.',
+  },
+  'history.importInvalid': {
+    en: 'That file is not a history export. Nothing was changed.',
+    pt: 'Esse arquivo não é uma exportação de histórico. Nada foi alterado.',
+  },
 
   // --- Header --------------------------------------------------------------
   'header.foundryPill': { en: 'Microsoft Foundry', pt: 'Microsoft Foundry' },
@@ -231,6 +269,7 @@ export const strings = {
   'keys.nextTurn': { en: 'Next turn', pt: 'Próximo turn' },
   'keys.startVoice': { en: 'Start a voice session', pt: 'Iniciar sessão de voz' },
   'keys.language': { en: 'Switch language', pt: 'Trocar idioma' },
+  'keys.openHistory': { en: 'Open history', pt: 'Abrir histórico' },
 
   // --- Addresses (spec 024) ------------------------------------------------
   // An address naming a conversation this browser never had is a normal thing to open — a link
@@ -431,6 +470,9 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   // the word the portal and the docs use, and a reader matching the screen against either wants it
   // to be the same word (spec 025).
   'keys.toggleTraces',
+  // `turn` is the unit this app counts, and pt already keeps the word: `keys.previousTurn` reads
+  // "Turn anterior". A history row saying "3 turns" matches the trace panel beside it (spec 027).
+  'history.turns',
 ]
 
 export function t(key: StringKey, lang: Lang): string {
