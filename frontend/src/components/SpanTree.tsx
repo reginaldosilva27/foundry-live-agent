@@ -17,6 +17,8 @@ import type { Span } from '../types/trace'
 
 interface Props {
   spans: Span[]
+  /** The span the band above selected, marked here so the two read as one thing (spec 029 AC8). */
+  selectedSpanId?: string
 }
 
 interface Placed extends Span {
@@ -56,7 +58,7 @@ function place(spans: Span[]): Placed[] {
 const percent = (value: number, total: number) =>
   `${total > 0 ? Math.round((value / total) * 100000) / 1000 : 0}%`
 
-export function SpanTree({ spans }: Props) {
+export function SpanTree({ spans, selectedSpanId }: Props) {
   const s = useT()
   if (spans.length === 0) return null
 
@@ -71,6 +73,8 @@ export function SpanTree({ spans }: Props) {
           key={span.span_id}
           className="span-row"
           data-testid="span-row"
+          data-span-id={span.span_id}
+          aria-current={span.span_id === selectedSpanId ? 'true' : undefined}
           data-depth={span.depth}
           data-kind={span.kind}
         >

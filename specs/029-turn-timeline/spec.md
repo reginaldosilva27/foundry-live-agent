@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **ID** | 029-turn-timeline |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
-| **Date** | 2026-09-16 |
+| **Date** | 2026-09-16 · clarified 2026-09-19 |
 
 ## Problem / motivation
 
@@ -38,8 +38,14 @@ a real axis, from real timestamps, for the one picture that explains the turn.
 - **No estimation of gaps.** Time not covered by a span is drawn as unattributed, not assigned to
   whichever span is adjacent.
 - No change to the `AgentEvent` set (§9).
-- No new backend query beyond what `GET /trace/{response_id}` already returns, unless the plan shows
-  the timestamps are missing from it.
+- **No backend change at all.** `GET /trace/{response_id}` already returns `start_ms` — milliseconds
+  after the run's earliest span — and `duration_ms` per span, and `frontend/src/types/trace.ts`
+  already mirrors them. This spec is entirely a frontend one.
+- **No stitching of the two legs.** A turn with a function-call round trip is **two OTel traces**,
+  a separate `operation_Id` and `gen_ai.response.id` per leg (verified 2026-09-16,
+  `docs/REFERENCES.md`). Joining them would mean `trace_ids` carrying an id per leg — a §9 change
+  that needs its own spec — plus a backend change and a shared axis across two traces whose clocks
+  may not align. Out of scope, and the band says so rather than implying it drew the whole turn.
 
 ## User-facing behavior
 
@@ -50,12 +56,33 @@ turn's real duration, with the axis labelled in seconds. Each span is a segment,
 is — model inference, a function tool this app executed, an MCP call Foundry executed — with the
 legend naming the three.
 
-**The two legs are visible as two.** A turn with a tool round trip contains two model segments with
-the tool between them, which is the picture that makes `docs/how-it-works/` legible at a glance.
+**The band draws the leg the turn holds, and says that is what it is.** A turn with a tool round
+trip is two OTel traces; the turn carries the response id of the leg that produced the answer, so
+that is the leg with spans. Drawing it while implying it were the whole turn would be the §5 failure
+this spec exists to avoid, so a turn whose stream contained a tool round trip carries one sentence
+saying the earlier leg is a separate trace.
+
+**The classes are the ones that exist.** A function tool *this app* executes produces **no span** —
+Foundry traces what Foundry runs, which is the §8 boundary showing up in telemetry (verified
+2026-09-16). So the legend names what the band can actually contain: the run, model inference, and
+a call Foundry executed. The app's own tool time appears as **unattributed**, and that is not a
+shortcoming of the picture — it is the picture. Spec 015 measured tool calls answering in about a
+millisecond while the model spent the seconds, and a band whose gaps are hairlines beside long model
+segments is that finding, drawn.
 
 **Unattributed time is drawn as unattributed** — a gap in the band, not a stretched neighbour. When
-the spans do not account for the whole turn, that gap is the honest finding, and often the
+the spans do not account for the whole leg, that gap is the honest finding, and often the
 interesting one.
+
+**The axis is the spans' own extent, not the browser's wall clock.** `start_ms` is measured from the
+run's earliest span, and the turn's `startedAt`/`endedAt` are a different machine's clock including
+network time. Laying one over the other would produce an axis that is part measurement and part
+arithmetic between two clocks, which is precisely the kind of drawn-but-not-measured picture spec
+014 refused. The band is labelled with what it is.
+
+**A hosted-harness turn gets no band**, for the same reason it gets no trace today: its spans carry
+no `gen_ai.response.id`, so the query resolves to nothing (spec 018). This is stated where the
+absence appears, not silently.
 
 **Hovering or focusing a segment** names it and gives its duration, and selecting it brings the
 matching call into view in the list below — the panel's existing selection behaviour (spec 010).
@@ -70,9 +97,11 @@ appears and says why once, not per turn.
    turn's measured duration and whose axis is labelled.
 2. **AC2** — Each span renders as a segment positioned and sized from its own start and end
    timestamps.
-3. **AC3** — Segments are classified as model, app-executed tool, or platform-executed call, and a
-   legend names the three.
-4. **AC4** — A turn with a tool round trip renders two model segments with the tool between them.
+3. **AC3** — Segments are classified as the run, model inference, or a call Foundry executed, and a
+   legend names them alongside unattributed time. A tool **this app** executed is never drawn as a
+   segment, because it produces no span.
+4. **AC4** — A turn whose stream contained a tool round trip renders the leg it holds and states,
+   once, that the earlier leg is a separate trace. It never implies it drew the whole turn.
 5. **AC5** — Time not covered by any span renders as an unattributed gap and is labelled as such.
 6. **AC6** — With no spans, no band is rendered and the panel states the timeline needs them; the
    existing retry remains available.
@@ -84,27 +113,18 @@ appears and says why once, not per turn.
    not from event arrival order (asserted against a fixture with out-of-order spans).
 10. **AC10** — The band is operable by keyboard and each segment has an accessible name carrying its
     kind and duration.
-11. **AC11** — Every new string ships `en` + `pt`.
+11. **AC11** — The band's axis is built from `start_ms`/`duration_ms` alone; no position or width is
+    derived from the turn's `startedAt`/`endedAt`, which are a different clock (asserted as a test).
+12. **AC12** — Every new string ships `en` + `pt`.
 
 ## Contract / data impact
 
 | | |
 |---|---|
 | **BFF / `AgentEvent`** | Unchanged (§9). |
-| **`GET /trace/{response_id}`** | May need to carry span start/end timestamps if it does not already. If it does, the frontend `Trace` type mirrors the backend shape, as it does today (§4). |
+| **`GET /trace/{response_id}`** | **Unchanged.** It already returns `start_ms` (ms after the run's earliest span) and `duration_ms` per span — `backend/app/traces.py` computes them and `frontend/src/types/trace.ts` already mirrors them, with a comment saying they are "what puts bars on a shared axis". The groundwork was laid by spec 005 and this spec spends it. |
 | **Fixtures (§5)** | The timeline is only as honest as its fixtures. Every fixture is recorded from a real run — including one with a tool round trip and one with unattributed time — never hand-built to make the picture look right. |
 | **Docs** | `docs/how-it-works/` — the streaming-events and round-trip pages gain the picture they have been describing in words. |
-
-## Open questions (clarify before planning)
-
-- [ ] Does `GET /trace/{response_id}` already return per-span start and end, or only durations?
-      This decides whether the spec touches the backend at all.
-- [ ] Are the span clocks comparable to the browser's `startedAt`/`endedAt`, or is the band's total
-      the spans' own extent rather than the turn's wall clock?
-- [ ] Does a hosted-harness run produce spans of the same shape, or does the container's own loop
-      report differently (spec 018's measurement)?
-- [ ] Does the band belong to the trace panel only, or is a compact version worth putting under the
-      turn in the chat?
 
 ## Out of scope / deferred
 

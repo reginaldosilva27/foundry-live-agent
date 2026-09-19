@@ -131,3 +131,22 @@ Two consequences visible on screen:
 - **The repeat names its agent.** A reader who switched agents and then repeated is asking a
   *different* agent the same question, which is a reasonable thing to want and a misleading thing to
   leave unsaid.
+
+## What the trace panel can draw of this (spec 029)
+
+The band above the span list draws **one leg**. The round trip described on this page is two OTel
+traces, not one: a separate `operation_Id` and `gen_ai.response.id` per leg, verified against the
+live service on 2026-09-16 and recorded in [REFERENCES.md](../REFERENCES.md). The turn carries the
+response id of the leg that produced the answer, so that is the leg with spans, and the band says so
+rather than implying it drew the whole turn.
+
+Two things follow, and both are visible rather than hidden:
+
+- **The tool the BFF ran is not a segment.** Foundry traces what Foundry runs, so a client-side
+  function tool produces no span at all — the §8 boundary showing up in telemetry. Its time appears
+  as unattributed, hatched, in the band.
+- **The gaps are the point.** Spec 015 measured those calls answering in about a millisecond while
+  the model spent the seconds. A band of long model segments separated by hairlines is that
+  measurement, drawn — and it is the opposite of what everyone assumes when they watch a tool row
+  appear.
+

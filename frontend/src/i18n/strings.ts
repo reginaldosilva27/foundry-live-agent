@@ -290,6 +290,22 @@ export const strings = {
   },
   'meta.cachedInput': { en: 'cached input', pt: 'entrada em cache' },
 
+  // Spec 029 — the shape of a turn. Every string here is about what the picture IS and is not:
+  // one leg, measured from spans, with the app's own tool time necessarily missing.
+  'timeline.title': { en: 'Where the time went', pt: 'Onde o tempo foi' },
+  'timeline.axisNote': {
+    en: 'Measured from the spans of this leg',
+    pt: 'Medido a partir dos spans desta perna',
+  },
+  'timeline.legendRun': { en: 'the run', pt: 'a execução' },
+  'timeline.legendModel': { en: 'model', pt: 'modelo' },
+  'timeline.legendTool': { en: 'executed by Foundry', pt: 'executado pelo Foundry' },
+  'timeline.legendGap': { en: 'unattributed', pt: 'não atribuído' },
+  'timeline.otherLeg': {
+    en: 'This turn had a tool round trip. The earlier leg is a separate trace and is not drawn.',
+    pt: 'Este turno teve um round trip de tool. A perna anterior é outro trace e não está desenhada.',
+  },
+
   // --- Addresses (spec 024) ------------------------------------------------
   // An address naming a conversation this browser never had is a normal thing to open — a link
   // from another machine. It is stated, not redirected away from.

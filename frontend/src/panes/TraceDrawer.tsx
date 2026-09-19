@@ -14,11 +14,12 @@
  * Below the responsive breakpoint the same element becomes an overlay drawer rather than a third
  * column (AC12) — that is CSS, not a second component.
  */
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CopyRow } from '../components/CopyRow'
 import { ChevronIcon, CloseIcon, ExternalIcon } from '../components/Icon'
 import { ToolRow } from '../components/ToolRow'
 import { SpanTree } from '../components/SpanTree'
+import { Timeline } from '../components/Timeline'
 import { TraceNumbers } from '../components/TraceNumbers'
 import { useT } from '../i18n/context'
 import type { Pricing } from '../state/cost'
@@ -65,14 +66,35 @@ interface Props {
  * One component because two branches of the panel render it: a turn that is here, and a response id
  * that arrived by address with no turn behind it (spec 024). Two copies would answer "what is the
  * state of the spans" in two places (§4).
+ *
+ * The band (spec 029) lives here rather than beside here, and the state line below serves both: a
+ * second sentence saying the timeline also needs the spans would be the same fact twice in one
+ * panel. When the spans are `unavailable` — tracing not configured — that line is the only thing
+ * said, once, and there is no retry to offer (AC7).
  */
-function Spans({ trace, onRetryTrace }: { trace?: Trace; onRetryTrace?: () => void }) {
+function Spans({
+  trace,
+  hadRoundTrip,
+  onRetryTrace,
+}: {
+  trace?: Trace
+  hadRoundTrip?: boolean
+  onRetryTrace?: () => void
+}) {
   const s = useT()
+  // The band's selection is the panel's own business, so it lives with the panel rather than being
+  // lifted to the app: nothing outside this column reacts to it (§8 — no state travels).
+  const [selectedSpanId, setSelectedSpanId] = useState<string | undefined>(undefined)
+
   return (
     <section className="trace__spans">
+      {trace?.status === 'ok' && (
+        <Timeline spans={trace.spans} hadRoundTrip={hadRoundTrip} onSelectSpan={setSelectedSpanId} />
+      )}
+
       <h3 className="trace__subtitle">{s('trace.spansTitle')}</h3>
       {trace?.status === 'ok' ? (
-        <SpanTree spans={trace.spans} />
+        <SpanTree spans={trace.spans} selectedSpanId={selectedSpanId} />
       ) : (
         <p className="trace__empty" data-testid="trace-spans-state">
           {trace?.status === 'pending'
@@ -255,7 +277,13 @@ export function TraceDrawer({
             )}
           </section>
 
-          <Spans trace={trace} onRetryTrace={onRetryTrace} />
+          {/* A round trip IS an app-executed call: Foundry asked, the BFF answered, and that answer
+              began a second Foundry response with a trace of its own (spec 029 AC4). */}
+          <Spans
+            trace={trace}
+            hadRoundTrip={turn.activities.some((a) => a.kind === 'tool' && a.executor === 'app')}
+            onRetryTrace={onRetryTrace}
+          />
 
           <footer className="trace__foot">
             <a

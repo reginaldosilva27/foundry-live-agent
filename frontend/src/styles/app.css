@@ -3314,3 +3314,155 @@ button:disabled {
   font-size: var(--fs-caption);
   color: var(--ds-n-300);
 }
+
+/* ---------------------------------------------------------------------------
+   The band: where a turn's time went (spec 029)
+
+   Absolutely positioned items over one track, because the axis is a real one:
+   a flex row would lay segments out by ORDER, which is the drawing spec 014
+   refused. Left and width are percentages of measured time, and nothing else
+   here may move an item.
+
+   Colours are the span kinds' own, already defined for `.span-row` — one fact,
+   two surfaces (§4).
+   --------------------------------------------------------------------------- */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.timeline__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline__title {
+  margin: 0;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--ds-n-500);
+}
+
+.timeline__axis-note {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--ds-n-600);
+}
+
+.timeline__axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ds-n-600);
+}
+
+.timeline__band {
+  position: relative;
+  height: 22px;
+  border-radius: var(--r-sm);
+  background: var(--ds-n-800);
+}
+
+.timeline__item {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border: 0;
+  border-radius: 2px;
+  padding: 0;
+}
+
+.timeline__item--segment {
+  cursor: pointer;
+}
+
+.timeline__item--segment[data-kind='agent'] {
+  background: var(--ds-blue);
+}
+
+.timeline__item--segment[data-kind='model'] {
+  background: var(--ds-blue-500);
+}
+
+.timeline__item--segment[data-kind='tool'] {
+  background: var(--ds-success);
+}
+
+.timeline__item--segment[data-kind='other'] {
+  background: var(--ds-n-500);
+}
+
+/* Unattributed time. Hatched rather than blank, so it reads as "nobody accounted for this" rather
+   than as the track showing through — the difference between a finding and a rendering artefact. */
+.timeline__item--gap {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 3px,
+    var(--ds-n-700) 3px,
+    var(--ds-n-700) 6px
+  );
+}
+
+.timeline__item--segment:focus-visible {
+  outline: 2px solid var(--ds-blue-500);
+  outline-offset: 1px;
+}
+
+.timeline__legend {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  gap: var(--sp-1) var(--sp-3);
+  list-style: none;
+  font-size: var(--fs-caption);
+  color: var(--ds-n-500);
+}
+
+.timeline__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.timeline__swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.timeline__swatch[data-kind='agent'] {
+  background: var(--ds-blue);
+}
+
+.timeline__swatch[data-kind='model'] {
+  background: var(--ds-blue-500);
+}
+
+.timeline__swatch[data-kind='tool'] {
+  background: var(--ds-success);
+}
+
+.timeline__swatch[data-kind='gap'] {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 2px,
+    var(--ds-n-700) 2px,
+    var(--ds-n-700) 4px
+  );
+}
+
+.timeline__note {
+  margin: 0;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--ds-n-600);
+}

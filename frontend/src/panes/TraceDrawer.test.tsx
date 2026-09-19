@@ -345,3 +345,67 @@ describe('a trace opened by address', () => {
     expect(screen.getByTestId('trace-activity')).toBeInTheDocument()
   })
 })
+
+/** Spec 029 AC4, AC6, AC7, AC8 — the band, in the panel. */
+describe('the turn timeline in the panel', () => {
+  const SPANS = [
+    {
+      name: 'invoke_agent foundry-live-agent:8',
+      span_id: 'root',
+      parent_id: 'outside',
+      duration_ms: 1000,
+      start_ms: 0,
+      kind: 'agent' as const,
+    },
+    {
+      name: 'chat gpt-5.5',
+      span_id: 'chat',
+      parent_id: 'root',
+      duration_ms: 600,
+      start_ms: 0,
+      kind: 'model' as const,
+    },
+  ]
+
+  const show = (trace?: Parameters<typeof TraceDrawer>[0]['trace'], onRetryTrace = vi.fn()) =>
+    render(<TraceDrawer turn={turn} open trace={trace} onRetryTrace={onRetryTrace} onClose={() => {}} />)
+
+  it('draws the band once the spans are read', () => {
+    show({ status: 'ok', spans: SPANS })
+    expect(screen.getByTestId('timeline')).toBeInTheDocument()
+  })
+
+  it('says the earlier leg is elsewhere, because this turn ran a tool round trip (AC4)', () => {
+    // `turn` above carries an app-executed call, which is what a round trip IS: Foundry asked, the
+    // BFF answered, and that answer began a second Foundry response with its own trace.
+    show({ status: 'ok', spans: SPANS })
+    expect(screen.getByText(/separate trace/)).toBeInTheDocument()
+  })
+
+  it('draws no band while the spans are still coming, and keeps the retry (AC6)', () => {
+    const onRetryTrace = vi.fn()
+    show({ status: 'pending', spans: [] }, onRetryTrace)
+
+    expect(screen.queryByTestId('timeline')).toBeNull()
+    expect(screen.getByTestId('trace-spans-state')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /check again|verificar/i })).toBeInTheDocument()
+  })
+
+  it('draws no band and offers no retry when tracing is not configured, and says so once (AC7)', () => {
+    show({ status: 'unavailable', spans: [] })
+
+    expect(screen.queryByTestId('timeline')).toBeNull()
+    expect(screen.queryByRole('button', { name: /check again|verificar/i })).toBeNull()
+    expect(screen.getAllByTestId('trace-spans-state')).toHaveLength(1)
+  })
+
+  it('marks the span a segment selects, in the list below it (AC8)', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event')
+    show({ status: 'ok', spans: SPANS })
+
+    await userEvent.click(screen.getByRole('button', { name: /chat gpt-5\.5/ }))
+
+    const row = screen.getByTestId('span-tree').querySelector('[data-span-id="chat"]')
+    expect(row).toHaveAttribute('aria-current', 'true')
+  })
+})
