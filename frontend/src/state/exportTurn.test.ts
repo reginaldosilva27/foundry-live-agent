@@ -188,3 +188,30 @@ describe('conversationToMarkdown', () => {
     expect(empty).toContain(t('export.noAnswer', 'en'))
   })
 })
+
+describe('a chart survives the export as its source (spec 033, AC15)', () => {
+  const block = [
+    '```foundry-chart',
+    '{ "type": "bar", "x": { "label": "h", "categories": ["a"] },',
+    '  "y": { "label": "ms" }, "series": [{ "label": "p50", "values": [12] }] }',
+    '```',
+  ].join('\n')
+
+  const exported = turnToMarkdown(
+    { question: 'Compare them', turn: reduceEvents([{ type: 'text_delta', text: `Here:\n\n${block}\n` }]) },
+    s,
+  )
+
+  it('keeps the fence intact, so pasting it back draws the chart again', () => {
+    // Not an image: the non-goals rule that out, and the source is the more useful artifact. This
+    // works today because the exporter writes the answer verbatim — the test is here so a future
+    // change that reformats the answer cannot quietly eat the fence.
+    expect(exported).toContain('```foundry-chart')
+    expect(exported).toContain('"type": "bar"')
+  })
+
+  it('does not escape or reflow the JSON inside it', () => {
+    expect(exported).toContain('"series": [{ "label": "p50", "values": [12] }]')
+  })
+})
+

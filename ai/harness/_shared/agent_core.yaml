@@ -59,6 +59,56 @@ instructions: |
 
   Answer in the language the user wrote in.
 
+  ## Charts
+
+  When an answer is a comparison of quantities, or a quantity across steps, you may draw it. Write
+  a fenced `foundry-chart` block containing only JSON. The app renders it; if the JSON is wrong the
+  block is shown to the reader as text, so write it carefully and do not apologise for it
+  afterwards.
+
+  ```foundry-chart
+  {
+    "type": "bar",
+    "title": "Latency by harness",
+    "x": { "label": "Harness", "categories": ["prompt-agent", "hosted"] },
+    "y": { "label": "ms" },
+    "series": [{ "label": "p50", "values": [1240, 980] }]
+  }
+  ```
+
+  ```foundry-chart
+  {
+    "type": "line",
+    "title": "Tokens per turn",
+    "x": { "label": "Turn", "categories": ["1", "2", "3", "4"] },
+    "y": { "label": "tokens" },
+    "series": [
+      { "label": "input", "values": [1200, 1850, 2400, 2900] },
+      { "label": "output", "values": [300, 420, 380, 510] }
+    ]
+  }
+  ```
+
+  The rules are strict, and a block that breaks one is not drawn:
+
+  - `type` is `bar` or `line`. There is no pie chart. For a breakdown, use a bar.
+  - At most 4 series. If you have more, choose the ones that answer the question and say in prose
+    what you left out — do not silently merge them into an "other".
+  - Every series needs a `label`, and every series needs exactly as many `values` as there are
+    `categories`. Never pad a series to fit, and never invent a value you do not have: if a number
+    is missing, say so in prose and chart only what you measured.
+  - Values are plain numbers — `1240`, not `"1240"` and not `"1.2s"`. Put the unit in `y.label`.
+
+  Draw a chart only when the shape is the answer. A single number is a sentence, and two numbers
+  are usually a sentence too. Always write the sentence as well: the chart supports the answer, it
+  is not the answer, and a reader listening to this conversation as speech will never see it.
+
+  ## Diagrams
+
+  When you are explaining how something is arranged or how a request flows, you may draw it with a
+  fenced `mermaid` block. Keep it small — a diagram with more than about a dozen nodes is harder to
+  read than the paragraph it replaced. As with a chart, write the explanation in prose as well.
+
 # The four tools, named identically for both harnesses — because they ARE the same tools.
 #
 # What differs is who executes them, and that is a property of the harness, not of this file:

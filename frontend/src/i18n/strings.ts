@@ -44,6 +44,45 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Charts and diagrams in an answer (spec 033) -------------------------
+  //
+  // The reason codes are deliberately specific. Someone whose block did not draw is debugging
+  // their agent's INSTRUCTIONS, and "invalid" would make the failure unteachable \u2014 which is the
+  // whole argument for rendering the block instead of hiding it.
+  'chart.described': { en: 'Chart: {what}', pt: 'Gr\u00e1fico: {what}' },
+  'chart.couldNotDraw': {
+    en: 'This block could not be drawn as a chart',
+    pt: 'N\u00e3o foi poss\u00edvel desenhar este bloco como gr\u00e1fico',
+  },
+  'chart.reason.bad_json': { en: 'it is not valid JSON', pt: 'n\u00e3o \u00e9 JSON v\u00e1lido' },
+  'chart.reason.unknown_type': {
+    en: 'that chart type is not supported \u2014 use bar or line',
+    pt: 'esse tipo de gr\u00e1fico n\u00e3o \u00e9 suportado \u2014 use bar ou line',
+  },
+  'chart.reason.no_categories': {
+    en: 'it declares no categories',
+    pt: 'n\u00e3o declara categorias',
+  },
+  'chart.reason.no_series': { en: 'it declares no series', pt: 'n\u00e3o declara s\u00e9ries' },
+  'chart.reason.too_many_series': {
+    en: 'it has more than four series',
+    pt: 'tem mais de quatro s\u00e9ries',
+  },
+  'chart.reason.length_mismatch': {
+    en: 'a series has a different number of values than there are categories',
+    pt: 'uma s\u00e9rie tem um n\u00famero de valores diferente do n\u00famero de categorias',
+  },
+  'chart.reason.bad_value': { en: 'a value is not a number', pt: 'um valor n\u00e3o \u00e9 um n\u00famero' },
+  'chart.reason.missing_label': {
+    en: 'a series has no label',
+    pt: 'uma s\u00e9rie est\u00e1 sem r\u00f3tulo',
+  },
+  'diagram.described': { en: 'Diagram', pt: 'Diagrama' },
+  'diagram.couldNotDraw': {
+    en: 'This block could not be drawn as a diagram',
+    pt: 'N\u00e3o foi poss\u00edvel desenhar este bloco como diagrama',
+  },
+
   // --- What this build is talking to (spec 032) ----------------------------
   //
   // The panel renders `GET /config` and nothing else. Every field needs a name in both languages,

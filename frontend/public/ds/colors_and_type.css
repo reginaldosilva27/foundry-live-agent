@@ -81,6 +81,35 @@
   --ds-n-50:           #F8FAFC;
 
   /* ---- Semantic ---- */
+  /* ---- Categorical series (spec 033) ----
+     The design system had no series palette: a brand blue, neutrals, and the status colours
+     below — which are RESERVED and must never stand in for a series, or "critical" and
+     "series 4" become the same red.
+
+     These four were VALIDATED, not chosen, with the dataviz colour checker against the light
+     surface and across EVERY pair (a chart shows all its series at once, so adjacent-only would
+     be the wrong test):
+
+       lightness band PASS · chroma floor PASS · contrast PASS
+       CVD separation PASS — worst all-pairs ΔE 12.5 (deutan)
+       normal vision  PASS — worst all-pairs ΔE 22.3
+
+     There is no fifth. Eight candidates across the wheel were tried and each collided with one of
+     these four, which is why `state/chart.ts` caps a block at four series rather than inventing a
+     hue or folding the rest into an "Other" nobody asked for.
+
+     One caveat, recorded rather than hidden: the worst TRITAN separation here is ΔE 4.7. The
+     checker passes the set on deutan/protan, which are far more common, and every series carries
+     a text label (spec 033 AC7) — that label is the secondary encoding which makes the pair legal,
+     not decoration.
+
+     A second theme (spec 036) must RE-VALIDATE these against the dark surface. A dark palette is
+     selected, never an automatic flip of a light one. */
+  --ds-series-1:       #0074FF;   /* the brand blue — a one-series chart is Dataside blue */
+  --ds-series-2:       #B45309;
+  --ds-series-3:       #00998C;
+  --ds-series-4:       #A21CAF;
+
   --ds-success:        #00B070;
   --ds-warning:        #F2A900;
   --ds-danger:         #E54848;

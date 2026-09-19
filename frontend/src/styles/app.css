@@ -4001,3 +4001,92 @@ button:disabled {
 .sidebar__about[aria-current='page'] {
   color: var(--fg-2);
 }
+
+/* --- Charts and diagrams in an answer (spec 033) -----------------------------------------
+   The marks carry the only colour here. Text wears text tokens — a value or a label in the
+   series colour would make the palette do two jobs, and the second one badly. Grid and axes are
+   recessive on purpose: the data is the thing, the frame is scaffolding. */
+
+.chart,
+.diagram {
+  display: flex;
+  flex-direction: column;
+  margin: var(--sp-3) 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  gap: var(--sp-2);
+}
+
+.chart__title {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.chart__plot {
+  width: 100%;
+  height: auto;
+}
+
+.chart__axis {
+  stroke: var(--border-2);
+  stroke-width: 1;
+}
+
+.chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart__tick,
+.chart__category,
+.chart__axis-label {
+  fill: var(--fg-4);
+  font-family: var(--font-sans);
+  font-size: 8px;
+}
+
+.chart__category {
+  fill: var(--fg-3);
+}
+
+/* Always present, including for a single series: colour is never the only channel (AC7). */
+.chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  gap: var(--sp-1) var(--sp-3);
+  list-style: none;
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.chart__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--r-xs);
+}
+
+/* The block stayed visible; this says why it did not draw. */
+.chart__failed {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.diagram__host svg {
+  max-width: 100%;
+  height: auto;
+}

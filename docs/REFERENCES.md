@@ -590,6 +590,23 @@ because of it.
 | Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | read the role definitions, then test with the lesser one |
 | Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | pin one, then list |
 
+### Open — does the agent actually write a chart block? (spec 033)
+
+`ai/harness/_shared/agent_core.yaml` now tells the agent how to write a `foundry-chart` block, and
+CI proves the **instructions and the renderer agree**: every worked example in that YAML is parsed
+by `parseChart` (`frontend/src/state/chartContract.test.ts`). That is a real guard against the two
+drifting apart, which is what `agent_core.yaml` exists to prevent.
+
+It is **not** evidence that the model follows them. No turn has been recorded in which the agent
+wrote a chart block unprompted, because that needs a credential and `az` is still the broken build
+described above, and §5 forbids hand-writing a recording to stand in for one.
+
+| Open question | How to close it |
+|---|---|
+| Does the agent write a valid `foundry-chart` block when an answer is a comparison? | apply the agent, ask it to compare the two harnesses' latencies, record the turn |
+| Does it over-reach — charting a single number, or a breakdown it invented? | the same turn, plus one where the data is thin |
+| Does the hosted harness produce the same block? | both harnesses read the same instructions, so a difference would be a spec 018 finding |
+
 The recorded listing (`backend/tests/fixtures/agents-listing-20260916.json`, 10 agents) carries **no
 `agent_endpoint` key at all** — consistent with nothing ever having been pinned, and not proof that
 the field would be omitted if something were. `test_agent_versions.py` asserts that premise, so a

@@ -198,6 +198,18 @@ violation.
   what the deployment decided, the other is what this browser keeps. `absent` and `false` render
   differently there, because a BFF that never mentioned a field and a deployment that switched it
   off are different facts (§5).
+- **A chart is text the agent wrote, never a decision the app made (spec 033).** The agent writes a
+  fenced **`foundry-chart`** block (JSON) or a `mermaid` block and the frontend renders it — the
+  same category of work as the Markdown around it, so §8 holds and any harness emitting the same
+  text draws the same picture. The app must never inspect an answer to decide to chart, and
+  `Chart.tsx`'s import list is asserted to prove it cannot. The schema's source of truth is
+  `frontend/src/state/chart.ts`, and the **worked examples in `agent_core.yaml` are its test
+  fixtures** (§4). Closed set: `bar` and `line`, **at most four series** — the palette was
+  *validated* for four hues all-pairs and no fifth passed, so a fifth series is refused rather than
+  folded into an "Other" the agent did not ask for (§5). `react-markdown` renders an unclosed fence
+  identically to a closed one, so `Markdown.tsx` counts fence markers itself or a half-arrived block
+  would flash a chart. Mermaid is **dynamically imported**; a static import anywhere in `src/` is a
+  test failure.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is
