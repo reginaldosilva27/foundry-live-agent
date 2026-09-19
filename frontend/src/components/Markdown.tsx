@@ -15,6 +15,7 @@ import { createContext, isValidElement, memo, useContext, useMemo } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
+import { AnswerImage } from './AnswerImage'
 import { Chart } from './Chart'
 import { CodeBlock } from './CodeBlock'
 import { languageOf } from './language'
@@ -147,7 +148,7 @@ function Table({ children }: React.ComponentProps<'table'>) {
   )
 }
 
-const COMPONENTS: Components = { code: Code, pre: Pre, table: Table }
+const COMPONENTS: Components = { code: Code, pre: Pre, table: Table, img: AnswerImage }
 
 const Block = memo(function Block({
   text,

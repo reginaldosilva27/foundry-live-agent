@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 044-images-in-answers |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -29,8 +30,8 @@ of the map for that reason.
 
 ## Goals
 
-- **The agent can produce an image**, through a tool, executed by whichever side the harness makes
-  responsible.
+- ~~**The agent can produce an image**~~ — **deferred**: it cannot be built without guessing a
+  Foundry API that nobody here has verified (§10). Recorded in `docs/REFERENCES.md`.
 - **The image renders in the answer**, sized, labelled and saveable.
 - **No new event type**, and no change to the contract.
 
@@ -45,6 +46,43 @@ of the map for that reason.
   produced (§8).
 - **No guessing what an image is.** An image with no description from the tool gets no invented alt
   text (§5).
+
+## What this spec ships, and what it does not
+
+The draft asked whether this has a use in the project's subject matter or is a capability demo, and
+said the answer decides whether it ships at all. Split in two, the answer is different for each half.
+
+**The rendering half ships.** An agent that cites a Learn page cites pages with diagrams in them,
+and `search_web` returns results with images. Markdown images already arrive today and render as
+whatever `react-markdown` does with them — unsized, unlabelled, able to push the column sideways.
+That is real, present, and needs **no contract change, no new tool and no unverified API**.
+
+**The generation half does not.** Which image model Foundry serves, under which SDK call and
+`api-version`, and what its output looks like, would all have to be **guessed** — `az` is a broken
+build on this machine and nothing could be verified against the live service. §10 forbids exactly
+that, and a tool written from memory against an API that changed through 2026 is the failure this
+repository was built to demonstrate the avoidance of. It is recorded in `docs/REFERENCES.md` as an
+open item with what would close it.
+
+So: the app renders images well; the agent gains no way to make one yet.
+
+## Decisions taken at clarify
+
+**Base64 is ruled out, and it turned out not to need ruling.** An inlined image would cross the SSE
+stream as a multi-megabyte string and then be written into this browser's record, which keeps 25
+conversations (spec 021). Measuring rather than assuming: `react-markdown` sanitises a `data:`
+source to the empty string before the app sees it, whatever its size. A size check of our own would
+have been dead code pretending to do the work.
+
+**The browser loads the image directly, and that is the one place the app's own rule bends.** "The
+browser talks to the BFF and nothing else" is true of every request this app makes; an `<img>` to a
+documentation host is not one of them, and the alternative is worse: a proxy would make the BFF a
+machine that fetches arbitrary URLs on request. `referrerpolicy="no-referrer"` and `loading="lazy"`
+are the mitigations, and `docs/architecture.md` says so rather than leaving a reader to notice.
+
+**A URL with a lifetime is handled by AC6 and nothing more.** The app cannot know whether a link
+expires, and an expired one renders as a failure with its URL visible — which is the useful thing,
+and the only honest one.
 
 ## User-facing behavior
 
@@ -78,11 +116,16 @@ like any other (spec 009). Nothing special happens because it was an image.
 4. **AC4** — Selecting an image opens an overlay that traps focus and returns it on close.
 5. **AC5** — An image can be saved, and the Markdown export carries its URL.
 6. **AC6** — An image that fails to load renders a failure with its URL visible and copyable.
-7. **AC7** — A failed generation renders as a failed tool call, with no image-specific handling.
+7. **AC7** — ~~A failed generation renders as a failed tool call~~ — **deferred with the generation
+   half**. Nothing image-specific exists in the activity panel, which is the behaviour it asked for.
 8. **AC8** — No new event type is introduced; the contract remains the nine types (asserted by the
    existing contract tests, unchanged).
 9. **AC9** — The frontend issues no request to produce an image (asserted — the §8 guard).
 10. **AC10** — Every new string ships `en` + `pt`.
+11. **AC11** — No image is ever inlined as base64. Measured rather than implemented: the Markdown
+    renderer sanitises a `data:` source away before the app sees it, whatever its size.
+12. **AC12** — The image carries `referrerpolicy="no-referrer"` and `loading="lazy"`, because it is
+    the one request in this app that does not go to the BFF.
 
 ## Contract / data impact
 
@@ -95,19 +138,9 @@ like any other (spec 009). Nothing special happens because it was an image.
 | **Content Security Policy / origins** | The browser would load an image from an origin that is not the BFF — the first time it talks to anything else. That deserves a sentence in the plan, and possibly a proxy through the BFF instead. |
 | **Docs** | `docs/architecture.md`, `docs/REFERENCES.md`. |
 
-## Open questions (clarify before planning)
-
-- [ ] Does the image URL have a lifetime? An answer stored in this browser's history (021) whose
-      image expires in an hour renders a broken image forever after. Does the app say so?
-- [ ] Does the browser load the image directly, or does the BFF proxy it — which keeps "the browser
-      talks to the BFF and nothing else" true?
-- [ ] Base64 in a tool output would blow up the SSE stream and this browser's storage. Is it ruled
-      out explicitly?
-- [ ] Is there a use for this in the project's actual subject matter, or is it a capability demo? The
-      answer decides whether it ships at all.
-
 ## Out of scope / deferred
 
 - Images as input (spec 045).
 - Editing or annotating images.
 - Any image the app itself generates.
+- **The generation tool** — deferred for want of a verified API, not for want of a design.

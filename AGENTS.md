@@ -300,6 +300,15 @@ violation.
   choice is this browser's (spec 036's store), read at session **start**, and turn detection and
   noise suppression stay deployment configuration. Nothing here says anything to the model:
   §8's single bounded exception (spec 017) is spent and stays spent.
+- **An image is text, and the app renders one but cannot make one (spec 044).** An image arrives as
+  a **URL in `text_delta`** — the tempting wrong answer was a tenth `AgentEvent` spent transporting
+  a URL that `text_delta` already carries (§9). The **generation half is deferred**: it would mean
+  guessing an image model, an SDK call, an `api-version` and an output shape with nothing verified
+  (§10), recorded in `docs/REFERENCES.md`. An `<img>` is **the one request in this app that does not
+  go to the BFF** — a proxy would make the BFF fetch arbitrary URLs, which is worse — so it carries
+  `referrerpolicy="no-referrer"`. Base64 cannot arrive: `react-markdown` sanitises `data:` away,
+  measured rather than implemented. An undescribed image says it has no description; it never gets
+  an invented one (§5).
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

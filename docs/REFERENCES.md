@@ -590,6 +590,26 @@ because of it.
 | Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | read the role definitions, then test with the lesser one |
 | Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | pin one, then list |
 
+### Open — how would the agent produce an image? (spec 044)
+
+Spec 044 shipped its rendering half and **deferred its generation half**, deliberately.
+
+Building a generation tool would mean naming an image model deployment, an SDK call, an
+`api-version` and an output shape — a URL with a lifetime? base64? — none of which could be checked
+against the live service, because `az` on this machine is the broken build described above. §10
+forbids writing any of that from memory, and a tool written against an API that changed through
+2026 is the exact failure this repository exists to demonstrate the avoidance of.
+
+What the rendering half establishes and does not need verifying: an image travels as a **URL in
+`text_delta`**, so no tenth `AgentEvent` is needed for it (§9), and `react-markdown` sanitises a
+`data:` source away, so base64 cannot reach the stream or this browser's record.
+
+| Open question | How to close it |
+|---|---|
+| Which image model does this Foundry project serve, and under which call? | read the image-generation doc, then list the project's model deployments |
+| Does its output URL expire, and after how long? | generate one and watch it |
+| Is it an Azure service under `DefaultAzureCredential`, or a third-party key? | the same doc; a third key after Tavily would need its own justification |
+
 ### Open — is barge-in observable? (spec 039)
 
 Spec 012 configures `interrupt_response` on the semantic detectors, so the service **does** cut the

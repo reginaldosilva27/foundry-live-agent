@@ -269,3 +269,22 @@ opened.
 The `/c/<id>` in an address is **this browser's** id for its own record, not Foundry's conversation
 id. Sending that link to someone else opens an empty app that says so — correctly, since they do not
 have the record.
+
+## The one origin that is not the BFF (spec 044)
+
+"The browser talks to the BFF and nothing else" is true of every request this app **makes**. An
+`<img>` in an answer is not one of them: when the agent cites a page with a diagram, the browser
+loads that diagram from the documentation host.
+
+The alternative is worse. Proxying it would make the BFF a machine that fetches arbitrary URLs on
+request, which is a larger hole than loading an image. So the image is loaded directly, with
+`referrerpolicy="no-referrer"` and `loading="lazy"`, and this paragraph exists so a reader meets
+the exception here rather than discovering it in a network panel.
+
+Base64 cannot arrive: `react-markdown` sanitises a `data:` source to the empty string before the
+app sees it — measured, not assumed — so an inlined image can neither cross the SSE stream nor be
+written into this browser's record.
+
+**The agent cannot produce an image yet.** That half of spec 044 is deferred for want of a verified
+Foundry API, and is recorded in [`REFERENCES.md`](REFERENCES.md).
+

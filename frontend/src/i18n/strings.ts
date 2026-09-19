@@ -44,6 +44,13 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Images in an answer (spec 044) --------------------------------------
+  // `image.noDescription` is a statement, not an apology: an image the answer did not describe has
+  // no description, and saying so is more useful to a screen-reader user than a generated guess.
+  'image.noDescription': { en: 'Image with no description', pt: 'Imagem sem descri\u00e7\u00e3o' },
+  'image.failed': { en: 'This image could not be loaded:', pt: 'N\u00e3o foi poss\u00edvel carregar esta imagem:' },
+  'image.close': { en: 'Close', pt: 'Fechar' },
+
   // --- Choosing the voice on the screen (spec 043) -------------------------
   // The voice IDENTIFIERS are never translated and never described: no "natural", no "expressive",
   // because nobody measured them. The identifier carries the locale and the tier, which is what a
