@@ -22,6 +22,7 @@ function row(name: string, overrides: Partial<AgentRow> = {}): AgentRow {
     version_status: 'active',
     model: 'gpt-5.5',
     harness: 'prompt-agent',
+    suggestions: [],
     selectable: true,
     reason: '',
     ...overrides,

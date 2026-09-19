@@ -356,3 +356,60 @@ def test_rejects_an_incomplete_hosted_block(tmp_path):
     bad = VALID + "\nhosted:\n  protocol: responses\n"
     with pytest.raises(AgentSpecError, match="cpu"):
         load_agent_spec(write(tmp_path, bad))
+
+
+class TestExamples:
+    """Spec 037 — what an agent is worth being asked, in its own definition.
+
+    Validated rather than passed through for the same reason `reasoning` is: a malformed entry
+    would not fail until it reached a screen, as a blank chip nobody can explain.
+    """
+
+    def test_absent_means_none_rather_than_an_error(self, tmp_path):
+        # Every agent in the project this repository did not write is in exactly this position.
+        spec = _spec(tmp_path, "")
+        assert spec.examples == []
+
+    def test_reads_a_bilingual_pair(self, tmp_path):
+        block = "examples:\n  - en: What is a harness?\n    pt: O que é um harness?\n"
+        spec = _spec(tmp_path, block)
+
+        assert [e.en for e in spec.examples] == ["What is a harness?"]
+        assert [e.pt for e in spec.examples] == ["O que é um harness?"]
+
+    def test_refuses_an_entry_with_no_portuguese(self, tmp_path):
+        # An English-only string reaching a bilingual UI through a side door (§7).
+        with pytest.raises(AgentSpecError, match="pt"):
+            _spec(tmp_path, "examples:\n  - en: Only English\n")
+
+    def test_refuses_an_entry_with_no_english(self, tmp_path):
+        with pytest.raises(AgentSpecError, match="en"):
+            _spec(tmp_path, "examples:\n  - pt: Só português\n")
+
+    def test_refuses_a_blank_value(self, tmp_path):
+        with pytest.raises(AgentSpecError, match="pt"):
+            _spec(tmp_path, "examples:\n  - en: Something\n    pt: '   '\n")
+
+    def test_refuses_a_block_that_is_not_a_list(self, tmp_path):
+        with pytest.raises(AgentSpecError, match="examples"):
+            _spec(tmp_path, "examples: nope\n")
+
+    def test_names_the_entry_that_is_wrong(self, tmp_path):
+        with pytest.raises(AgentSpecError, match=r"examples\[1\]"):
+            _spec(
+                tmp_path,
+                "examples:\n  - en: Fine\n    pt: Ok\n  - en: Broken\n",
+            )
+
+
+def _spec(tmp_path, extra: str):
+    """A minimal valid definition plus whatever is under test."""
+    path = tmp_path / "agent.yaml"
+    path.write_text(
+        "schema_version: foundry-live-agent/v1\n"
+        "name: probe\n"
+        "model: gpt-5.5\n"
+        "instructions: |\n  Be useful.\n"
+        "tools: []\n" + extra
+    )
+    return load_agent_spec(path)

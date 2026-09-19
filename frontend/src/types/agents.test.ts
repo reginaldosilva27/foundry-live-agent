@@ -29,6 +29,7 @@ describe('the TypeScript mirror of the agents listing', () => {
       version_status: true,
       model: true,
       harness: true,
+      suggestions: true,
       selectable: true,
       reason: true,
     }
@@ -43,6 +44,7 @@ describe('the TypeScript mirror of the agents listing', () => {
       version_status: true,
       model: true,
       harness: true,
+      suggestions: true,
       selectable: true,
       reason: true,
       instructions: true,

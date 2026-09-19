@@ -439,18 +439,9 @@ export const strings = {
     en: 'Every reasoning fragment, every tool call and every token, as the agent produces them.',
     pt: 'Cada fragmento de raciocínio, cada chamada de ferramenta e cada token, conforme o agente os produz.',
   },
-  'empty.suggestion1': {
-    en: 'What time is it in Sao Paulo right now?',
-    pt: 'Que horas são em São Paulo agora?',
-  },
-  'empty.suggestion2': {
-    en: 'How does this project talk to Microsoft Foundry?',
-    pt: 'Como este projeto conversa com o Microsoft Foundry?',
-  },
-  'empty.suggestion3': {
-    en: 'What is a hosted agent, and how is it different from a prompt agent?',
-    pt: 'O que é um agente hospedado, e como ele difere de um prompt agent?',
-  },
+  // The three example questions that used to live here now live in the agent's own definition
+  // (`ai/harness/_shared/agent_core.yaml`, spec 037). What an agent is worth being asked is a
+  // property of the agent, and a copy in TypeScript was free to drift from the one that ships.
 
   // --- Composer ------------------------------------------------------------
   'composer.placeholder': { en: 'Ask the agent something', pt: 'Pergunte algo ao agente' },

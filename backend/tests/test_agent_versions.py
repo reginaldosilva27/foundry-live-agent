@@ -297,3 +297,53 @@ class TestPromotableRows:
         assert rows
         assert all(not r.promotable for r in rows)
         assert {r.promote_reason for r in rows} == {"not_owned"}
+
+
+# --- What an agent is worth being asked (spec 037) --------------------------------------
+
+
+class TestSuggestions:
+    """Read from our own definitions and joined onto the service's rows by name.
+
+    The service returns `instructions`, `model`, `tools` and `reasoning` — nothing that could carry
+    an example question. So "ours only" is a permanent limitation rather than a gap, and the honest
+    one: we cannot know what somebody else's agent is for.
+    """
+
+    def test_our_prompt_agent_carries_the_examples_from_its_definition(self, listing):
+        from app.harness_factory import EXAMPLES_FOR_AGENT
+
+        row = next(r for r in summarise(listing) if r.name == "foundry-live-agent")
+
+        assert row.suggestions == EXAMPLES_FOR_AGENT["foundry-live-agent"]
+        assert len(row.suggestions) >= 3
+
+    def test_every_suggestion_is_bilingual(self, listing):
+        row = next(r for r in summarise(listing) if r.name == "foundry-live-agent")
+
+        for suggestion in row.suggestions:
+            assert suggestion["en"].strip()
+            assert suggestion["pt"].strip()
+
+    def test_an_agent_we_did_not_write_carries_none(self, listing):
+        # Absent, not invented. Deriving a suggestion from its tools would be this app making up a
+        # description of somebody else's agent.
+        row = next(r for r in summarise(listing) if r.name == "DatabricksGenie")
+
+        assert row.suggestions == []
+
+    def test_they_come_from_the_definition_and_not_from_a_literal(self):
+        """The §4 point: the YAML is the source of truth, so the two cannot drift."""
+        from pathlib import Path
+
+        import yaml
+
+        from app.harness_factory import EXAMPLES_FOR_AGENT
+
+        root = Path(__file__).resolve().parents[2]
+        core = root / "ai" / "harness" / "_shared" / "agent_core.yaml"
+        declared = yaml.safe_load(core.read_text())["examples"]
+
+        assert EXAMPLES_FOR_AGENT["foundry-live-agent"] == [
+            {"en": e["en"], "pt": e["pt"]} for e in declared
+        ]

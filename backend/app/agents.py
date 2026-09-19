@@ -39,7 +39,7 @@ English by construction.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 __all__ = [
@@ -101,8 +101,12 @@ class AgentSummary:
     #: and re-deriving this in TypeScript would give `HARNESS_FOR_KIND` a second home (§4).
     harness: str
     selectable: bool
+    #: What this agent is worth being asked (spec 037). Empty for one we did not write — the
+    #: service has no field that could carry these, so the BFF joins its rows against our own
+    #: definitions by name. Last, with a default, so every existing construction is unchanged.
+    suggestions: list[dict[str, str]] = field(default_factory=list)
     #: ``""`` when selectable; otherwise ``no_harness`` · ``disabled`` · ``version_not_active``.
-    reason: str
+    reason: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -112,6 +116,7 @@ class AgentSummary:
             "version_status": self.version_status,
             "model": self.model,
             "harness": self.harness,
+            "suggestions": [dict(s) for s in self.suggestions],
             "selectable": self.selectable,
             "reason": self.reason,
         }
@@ -494,7 +499,7 @@ def _summarise_one(agent: dict[str, Any]) -> AgentSummary:
     latest = (agent.get("versions") or {}).get("latest") or {}
     definition = latest.get("definition") or {}
 
-    from app.harness_factory import HARNESS_FOR_KIND
+    from app.harness_factory import EXAMPLES_FOR_AGENT, HARNESS_FOR_KIND
 
     kind = definition.get("kind") or "unknown"
     status = latest.get("status") or "unknown"
@@ -508,6 +513,7 @@ def _summarise_one(agent: dict[str, Any]) -> AgentSummary:
         version_status=status,
         model=_model(definition),
         harness=HARNESS_FOR_KIND.get(kind, ""),
+        suggestions=EXAMPLES_FOR_AGENT.get(agent.get("name") or agent.get("id") or "", []),
         selectable=not reason,
         reason=reason,
     )

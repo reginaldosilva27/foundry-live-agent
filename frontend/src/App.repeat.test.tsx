@@ -16,6 +16,7 @@ import type { AgentRow } from './types/agents'
 
 const CONFIG = {
   harness: 'prompt-agent',
+  suggestions: [],
   agent_name: 'foundry-live-agent',
   agent_version: null,
   model: 'foundry-analytics-demo/gpt-5.5',
@@ -34,6 +35,7 @@ const AGENTS: AgentRow[] = [
     version_status: 'active',
     model: 'gpt-5.5',
     harness: 'prompt-agent',
+    suggestions: [],
     selectable: true,
     reason: '',
   },

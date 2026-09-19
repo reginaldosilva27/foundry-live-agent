@@ -72,6 +72,22 @@ class McpToolSpec:
 
 
 @dataclass(frozen=True)
+class ExampleQuestion:
+    """A question this agent is worth asking (spec 037).
+
+    Bilingual in the definition itself, because the app is bilingual and so is the agent: a
+    suggestion that only existed in English would be an English-only string shipped through a side
+    door (§7). Nothing generates these — the app never asks a model what to ask it (§8).
+    """
+
+    en: str
+    pt: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {"en": self.en, "pt": self.pt}
+
+
+@dataclass(frozen=True)
 class AgentSpec:
     """A validated agent definition."""
 
@@ -85,6 +101,8 @@ class AgentSpec:
     # Present only for a harness Foundry runs as a container. `None` means "not applicable",
     # which is a different statement from an empty block meaning "unset".
     hosted: dict[str, Any] | None = None
+    #: What this agent is worth being asked. Empty for an agent we did not write (spec 037).
+    examples: list[ExampleQuestion] = field(default_factory=list)
 
     @property
     def uses_gateway(self) -> bool:
@@ -195,7 +213,36 @@ def load_agent_spec(path: Path | str) -> AgentSpec:
         mcp_tools=mcp_tools,
         reasoning=_reasoning(raw.get("reasoning"), path),
         hosted=_hosted(raw.get("hosted"), path),
+        examples=_examples(raw.get("examples"), path),
     )
+
+
+def _examples(raw: Any, path: Path) -> list[ExampleQuestion]:
+    """Validate the optional `examples:` block (spec 037).
+
+    Worth validating rather than passing through, for the same reason `reasoning` is: a malformed
+    entry would not fail until it reached a screen, as a blank chip nobody can explain. And a
+    missing `pt` is not a small thing — it is an English-only string reaching a bilingual UI
+    through a side door (§7).
+
+    Absent means the agent offers none, which is a fact and not an error: every agent in the
+    project that this repository did not write is in exactly that position.
+    """
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise AgentSpecError(f"{path}: examples must be a list")
+
+    out: list[ExampleQuestion] = []
+    for index, entry in enumerate(raw):
+        where = f"{path}: examples[{index}]"
+        if not isinstance(entry, dict):
+            raise AgentSpecError(f"{where} must be a mapping with 'en' and 'pt'")
+        missing = [lang for lang in ("en", "pt") if not str(entry.get(lang) or "").strip()]
+        if missing:
+            raise AgentSpecError(f"{where} is missing {' and '.join(missing)}")
+        out.append(ExampleQuestion(en=str(entry["en"]).strip(), pt=str(entry["pt"]).strip()))
+    return out
 
 
 def _reasoning(raw: Any, path: Path) -> dict[str, str] | None:

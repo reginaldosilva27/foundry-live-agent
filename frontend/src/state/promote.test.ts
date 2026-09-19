@@ -17,6 +17,7 @@ const DETAIL = (served: string): AgentDetail => ({
   version_status: 'active',
   model: 'gpt-5.5',
   harness: 'prompt-agent',
+  suggestions: [],
   selectable: true,
   reason: '',
   instructions: '',

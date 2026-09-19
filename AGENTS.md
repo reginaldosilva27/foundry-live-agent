@@ -244,6 +244,13 @@ violation.
   does not invert: it becomes the deepest surface in an elevation stack. Syntax highlighting maps
   **every** group `github.css` defines, including the unclassified ones, or text renders navy on
   navy. Every storage key lives in `state/storage.ts`'s `KEYS`, asserted.
+- **What an agent is worth being asked lives in its definition (spec 037).** `examples:` in
+  `agent_core.yaml`, bilingual, validated by `agent_spec.py`. The frontend holds **no** list: it
+  renders the answering agent's row from `GET /agents` and derives nothing from the agent's tools,
+  name or kind — that would be the app inventing a description of it — and nothing generates them,
+  because the app never asks a model what to ask it (§8). **The service has no field for these**,
+  so the BFF joins its rows against our own YAML by name and an agent we did not write carries
+  none; "ours only" is a permanent limitation, not a gap.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

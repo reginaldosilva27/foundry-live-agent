@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 037-agent-suggestions |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -48,6 +49,22 @@ All new prose ships `{ en, pt }` (§7).
 **The empty state asks the agent that will answer.** When that agent's definition carries example
 questions, those are shown, in both languages, because the app is bilingual and so is the agent.
 
+**They travel on `GET /agents`, per agent.** That listing is already where the frontend learns what
+an agent is, and it is what makes switching update the suggestions with no second request and no
+reload.
+
+**They come from our YAML, and there is no service field for them.** `GET {project_endpoint}/agents`
+returns `instructions`, `model`, `tools` and `reasoning` — nothing that could hold an example
+question. So the BFF matches the listing's rows against the definitions in `ai/harness/*/agent.yaml`
+and attaches suggestions where a name matches. **"Ours only" is therefore a permanent limitation,
+not a gap to close**, and it is the honest one: we cannot know what somebody else's agent is for.
+`AgentVersionDetails.metadata` could technically carry them, but writing it would make this app an
+author of agent state, which spec 031's non-goals rule out.
+
+**Nothing caps how many there are.** Not the schema, not the screen. These are written by a person
+in a repository, not generated, so a cap would protect against nothing and would silently drop the
+fourth example somebody deliberately added.
+
 **When it does not** — every agent in the project that this repository did not write — the empty
 state shows no suggestions and keeps its headline and subtitle. An empty list is the honest state:
 we do not know what that agent is for. It is not an error and says nothing apologetic.
@@ -73,6 +90,10 @@ agent is described.
 8. **AC8** — With the agents listing unavailable, the empty state falls back to the BFF's configured
    agent's suggestions, or to none, and never to a hard-coded list in the frontend.
 9. **AC9** — The default deployment renders the same three suggestions it renders today.
+10. **AC10** — Suggestions for an agent this repository does not own are absent, not empty, and the
+    BFF invents none.
+11. **AC11** — The definition's examples are validated for shape: each carries a non-empty `en` and
+    `pt` (§7), and a malformed block fails `apply_agent.py` rather than shipping.
 
 ## Contract / data impact
 
@@ -85,16 +106,9 @@ agent is described.
 | **i18n** | The suggestion strings leave `strings.ts` and live in the agent definition; `strings.test.ts` must not then flag them as missing. |
 | **Docs** | `docs/harness-comparison.md` — the schema addition. |
 
-## Open questions (clarify before planning)
-
-- [ ] Do the suggestions travel on `GET /agents` for every agent, or only for the configured one?
-      The listing is already the place the frontend learns about agents, which argues for the former.
-- [ ] Can the service return example questions for an agent this repository did not create — is
-      there a field for it — or is "ours only" a permanent limitation worth stating?
-- [ ] How many suggestions, and does the definition cap it or the screen?
-- [ ] Does the composer's chip or the agents screen show them too, or only the empty state?
-
 ## Out of scope / deferred
 
 - Suggestions after the conversation has started.
 - Any generated, ranked or personalised suggestion.
+- Showing an agent's examples on the inspector (spec 030) or in the composer — a natural follow-up,
+  deliberately not widened into here.

@@ -30,7 +30,13 @@ from app.tool_executor import execute
 if TYPE_CHECKING:  # an annotation only — importing it for real would close a cycle with app.agents
     from app.agents import AgentSummary
 
-__all__ = ["HARNESS_FOR_KIND", "OWNED_AGENT_NAMES", "AzureClients", "build_harness"]
+__all__ = [
+    "EXAMPLES_FOR_AGENT",
+    "HARNESS_FOR_KIND",
+    "OWNED_AGENT_NAMES",
+    "AzureClients",
+    "build_harness",
+]
 
 # Which agent kinds THIS BUILD can drive, and with what (spec 019).
 #
@@ -75,6 +81,32 @@ def _owned_agent_names() -> frozenset[str]:
 
 
 OWNED_AGENT_NAMES: frozenset[str] = _owned_agent_names()
+
+
+# What each of our agents is worth being asked (spec 037).
+#
+# Read from the same definitions, for the same reason: what an agent is good at is a property of
+# the AGENT, and a list of example questions in the frontend was a second description of it, free
+# to drift (§4). The service's listing has no field that could carry these — it returns
+# `instructions`, `model`, `tools` and `reasoning` — so the BFF joins its rows against ours by
+# name, and an agent we did not write simply has none. That is a permanent limitation and the
+# honest one: we cannot know what somebody else's agent is for.
+def _examples_for_agent() -> dict[str, list[dict[str, str]]]:
+    from harness._shared.agent_spec import load_agent_spec
+
+    root = Path(harness._shared.__file__).resolve().parent.parent
+    out: dict[str, list[dict[str, str]]] = {}
+    for path in sorted(root.glob("*/agent.yaml")):
+        try:
+            spec = load_agent_spec(path)
+        except Exception:  # noqa: BLE001 - one bad harness must not stop the process
+            continue
+        if spec.examples:
+            out[spec.name] = [example.as_dict() for example in spec.examples]
+    return out
+
+
+EXAMPLES_FOR_AGENT: dict[str, list[dict[str, str]]] = _examples_for_agent()
 
 # Observed 2026-09-16: the hosted agent endpoint REQUIRES this, and the documented URL shape
 # omits it — `400 BadRequest — Missing required query parameter: api-version` without it.

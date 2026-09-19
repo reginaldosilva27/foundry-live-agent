@@ -14,7 +14,7 @@ import type { Pricing } from '../state/cost'
 import { isSettled, turnStatus, type Turn } from '../state/turn'
 import { sourcesOf } from '../state/sources'
 import { ActivityPanel } from './ActivityPanel'
-import { EmptyState } from './EmptyState'
+import { EmptyState, type Suggestion } from './EmptyState'
 
 interface Props {
   messages: Message[]
@@ -30,6 +30,8 @@ interface Props {
   onSuggestion: (text: string) => void
   /** Open the trace panel for a turn, optionally on one of its calls (spec 009). */
   onOpenTrace: (turnId: string, callId?: string) => void
+  /** The answering agent's own examples (spec 037). The frontend holds no list of its own. */
+  suggestions?: Suggestion[]
   /** Ask a question again, and put one back in the composer (spec 026). */
   onRepeat: (turnId: string, question: string) => void
   onEdit: (text: string) => void
@@ -102,6 +104,7 @@ export function Conversation({
   notice,
   onSuggestion,
   onOpenTrace,
+  suggestions,
   onRepeat,
   onEdit,
   blocked,
@@ -129,7 +132,7 @@ export function Conversation({
     return (
       <div className="conversation conversation--empty" ref={column}>
         {notice && <Notice text={notice} />}
-        <EmptyState onSuggestion={onSuggestion} />
+        <EmptyState suggestions={suggestions} onSuggestion={onSuggestion} />
       </div>
     )
   }

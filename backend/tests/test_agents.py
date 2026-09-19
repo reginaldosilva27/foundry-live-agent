@@ -289,6 +289,7 @@ def test_the_route_returns_the_rows(listing):
         "version_status",
         "model",
         "harness",
+        "suggestions",
         "selectable",
         "reason",
     } == set(body["agents"][0])

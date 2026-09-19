@@ -22,6 +22,15 @@ export interface AgentRow {
    * selected agent of the other kind answered.
    */
   harness: string
+  /**
+   * What this agent is worth being asked (spec 037).
+   *
+   * Empty for every agent this repository did not write, which is most of the project's. The
+   * frontend holds NO list of its own: a set of example questions in TypeScript would be a second
+   * description of an agent whose first one lives in `agent_core.yaml` (§4), and deriving one from
+   * the agent's tools would be the app inventing a description of it.
+   */
+  suggestions: { en: string; pt: string }[]
   selectable: boolean
   /** `''` when selectable; otherwise a CODE the UI translates — never prose (§7). */
   reason: string

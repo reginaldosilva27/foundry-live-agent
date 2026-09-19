@@ -122,6 +122,14 @@ export default function App() {
 
   /** Every turn names the chosen agent, or nothing at all — which is the configured one (AC12). */
   const { clearNotice, selected: selectedAgent, selectedRow } = agents
+  /**
+   * The row the suggestions come from (spec 037): whoever is about to answer.
+   *
+   * With no selection that is the BFF's configured agent, found in the listing. With the listing
+   * unavailable it is `undefined`, and the empty state shows none — never a hard-coded list, which
+   * is the whole point of moving them into the definition (AC8).
+   */
+  const configuredRow = agents.agents.find((row) => row.name === config?.agent_name)
   /** Who answers, as the screen says it: the selection, else the agent the BFF is configured with. */
   const answering = selectedAgent ?? config?.agent_name
   const sendToSelected = useCallback(
@@ -497,6 +505,8 @@ export default function App() {
                 notice={missing ? translate('route.conversationMissing', lang) : undefined}
                 onSuggestion={sendToSelected}
                 onOpenTrace={openTrace}
+                // The answering agent's own examples, from its definition (spec 037).
+                suggestions={selectedRow?.suggestions ?? configuredRow?.suggestions}
                 onRepeat={repeatTurn}
                 onEdit={editQuestion}
                 blocked={blocked}

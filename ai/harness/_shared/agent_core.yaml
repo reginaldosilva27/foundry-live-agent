@@ -109,6 +109,24 @@ instructions: |
   fenced `mermaid` block. Keep it small — a diagram with more than about a dozen nodes is harder to
   read than the paragraph it replaced. As with a chart, write the explanation in prose as well.
 
+# What this agent is worth being asked (spec 037).
+#
+# These three moved here from the frontend's string table, unchanged, and the reasoning behind them
+# moved with them: one question the APP answers with a tool it executes, one the agent answers from
+# this repository's own knowledge base, and one Foundry answers by calling the Learn MCP server.
+# Between them they demonstrate every kind of call this project exists to make visible.
+#
+# They live here because what an agent is good at is a property of the AGENT. A list of example
+# questions in TypeScript was a second description of this agent, free to drift from this one (§4).
+# Nothing generates them: the app never asks a model what to ask it (§8).
+examples:
+  - en: What time is it in Sao Paulo right now?
+    pt: Que horas são em São Paulo agora?
+  - en: How does this project talk to Microsoft Foundry?
+    pt: Como este projeto conversa com o Microsoft Foundry?
+  - en: What is a hosted agent, and how is it different from a prompt agent?
+    pt: O que é um agente hospedado, e como ele difere de um prompt agent?
+
 # The four tools, named identically for both harnesses — because they ARE the same tools.
 #
 # What differs is who executes them, and that is a property of the harness, not of this file:

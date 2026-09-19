@@ -18,6 +18,7 @@ const ROW = {
   version_status: 'active',
   model: 'gpt-5.5',
   harness: 'prompt-agent',
+  suggestions: [],
   selectable: true,
   reason: '',
 }
@@ -50,6 +51,7 @@ function stubBff() {
     if (url.endsWith('/config')) {
       return json({
         harness: 'prompt-agent',
+        suggestions: [],
         agent_name: 'foundry-live-agent',
         model: 'gpt-5.5',
         uses_gateway: false,

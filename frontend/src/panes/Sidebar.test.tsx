@@ -25,6 +25,7 @@ function row(name: string, overrides: Partial<AgentRow> = {}): AgentRow {
     version_status: 'active',
     model: 'gpt-5.5',
     harness: 'prompt-agent',
+    suggestions: [],
     selectable: true,
     reason: '',
     ...overrides,
@@ -45,6 +46,7 @@ const AGENTS: AgentsState = {
 
 const CONFIG = {
   harness: 'prompt-agent',
+  suggestions: [],
   agent_name: 'foundry-live-agent',
   model: 'foundry-analytics-demo/gpt-5.5',
   uses_gateway: true,

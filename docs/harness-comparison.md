@@ -118,3 +118,27 @@ See [`../ai/harness/langgraph/README.md`](../ai/harness/langgraph/README.md) for
 ## Also possible later
 
 A third column, `ai/harness/agent-framework/`, using Microsoft Agent Framework's `FoundryChatClient`.
+
+## `examples:` — what an agent is worth being asked (spec 037)
+
+Our schema, not Microsoft's, like the rest of `agent.yaml`. An optional list, each entry carrying
+`en` and `pt`, validated by `agent_spec.py` — a missing `pt` fails `apply_agent.py` rather than
+reaching a bilingual UI as an English-only string (§7).
+
+```yaml
+examples:
+  - en: What time is it in Sao Paulo right now?
+    pt: Que horas são em São Paulo agora?
+```
+
+These used to be three hard-coded strings in the frontend. What an agent is good at is a property
+of the **agent**, and a copy in TypeScript was a second description of it, free to drift from the
+one that actually ships (§4).
+
+**The service has no field for them.** `GET {project_endpoint}/agents` returns `instructions`,
+`model`, `tools` and `reasoning` — nothing that could hold an example question. So the BFF joins
+the service's rows against our own definitions by name, and an agent this repository did not write
+carries none. That is a permanent limitation rather than a gap to close, and the honest one: we
+cannot know what somebody else's agent is for. `AgentVersionDetails.metadata` could technically
+carry them, but writing it would make this app an author of agent state, which spec 031 rules out.
+
