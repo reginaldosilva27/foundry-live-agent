@@ -52,6 +52,17 @@ export default function App() {
   const [lang, setLang] = useState<Lang>(() =>
     detectLang(typeof navigator === 'undefined' ? [] : navigator.languages),
   )
+
+  /**
+   * The language the PAGE declares follows the language it is showing (spec 040, AC7).
+   *
+   * Set here, where the language is owned, rather than in whichever component happens to render
+   * first. A screen reader picks its pronunciation from this attribute, so an app that switches to
+   * Portuguese while the document still says `en` is read aloud in the wrong accent.
+   */
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
   /**
    * The address (spec 024). `view` is derived from it rather than stored beside it: two homes for
    * "which screen is showing" is the drift §4 is about, and the route is the one that survives a
@@ -180,11 +191,15 @@ export default function App() {
    * Deliberately keyed on `streaming` alone. The effect runs on the render where the turn settled,
    * and closes over that render's messages, which are the finished ones.
    */
+  // One sentence for the screen reader, set on the render where the turn settled (spec 040, AC5).
+  const [announcement, setAnnouncement] = useState('')
   const settled = useRef(false)
   useEffect(() => {
     const justFinished = settled.current && !streaming
     settled.current = streaming
     if (!justFinished || messages.length === 0) return
+
+    setAnnouncement(translate('a11y.answerReady', lang))
 
     const id = activeId ?? `c_${Date.now()}`
     if (!activeId) {
@@ -425,6 +440,33 @@ export default function App() {
   return (
     <LangContext.Provider value={lang}>
       <div className="app" data-traces-open={tracesOpen}>
+        {/* The first focusable thing on the page, and the rail is the first thing between the
+            keyboard and the composer on every load (spec 040, AC1). */}
+        <a className="skip-link" href="#conversation">
+          {translate('a11y.skipToConversation', lang)}
+        </a>
+
+        {/*
+          One polite region, holding one sentence.
+
+          The live line says what is HAPPENING and then falls silent when the answer arrives —
+          correct for a sighted reader, because the answer is visible, and for a screen-reader user
+          the moment the app goes quiet with no explanation. This says the answer is ready.
+
+          The answer itself is deliberately NOT in a live region: announcing it token by token
+          would read the whole thing into the queue as it streams, which is worse than silence.
+        */}
+        {/* `aria-live` without `role="status"`: the role only implies the same politeness, and a
+            second element carrying it made `getByRole('status')` ambiguous for every other test
+            that asks about a copy confirmation. */}
+        <p
+          className="visually-hidden"
+          aria-live="polite"
+          aria-atomic="true"
+          data-testid="announcer"
+        >
+          {announcement}
+        </p>
         <Sidebar
           config={config}
           configFailed={failed}
@@ -444,7 +486,7 @@ export default function App() {
           onOpenPalette={() => setPaletteOpen(true)}
         />
 
-        <main className="main">
+        <main className="main" id="conversation" tabIndex={-1}>
           <Header
             config={config}
             selectedAgent={selectedAgent}

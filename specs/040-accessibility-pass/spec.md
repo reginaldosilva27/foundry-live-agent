@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 040-accessibility-pass |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -68,6 +69,25 @@ copy, the download, the mic, the send and stop, the collapse.
 **The activity rows, the tool bars and the trace numbers** are readable in a linear reading order: a
 duration bar is decorative and the number beside it is the information.
 
+**How the naming rule is asserted without becoming brittle.** Not a checklist in a doc, and not a
+per-component test that has to be remembered. The app is **rendered**, every interactive element is
+collected, and each is required to have a non-empty accessible name — `aria-label`, `title`, or its
+own text. It fails only when a control genuinely has none, which is the only thing it is meant to
+catch, and it catches a control added three specs from now.
+
+**The trace panel takes focus**, because a reader asked for it. That is the distinction: a surface
+the reader opened should receive focus, and one that appeared as a side effect should not steal it.
+Closing returns focus to the control that opened it.
+
+**The announcement says the answer is ready, and nothing more.** Not the turn's shape — "three
+tools, twelve seconds" is on screen already, and reading it into the queue makes the one moment
+that needed a word into a paragraph. The streaming text itself is never announced token by token.
+
+**Contrast is measured, in both palettes.** Spec 036 shipped the second one first, which is the
+order that makes this possible: the semantic text-on-surface pairs are computed against both
+themes' surfaces in a test, so this is a measurement rather than a claim (§5). It is still not a
+conformance statement — it is these pairs, at this ratio, asserted.
+
 ## Acceptance criteria
 
 1. **AC1** — A skip link is the first focusable element and moves focus to the conversation.
@@ -84,6 +104,8 @@ duration bar is decorative and the number beside it is the information.
 9. **AC9** — Decorative graphics — duration bars, the avatar, the pending dots — are hidden from
    assistive technology, and their information is available as text.
 10. **AC10** — Every new string ships `en` + `pt`.
+11. **AC11** — The semantic text-on-surface pairs meet 4.5:1 in **both** themes, computed in a test
+    rather than asserted in prose.
 
 ## Contract / data impact
 
@@ -92,16 +114,6 @@ duration bar is decorative and the number beside it is the information.
 | **BFF / `AgentEvent`** | Unchanged (§9). |
 | **Test surface** | The value of this spec is that it does not decay. AC8 in particular must be an assertion over the rendered app, so a control added later without a name fails CI — a checklist in a doc would be the §4 failure of the same fact in two places. |
 | **Docs** | `docs/design-system.md` — the focus and live-region behaviours join the layout contract. |
-
-## Open questions (clarify before planning)
-
-- [ ] How is AC8 asserted without becoming a test that fails on every legitimate change?
-- [ ] Does the trace panel take focus on open, or only announce itself? Taking focus is right for a
-      panel the reader asked for and wrong for one that opened as a side effect.
-- [ ] What exactly does the completion announcement say — "answer ready", or something carrying the
-      turn's shape (three tools, twelve seconds)?
-- [ ] Is contrast measured as part of this pass, and against which palette, given spec 036 adds a
-      second one? These two specs are coupled and the order matters.
 
 ## Out of scope / deferred
 

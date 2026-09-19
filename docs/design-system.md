@@ -79,3 +79,35 @@ Every storage key lives in `state/storage.ts`'s `KEYS` registry, and a test asse
 outside it touches `localStorage` or spells a key. The point of "what this browser keeps" is that
 it can be listed, exported and cleared — which stops being true the moment a key exists that
 nothing can enumerate.
+
+## Focus, live regions and contrast (spec 040)
+
+**The skip link is the first focusable element** on every load, because the rail is otherwise the
+first thing between the keyboard and the composer. It is moved off-screen with a transform rather
+than `display: none` — a hidden element is not focusable, and then the link does nothing for the
+one person it exists for.
+
+**One polite live region** holds one sentence, and it says the answer is ready. The streaming
+answer itself is deliberately **not** in a live region: announcing it token by token would read the
+whole thing into the queue as it arrives, which is worse than silence. The turn's shape — three
+tools, twelve seconds — is already on screen and stays there.
+
+`aria-live="polite"` without `role="status"`: the role only implies the same politeness, and a
+second element carrying it makes `getByRole('status')` ambiguous for every other surface that
+reports a copy confirmation.
+
+**Contrast is computed, not asserted in prose.** `contrast.test.ts` resolves the semantic
+text-on-surface pairs out of the ramp and checks them against WCAG's formula in **both** palettes.
+It found two real failures in the light mapping and they were fixed by stepping the ramp:
+
+| token | was | ratio | now | ratio |
+|---|---|---|---|---|
+| `--fg-3` on `--bg-2` | `--ds-n-500` | 4.38:1 | `--ds-n-600` | 7.11:1 |
+| `--fg-4` on `--bg-1` | `--ds-n-400` | 2.63:1 | `--ds-n-500` | 4.59:1 |
+
+The dark mapping already cleared both bars and is unchanged. `--fg-4` is held to 3:1 rather than
+4.5:1 because it carries captions, placeholders and disabled text — saying that out loud is more
+honest than exempting it silently.
+
+**This is not a conformance claim.** It is these pairs, at this ratio, asserted.
+

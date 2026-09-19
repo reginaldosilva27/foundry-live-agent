@@ -265,6 +265,13 @@ violation.
   different numbers on purpose. **Interruption is deferred**: barge-in is configured, but no
   recorded session carries an event for it, and inferring it from silence would be a measurement we
   did not make (§5). Recorded in `docs/REFERENCES.md`.
+- **The accessibility pass is a test, not a checklist (spec 040).** `a11y.test.tsx` renders the app
+  on five screens and fails if **any** interactive control has no accessible name — so a control
+  added three specs from now fails CI rather than shipping. `contrast.test.ts` computes the
+  semantic text-on-surface pairs against **both** palettes and found two real failures in the light
+  mapping (`--fg-3` at 4.38:1, `--fg-4` at 2.63:1), fixed by stepping the ramp. One polite live
+  region says the answer is ready; the streaming answer is **never** in a live region, or it is
+  read into the queue token by token. `document.lang` follows the interface language.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

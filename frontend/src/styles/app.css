@@ -4636,3 +4636,40 @@ button:disabled {
   font-size: var(--fs-body-s);
   color: var(--fg-2);
 }
+
+/* --- The keyboard and screen-reader pass (spec 040) --------------------------------------
+   The skip link is the first focusable element on the page. It is off-screen until focused, not
+   `display: none` — a hidden element is not focusable, and then the link does nothing for the one
+   person it exists for. */
+
+.skip-link {
+  position: absolute;
+  z-index: 100;
+  top: var(--sp-2);
+  left: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--bg-accent);
+  font-size: var(--fs-body-s);
+  color: var(--fg-on-accent);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* Available to a screen reader, absent from the layout. Not `display: none`, which removes it from
+   the accessibility tree along with the layout. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}

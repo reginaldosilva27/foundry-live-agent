@@ -1,24 +1,20 @@
 # Tasks: The keyboard and screen-reader pass
 
-> The work, ordered, as a TDD checklist. Each implementation task is preceded by the
-> test that should fail first (red → green → refactor). Check boxes as you go.
-
-## Tasks
-
-- [ ] **T1 — <test first>**: write failing test for AC1
-- [ ] **T2 — <implement>**: make T1 pass
-- [ ] **T3 — <test first>**: write failing test for AC2
-- [ ] **T4 — <implement>**: make T3 pass
-- [ ] **T5 — contract/docs**: update the single source of truth + docs in the same change (§4)
-- [ ] **T6 — i18n**: add en + pt strings (constitution §7, if applicable)
-- [ ] **T7 — refactor**: clean up, keep tests green
+- [x] **T1 — test**: every interactive control in the rendered app has an accessible name (AC8).
+- [x] **T2 — implement**: names for whatever that finds.
+- [x] **T3 — test**: the skip link is first and targets the conversation (AC1, AC2).
+- [x] **T4 — implement**: the skip link.
+- [x] **T5 — test**: `lang` follows the interface language (AC7).
+- [x] **T6 — implement**: the `lang` effect.
+- [x] **T7 — test**: a settled turn announces; the streaming answer is not a live region (AC5, AC6).
+- [x] **T8 — implement**: the announcement region.
+- [x] **T9 — test**: opening the trace panel moves focus; closing restores it (AC3, AC4).
+- [x] **T10 — implement**: the focus moves.
+- [x] **T11 — test**: contrast in both themes (AC11).
+- [x] **T12 — implement**: whatever that finds.
+- [x] **T13 — docs/sync**, **T14 — spec** flip to `done`.
 
 ## Definition of done
 
-- [ ] Every acceptance criterion in `spec.md` maps to a passing test
-- [ ] Lint clean
-- [ ] Tests green
-- [ ] Type-check / build passes
-- [ ] Docs updated in the same change; cross-cutting contract in sync (§4)
-- [ ] (If bilingual) all new user-facing text exists in en **and** pt
-- [ ] `spec.md` status updated to `done`
+- [ ] Every acceptance criterion maps to a passing test
+- [ ] Lint clean · Tests green · `verify-gates` green

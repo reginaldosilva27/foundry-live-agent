@@ -145,8 +145,12 @@
 
   --fg-1:              var(--ds-black);   /* Strongest text */
   --fg-2:              var(--ds-n-700);   /* Body */
-  --fg-3:              var(--ds-n-500);   /* Muted, captions */
-  --fg-4:              var(--ds-n-400);   /* Disabled, placeholders */
+  /* Stepped one down each, spec 040. MEASURED, not adjusted by eye: at n-500 and n-400 the muted
+     text read 4.38:1 on `--bg-2` and the placeholder step 2.63:1 on `--bg-1` — under 4.5:1 and
+     under 3:1 respectively. `contrast.test.ts` computes both and fails if they drift back.
+     The dark mapping already cleared the same bars and is unchanged. */
+  --fg-3:              var(--ds-n-600);   /* Muted, captions — 7.44:1 on white */
+  --fg-4:              var(--ds-n-500);   /* Disabled, placeholders — 4.59:1 on white */
   --fg-on-accent:      var(--ds-white);
   --fg-on-inverse:     var(--ds-white);
   --fg-link:           var(--ds-blue);

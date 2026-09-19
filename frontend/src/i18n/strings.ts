@@ -44,6 +44,14 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- The keyboard and screen-reader pass (spec 040) ----------------------
+  // `a11y.answerReady` is deliberately short. The turn's shape \u2014 three tools, twelve seconds \u2014 is
+  // already on screen; reading it into the announcement queue would turn the one moment that
+  // needed a word into a paragraph.
+  'a11y.skipToConversation': { en: 'Skip to the conversation', pt: 'Ir para a conversa' },
+  'a11y.answerReady': { en: 'The answer is ready', pt: 'A resposta est\u00e1 pronta' },
+  'a11y.announcements': { en: 'Announcements', pt: 'Avisos' },
+
   // --- What the voice session is doing (spec 039) --------------------------
   'voice.elapsed': { en: '{seconds}s', pt: '{seconds}s' },
 
