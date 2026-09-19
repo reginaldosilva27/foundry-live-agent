@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 035-tables-and-code |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -45,15 +46,30 @@ already use, so there is one copy behaviour in the app and not two (§4).
 
 **A block whose language was not detected** says nothing rather than guessing one.
 
-**A table** carries a copy control offering it as delimited text that opens correctly in a
-spreadsheet. The format the clarify step settles; the requirement is that a cell containing a comma
-or a newline survives the round trip.
+**A table** carries a copy control offering it as **tab-separated** text. This is a *clipboard*
+operation, not a file: a spreadsheet pastes TSV straight into cells, while CSV on the clipboard
+lands in a single column or opens an import dialog. CSV would be the better answer to a question
+nobody asked here — "download a file".
+
+A cell containing a tab, a newline or a quote is **quoted, with inner quotes doubled** — the CSV
+escaping rule, applied to a tab delimiter. Without it a single cell with a line break in it silently
+shifts every column after it.
+
+**There is no second control offering Markdown.** A reader pasting into a document already has it:
+the answer actions copy `turn.text`, which is the model's own Markdown table, verbatim. A button
+that produced a second version of the same thing would be a second source of truth for it (§4).
 
 **A table wider than the column** scrolls horizontally inside its own container. The conversation
 column never scrolls sideways, at any width.
 
 **While streaming**, a block that has not closed yet carries no controls — there is nothing complete
-to take — and gains them when the turn settles.
+to take — and gains them when the turn settles. The condition is the **turn**, not the fence: a
+fence that has closed while the answer keeps arriving is complete, but the controls would still
+appear mid-paragraph and move the text under the reader.
+
+**The trace panel's payload reader is left alone.** It has no copy control today — checked, not
+assumed — and adding one is a different surface with different content: a JSON payload somebody is
+reading, not a code block inside an answer. Recorded below as a gap rather than folded in here.
 
 ## Acceptance criteria
 
@@ -64,16 +80,20 @@ to take — and gains them when the turn settles.
 3. **AC3** — Copying a code block places exactly its content on the clipboard — no language line, no
    surrounding whitespace.
 4. **AC4** — Copy success and failure use the existing copy feedback (§4).
-5. **AC5** — A table offers a copy control producing delimited text whose rows and columns match the
-   rendered table.
-6. **AC6** — A cell containing the delimiter, a quote or a newline survives the copy correctly
-   (asserted with such a table).
+5. **AC5** — A table offers a copy control producing **tab-separated** text whose rows and columns
+   match the rendered table.
+6. **AC6** — A cell containing a tab, a quote or a newline is quoted with inner quotes doubled, and
+   round-trips (asserted with such a table).
+11. **AC11** — No control offers the table as Markdown; the answer actions remain the one way to
+    take the model's own text (§4).
 7. **AC7** — A table wider than its column scrolls within its own container, and the conversation
    column does not scroll horizontally (existing layout test, extended).
 8. **AC8** — A block or table inside a turn still streaming renders no copy control; it appears when
    the turn settles.
 9. **AC9** — Rendering and copying issue no request (asserted).
 10. **AC10** — Every new string ships `en` + `pt`.
+12. **AC12** — A settled turn's blocks carry controls; a streaming turn's do not, whether or not
+    the fence itself has closed.
 
 ## Contract / data impact
 
@@ -82,19 +102,15 @@ to take — and gains them when the turn settles.
 | **BFF / `AgentEvent`** | Unchanged (§9). |
 | **Copy behaviour** | `useCopy` stays the single source of truth for clipboard interaction and its feedback; these controls use it rather than re-implementing it (§4). |
 | **Markdown rendering** | `Markdown.tsx`'s block memoisation must survive: controls are added without making each token re-render the settled blocks (spec 004 AC8). |
+| **Deferred, and recorded** | `LogViewer` — the trace panel's payload reader — has no copy control at all. That is a real gap and it is not this spec's surface. |
 | **Docs** | None expected. |
-
-## Open questions (clarify before planning)
-
-- [ ] CSV or TSV for a table? TSV pastes into a spreadsheet without a dialog; CSV is the more
-      expected file.
-- [ ] Does the table copy also offer Markdown, which is what a reader pasting into a document wants?
-- [ ] Does a code block get a download as well as a copy, or is copy enough?
-- [ ] Do these controls appear in the trace panel's payload reader too, or does it already have its
-      own copy behaviour to reuse?
 
 ## Out of scope / deferred
 
 - Sorting, filtering or reformatting a table.
 - Running or editing code.
 - Line numbers, wrapping toggles, or diff rendering.
+- Downloading a code block as a file. Copy answers the need; a download needs a filename and a
+  language-to-extension table, which is a surface of its own.
+- A copy control in the trace panel's payload reader — a real gap, deliberately not widened into
+  here.

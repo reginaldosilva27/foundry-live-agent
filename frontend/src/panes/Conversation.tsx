@@ -175,7 +175,9 @@ export function Conversation({
 
                 {message.turn.text && (
                   <div className="turn__answer" data-testid="answer">
-                    <Markdown text={message.turn.text} />
+                    {/* Controls appear when the TURN settles, not when a fence closes: a button
+                        arriving mid-paragraph moves the text under the reader (spec 035). */}
+                    <Markdown text={message.turn.text} settled={isSettled(message.turn)} />
                     {message.turn.status === 'streaming' && (
                       <span className="caret" aria-hidden="true" />
                     )}

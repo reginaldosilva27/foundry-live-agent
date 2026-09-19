@@ -44,6 +44,12 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Tables and code you can take (spec 035) -----------------------------
+  // `copy.copied` / `copy.failed` are reused rather than restated: one clipboard behaviour means
+  // one set of words for whether it worked (\u00a74).
+  'code.copy': { en: 'Copy this code', pt: 'Copiar este c\u00f3digo' },
+  'table.copy': { en: 'Copy this table', pt: 'Copiar esta tabela' },
+
   // --- Where an answer came from (spec 034) --------------------------------
   //
   // The wording has to stay on the right side of one line: we know what the agent CONSULTED, not

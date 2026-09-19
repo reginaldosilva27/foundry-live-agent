@@ -1,24 +1,33 @@
 # Tasks: Tables and code you can take
 
-> The work, ordered, as a TDD checklist. Each implementation task is preceded by the
-> test that should fail first (red → green → refactor). Check boxes as you go.
+## Phase 1 — the escaping rule (AC6)
 
-## Tasks
+- [x] **T1 — test**: a cell with a tab, a newline or a quote is quoted with inner quotes doubled.
+- [x] **T2 — implement**: `state/tsv.ts`.
 
-- [ ] **T1 — <test first>**: write failing test for AC1
-- [ ] **T2 — <implement>**: make T1 pass
-- [ ] **T3 — <test first>**: write failing test for AC2
-- [ ] **T4 — <implement>**: make T3 pass
-- [ ] **T5 — contract/docs**: update the single source of truth + docs in the same change (§4)
-- [ ] **T6 — i18n**: add en + pt strings (constitution §7, if applicable)
-- [ ] **T7 — refactor**: clean up, keep tests green
+## Phase 2 — the code block (AC1–AC4, AC9)
+
+- [x] **T3 — test**: language name shown or absent; copy button named; copies exactly the content.
+- [x] **T4 — implement**: `components/CodeBlock.tsx`.
+
+## Phase 3 — the table (AC5, AC7, AC11)
+
+- [x] **T5 — test**: the TSV matches the rendered rows and columns; the wrapper scrolls; no
+      Markdown control exists.
+- [x] **T6 — implement**: `components/TableBlock.tsx`.
+
+## Phase 4 — streaming (AC8, AC12)
+
+- [x] **T7 — test**: a streaming turn renders no controls; a settled one does; a drawn chart gains
+      no code header.
+- [x] **T8 — implement**: `BlockContext` and the `settled` prop through `Conversation`.
+
+## Phase 5 — the record
+
+- [x] **T9 — i18n**, **T10 — styles**, **T11 — layout test extended**, **T12 — refactor**.
+- [x] **T13 — spec**: flip to `done`.
 
 ## Definition of done
 
-- [ ] Every acceptance criterion in `spec.md` maps to a passing test
-- [ ] Lint clean
-- [ ] Tests green
-- [ ] Type-check / build passes
-- [ ] Docs updated in the same change; cross-cutting contract in sync (§4)
-- [ ] (If bilingual) all new user-facing text exists in en **and** pt
-- [ ] `spec.md` status updated to `done`
+- [ ] Every acceptance criterion maps to a passing test
+- [ ] Lint clean · Tests green · `verify-gates` green

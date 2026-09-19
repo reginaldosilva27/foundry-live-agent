@@ -218,6 +218,15 @@ violation.
   only a repository path, which renders as a path and never as a link. A generic URL scan lists
   pages the agent never opened (§5), so the tests are driven by the **recorded** payloads. `callKey`
   in `state/turn.ts` is the single home for how a call is addressed.
+- **Code blocks and tables carry their own controls (spec 035).** `Markdown.tsx` overrides `pre`
+  (not `code` — `<pre>` takes phrasing content only, so the header must sit outside it) and `table`.
+  A chart or diagram fence is passed through untouched, decided by the child's **className**: by the
+  time `pre` renders, its child is an element of the `code` override, so `node.type` is that
+  function rather than `'code'`. A table copies as **TSV**, because this is the clipboard and a
+  spreadsheet pastes TSV straight into cells; a cell containing a tab, newline or quote is quoted
+  with inner quotes doubled, or one line break silently shifts every column after it. No control
+  offers Markdown — the answer actions already copy `turn.text` verbatim (§4). Controls key off the
+  **turn** being settled, not off the fence closing.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

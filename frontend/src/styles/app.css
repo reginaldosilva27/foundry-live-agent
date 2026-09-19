@@ -4144,3 +4144,73 @@ button:disabled {
 .sources__from {
   color: var(--fg-4);
 }
+
+/* --- Tables and code you can take (spec 035) ---------------------------------------------
+   The controls are quiet until wanted: visible on hover or focus, and always reachable by the
+   keyboard, because a control that only a mouse can find is not a control for everyone. */
+
+.code-block,
+.table-block {
+  position: relative;
+  margin: var(--sp-3) 0;
+}
+
+.code-block__head,
+.table-block__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+  gap: var(--sp-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.table-block__head {
+  justify-content: flex-end;
+}
+
+.code-block__lang {
+  font-family: var(--font-mono);
+}
+
+.code-block__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.code-block__copy,
+.table-block__copy {
+  display: flex;
+  padding: var(--sp-1);
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  color: var(--fg-4);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.code-block:hover .code-block__copy,
+.table-block:hover .table-block__copy,
+.code-block__copy:focus-visible,
+.table-block__copy:focus-visible {
+  opacity: 1;
+}
+
+.code-block__copy:hover,
+.table-block__copy:hover {
+  color: var(--fg-2);
+}
+
+/* The table scrolls itself. The conversation column never scrolls sideways, at any width. */
+.table-block__scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table-block__scroll table {
+  width: max-content;
+  min-width: 100%;
+}
