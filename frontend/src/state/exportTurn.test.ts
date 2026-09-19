@@ -215,3 +215,38 @@ describe('a chart survives the export as its source (spec 033, AC15)', () => {
   })
 })
 
+describe('the sources travel with the answer (spec 034, AC8)', () => {
+  const output = JSON.stringify({
+    results: [{ title: 'Foundry', url: 'https://learn.microsoft.com/azure/foundry' }],
+  })
+
+  const exported = turnToMarkdown(
+    {
+      question: 'What is Foundry?',
+      turn: reduceEvents([
+        { type: 'tool_call', call_id: 'c1', name: 'search_web', arguments: '{}', executor: 'bff' },
+        { type: 'tool_result', call_id: 'c1', output, duration_ms: 12 },
+        { type: 'text_delta', text: 'It is a platform.' },
+      ]),
+    },
+    s,
+  )
+
+  it('lists what was consulted, as a link', () => {
+    expect(exported).toContain(t('export.sources', 'en'))
+    expect(exported).toContain('https://learn.microsoft.com/azure/foundry')
+  })
+
+  it('says which tool produced it', () => {
+    expect(exported).toContain('search_web')
+  })
+
+  it('omits the section entirely for a turn that consulted nothing', () => {
+    const bare = turnToMarkdown(
+      { question: 'Hi', turn: reduceEvents([{ type: 'text_delta', text: 'Hello.' }]) },
+      s,
+    )
+    expect(bare).not.toContain(t('export.sources', 'en'))
+  })
+})
+

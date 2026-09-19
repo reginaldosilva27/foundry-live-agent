@@ -1,6 +1,7 @@
 /** The centre column: the empty state, then the turns, scrolled to the newest. */
 import { useEffect, useRef } from 'react'
 import { AnswerActions } from '../components/AnswerActions'
+import { Sources } from '../components/Sources'
 import { ErrorCard } from '../components/ErrorCard'
 import { formatClock } from '../components/format'
 import { Markdown } from '../components/Markdown'
@@ -11,6 +12,7 @@ import type { Message } from '../hooks/useAgentStream'
 import { useElapsed } from '../hooks/useElapsed'
 import type { Pricing } from '../state/cost'
 import { isSettled, turnStatus, type Turn } from '../state/turn'
+import { sourcesOf } from '../state/sources'
 import { ActivityPanel } from './ActivityPanel'
 import { EmptyState } from './EmptyState'
 
@@ -193,6 +195,13 @@ export function Conversation({
 
                 {isSettled(message.turn) && (
                   <>
+                    {/* Only once the turn settles (spec 034, AC10) — a list that grew as calls
+                        landed would reflow the text somebody is reading, and a source is only
+                        evidence once the answer that used it exists. */}
+                    <Sources
+                      sources={sourcesOf(message.turn)}
+                      onOpenCall={(callKey) => onOpenTrace(message.id, callKey)}
+                    />
                     <AnswerActions
                       turn={message.turn}
                       question={questionFor(messages, message.id)}

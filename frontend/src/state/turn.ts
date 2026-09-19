@@ -82,6 +82,18 @@ export interface Turn {
   unknownEvents: Record<string, number>
 }
 
+/**
+ * How a call is addressed, for opening its payload in the trace reader.
+ *
+ * A function call has an id Foundry gave it; an MCP call has none, so its position in the turn
+ * stands in. **One home** (§4): `App` resolves an address to an activity with this, and spec 034's
+ * source strip produces one with it. The two agreeing by coincidence is a link that opens the
+ * wrong payload.
+ */
+export function callKey(activity: Activity, index: number): string {
+  return activity.kind === 'tool' ? activity.callId : `mcp_${index}`
+}
+
 export function emptyTurn(): Turn {
   return { reasoning: '', activities: [], text: '', status: 'streaming', unknownEvents: {} }
 }

@@ -12,6 +12,7 @@
 import { formatMs, modelName } from '../components/format'
 import type { StringKey } from '../i18n/strings'
 import type { StoredConversation } from './history'
+import { sourcesOf } from './sources'
 import type { Turn } from './turn'
 
 export interface ExportInput {
@@ -57,6 +58,19 @@ function turnSection(input: ExportInput, s: Translate): string[] {
 
   lines.push(`## ${s('export.question')}`, '', question, '')
   lines.push(`## ${s('export.answer')}`, '', turn.text.trim() || s('export.noAnswer'), '')
+
+  // A saved answer without what it consulted keeps the part worth least (spec 034, AC8). Links as
+  // links, repository paths as plain text — the same distinction the strip draws on screen.
+  const sources = sourcesOf(turn)
+  if (sources.length > 0) {
+    lines.push(`## ${s('export.sources')}`, '')
+    for (const source of sources) {
+      const from = source.kind === 'passage' ? s('sources.knowledgeBase') : source.from
+      const name = source.failed ? s('sources.failed') : source.label
+      lines.push(`- ${source.url ? `[${name}](${source.url})` : name} — ${from}`)
+    }
+    lines.push('')
+  }
 
   lines.push(`## ${s('export.calls')}`, '')
   if (turn.activities.length === 0) {

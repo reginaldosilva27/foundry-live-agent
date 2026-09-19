@@ -226,3 +226,24 @@ Two consequences worth knowing:
   `conversation_id`, because that is Foundry's state and this app does not own it (§8).
 - A stopped turn is **not** read aloud when spoken answers are on. Speaking the half of an answer
   somebody just interrupted is the opposite of what they asked for.
+
+## What an answer consulted (spec 034)
+
+The agent is told to cite, and does — in prose. The events already carry the evidence, so the
+**Sources** strip under a settled turn is built from `mcp_call` and `tool_result`, never from the
+answer text. Selecting one opens that call's payload in the trace reader; it is an index into
+evidence the app already renders, not a second copy of it.
+
+**The reading rule is per tool, and that is measured rather than assumed:**
+
+| Tool | Where the URL is |
+|---|---|
+| `microsoft_learn` | `contentUrl` — inside a string holding **two concatenated JSON documents**, so `JSON.parse` on the whole thing throws |
+| `search_web` | `url`, in `{query, results[]}` |
+| `lookup_knowledge` | none — `source`, a path inside this repository, rendered as a path and never as a link |
+
+The tempting simplification, scanning the output string for URLs, is wrong for all three. Against
+the real Learn payload it finds nothing at the top level and pulls dozens of incidental links out
+of the Markdown in `content`, listing pages the agent never opened as though it had (§5). The tests
+are driven by the recorded payloads for exactly that reason.
+

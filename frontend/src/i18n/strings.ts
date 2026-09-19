@@ -44,6 +44,24 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Where an answer came from (spec 034) --------------------------------
+  //
+  // The wording has to stay on the right side of one line: we know what the agent CONSULTED, not
+  // what it used. "Sources" and "from" say that; anything like "according to" would claim the app
+  // knows which source supports which sentence, which it does not (\u00a75).
+  'sources.title': { en: 'Sources', pt: 'Fontes' },
+  'sources.from': { en: 'from {tool}', pt: 'de {tool}' },
+  'sources.knowledgeBase': {
+    en: 'project knowledge base',
+    pt: 'base de conhecimento do projeto',
+  },
+  'sources.failed': { en: 'this lookup failed', pt: 'esta consulta falhou' },
+  'sources.openCall': {
+    en: 'Open the call that produced this',
+    pt: 'Abrir a chamada que produziu isto',
+  },
+  'export.sources': { en: 'Sources', pt: 'Fontes' },
+
   // --- Charts and diagrams in an answer (spec 033) -------------------------
   //
   // The reason codes are deliberately specific. Someone whose block did not draw is debugging

@@ -4090,3 +4090,57 @@ button:disabled {
   max-width: 100%;
   height: auto;
 }
+
+/* --- Where an answer came from (spec 034) ------------------------------------------------
+   Deliberately quiet. The sources support the answer; they are not a second answer, and a strip
+   that competed with the prose above it would be arguing with its own purpose. */
+
+.sources {
+  margin: var(--sp-2) 0 0;
+}
+
+.sources__title {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+
+.sources__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  gap: var(--sp-1);
+  list-style: none;
+}
+
+.sources__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--fs-caption);
+}
+
+.sources__open {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.sources__open:hover {
+  color: var(--fg-link);
+}
+
+.sources__from {
+  color: var(--fg-4);
+}

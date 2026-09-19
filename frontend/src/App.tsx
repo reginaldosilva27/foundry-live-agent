@@ -32,6 +32,7 @@ import { type Command } from './state/keys'
 import { type Entry } from './state/palette'
 import { useAgentDetail, useAgents } from './state/agents'
 import { usePromote } from './state/promote'
+import { callKey } from './state/turn'
 import { favouriteRows, useFavourites } from './state/favourites'
 import { titleFrom, useHistory } from './state/history'
 import { useCollapsed } from './state/ui'
@@ -339,8 +340,7 @@ export default function App() {
   const openCall = useMemo(() => {
     if (!trace.callId || shownTurn?.role !== 'agent') return undefined
     return shownTurn.turn.activities.find(
-      (activity, index) =>
-        (activity.kind === 'tool' ? activity.callId : `mcp_${index}`) === trace.callId,
+      (activity, index) => callKey(activity, index) === trace.callId,
     )
   }, [shownTurn, trace.callId])
 
