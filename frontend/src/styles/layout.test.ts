@@ -92,7 +92,12 @@ describe('app.css', () => {
   })
 
   it('writes no colour of its own — every value comes from a design-system token', () => {
-    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+    // Comments are stripped first. The rule is about DECLARATIONS: a stylesheet that names a hex
+    // value has taken a decision the design system should own. A comment that documents which
+    // ramp step a token resolves to — spec 036's elevation stack, spec 033's validated palette —
+    // is the opposite, and a grep over raw source cannot tell the two apart.
+    const declarations = css.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(declarations).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })
 })
 

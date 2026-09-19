@@ -110,6 +110,26 @@
   --ds-series-3:       #00998C;
   --ds-series-4:       #A21CAF;
 
+  /* The dark theme's fourth slot (spec 036). SELECTED for the dark card surface, not flipped:
+     validated all-pairs against #1B2230, where #A21CAF falls to 2.52:1 contrast. The other three
+     hold unchanged, so only this one is restated. */
+  --ds-series-4-dark:  #BE2FCF;
+
+  /* Syntax colours for the dark theme (spec 036).
+     The light theme ships with highlight.js's `github.css`, which is vendored and imported as
+     given. An @import cannot be scoped to a theme attribute, so a second theme file would simply
+     overwrite the first for BOTH themes — these redefine the same groups github.css defines,
+     mirroring GitHub's own dark pairing, which is a well-tested set on a dark ground. */
+  --ds-code-keyword:   #FF7B72;
+  --ds-code-title:     #D2A8FF;
+  --ds-code-literal:   #79C0FF;
+  --ds-code-string:    #A5D6FF;
+  --ds-code-builtin:   #FFA657;
+  --ds-code-comment:   #8B949E;
+  --ds-code-name:      #7EE787;
+  --ds-code-bullet:    #F2CC60;
+  --ds-code-deletion:  #FFA198;
+
   --ds-success:        #00B070;
   --ds-warning:        #F2A900;
   --ds-danger:         #E54848;

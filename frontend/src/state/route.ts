@@ -30,6 +30,8 @@ export type Route =
   | { name: 'compare' }
   /** What this deployment is, as `GET /config` reports it (spec 032). Read-only, and linkable. */
   | { name: 'about' }
+  /** What THIS BROWSER prefers (spec 036). The editable counterpart to `/about`. */
+  | { name: 'preferences' }
 
 /** Every route the app can be at, in the order they are documented. */
 export const ROUTES = [
@@ -41,6 +43,7 @@ export const ROUTES = [
   'agent',
   'compare',
   'about',
+  'preferences',
 ] as const
 
 /**
@@ -58,6 +61,7 @@ export function parseRoute(pathname: string): Route {
     if (segments[0] === 'history') return { name: 'history' }
     if (segments[0] === 'compare') return { name: 'compare' }
     if (segments[0] === 'about') return { name: 'about' }
+    if (segments[0] === 'preferences') return { name: 'preferences' }
   }
   if (segments.length === 2) {
     if (segments[0] === 'agents') return { name: 'agent', agentName: segments[1] }
@@ -81,6 +85,8 @@ export function buildPath(route: Route): string {
       return '/compare'
     case 'about':
       return '/about'
+    case 'preferences':
+      return '/preferences'
     case 'conversation':
       return `/c/${encodeURIComponent(route.id)}`
     case 'trace':

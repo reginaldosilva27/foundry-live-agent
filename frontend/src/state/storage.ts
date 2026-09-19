@@ -10,6 +10,28 @@
  * owns the conversation; §8 stays true because none of this is ever sent anywhere.
  */
 
+/**
+ * Every key this browser keeps, in one place (spec 036, AC10).
+ *
+ * Four of these predate this registry and keep their exact spellings, because a reader's stored
+ * history and favourites must survive the move. What the registry buys is the next one: a
+ * preference added without a home here would be a fifth key nobody can enumerate, and the point of
+ * "what this browser keeps" is that it can be listed, exported and cleared.
+ *
+ * `fla.theme.v1` is spelled a second time in `index.html`, deliberately — see `preferences.ts`.
+ */
+export const KEYS = {
+  history: 'fla.history.v1',
+  favourites: 'fla.favourites.v1',
+  ui: 'fla.ui.v1',
+  preferences: 'fla.prefs.v1',
+  /** Read by the pre-paint script before any module exists, so it is stored on its own. */
+  theme: 'fla.theme.v1',
+  probe: 'fla.probe',
+} as const
+
+export type StorageKey = (typeof KEYS)[keyof typeof KEYS]
+
 /** The backend, or `null` when this browser will not hand it over. */
 function backend(): Storage | null {
   try {
@@ -48,15 +70,13 @@ export function remove(key: string): void {
   }
 }
 
-const PROBE = 'fla.probe'
-
 /** Whether this browser stores at all — probed, because the only honest answer is a write. */
 export function available(): boolean {
   try {
     const store = backend()
     if (!store) return false
-    store.setItem(PROBE, '1')
-    store.removeItem(PROBE)
+    store.setItem(KEYS.probe, '1')
+    store.removeItem(KEYS.probe)
     return true
   } catch {
     return false

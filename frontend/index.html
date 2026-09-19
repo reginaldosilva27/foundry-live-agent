@@ -11,6 +11,26 @@
     -->
     <link rel="stylesheet" href="/ds/colors_and_type.css" />
     <title>Foundry Live Agent</title>
+    <!--
+      The theme, before first paint (spec 036, AC3/AC12).
+
+      CSS cannot read storage, so there is no CSS-only way to honour a CHOSEN theme on the first
+      frame; without this the app paints the other palette and corrects itself, on every load.
+
+      It necessarily spells the key before any module exists to ask, so `fla.theme.v1` appears here
+      and in `state/storage.ts`. That duplication is deliberate and `preferences.test.ts` asserts
+      the two agree. `system` writes no attribute, which lets the stylesheet's
+      `prefers-color-scheme` block take over.
+    -->
+    <script>
+      try {
+        var t = localStorage.getItem('fla.theme.v1')
+        if (t) t = JSON.parse(t)
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {
+        /* A blocked origin or a private window: the system preference is a fine answer. */
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -227,6 +227,16 @@ violation.
   with inner quotes doubled, or one line break silently shifts every column after it. No control
   offers Markdown — the answer actions already copy `turn.text` verbatim (§4). Controls key off the
   **turn** being settled, not off the fence closing.
+- **Two themes, and the mapping is ours (spec 036).** A colour literal may only appear in the
+  **vendored** `public/ds/colors_and_type.css`; `app.css` names tokens and never values, and
+  `layout.test.ts` asserts it. Light is the base `:root` declaration, `[data-theme='dark']` is an
+  explicit choice, and the `prefers-color-scheme` block is guarded by `:not([data-theme='light'])`
+  so an explicit light choice survives a dark system; `system` **removes** the attribute rather
+  than writing one. The first paint needs a six-line inline script in `index.html` — CSS cannot
+  read storage — which spells the key itself; that duplication is deliberate and tested. The rail
+  does not invert: it becomes the deepest surface in an elevation stack. Syntax highlighting maps
+  **every** group `github.css` defines, including the unclassified ones, or text renders navy on
+  navy. Every storage key lives in `state/storage.ts`'s `KEYS`, asserted.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

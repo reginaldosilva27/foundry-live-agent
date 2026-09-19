@@ -6,9 +6,9 @@
  * legitimately keeps on its own: how the reader left the window, not what the agent said.
  */
 import { useCallback, useState } from 'react'
-import { readJson, writeJson } from './storage'
+import { KEYS, readJson, writeJson } from './storage'
 
-export const UI_KEY = 'fla.ui.v1'
+export const UI_KEY = KEYS.ui
 
 interface UiState {
   collapsed: boolean

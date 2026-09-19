@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 036-preferences-and-theme |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -49,6 +50,34 @@ All new prose ships `{ en, pt }` (§7).
 tracks a change made while the app is open. A chosen theme persists in this browser and survives a
 reload without the page flashing the other palette first.
 
+**The rail does not invert.** It is already the dark surface against a light column, and in dark it
+simply becomes the deepest one. The app gains an explicit elevation stack, and separation comes from
+that plus a border rather than from a hue change:
+
+```
+rail   --ds-ink     #11151C   deepest, recessed
+ground --ds-n-900   #121826
+card   --ds-ink-2   #1B2230   "elevated dark surface", which is what the DS calls it
+raised --ds-n-800   #1F2735
+```
+
+Inverting the rail would mean the one element a reader already navigates by changes character
+between themes, which is the opposite of what a theme should do.
+
+**Syntax highlighting is mapped, not vendored twice.** The light theme stays
+(`highlight.js/styles/github.css`); the dark one is a short override of the same `.hljs-*` classes
+in our own stylesheet, under the theme attribute. An `@import` cannot be scoped to an attribute, so
+importing a second theme file would simply overwrite the first for both themes. Our own mapping
+also keeps colour in one place, which is what the rest of this spec is about.
+
+**Density is not a preference.** The spec's own draft said nobody has asked for it, and that is the
+whole argument: a control nobody wants is a control to translate, test and keep working in two
+themes forever.
+
+**This is not where the deployment's facts live.** Spec 032's `/about` is read-only and stays its
+own screen; the distinction between what *this browser* keeps and what *the deployment* decided is
+one of the things this app exists to teach, and a toggle beside a fact would blur it.
+
 **Both themes are complete.** Every semantic token is defined for both, and no colour is defined only
 inside a media query — the failure mode being a screen that renders one theme's text on the other
 theme's ground. Every state the app can be in is legible in both: the dark rail, the trace panel, the
@@ -64,6 +93,21 @@ browser only — the same honesty spec 021 and 022 applied to history and favour
 
 **With storage unavailable**, every preference still works for the session and nothing throws (022
 AC9's rule).
+
+**The first paint is in the chosen theme**, which means a small inline script in `index.html` sets
+the attribute on `<html>` before the bundle loads. CSS cannot read storage, so there is no CSS-only
+answer; the alternative is a flash of the other palette on every load, which is the bug this rules
+out. That script necessarily names the storage key **before any module exists to ask**, so the key
+is spelled twice — a deliberate duplication, with a test asserting the two spellings agree (§4).
+
+**The chart palette is re-selected for dark, not flipped.** Spec 033 left this as a debt and it is
+paid here. Measured against the dark card surface, all-pairs: three hues hold, and the fourth is
+re-stepped because `#A21CAF` falls to 2.52:1 contrast on `#1B2230`.
+
+```
+light  #0074FF  #B45309  #00998C  #A21CAF
+dark   #0074FF  #B45309  #00998C  #BE2FCF     all checks pass, contrast >= 3:1
+```
 
 ## Acceptance criteria
 
@@ -83,6 +127,12 @@ AC9's rule).
 10. **AC10** — Browser-kept state is read and written through one module; no component reads storage
     directly (asserted, and it absorbs the existing rail and favourites keys).
 11. **AC11** — Every new string ships `en` + `pt`.
+12. **AC12** — The theme attribute is set before first paint, and the storage key the inline script
+    reads is the same one the storage module writes (asserted against both files).
+13. **AC13** — The chart series tokens are redefined for dark, and the dark set's validation is
+    recorded (spec 033's debt).
+14. **AC14** — Syntax highlighting is legible in both themes, and the dark mapping uses design
+    tokens rather than a second vendored theme file.
 
 ## Contract / data impact
 
@@ -93,19 +143,9 @@ AC9's rule).
 | **Design tokens** | `public/ds/colors_and_type.css` is the design system's file, imported as given. The dark mapping of the semantic layer is **ours** and belongs in the app's stylesheet, not in the vendored file — editing the vendored one would lose the change on the next import (§4). |
 | **Docs** | `docs/design-system.md` — the second palette and the token contract it depends on. |
 
-## Open questions (clarify before planning)
-
-- [ ] Does the dark theme invert the rail, which is already dark? A dark rail on a dark ground needs a
-      different separation than a dark rail on a light one.
-- [ ] Which `highlight.js` theme for dark, and does the light one stay?
-- [ ] Is density a real preference or speculation? Nobody has asked for it.
-- [ ] Does this panel share a home with spec 032's connection panel, or stay separate to keep the
-      "this browser" versus "this deployment" distinction sharp?
-- [ ] How is the first-paint flash avoided — an inline script before the app mounts, or a CSS-only
-      approach that cannot know a stored choice?
-
 ## Out of scope / deferred
 
 - Any preference that changes what the agent does.
 - Theming beyond light and dark.
 - Syncing preferences anywhere.
+- A density control — speculation, by the draft's own admission.

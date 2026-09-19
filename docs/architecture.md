@@ -234,7 +234,7 @@ it is generated from the configuration, and this page is written.
 
 ## Addresses (spec 024)
 
-The frontend has seven addresses and one reservation. `frontend/src/state/route.ts` is their single
+The frontend has eight addresses and one reservation. `frontend/src/state/route.ts` is their single
 source of truth — every link is built through it, and `route.test.ts` proves the parse and the build
 round-trip for **every** route in `ROUTES`, so this table cannot quietly fall behind the code again.
 
@@ -245,6 +245,7 @@ round-trip for **every** route in `ROUTES`, so this table cannot quietly fall be
 | `/agents/<name>` | one agent's definition, as the service reports it (spec 030) |
 | `/history` | the record this browser kept, and the controls that move it (spec 027) |
 | `/about` | what this deployment is, from `GET /config` (spec 032) |
+| `/preferences` | what **this browser** prefers, and editable (spec 036) |
 | `/c/<id>` | a conversation **this browser** kept (spec 021) |
 | `/trace/<response_id>` | the trace panel on that response |
 | `/compare` | reserved for spec 020; renders the chat until that spec is built |

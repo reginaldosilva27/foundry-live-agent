@@ -16,10 +16,10 @@
 import { useCallback, useState } from 'react'
 import type { Message } from '../hooks/useAgentStream'
 import { fold } from './fold'
-import { available, readJson, remove as removeKey, writeJson } from './storage'
+import { KEYS, available, readJson, remove as removeKey, writeJson } from './storage'
 
 /** Bump the suffix to invalidate; never migrate a shape in place. */
-export const HISTORY_KEY = 'fla.history.v1'
+export const HISTORY_KEY = KEYS.history
 
 /** How many conversations a browser keeps. Enough to find yesterday's; small enough to write. */
 export const CAP = 25

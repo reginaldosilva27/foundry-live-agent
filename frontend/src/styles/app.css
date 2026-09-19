@@ -4214,3 +4214,252 @@ button:disabled {
   width: max-content;
   min-width: 100%;
 }
+
+/* =========================================================================================
+   The second palette (spec 036)
+
+   The vendored design system defines the RAMPS; this defines the MAPPING, because the mapping is
+   ours and editing `public/ds/colors_and_type.css` would lose it on the next import (§4).
+
+   Two blocks, deliberately. `[data-theme='dark']` is an explicit choice, written by the pre-paint
+   script and by the preferences store. The media query is "follow the system", and it is guarded
+   by `:not([data-theme])` so an explicit LIGHT choice is not overridden by a dark system.
+
+   The rail does not invert. It is already the dark surface against a light column, and in dark it
+   becomes the deepest one — an elevation stack rather than a hue change, so the element a reader
+   navigates by keeps its character in both themes:
+
+       rail    --ds-ink    #11151C   recessed
+       ground  --ds-n-900  #121826
+       card    --ds-ink-2  #1B2230   the DS calls this "elevated dark surface"
+       raised  --ds-n-800  #1F2735
+   ========================================================================================= */
+
+:root[data-theme='dark'],
+:root:not([data-theme]) {
+  /* Light stays the base declaration. Every token below is redefined, never only inside a media
+     query — a token defined in one place and not the other is how a screen ends up rendering one
+     theme's text on the other theme's ground (AC4). */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg-1: var(--ds-ink-2);
+    --bg-2: var(--ds-n-900);
+    --bg-3: var(--ds-n-800);
+    --bg-inverse: var(--ds-ink);
+    --bg-accent: var(--ds-blue-500);
+    --bg-accent-soft: var(--ds-n-800);
+
+    --fg-1: var(--ds-white);
+    --fg-2: var(--ds-n-200);
+    --fg-3: var(--ds-n-400);
+    --fg-4: var(--ds-n-500);
+    --fg-link: var(--ds-blue-500);
+
+    --border-1: var(--ds-n-700);
+    --border-2: var(--ds-n-600);
+    --border-accent: var(--ds-blue-500);
+
+    /* Re-SELECTED for the dark surface, not flipped (spec 033's debt, paid here). Validated
+       all-pairs against #1B2230: three hues hold; the fourth is re-stepped because #A21CAF falls
+       to 2.52:1 contrast there. All checks pass, contrast >= 3:1. */
+    --ds-series-4: var(--ds-series-4-dark);
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg-1: var(--ds-ink-2);
+  --bg-2: var(--ds-n-900);
+  --bg-3: var(--ds-n-800);
+  --bg-inverse: var(--ds-ink);
+  --bg-accent: var(--ds-blue-500);
+  --bg-accent-soft: var(--ds-n-800);
+
+  --fg-1: var(--ds-white);
+  --fg-2: var(--ds-n-200);
+  --fg-3: var(--ds-n-400);
+  --fg-4: var(--ds-n-500);
+  --fg-link: var(--ds-blue-500);
+
+  --border-1: var(--ds-n-700);
+  --border-2: var(--ds-n-600);
+  --border-accent: var(--ds-blue-500);
+
+  --ds-series-4: var(--ds-series-4-dark);
+}
+
+/* Syntax highlighting, mapped rather than vendored twice (spec 036, AC14).
+
+   `@import` cannot be scoped to an attribute, so importing a second highlight.js theme would
+   overwrite the first for BOTH themes. These mirror the groups `github.css` actually defines —
+   read from the file, not guessed — so no class is left with a light colour on a dark ground.
+   That was the failure the first attempt shipped: a string and a parameter list rendered navy on
+   navy, invisible until the page was looked at. */
+
+:root[data-theme='dark'] .hljs {
+  color: var(--fg-2);
+  background: transparent;
+}
+
+:root[data-theme='dark'] .hljs-doctag,
+:root[data-theme='dark'] .hljs-keyword,
+:root[data-theme='dark'] .hljs-meta .hljs-keyword,
+:root[data-theme='dark'] .hljs-template-tag,
+:root[data-theme='dark'] .hljs-template-variable,
+:root[data-theme='dark'] .hljs-type,
+:root[data-theme='dark'] .hljs-variable.language_ {
+  color: var(--ds-code-keyword);
+}
+
+:root[data-theme='dark'] .hljs-title,
+:root[data-theme='dark'] .hljs-title.class_,
+:root[data-theme='dark'] .hljs-title.class_.inherited__,
+:root[data-theme='dark'] .hljs-title.function_ {
+  color: var(--ds-code-title);
+}
+
+:root[data-theme='dark'] .hljs-attr,
+:root[data-theme='dark'] .hljs-attribute,
+:root[data-theme='dark'] .hljs-literal,
+:root[data-theme='dark'] .hljs-meta,
+:root[data-theme='dark'] .hljs-number,
+:root[data-theme='dark'] .hljs-operator,
+:root[data-theme='dark'] .hljs-variable,
+:root[data-theme='dark'] .hljs-selector-attr,
+:root[data-theme='dark'] .hljs-selector-class,
+:root[data-theme='dark'] .hljs-selector-id,
+:root[data-theme='dark'] .hljs-section {
+  color: var(--ds-code-literal);
+}
+
+:root[data-theme='dark'] .hljs-regexp,
+:root[data-theme='dark'] .hljs-string,
+:root[data-theme='dark'] .hljs-meta .hljs-string {
+  color: var(--ds-code-string);
+}
+
+:root[data-theme='dark'] .hljs-built_in,
+:root[data-theme='dark'] .hljs-symbol {
+  color: var(--ds-code-builtin);
+}
+
+:root[data-theme='dark'] .hljs-comment,
+:root[data-theme='dark'] .hljs-code,
+:root[data-theme='dark'] .hljs-formula {
+  color: var(--ds-code-comment);
+}
+
+:root[data-theme='dark'] .hljs-name,
+:root[data-theme='dark'] .hljs-quote,
+:root[data-theme='dark'] .hljs-selector-tag,
+:root[data-theme='dark'] .hljs-selector-pseudo,
+:root[data-theme='dark'] .hljs-addition {
+  color: var(--ds-code-name);
+}
+
+:root[data-theme='dark'] .hljs-bullet {
+  color: var(--ds-code-bullet);
+}
+
+:root[data-theme='dark'] .hljs-deletion {
+  color: var(--ds-code-deletion);
+}
+
+/* Plain, unclassified code text and substitutions inherit the body colour rather than the light
+   theme's near-black, which is what made a parameter list disappear. */
+:root[data-theme='dark'] .hljs-subst,
+:root[data-theme='dark'] .hljs-params,
+:root[data-theme='dark'] .hljs-punctuation,
+:root[data-theme='dark'] .hljs-property,
+:root[data-theme='dark'] .hljs-char,
+:root[data-theme='dark'] .hljs-tag,
+:root[data-theme='dark'] .hljs-emphasis,
+:root[data-theme='dark'] .hljs-strong {
+  color: var(--fg-2);
+}
+
+/* --- Preferences (spec 036) --------------------------------------------------------------
+   The editable counterpart to /about. Ordinary form furniture: the point of the screen is the
+   distinction it draws, not the controls, so they stay quiet. */
+
+.prefs {
+  display: flex;
+  flex-direction: column;
+  max-width: 56ch;
+  padding: var(--sp-5) var(--sp-5) var(--sp-6);
+  gap: var(--sp-4);
+  overflow-y: auto;
+}
+
+.prefs__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+}
+
+.prefs__lead,
+.prefs__warning {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.prefs__warning {
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+}
+
+.prefs__group {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  gap: var(--sp-2);
+}
+
+.prefs__legend {
+  padding: 0 var(--sp-2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+
+.prefs__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.prefs__choice {
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.prefs__choice[aria-pressed='true'] {
+  border-color: var(--border-accent);
+  color: var(--fg-1);
+}
+
+.prefs__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+  cursor: pointer;
+}

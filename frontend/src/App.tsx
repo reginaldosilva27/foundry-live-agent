@@ -26,12 +26,14 @@ import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
 import { CommandPalette } from './panes/CommandPalette'
 import { AboutScreen } from './panes/About'
+import { PreferencesScreen } from './panes/Preferences'
 import { AgentDetailScreen } from './panes/AgentDetail'
 import { HistoryScreen } from './panes/HistoryScreen'
 import { type Command } from './state/keys'
 import { type Entry } from './state/palette'
 import { useAgentDetail, useAgents } from './state/agents'
 import { usePromote } from './state/promote'
+import { usePreferences } from './state/preferences'
 import { callKey } from './state/turn'
 import { favouriteRows, useFavourites } from './state/favourites'
 import { titleFrom, useHistory } from './state/history'
@@ -59,7 +61,8 @@ export default function App() {
     route.name === 'agents' ||
     route.name === 'history' ||
     route.name === 'agent' ||
-    route.name === 'about'
+    route.name === 'about' ||
+    route.name === 'preferences'
       ? route.name
       : 'chat'
   // Spec 030. Read only while the detail is on screen: the listing already answers every other
@@ -68,6 +71,8 @@ export default function App() {
   const inspected = useAgentDetail(inspecting)
   // The app's only write (spec 031). Off by default, and the screen renders nothing without it.
   const promotion = usePromote()
+  // What this browser keeps (spec 036). Applied to the document by the hook itself.
+  const prefs = usePreferences()
   const setView = useCallback(
     (next: NavView) => navigate({ name: next === 'chat' ? 'chat' : next }),
     [navigate],
@@ -460,6 +465,9 @@ export default function App() {
                 })
               }}
             />
+          ) : view === 'preferences' ? (
+            // The editable counterpart to `/about`: what THIS BROWSER keeps (spec 036).
+            <PreferencesScreen prefs={prefs} />
           ) : view === 'about' ? (
             // Handed the config the rail already read (spec 032, AC2): the panel issues no request
             // of its own, which is what makes "read-only" a property rather than a promise.

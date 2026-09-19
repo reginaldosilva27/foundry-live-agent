@@ -41,7 +41,7 @@ import type { AgentRow } from '../types/agents'
  * Derived from the address rather than stored beside it (spec 024) — `App` maps one to the other,
  * and `route.ts` stays the single definition of the scheme (§4).
  */
-export type View = 'chat' | 'agents' | 'history' | 'agent' | 'about'
+export type View = 'chat' | 'agents' | 'history' | 'agent' | 'about' | 'preferences'
 
 /**
  * The views the rail can switch to.
@@ -239,6 +239,14 @@ export function Sidebar({
             onClick={() => onView('about')}
           >
             {s('sidebar.about')}
+          </button>
+          <button
+            type="button"
+            className="sidebar__about"
+            aria-current={view === 'preferences' ? 'page' : undefined}
+            onClick={() => onView('preferences')}
+          >
+            {s('sidebar.preferences')}
           </button>
           <p data-testid="sidebar-model">
             <span className="sidebar__key">{s('sidebar.modelLabel')}</span>

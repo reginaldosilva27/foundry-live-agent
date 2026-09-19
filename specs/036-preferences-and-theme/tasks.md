@@ -1,24 +1,35 @@
 # Tasks: Preferences, and a second theme
 
-> The work, ordered, as a TDD checklist. Each implementation task is preceded by the
-> test that should fail first (red → green → refactor). Check boxes as you go.
+## Phase 1 — one home for stored state (AC10)
 
-## Tasks
+- [x] **T1 — test**: no `localStorage` call and no `'fla.` literal outside `storage.ts`.
+- [x] **T2 — implement**: the `KEYS` registry; move history, favourites and ui behind it.
 
-- [ ] **T1 — <test first>**: write failing test for AC1
-- [ ] **T2 — <implement>**: make T1 pass
-- [ ] **T3 — <test first>**: write failing test for AC2
-- [ ] **T4 — <implement>**: make T3 pass
-- [ ] **T5 — contract/docs**: update the single source of truth + docs in the same change (§4)
-- [ ] **T6 — i18n**: add en + pt strings (constitution §7, if applicable)
-- [ ] **T7 — refactor**: clean up, keep tests green
+## Phase 2 — the preference store (AC1, AC2, AC5, AC6, AC7, AC12)
+
+- [x] **T3 — test**: defaults, persistence, `system` tracking the media query, storage failure.
+- [x] **T4 — test**: the key the inline script reads is the one the module writes.
+- [x] **T5 — implement**: `state/preferences.ts` and the `index.html` script.
+
+## Phase 3 — the second palette (AC4, AC13, AC14)
+
+- [x] **T6 — test**: every semantic token declared in base `:root`; series tokens redefined for
+      dark; the hljs dark mapping names tokens.
+- [x] **T7 — implement**: the dark mapping in `app.css`.
+- [x] **T8 — verify**: render the app in both themes and look at it.
+
+## Phase 4 — the panel (AC8, AC9, AC11)
+
+- [x] **T9 — test**: it says the preferences are local, renders no deployment fact, and each
+      control takes effect.
+- [x] **T10 — implement**: `panes/Preferences.tsx`, the route, the rail link.
+
+## Phase 5 — the record
+
+- [x] **T11 — i18n**, **T12 — docs** (`docs/design-system.md`), **T13 — sync**, **T14 — refactor**.
+- [x] **T15 — spec**: flip to `done`.
 
 ## Definition of done
 
-- [ ] Every acceptance criterion in `spec.md` maps to a passing test
-- [ ] Lint clean
-- [ ] Tests green
-- [ ] Type-check / build passes
-- [ ] Docs updated in the same change; cross-cutting contract in sync (§4)
-- [ ] (If bilingual) all new user-facing text exists in en **and** pt
-- [ ] `spec.md` status updated to `done`
+- [ ] Every acceptance criterion maps to a passing test
+- [ ] Lint clean · Tests green · `verify-gates` green

@@ -44,6 +44,29 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Preferences, and a second theme (spec 036) --------------------------
+  // The lead is the load-bearing one: it says these are THIS BROWSER's, which is the distinction
+  // between this screen and /about, where the deployment's facts are read-only.
+  'prefs.title': { en: 'Preferences', pt: 'Prefer\u00eancias' },
+  'prefs.lead': {
+    en: 'Kept in this browser only. Nothing here is sent anywhere, and nothing here changes what the agent does.',
+    pt: 'Guardado apenas neste navegador. Nada aqui \u00e9 enviado, e nada aqui muda o que o agente faz.',
+  },
+  'prefs.notStored': {
+    en: 'This browser will not store preferences, so these last until you close the tab.',
+    pt: 'Este navegador n\u00e3o guarda prefer\u00eancias, ent\u00e3o estas valem at\u00e9 fechar a aba.',
+  },
+  'prefs.theme': { en: 'Theme', pt: 'Tema' },
+  'prefs.theme.system': { en: 'Follow the system', pt: 'Seguir o sistema' },
+  'prefs.theme.light': { en: 'Light', pt: 'Claro' },
+  'prefs.theme.dark': { en: 'Dark', pt: 'Escuro' },
+  'prefs.language': { en: 'Language', pt: 'Idioma' },
+  'prefs.behaviour': { en: 'Behaviour', pt: 'Comportamento' },
+  'prefs.speakAnswers': { en: 'Speak answers aloud', pt: 'Ler as respostas em voz alta' },
+  'prefs.reasoningOpen': { en: 'Start the reasoning card open', pt: 'Abrir o card de racioc\u00ednio' },
+  'prefs.activityOpen': { en: 'Start the activity panel expanded', pt: 'Abrir o painel de atividade' },
+  'sidebar.preferences': { en: 'Preferences', pt: 'Prefer\u00eancias' },
+
   // --- Tables and code you can take (spec 035) -----------------------------
   // `copy.copied` / `copy.failed` are reused rather than restated: one clipboard behaviour means
   // one set of words for whether it worked (\u00a74).

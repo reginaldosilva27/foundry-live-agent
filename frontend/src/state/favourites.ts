@@ -10,11 +10,11 @@
  * `selectable` and `reason`, exactly as spec 019 sends them.
  */
 import { useCallback, useState } from 'react'
-import { readJson, writeJson } from './storage'
+import { KEYS, readJson, writeJson } from './storage'
 import type { AgentRow } from '../types/agents'
 
 /** Bump the suffix to invalidate. Separate from history and chrome: one clearing, one concern. */
-export const FAVOURITES_KEY = 'fla.favourites.v1'
+export const FAVOURITES_KEY = KEYS.favourites
 
 /**
  * The favourited agents that the project currently lists, in the listing's order.
