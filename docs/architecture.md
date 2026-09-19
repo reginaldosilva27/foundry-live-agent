@@ -210,16 +210,41 @@ shape and the exported one together (§4).
 - Function calling is **client-side execution** by definition and cannot live in a Toolbox.
 
 
+## This page, on screen (spec 032)
+
+`/about` renders `GET /config` — which project and agent, through the gateway or not, tracing on or
+off, what voice can do, whether this build may roll an agent back, and the **event-mapping report**:
+how many Foundry event names have been seen in a recorded run, and which have not.
+
+That last one is why the screen is worth having. It is constitution §10 in numeric form, and until
+spec 032 it was visible only by curling the endpoint.
+
+Two properties keep it honest:
+
+- **Read-only by construction, and asserted.** No control, no form, no request of its own — the
+  panel is handed the config the rail already read. The browser's preferences (spec 036) live
+  elsewhere on purpose: one is what the deployment decided, the other is what this browser keeps,
+  and a toggle beside a fact would blur the distinction spec 021 is built on.
+- **A field added to `/config` and not rendered fails CI.** `About.coverage.test.ts` reads
+  `backend/app/routers/config.py` and compares it with the panel's declared coverage (§4). Spec
+  031's `agents.can_promote` is the case that motivated it.
+
+This page and that screen describe the same deployment. Where they disagree, the screen is right —
+it is generated from the configuration, and this page is written.
+
 ## Addresses (spec 024)
 
-The frontend has four addresses and one reservation. `frontend/src/state/route.ts` is their single
+The frontend has seven addresses and one reservation. `frontend/src/state/route.ts` is their single
 source of truth — every link is built through it, and `route.test.ts` proves the parse and the build
-round-trip.
+round-trip for **every** route in `ROUTES`, so this table cannot quietly fall behind the code again.
 
 | Address | Shows |
 |---|---|
 | `/` | the chat |
 | `/agents` | the agents screen |
+| `/agents/<name>` | one agent's definition, as the service reports it (spec 030) |
+| `/history` | the record this browser kept, and the controls that move it (spec 027) |
+| `/about` | what this deployment is, from `GET /config` (spec 032) |
 | `/c/<id>` | a conversation **this browser** kept (spec 021) |
 | `/trace/<response_id>` | the trace panel on that response |
 | `/compare` | reserved for spec 020; renders the chat until that spec is built |

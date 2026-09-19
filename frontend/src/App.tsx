@@ -25,6 +25,7 @@ import { useAgentStream } from './hooks/useAgentStream'
 import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
 import { CommandPalette } from './panes/CommandPalette'
+import { AboutScreen } from './panes/About'
 import { AgentDetailScreen } from './panes/AgentDetail'
 import { HistoryScreen } from './panes/HistoryScreen'
 import { type Command } from './state/keys'
@@ -54,7 +55,10 @@ export default function App() {
    */
   const { route, navigate } = useRoute()
   const view: View =
-    route.name === 'agents' || route.name === 'history' || route.name === 'agent'
+    route.name === 'agents' ||
+    route.name === 'history' ||
+    route.name === 'agent' ||
+    route.name === 'about'
       ? route.name
       : 'chat'
   // Spec 030. Read only while the detail is on screen: the listing already answers every other
@@ -456,6 +460,10 @@ export default function App() {
                 })
               }}
             />
+          ) : view === 'about' ? (
+            // Handed the config the rail already read (spec 032, AC2): the panel issues no request
+            // of its own, which is what makes "read-only" a property rather than a promise.
+            <AboutScreen config={config} failed={failed} />
           ) : view === 'history' ? (
             <HistoryScreen history={history} onOpen={openConversation} />
           ) : view === 'agents' ? (

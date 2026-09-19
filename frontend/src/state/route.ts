@@ -28,6 +28,8 @@ export type Route =
   | { name: 'agent'; agentName: string }
   /** Reserved for spec 020. It parses; the app renders the chat until that spec builds it. */
   | { name: 'compare' }
+  /** What this deployment is, as `GET /config` reports it (spec 032). Read-only, and linkable. */
+  | { name: 'about' }
 
 /** Every route the app can be at, in the order they are documented. */
 export const ROUTES = [
@@ -38,6 +40,7 @@ export const ROUTES = [
   'history',
   'agent',
   'compare',
+  'about',
 ] as const
 
 /**
@@ -54,6 +57,7 @@ export function parseRoute(pathname: string): Route {
     if (segments[0] === 'agents') return { name: 'agents' }
     if (segments[0] === 'history') return { name: 'history' }
     if (segments[0] === 'compare') return { name: 'compare' }
+    if (segments[0] === 'about') return { name: 'about' }
   }
   if (segments.length === 2) {
     if (segments[0] === 'agents') return { name: 'agent', agentName: segments[1] }
@@ -75,6 +79,8 @@ export function buildPath(route: Route): string {
       return `/agents/${encodeURIComponent(route.agentName)}`
     case 'compare':
       return '/compare'
+    case 'about':
+      return '/about'
     case 'conversation':
       return `/c/${encodeURIComponent(route.id)}`
     case 'trace':

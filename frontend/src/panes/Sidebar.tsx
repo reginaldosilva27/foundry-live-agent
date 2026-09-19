@@ -41,7 +41,7 @@ import type { AgentRow } from '../types/agents'
  * Derived from the address rather than stored beside it (spec 024) — `App` maps one to the other,
  * and `route.ts` stays the single definition of the scheme (§4).
  */
-export type View = 'chat' | 'agents' | 'history' | 'agent'
+export type View = 'chat' | 'agents' | 'history' | 'agent' | 'about'
 
 /**
  * The views the rail can switch to.
@@ -228,6 +228,18 @@ export function Sidebar({
         </div>
 
         <footer className="sidebar__footer">
+          {/* The footer is the glance; `/about` is the look (spec 032, AC7). It links rather than
+              growing — the event-mapping report is a list of names and the rail is narrow. Rendered
+              unconditionally, including when the config failed, because the panel is exactly where
+              a reader goes to find out why. */}
+          <button
+            type="button"
+            className="sidebar__about"
+            aria-current={view === 'about' ? 'page' : undefined}
+            onClick={() => onView('about')}
+          >
+            {s('sidebar.about')}
+          </button>
           <p data-testid="sidebar-model">
             <span className="sidebar__key">{s('sidebar.modelLabel')}</span>
             {config ? modelName(config.model) : s(configFailed ? 'config.unavailable' : 'config.loading')}

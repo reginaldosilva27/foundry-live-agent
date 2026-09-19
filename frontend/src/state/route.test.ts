@@ -30,6 +30,10 @@ describe('parseRoute', () => {
     expect(parseRoute('/trace/resp_abc123')).toEqual({ name: 'trace', responseId: 'resp_abc123' })
   })
 
+  it('reads what this build is (spec 032 AC10)', () => {
+    expect(parseRoute('/about')).toEqual({ name: 'about' })
+  })
+
   it('reads one agent’s detail (spec 030 AC1)', () => {
     expect(parseRoute('/agents/foundry-live-agent')).toEqual({
       name: 'agent',
@@ -73,6 +77,7 @@ describe('buildPath', () => {
     { name: 'history' },
     { name: 'agent', agentName: 'foundry-live-agent' },
     { name: 'compare' },
+    { name: 'about' },
   ]
 
   it('round-trips every route, so the two halves cannot drift', () => {

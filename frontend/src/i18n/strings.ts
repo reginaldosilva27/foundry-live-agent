@@ -44,6 +44,74 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- What this build is talking to (spec 032) ----------------------------
+  //
+  // The panel renders `GET /config` and nothing else. Every field needs a name in both languages,
+  // which is most of what this block is; the interesting strings are the three that carry judgement
+  // \u2014 the lead (nothing here is editable), the note (what "unverified" means, standing in for a link
+  // this app cannot honestly provide), and `notReported`, which must never read like "no".
+  'about.title': { en: 'What this build is', pt: 'O que \u00e9 esta build' },
+  'about.lead': {
+    en: 'Facts about this deployment, decided by its configuration. Nothing here can be changed from the browser.',
+    pt: 'Fatos sobre esta implanta\u00e7\u00e3o, definidos pela sua configura\u00e7\u00e3o. Nada aqui pode ser alterado pelo navegador.',
+  },
+  'about.loading': { en: 'Reading the configuration\u2026', pt: 'Lendo a configura\u00e7\u00e3o\u2026' },
+  'about.failed': {
+    en: 'The configuration could not be read',
+    pt: 'N\u00e3o foi poss\u00edvel ler a configura\u00e7\u00e3o',
+  },
+  'about.notReported': { en: 'not reported', pt: 'n\u00e3o informado' },
+  'about.yes': { en: 'yes', pt: 'sim' },
+  'about.no': { en: 'no', pt: 'n\u00e3o' },
+
+  'about.whoAnswers': { en: 'Who answers', pt: 'Quem responde' },
+  'about.routing': { en: 'How inference routes', pt: 'Como a infer\u00eancia \u00e9 roteada' },
+  'about.observable': { en: 'What is observable', pt: 'O que \u00e9 observ\u00e1vel' },
+  'about.voice': { en: 'What voice can do', pt: 'O que a voz pode fazer' },
+  'about.contract': { en: 'The event contract', pt: 'O contrato de eventos' },
+  'about.mayChange': { en: 'What this build may change', pt: 'O que esta build pode alterar' },
+
+  'about.field.project': { en: 'Foundry project', pt: 'Projeto Foundry' },
+  'about.field.agent': { en: 'Agent', pt: 'Agente' },
+  'about.field.agentVersion': { en: 'Version', pt: 'Vers\u00e3o' },
+  'about.field.harness': { en: 'Harness', pt: 'Harness' },
+  'about.field.model': { en: 'Model', pt: 'Modelo' },
+  'about.field.usesGateway': { en: 'Through the AI Gateway', pt: 'Atrav\u00e9s do AI Gateway' },
+  'about.field.tracing': { en: 'Tracing enabled', pt: 'Tracing habilitado' },
+  'about.field.gatewayLogged': {
+    en: 'Gateway writes spans',
+    pt: 'O gateway grava spans',
+  },
+  'about.field.speech': { en: 'Spoken answers', pt: 'Respostas faladas' },
+  'about.field.voiceEnabled': { en: 'Voice Live available', pt: 'Voice Live dispon\u00edvel' },
+  'about.field.webrtcApiVersion': { en: 'WebRTC api-version', pt: 'api-version do WebRTC' },
+  'about.field.pricing': { en: 'Rate table configured', pt: 'Tabela de pre\u00e7os configurada' },
+  'about.field.pricingRecorded': { en: 'Rates read on', pt: 'Pre\u00e7os lidos em' },
+  'about.field.canPromote': {
+    en: 'Can roll an agent back to an earlier version',
+    pt: 'Pode reverter um agente para uma vers\u00e3o anterior',
+  },
+
+  'about.events.types': { en: 'Event types', pt: 'Tipos de evento' },
+  'about.events.count': {
+    en: '{verified} of {total} Foundry event names verified against a recorded run',
+    pt: '{verified} de {total} nomes de eventos do Foundry verificados em uma execu\u00e7\u00e3o gravada',
+  },
+  'about.events.unverified': {
+    en: 'Not yet seen in a recorded run',
+    pt: 'Ainda n\u00e3o vistos em uma execu\u00e7\u00e3o gravada',
+  },
+  'about.events.allVerified': {
+    en: 'Every event name has been seen in a recorded run',
+    pt: 'Todos os nomes de eventos j\u00e1 foram vistos em uma execu\u00e7\u00e3o gravada',
+  },
+  'about.events.note': {
+    en: 'These are mapped from documented payload shapes and have not been observed. See docs/REFERENCES.md in the repository.',
+    pt: 'Estes s\u00e3o mapeados a partir de formatos documentados e ainda n\u00e3o foram observados. Veja docs/REFERENCES.md no reposit\u00f3rio.',
+  },
+
+  'sidebar.about': { en: 'What this build is', pt: 'O que \u00e9 esta build' },
+
   // --- Versions, and going back to one (spec 031) --------------------------
   //
   // The confirmation's body is the load-bearing string in this file. Every other persistent thing
@@ -572,6 +640,11 @@ export type StringKey = keyof typeof strings
  */
 export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'app.name',
+  // This repository's own word for a swappable adapter, used as a proper noun throughout the docs,
+  // the code and `GET /config`'s `harness` field. "Arn\u00eas" would be a translation of the metaphor
+  // rather than of the term, and a reader comparing the panel with the endpoint would lose the
+  // thread (spec 032).
+  'about.field.harness',
   // Foundry's own vocabulary. `prompt` and `workflow` are the literal `definition.kind` values the
   // service returns, and translating them would stop the screen matching the portal a reader has
   // open beside it. `hosted` DOES translate, because "hospedado" is an ordinary Portuguese word

@@ -132,6 +132,16 @@ describe('loading the app at an address (AC1)', () => {
     expect(await screen.findByRole('searchbox')).toBeInTheDocument()
   })
 
+  it('opens what this build is at /about, and survives a reload (spec 032 AC10)', async () => {
+    fakeBff()
+    at('/about')
+    render(<App />)
+
+    // Rendered from the address alone — no click got it here, which is what "survives a reload"
+    // means for a screen that keeps no state of its own.
+    expect(await screen.findByText(t('about.lead', 'en'))).toBeInTheDocument()
+  })
+
   it('renders the chat at the reserved /compare, which spec 020 has not built yet', async () => {
     fakeBff()
     at('/compare')

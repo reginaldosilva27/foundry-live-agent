@@ -189,6 +189,15 @@ violation.
   agents, from the harness `agent.yaml` files), and RBAC — the flag reveals a control, it cannot
   grant anything. The route takes **no body**, so no agent definition can travel on it, and the app
   records nothing about a promotion because it has no identity to record (see `SECURITY.md`).
+- **`GET /config` has a screen now, and it is drift-tested (spec 032).** `/about` renders every
+  top-level field the endpoint returns — including the event-mapping report, which is §10 in numeric
+  form. **Adding a field to `GET /config` and not rendering it fails CI**: `About.coverage.test.ts`
+  reads `backend/app/routers/config.py` and compares it with `COVERED_CONFIG_KEYS` in
+  `frontend/src/panes/aboutFields.ts`. The panel is read-only *by construction* — no control, no
+  request of its own, asserted — and the browser's preferences deliberately live elsewhere: one is
+  what the deployment decided, the other is what this browser keeps. `absent` and `false` render
+  differently there, because a BFF that never mentioned a field and a deployment that switched it
+  off are different facts (§5).
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

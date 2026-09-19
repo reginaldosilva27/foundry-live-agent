@@ -152,6 +152,31 @@ describe('the rail', () => {
     expect(screen.getByTestId('sidebar-model')).toHaveTextContent(t('config.loading', 'en'))
   })
 
+  // --- Spec 032 AC7: the footer is the glance, and links to the look ------
+
+  it('keeps its two lines and offers the way into the panel', () => {
+    show()
+
+    expect(screen.getByTestId('sidebar-model')).toHaveTextContent('gpt-5.5')
+    expect(screen.getByText(t('sidebar.gatewayOn', 'en'))).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: t('sidebar.about', 'en') })).toBeInTheDocument()
+  })
+
+  it('navigates to the panel rather than growing the footer', async () => {
+    const onView = vi.fn()
+    show({ onView })
+
+    await userEvent.click(screen.getByRole('button', { name: t('sidebar.about', 'en') }))
+
+    expect(onView).toHaveBeenCalledWith('about')
+  })
+
+  it('offers it even when the configuration could not be read', () => {
+    // The panel is where a reader goes to find out WHY, so the way in must survive the failure.
+    show({ config: null, configFailed: true })
+    expect(screen.getByRole('button', { name: t('sidebar.about', 'en') })).toBeInTheDocument()
+  })
+
   // --- AC8 ---------------------------------------------------------------
 
   it('names the agent that is answering and does not list the rest', () => {

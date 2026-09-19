@@ -3867,3 +3867,137 @@ button:disabled {
   color: var(--fg-1);
 }
 
+/* --- What this build is talking to (spec 032) --------------------------------------------
+   A page of definition lists and nothing else. There is no control here by design, so there is
+   nothing interactive to style — which is the visual half of "read-only by construction". */
+
+.about {
+  display: flex;
+  flex-direction: column;
+  max-width: 68ch;
+  padding: var(--sp-5) var(--sp-5) var(--sp-6);
+  gap: var(--sp-4);
+  overflow-y: auto;
+}
+
+.about__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+}
+
+.about__lead {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.about__state {
+  margin: 0;
+  padding: var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.about__group {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  gap: var(--sp-2);
+}
+
+.about__subtitle {
+  margin: 0;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+
+.about__pairs {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  gap: var(--sp-2);
+}
+
+.about__row {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  align-items: baseline;
+  font-size: var(--fs-body-s);
+}
+
+.about__row dt {
+  color: var(--fg-4);
+}
+
+.about__row dd {
+  margin: 0;
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
+}
+
+/* Absent is not false — the value that says the service reported nothing reads as quieter. */
+.about__absent {
+  font-style: italic;
+  color: var(--fg-4);
+}
+
+.about__events {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  gap: var(--sp-1) var(--sp-2);
+  list-style: none;
+}
+
+.about__event {
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.about__unverified-title,
+.about__all-verified {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+/* The sentence that stands in for a link this app cannot honestly provide. */
+.about__note {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+/* The way in, in the footer that stays two lines (AC7). */
+.sidebar__about {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar__about:hover,
+.sidebar__about[aria-current='page'] {
+  color: var(--fg-2);
+}
