@@ -41,7 +41,7 @@ import type { AgentRow } from '../types/agents'
  * Derived from the address rather than stored beside it (spec 024) — `App` maps one to the other,
  * and `route.ts` stays the single definition of the scheme (§4).
  */
-export type View = 'chat' | 'agents' | 'history' | 'agent' | 'about' | 'preferences'
+export type View = 'chat' | 'agents' | 'history' | 'agent' | 'about' | 'preferences' | 'tools'
 
 /**
  * The views the rail can switch to.

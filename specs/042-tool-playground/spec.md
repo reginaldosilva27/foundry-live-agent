@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 042-tool-playground |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -52,8 +53,22 @@ All new prose ships `{ en, pt }` (§7).
 **The playground** lists the function tools this build can execute, from the registry that is already
 their single source of truth (§4) — the same names, descriptions and schemas Foundry is given.
 
-**Selecting one** renders a form from its schema and the schema itself, side by side. What Foundry
-sees and what the reader types are the same thing, visibly.
+**Selecting one** shows its schema and a field for **the JSON Foundry actually sends**, side by
+side. Not a generated form: a form would be a second description of the schema (§4), it would hide
+the shape of the thing being taught, and the reader who is here to understand a function call
+should see the `arguments` string as it really arrives. Simpler and more honest, which is usually
+the same decision twice.
+
+**Arguments are validated against the schema before anything runs**, with `jsonschema` — the same
+document Foundry is given, judged by a real validator rather than a hand-rolled check.
+
+**Its own switch, not the inspector's.** Spec 038's event inspector reads what already happened and
+costs nothing. This spends a metered third-party key and makes the BFF fetch arbitrary queries.
+Different risk, different flag, and off by default.
+
+**Nothing here is traced.** A tool execution outside a turn has no `response_id` to attach to, and
+inventing one to give it a home would be worse than the gap (§5). The duration is reported on the
+screen, where it belongs.
 
 **Running it** executes the tool in the BFF process — the same execution path a real function call
 takes, not a copy of it — and renders the output raw, with its duration, and copyable.
@@ -73,7 +88,8 @@ executes `search_web` against a metered API key.
 
 1. **AC1** — The playground lists exactly the function tools the registry defines, with their
    descriptions (§4) — no second list in frontend or backend source (asserted).
-2. **AC2** — Selecting a tool renders its parameter schema and a form derived from it.
+2. **AC2** — Selecting a tool renders its parameter schema **and a field for the raw `arguments`
+   JSON** — the string Foundry sends — rather than a form generated from the schema.
 3. **AC3** — Running executes the tool through the same execution path used when answering a function
    call from Foundry (asserted, not by inspection).
 4. **AC4** — The raw output renders with its duration and is copyable.
@@ -89,6 +105,7 @@ executes `search_web` against a metered API key.
    available, and the endpoint refuses (asserted at the BFF, not only hidden in the UI).
 10. **AC10** — The screen states that no agent and no model were involved.
 11. **AC11** — Every new string ships `en` + `pt`.
+12. **AC12** — The playground's switch is its own, independent of any other developer surface.
 
 ## Contract / data impact
 
@@ -96,20 +113,10 @@ executes `search_web` against a metered API key.
 |---|---|
 | **BFF / `AgentEvent`** | Unchanged (§9). The playground does not stream and emits no events. |
 | **New endpoint** | Executes a named tool with given arguments. It must reuse `tool_executor`'s path, or it becomes a second implementation of tool execution — the §4 failure this project has avoided by implementing the tools once in `ai/harness/_shared/tools/`. |
-| **`GET /config`** | Carries whether the playground is enabled, so the UI does not offer what the BFF will refuse. Disabled is the default. |
+| **`GET /config`** | Carries whether the playground is enabled, so the UI does not offer what the BFF will refuse. Disabled is the default, and the flag is the playground's own — spec 038's inspector reads and costs nothing, this spends a key. |
+| **Validation** | `jsonschema`, already a dependency, against the registry's own schema. A hand-rolled check would be a second reading of the document Foundry is given. |
 | **Security** | An enabled playground is an unauthenticated way to spend a third-party API key (`TAVILY_API_KEY`) and to make the BFF fetch arbitrary queries. `SECURITY.md` must say so, and the default must be off. |
 | **Docs** | `docs/how-it-works/` — the function-call round trip page gains the place to try one. |
-
-## Open questions (clarify before planning)
-
-- [ ] Does the playground live behind the same switch as any future developer surfaces (spec 038's
-      inspector), or its own?
-- [ ] Is the form generated from the JSON schema, or is a raw JSON textarea both simpler and more
-      honest about what Foundry actually sends?
-- [ ] Does a run appear anywhere in tracing, and should it — a tool execution with no run to attach
-      to may have nowhere to go.
-- [ ] Should the playground show the *last real call* of that tool from this session as a starting
-      point, or is that a convenience that blurs the "not a conversation" line?
 
 ## Out of scope / deferred
 

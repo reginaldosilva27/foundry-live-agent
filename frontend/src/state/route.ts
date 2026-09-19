@@ -32,6 +32,8 @@ export type Route =
   | { name: 'about' }
   /** What THIS BROWSER prefers (spec 036). The editable counterpart to `/about`. */
   | { name: 'preferences' }
+  /** Run one function tool, outside any conversation (spec 042). */
+  | { name: 'tools' }
 
 /** Every route the app can be at, in the order they are documented. */
 export const ROUTES = [
@@ -44,6 +46,7 @@ export const ROUTES = [
   'compare',
   'about',
   'preferences',
+  'tools',
 ] as const
 
 /**
@@ -62,6 +65,7 @@ export function parseRoute(pathname: string): Route {
     if (segments[0] === 'compare') return { name: 'compare' }
     if (segments[0] === 'about') return { name: 'about' }
     if (segments[0] === 'preferences') return { name: 'preferences' }
+    if (segments[0] === 'tools') return { name: 'tools' }
   }
   if (segments.length === 2) {
     if (segments[0] === 'agents') return { name: 'agent', agentName: segments[1] }
@@ -87,6 +91,8 @@ export function buildPath(route: Route): string {
       return '/about'
     case 'preferences':
       return '/preferences'
+    case 'tools':
+      return '/tools'
     case 'conversation':
       return `/c/${encodeURIComponent(route.id)}`
     case 'trace':

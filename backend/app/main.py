@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.agents import build_agent_detail_reader, build_agent_lister, build_version_promoter
 from app.harness_factory import AzureClients, build_harness
-from app.routers import agents, chat, config, health, speech, traces, voice
+from app.routers import agents, chat, config, health, speech, tools, traces, voice
 from app.settings import load_settings
 from app.speech import build_synthesizer
 from app.traces import build_trace_reader
@@ -106,6 +106,7 @@ def create_app(
         agents.router,
         chat.router,
         config.router,
+        tools.router,
         health.router,
         speech.router,
         traces.router,

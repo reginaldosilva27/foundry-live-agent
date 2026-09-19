@@ -19,6 +19,7 @@ import { Header } from './panes/Header'
 import { Sidebar, type NavView, type View } from './panes/Sidebar'
 import { TraceDrawer } from './panes/TraceDrawer'
 import { VoiceOverlay } from './panes/VoiceOverlay'
+import { BFF_URL } from './config'
 import { LangContext } from './i18n/context'
 import { detectLang, t as translate, type Lang } from './i18n/strings'
 import { useAgentStream } from './hooks/useAgentStream'
@@ -26,6 +27,7 @@ import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
 import { CommandPalette } from './panes/CommandPalette'
 import { AboutScreen } from './panes/About'
+import { Playground, type ToolSpec } from './panes/Playground'
 import { PreferencesScreen } from './panes/Preferences'
 import { AgentDetailScreen } from './panes/AgentDetail'
 import { HistoryScreen } from './panes/HistoryScreen'
@@ -74,7 +76,8 @@ export default function App() {
     route.name === 'history' ||
     route.name === 'agent' ||
     route.name === 'about' ||
-    route.name === 'preferences'
+    route.name === 'preferences' ||
+    route.name === 'tools'
       ? route.name
       : 'chat'
   // Spec 030. Read only while the detail is on screen: the listing already answers every other
@@ -107,6 +110,24 @@ export default function App() {
   // the newest turn, which is what the header's Traces button opens (spec 009).
   const [trace, setTrace] = useState<{ turnId?: string; callId?: string }>({})
   const { config, failed } = useConfig()
+  /**
+   * The function tools this build can run (spec 042).
+   *
+   * Read only when the playground screen is open and the deployment enabled it: the listing is the
+   * registry, and nothing else on any screen needs it.
+   */
+  const [playgroundTools, setPlaygroundTools] = useState<ToolSpec[]>([])
+  useEffect(() => {
+    if (route.name !== 'tools' || !config?.playground?.enabled) return
+    let live = true
+    fetch(`${BFF_URL}/tools`)
+      .then((r) => r.json())
+      .then((body: { tools?: ToolSpec[] }) => live && setPlaygroundTools(body.tools ?? []))
+      .catch(() => live && setPlaygroundTools([]))
+    return () => {
+      live = false
+    }
+  }, [route.name, config?.playground?.enabled])
   const { messages, streaming, conversationId, send, stop, append, restore, reset } =
     useAgentStream()
   const history = useHistory()
@@ -519,6 +540,9 @@ export default function App() {
                 })
               }}
             />
+          ) : view === 'tools' ? (
+            // Outside the conversation, on purpose and visibly (spec 042).
+            <Playground tools={playgroundTools} />
           ) : view === 'preferences' ? (
             // The editable counterpart to `/about`: what THIS BROWSER keeps (spec 036).
             <PreferencesScreen prefs={prefs} />

@@ -84,6 +84,9 @@ export function AboutScreen({ config, failed }: Props) {
         {/* The app's only write, and off by default (spec 031). Stated here so a reader who never
             sees the control learns it is configuration rather than a missing feature. */}
         <Flag label={s('about.field.canPromote')} value={config.agents?.can_promote} field="canPromote" />
+        <Flag label={s('about.field.canPropose')} value={config.agents?.can_propose} field="canPropose" />
+        {/* Its own switch, and it spends a metered key when on (spec 042). */}
+        <Flag label={s('about.field.playground')} value={config.playground?.enabled} field="playground" />
       </Group>
 
       <Contract config={config} />

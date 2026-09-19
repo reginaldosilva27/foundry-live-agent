@@ -44,6 +44,28 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- The tool playground (spec 042) --------------------------------------
+  // The framing is the safety argument, so it is the headline and not a disclaimer in small type:
+  // this is not a conversation, no agent chose anything, and nothing was sent to a model.
+  'tools.title': { en: 'Run a tool', pt: 'Executar uma ferramenta' },
+  'tools.lead': {
+    en: 'Not a conversation. No agent chose this, nothing was sent to a model, and nothing here appears in the chat.',
+    pt: 'N\u00e3o \u00e9 uma conversa. Nenhum agente escolheu isto, nada foi enviado a um modelo, e nada aqui aparece no chat.',
+  },
+  'tools.schema': { en: 'The schema Foundry is given', pt: 'O schema que o Foundry recebe' },
+  'tools.arguments': {
+    en: 'Arguments \u2014 the JSON a function call carries',
+    pt: 'Argumentos \u2014 o JSON que uma chamada de fun\u00e7\u00e3o carrega',
+  },
+  'tools.run': { en: 'Run', pt: 'Executar' },
+  'tools.running': { en: 'Running\u2026', pt: 'Executando\u2026' },
+  'tools.output': { en: 'Output', pt: 'Sa\u00edda' },
+  'tools.duration': { en: '{ms} ms', pt: '{ms} ms' },
+  'tools.copyOutput': { en: 'Copy the output', pt: 'Copiar a sa\u00edda' },
+  'tools.invalid': { en: 'These arguments were refused: {error}', pt: 'Estes argumentos foram recusados: {error}' },
+  'tools.unavailable': { en: 'The tool could not be run', pt: 'N\u00e3o foi poss\u00edvel executar a ferramenta' },
+  'sidebar.tools': { en: 'Run a tool', pt: 'Executar uma ferramenta' },
+
   // --- Proposing a change to the agent (spec 041) --------------------------
   //
   // THE WORDING IS THE FEATURE. Nothing here may say saved, updated or applied, because nothing
@@ -238,6 +260,14 @@ export const strings = {
   'about.field.webrtcApiVersion': { en: 'WebRTC api-version', pt: 'api-version do WebRTC' },
   'about.field.pricing': { en: 'Rate table configured', pt: 'Tabela de pre\u00e7os configurada' },
   'about.field.pricingRecorded': { en: 'Rates read on', pt: 'Pre\u00e7os lidos em' },
+  'about.field.canPropose': {
+    en: 'Can propose a change to an agent',
+    pt: 'Pode propor uma altera\u00e7\u00e3o num agente',
+  },
+  'about.field.playground': {
+    en: 'Tool playground enabled',
+    pt: 'Playground de ferramentas habilitado',
+  },
   'about.field.canPromote': {
     en: 'Can roll an agent back to an earlier version',
     pt: 'Pode reverter um agente para uma vers\u00e3o anterior',
@@ -791,6 +821,8 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'events.runOf',
   // A number and a unit symbol, identical in both languages (spec 039).
   'voice.elapsed',
+  // A number and a unit symbol (spec 042).
+  'tools.duration',
   // Foundry's own vocabulary. `prompt` and `workflow` are the literal `definition.kind` values the
   // service returns, and translating them would stop the screen matching the portal a reader has
   // open beside it. `hosted` DOES translate, because "hospedado" is an ordinary Portuguese word

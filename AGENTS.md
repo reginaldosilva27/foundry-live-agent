@@ -282,6 +282,16 @@ violation.
   and it states drift before any editing. Instructions only — not tools, not the model. No PR
   creation: a second third-party secret for a convenience. A test asserts no string in the feature
   says *saved*, *updated* or *applied*, in either language.
+- **One function tool can be run on purpose, outside any conversation (spec 042).** `/tools` posts
+  to `POST /tools/{name}/run`, which validates with `jsonschema` against the registry's own schema
+  and then calls **`tool_executor.execute`** — the same function every adapter gets, asserted by
+  patching it rather than by reading the source. **Why this is not §8's forbidden thing: a person
+  chose.** §8 forbids the *app* choosing a tool; what makes this safe is being visibly outside the
+  conversation — no `conversation_id`, no model, nothing in the transcript, all asserted. Arguments
+  are a **raw JSON field**, never a generated form: a form would be a second description of the
+  schema and would hide that `arguments` is a string. `search_unavailable` renders verbatim — it is
+  the tool's answer, not an error. Its **own** flag, off by default: an enabled playground spends
+  `TAVILY_API_KEY` without authentication (SECURITY.md).
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

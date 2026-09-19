@@ -24,6 +24,7 @@ export const COVERED_CONFIG_KEYS = [
   'speech',
   'voice',
   'agents',
+  'playground',
   'pricing',
   'event_types',
   'event_mapping',

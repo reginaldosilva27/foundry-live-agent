@@ -150,3 +150,26 @@ Two things follow, and both are visible rather than hidden:
   measurement, drawn — and it is the opposite of what everyone assumes when they watch a tool row
   appear.
 
+## Trying one (spec 042)
+
+`/tools` runs a single function tool with arguments you type, through **the same**
+`tool_executor.execute` an adapter uses when Foundry asks — not a copy of the path, the path. The
+schema beside the field is the same document Foundry is given at `create_version` time.
+
+Arguments are a raw JSON field rather than a generated form, and that is the honest choice twice
+over: a form would be a second description of the schema (§4), and `arguments` arriving as a
+**string** is part of what a function call is.
+
+**Why this is not the thing §8 forbids.** §8 forbids the *app* choosing which tool to call — a
+loop, a heuristic, a re-prompt on model output. A person typing arguments and pressing run has
+chosen, exactly as a person choosing which agent answers is configuration (spec 019). What makes it
+safe is that it is visibly outside the conversation: no `conversation_id` is created, sent or
+stored, nothing reaches a model, and nothing lands in the transcript. Those are assertions in
+`test_tool_playground.py`.
+
+The most instructive case is the one that looks like a failure and is not: `search_web` answering
+`search_unavailable` because no key is configured. That is the tool's documented answer, it renders
+verbatim, and it is the state most forks of this repository will be in.
+
+Off by default — see [`SECURITY.md`](../../SECURITY.md).
+

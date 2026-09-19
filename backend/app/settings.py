@@ -74,6 +74,12 @@ class Settings:
     # so the risk is not damage but noise — a deployed demo does not need an editor on it. What it
     # gates is a surface, not a permission.
     allow_proposals: bool = False
+    # Whether this deployment exposes the tool playground (spec 042).
+    #
+    # Its OWN flag, not shared with any other developer surface. Spec 038's event inspector reads
+    # what already happened and costs nothing; this spends a metered third-party key and makes the
+    # BFF fetch arbitrary queries. Different risk, different switch. See SECURITY.md.
+    allow_playground: bool = False
     # What a turn costs (spec 028). **This repository ships no prices.** A rate compiled in here
     # would be a fact with no owner: prices vary by region and by agreement and change without
     # telling us, and a number rendered with a currency symbol reads as measured (§5). So the
@@ -159,6 +165,7 @@ def load_settings(**overrides: object) -> Settings:
         "appinsights_resource_id": os.environ.get("APPLICATIONINSIGHTS_RESOURCE_ID", ""),
         "allow_version_promote": _flag(os.environ.get("FOUNDRY_ALLOW_VERSION_PROMOTE")),
         "allow_proposals": _flag(os.environ.get("FOUNDRY_ALLOW_PROPOSALS")),
+        "allow_playground": _flag(os.environ.get("FOUNDRY_ALLOW_PLAYGROUND")),
         "model_rates": _model_rates(os.environ.get("MODEL_RATES", "")),
         "rates_currency": os.environ.get("MODEL_RATES_CURRENCY", "USD"),
         "rates_recorded_at": os.environ.get("MODEL_RATES_RECORDED_AT", ""),

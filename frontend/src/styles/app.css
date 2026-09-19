@@ -4785,3 +4785,156 @@ button:disabled {
   text-decoration: none;
   cursor: pointer;
 }
+
+/* --- The tool playground (spec 042) ------------------------------------------------------
+   Two panes: what Foundry is given, and what the reader types. Side by side on purpose — the
+   claim that they are the same thing is only believable if you can see both. */
+
+.playground {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-5);
+  gap: var(--sp-3);
+  overflow-y: auto;
+}
+
+.playground__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+}
+
+.playground__lead {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--border-accent);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}
+
+.playground__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.playground__tools button {
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+.playground__tools button[aria-pressed='true'] {
+  border-color: var(--border-accent);
+  color: var(--fg-1);
+}
+
+.playground__description {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.playground__panes {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.playground__subtitle {
+  display: flex;
+  align-items: baseline;
+  margin: 0 0 var(--sp-1);
+  gap: var(--sp-2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+
+.playground__duration {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-regular);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.playground__field {
+  display: flex;
+  flex-direction: column;
+}
+
+.playground__field textarea,
+.playground pre {
+  margin: 0;
+  padding: var(--sp-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  overflow: auto;
+}
+
+.playground__field textarea {
+  resize: vertical;
+}
+
+.playground__run {
+  align-self: flex-start;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+  cursor: pointer;
+}
+
+.playground__run:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.playground__result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+
+.playground__result pre {
+  width: 100%;
+  max-height: 320px;
+}
+
+.playground__result button {
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.playground__invalid {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}

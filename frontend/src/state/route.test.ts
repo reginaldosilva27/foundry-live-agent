@@ -83,6 +83,7 @@ describe('buildPath', () => {
     { name: 'compare' },
     { name: 'about' },
     { name: 'preferences' },
+    { name: 'tools' },
   ]
 
   it('round-trips every route, so the two halves cannot drift', () => {

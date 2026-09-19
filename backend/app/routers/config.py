@@ -71,6 +71,9 @@ async def config(request: Request) -> dict:
             # Nothing here writes; the flag gates a surface, not a permission (spec 041).
             "can_propose": settings.allow_proposals,
         },
+        # Its own switch (spec 042): the playground spends a metered key, unlike anything else
+        # a reader can turn on here.
+        "playground": {"enabled": settings.allow_playground},
         "event_types": sorted(EVENT_TYPES),
         "event_mapping": _mapping_report(settings.harness),
     }

@@ -32,6 +32,8 @@ export interface BffConfig {
    * control the server would refuse must never render (AC9).
    */
   agents?: { can_promote: boolean; can_propose?: boolean }
+  /** Whether this deployment exposes the tool playground (spec 042). Absent reads as no. */
+  playground?: { enabled: boolean }
   project_name: string
   speech: {
     enabled: boolean

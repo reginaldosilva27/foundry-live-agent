@@ -78,6 +78,27 @@ that has users.
 **The role assignment is a manual step**, documented rather than shipped: there is no Bicep in this
 repository yet, and shipping unverified IaC would be worse than saying so (constitution §5).
 
+## The tool playground
+
+`POST /tools/{name}/run` (spec 042) executes one of this build's function tools with arguments a
+caller supplies. It runs no model, creates no conversation and writes nothing — but it is still the
+most consequential thing to turn on in this application, for a reason that has nothing to do with
+Foundry:
+
+**An enabled playground is an unauthenticated way to spend `TAVILY_API_KEY`.** `search_web` calls a
+metered third-party API, and anyone who can reach the BFF can call it with any query they like, as
+often as they like. The BFF also becomes a machine that fetches arbitrary search queries on
+somebody's behalf, which is a different kind of exposure from anything else here.
+
+`lookup_knowledge` and `get_current_datetime` read local data and cost nothing.
+
+**It has its own switch** (`FOUNDRY_ALLOW_PLAYGROUND`, off by default), deliberately not shared
+with any other developer surface: spec 038's event inspector reads what already happened and costs
+nothing, and bundling the two would let somebody turn on a meter while meaning to turn on a log.
+
+The endpoint **refuses when the flag is off**, rather than the screen merely being hidden — hiding
+a control is not a control.
+
 ## Supported versions
 
 The project is pre-1.0. Fixes land on `main`; there are no backports.
