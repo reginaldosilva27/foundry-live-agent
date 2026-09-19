@@ -44,6 +44,66 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Versions, and going back to one (spec 031) --------------------------
+  //
+  // The confirmation's body is the load-bearing string in this file. Every other persistent thing
+  // in this app is local to one browser; this one changes what the project serves for everybody,
+  // and a reader who has only seen the local ones has no reason to expect that.
+  'versions.title': { en: 'Versions', pt: 'Vers\u00f5es' },
+  'versions.loading': { en: 'Reading the versions\u2026', pt: 'Lendo as vers\u00f5es\u2026' },
+  'versions.none': {
+    en: "This agent's versions were not reported",
+    pt: 'As vers\u00f5es deste agente n\u00e3o foram informadas',
+  },
+  'versions.served': { en: 'serving', pt: 'em uso' },
+  'versions.latest': { en: 'latest', pt: 'mais recente' },
+  'versions.pinned': {
+    en: 'This project is pinned to v{version}; the newest is v{latest}',
+    pt: 'Este projeto est\u00e1 fixado na v{version}; a mais recente \u00e9 a v{latest}',
+  },
+  'versions.created': { en: 'created {when}', pt: 'criada em {when}' },
+  'versions.notReported': { en: 'not reported', pt: 'n\u00e3o informado' },
+  'versions.promote': { en: 'Use this version', pt: 'Usar esta vers\u00e3o' },
+  'versions.promoting': { en: 'Switching\u2026', pt: 'Trocando\u2026' },
+  'versions.confirm.title': {
+    en: 'Serve version {version}?',
+    pt: 'Servir a vers\u00e3o {version}?',
+  },
+  'versions.confirm.body': {
+    en: 'This changes which version answers for everyone using this project, not only in this browser. It applies from the next turn.',
+    pt: 'Isto muda qual vers\u00e3o responde para todos que usam este projeto, n\u00e3o apenas neste navegador. Vale a partir do pr\u00f3ximo turno.',
+  },
+  'versions.confirm.ok': { en: 'Serve this version', pt: 'Servir esta vers\u00e3o' },
+  'versions.confirm.cancel': { en: 'Cancel', pt: 'Cancelar' },
+  'versions.reason.served': {
+    en: 'This is the version being served',
+    pt: 'Esta \u00e9 a vers\u00e3o em uso',
+  },
+  'versions.reason.not_owned': {
+    en: 'This agent was not created by this repository',
+    pt: 'Este agente n\u00e3o foi criado por este reposit\u00f3rio',
+  },
+  'versions.error.write_disabled': {
+    en: 'Changing versions is turned off in this deployment',
+    pt: 'A troca de vers\u00f5es est\u00e1 desligada nesta implanta\u00e7\u00e3o',
+  },
+  'versions.error.not_owned': {
+    en: 'This agent was not created by this repository',
+    pt: 'Este agente n\u00e3o foi criado por este reposit\u00f3rio',
+  },
+  'versions.error.forbidden': {
+    en: 'This build is not allowed to change the project',
+    pt: 'Esta build n\u00e3o tem permiss\u00e3o para alterar o projeto',
+  },
+  'versions.error.unknown_version': {
+    en: 'That version no longer exists',
+    pt: 'Essa vers\u00e3o n\u00e3o existe mais',
+  },
+  'versions.error.unavailable': {
+    en: 'The project could not be reached',
+    pt: 'N\u00e3o foi poss\u00edvel acessar o projeto',
+  },
+
   'agents.reason.no_harness': {
     en: 'This build has no harness for this kind of agent',
     pt: 'Esta build n\u00e3o tem harness para este tipo de agente',

@@ -14,7 +14,7 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.agents import build_agent_detail_reader, build_agent_lister
+from app.agents import build_agent_detail_reader, build_agent_lister, build_version_promoter
 from app.harness_factory import AzureClients, build_harness
 from app.routers import agents, chat, config, health, speech, traces, voice
 from app.settings import load_settings
@@ -32,6 +32,7 @@ def create_app(
     trace_query: Callable[..., Any] | None = None,
     agent_lister: Callable[..., Any] | None = None,
     agent_detail: Callable[..., Any] | None = None,
+    promote_version: Callable[..., Any] | None = None,
     **settings_overrides: object,
 ) -> FastAPI:
     """Build the app.
@@ -82,6 +83,10 @@ def create_app(
     app.state.list_agents = agent_lister or build_agent_lister(settings, clients.credential)
     # Spec 030. A second projection of the same listing, not a second call — see `agents.py`.
     app.state.agent_detail = agent_detail or build_agent_detail_reader(settings, clients.credential)
+    # The one write this app makes (spec 031). Built even when the flag is off — the ROUTE is what
+    # the flag gates, so that a deployment turning it on needs no restart of anything but itself,
+    # and so the seam is identical in tests.
+    app.state.promote_version = promote_version or build_version_promoter(settings, clients)
     # Voice sessions live in this process, so the BFF is single-replica for voice. Said out loud
     # in docs/how-it-works/voice-live-lifecycle.md rather than solved: a session store is a
     # different feature, and pretending otherwise would be the kind of drawing-of-a-feature §5

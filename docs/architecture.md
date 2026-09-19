@@ -71,6 +71,44 @@ Three properties worth knowing, each of which is a decision rather than an accid
   agents on its own, and nothing reads model output to decide. The violation would be the app
   choosing; a person choosing is what a settings screen is.
 
+## The rollback story, demonstrated (spec 031)
+
+`apply_agent.py` has always said that every run creates a new immutable version and that this is
+the rollback story. Until 2026-09-19 the story was told and never shown: the app displayed one
+number and offered no way to see the others, let alone go back to one.
+
+```
+Browser ──GET /agents/{name}──> BFF ──GET {project_endpoint}/agents──> Foundry   (the definition)
+                                 ├── agents.get(name)                           (the routing)
+                                 └── agents.list_versions(name)                 (the versions)
+
+Browser ──POST /agents/{name}/versions/{version}/promote──> BFF ──update_details(...)──> Foundry
+                                 └── then READS BACK, and answers with what the service says now
+```
+
+**"The served version" is not "the newest version".** An agent endpoint can pin a version through
+`agent_endpoint.version_selector`, and the moment anything does, the two come apart. One function,
+`served_version()` in `backend/app/agents.py`, is where that distinction is decided — the selector's
+version when the endpoint carries one, the newest when it does not.
+
+Three properties, each a decision:
+
+- **The listing stays one request.** `GET /agents` does not carry `agent_endpoint`, and resolving a
+  pin there would cost a call per agent — undoing what spec 030 verified. So the rail reports the
+  *latest* version and says so, and the agent detail screen, which is opened deliberately and can
+  afford two more calls, is the authoritative place for what is actually served. A test asserts the
+  absence of the extra call.
+- **The write is off by default and bounded twice.** A flag decides whether the surface exists at
+  all; the harness `agent.yaml` names decide which agents it applies to. Neither is a permission —
+  RBAC is — and [`SECURITY.md`](../SECURITY.md) is where that is spelled out, because a BFF this app
+  puts no sign-in in front of is a real consideration rather than a footnote.
+- **It reads back rather than assuming.** The response to a promotion is a fresh read, so a
+  promotion that silently did not take effect looks like one.
+
+This is the first thing in the app that writes to Foundry, and the deliberate shape of the route is
+that it *cannot* do more: there is no request body, so no agent definition can travel on it. Editing
+an agent from the browser remains out of scope, and creating a version stays with `apply_agent.py`.
+
 ## What the browser keeps, and what it must never keep (spec 021)
 
 Since 2026-09-16 the shell has two views, an action row under each answer, and a list of past

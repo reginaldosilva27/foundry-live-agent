@@ -48,6 +48,41 @@ export interface AgentDetail extends AgentRow {
   /** The service's own object, rendered as reported. `null` when it configured none. */
   reasoning: Record<string, unknown> | null
   container: AgentContainer | null
+  /**
+   * The version the endpoint actually serves (spec 031).
+   *
+   * **Not the same as `version` on a row.** The listing reports the NEWEST version, because it does
+   * not carry the endpoint's `version_selector` and resolving a pin there would cost a call per
+   * agent (AC12). This screen reads it properly, so once anything is pinned these two disagree —
+   * which is the whole point, and why the screen says which is which.
+   */
+  served_version: string
+  latest_version: string
+  /** Whether a selector chose the served version, rather than it merely being the newest. */
+  pinned: boolean
+  /** `null` means the service did not report them — not that this agent has none. */
+  versions: AgentVersion[] | null
+}
+
+/** One version of an agent (spec 031). Mirrors `AgentVersion` in `backend/app/agents.py`. */
+export interface AgentVersion {
+  version: string
+  /** `null` when the service reported no status. Rendered as not reported, never as healthy. */
+  status: string | null
+  /** The service's own Unix seconds. Formatted for reading here, because §7 lives here. */
+  created_at: number | null
+  /** `null` when the service reported none — a hosted version has no model at all. */
+  model: string | null
+  served: boolean
+  /** Whether this version can be rolled back to. Never true for the served one. */
+  promotable: boolean
+  /**
+   * `''` when promotable; otherwise a CODE the UI translates — `served` · `not_owned`.
+   *
+   * Decided by the BFF, like `reason`: ownership comes from the harness `agent.yaml` files and a copy
+   * of that rule here would be the §4 drift.
+   */
+  promote_reason: string
 }
 
 export interface AgentTool {

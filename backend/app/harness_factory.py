@@ -30,7 +30,7 @@ from app.tool_executor import execute
 if TYPE_CHECKING:  # an annotation only — importing it for real would close a cycle with app.agents
     from app.agents import AgentSummary
 
-__all__ = ["HARNESS_FOR_KIND", "AzureClients", "build_harness"]
+__all__ = ["HARNESS_FOR_KIND", "OWNED_AGENT_NAMES", "AzureClients", "build_harness"]
 
 # Which agent kinds THIS BUILD can drive, and with what (spec 019).
 #
@@ -45,6 +45,36 @@ HARNESS_FOR_KIND: dict[str, str] = {
     "prompt": "prompt-agent",
     "hosted": "langgraph",
 }
+
+
+# Which agents THIS REPOSITORY authored (spec 031).
+#
+# Read from the harness definitions rather than written down, for the same reason
+# `HARNESS_FOR_KIND` has one home: the names are already stated in `ai/harness/*/agent.yaml`, which
+# is what `apply_agent.py` deploys, and a second copy here would drift on the first rename (§4). A
+# fork that edits those files gets its own agents in the allowlist with no code change.
+#
+# It exists because promoting a version is a **write** that changes what the whole project serves.
+# The recorded listing holds ten agents and eight of them are other people's work; bounding the
+# blast radius to what this repository created is the same sentence spec 031's non-goals use to
+# justify promoting at all. Enforced in the BFF, not only in the UI — a restriction the server does
+# not keep is not a restriction.
+def _owned_agent_names() -> frozenset[str]:
+    import yaml
+
+    root = Path(harness._shared.__file__).resolve().parent.parent
+    names = set()
+    for path in sorted(root.glob("*/agent.yaml")):
+        try:
+            loaded = yaml.safe_load(path.read_text()) or {}
+        except Exception:  # noqa: BLE001 - an unreadable harness must not stop the process
+            continue
+        if name := loaded.get("name"):
+            names.add(str(name))
+    return frozenset(names)
+
+
+OWNED_AGENT_NAMES: frozenset[str] = _owned_agent_names()
 
 # Observed 2026-09-16: the hosted agent endpoint REQUIRES this, and the documented URL shape
 # omits it — `400 BadRequest — Missing required query parameter: api-version` without it.
@@ -71,11 +101,27 @@ class AzureClients:
     def __init__(self) -> None:
         self._openai: Any = None
         self._credential: Any = None
+        self._project: Any = None
 
     def openai(self, settings: Settings) -> Any:
         if self._openai is None:
             self._openai = _openai_client(settings, self.credential())
         return self._openai
+
+    def project(self, settings: Settings) -> Any:
+        """The Agents data-plane client, once per process.
+
+        Spec 031 needs the SDK rather than a hand-built URL: the version and endpoint routes are
+        not in `docs/REFERENCES.md`, and §10 forbids guessing one. The listing keeps its verified
+        HTTP path — this is additive, not a replacement.
+        """
+        if self._project is None:
+            from azure.ai.projects import AIProjectClient
+
+            self._project = AIProjectClient(
+                endpoint=settings.project_endpoint, credential=self.credential()
+            )
+        return self._project
 
     def credential(self) -> Any:
         """One credential for the whole process. Azure's own token cache lives inside it, so a

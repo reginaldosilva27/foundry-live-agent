@@ -531,3 +531,66 @@ beside it is the part that decides the formula, and that is measured here rather
 | Hosting package | `langchain-azure-ai[hosting]>=1.2.9`, pip **≥ 26** | LangGraph hosted-agents guide + observed 2026-09-16 |
 | azd extensions | `azure.ai.agents` ≥ 1.0.0-beta.8, `azure.ai.projects` ≥ 1.0.0-beta.4, azd ≥ 1.27.1 | azure.yaml reference |
 | Hosted agent trace join | `microsoft.session.id` == `agent_session_id` (**not** `gen_ai.response.id`) | observed 2026-09-16 |
+| Promote a version | `update_details(agent_name, agent_endpoint=...version_selector...)`, one rule at 100% | **SDK 2.6.0 typespec, 2026-09-19 — NOT verified live** |
+
+## Promoting a version — spec 031, read from the SDK 2026-09-19
+
+> **This section is the one place in this file where the source is a shipped SDK rather than a doc
+> page or a live observation, and it is labelled as such deliberately (§10).** Everything below
+> comes from the `azure-ai-projects` **2.6.0** typespec — the generated models and their
+> docstrings — which is a Microsoft artifact rather than anyone's memory, but is *not* the same as
+> having seen the service accept the call.
+
+### What the SDK settles
+
+**There is no promote verb.** `AgentsOperations` exposes `create_version`, `get_version`,
+`list_versions`, `delete_version`, `enable`, `disable` and `update_details` — and nothing named
+promote, activate or set_version. Going back to a version is a **merge-patch on the agent
+endpoint's routing**:
+
+```python
+agents.update_details(
+    agent_name,
+    agent_endpoint=AgentEndpointConfig(
+        version_selector=VersionSelector(
+            version_selection_rules=[
+                FixedRatioVersionSelectionRule(agent_version="3", traffic_percentage=100)
+            ]
+        )
+    ),
+)
+```
+
+| Fact | Where it comes from |
+|---|---|
+| `AgentEndpointConfig.version_selector` — *"determines how traffic is routed to different versions of the agent"* | `azure-ai-projects` 2.6.0 model docstring |
+| `VersionSelectionRule` has one subclass, `FixedRatioVersionSelectionRule`, carrying `agent_version` + `traffic_percentage` (0–100) | same |
+| `AgentVersionDetails` carries `version` · `status` · `created_at` · `definition` · `draft` · `metadata` | same |
+| The payload **cannot carry a definition**, so this route can never author an agent (spec 031, AC14) | asserted on the serialised body in `backend/tests/test_agent_promote.py` |
+
+### The disagreement worth recording
+
+The [Manage hosted agents](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/manage-hosted-agent)
+doc says an agent endpoint serves **one** version at 100% and that traffic splitting is
+unsupported. The type models a **list** of weighted rules. This repository sends exactly one rule
+at 100% — the documented shape — and records the disagreement rather than exploring it.
+
+### Open — NOT verified against the live service
+
+`az` on the author's machine was a broken build on 2026-09-19
+(`/usr/local/Cellar/azure-cli/2.69.0/libexec/bin/python: Bad CPU type in executable`), so
+`DefaultAzureCredential` had no source and none of the following could be probed. They are recorded
+as open questions rather than guessed silently (§10), and the write path ships **off by default**
+because of it.
+
+| Open question | Why it matters | How to close it |
+|---|---|---|
+| Does `agents.get(name)` return `agent_endpoint` populated? | If not, `pinned` is always false and a promotion would appear to do nothing — which AC7's fresh read would show as "nothing changed" | `agents.get("foundry-live-agent")` and look |
+| Does `update_details` accept this selector as written? | It is the whole feature | promote to an older version on a throwaway agent |
+| Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | read the role definitions, then test with the lesser one |
+| Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | pin one, then list |
+
+The recorded listing (`backend/tests/fixtures/agents-listing-20260916.json`, 10 agents) carries **no
+`agent_endpoint` key at all** — consistent with nothing ever having been pinned, and not proof that
+the field would be omitted if something were. `test_agent_versions.py` asserts that premise, so a
+future recording that contradicts it fails loudly instead of quietly invalidating the reasoning.

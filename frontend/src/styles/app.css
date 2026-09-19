@@ -3715,3 +3715,155 @@ button:disabled {
 .agent-card__inspect:hover {
   color: var(--fg-1);
 }
+
+/* --- Versions, and going back to one (spec 031) ------------------------------------------
+   Built from the tool list's vocabulary rather than a new one: a version is another thing the
+   service reports about this agent, and it should not look like a different kind of object. The
+   one visual departure is the promote control, which is deliberately plain — it changes what the
+   whole project serves, and a button that looks eager would be arguing for itself. */
+
+.agent-detail__pinned {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}
+
+.agent-detail__versions {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  gap: var(--sp-2);
+  list-style: none;
+}
+
+.agent-detail__version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.agent-detail__version-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  gap: var(--sp-2);
+}
+
+.agent-detail__version-name {
+  font-family: var(--font-mono);
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.agent-detail__version-status {
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+/* The one that answers. Marked, not merely ordered — "newest" and "serving" can differ. */
+.agent-detail__version-served {
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--bg-accent-soft, var(--bg-3));
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+}
+
+.agent-detail__version-meta {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  gap: var(--sp-3);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agent-detail__version-why,
+.agent-detail__version-busy {
+  margin: 0 0 0 auto;
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agent-detail__promote {
+  margin-left: auto;
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.agent-detail__promote:hover:not(:disabled) {
+  border-color: var(--border-2);
+  color: var(--fg-1);
+}
+
+.agent-detail__promote:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The confirmation exists for one sentence — that this is not a browser-local setting. */
+.agent-detail__confirm {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-2);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  gap: var(--sp-2);
+}
+
+.agent-detail__confirm-title {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.agent-detail__confirm-body {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}
+
+.agent-detail__confirm-actions {
+  display: flex;
+  margin: 0;
+  gap: var(--sp-2);
+}
+
+.agent-detail__confirm-actions button {
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.agent-detail__confirm-actions button:first-child {
+  border-color: var(--ds-warning);
+  color: var(--fg-1);
+}
+

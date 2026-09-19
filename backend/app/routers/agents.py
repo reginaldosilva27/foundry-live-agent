@@ -1,10 +1,21 @@
-"""`GET /agents` — which agents the project has, and `GET /agents/{name}` — what one of them is."""
+"""`GET /agents` — which agents the project has, `GET /agents/{name}` — what one of them is,
+and `POST /agents/{name}/versions/{version}/promote` — go back to one (spec 031)."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response
 
 from app.agents import AgentsUnavailable
+
+#: Which HTTP status each refusal deserves. `not_owned` and `write_disabled` are 403 because they
+#: are both "this build will not do that", which is what a reader debugging a deployment needs.
+_STATUS = {
+    "write_disabled": 403,
+    "not_owned": 403,
+    "forbidden": 403,
+    "unknown_agent": 404,
+    "unknown_version": 404,
+}
 
 router = APIRouter()
 
@@ -34,10 +45,14 @@ async def agents(request: Request) -> dict:
 async def agent(name: str, request: Request, response: Response) -> dict:
     """One agent, inspected (spec 030).
 
-    Answered from the **same listing** `GET /agents` reads — the service returns every agent's whole
-    definition, so there is no second upstream call to make. Read-only, like its sibling: this route
-    describes an agent and never changes one. Editing has a spec of its own (041) and a reason to
-    stay out of the browser (§4).
+    Mostly answered from the **same listing** `GET /agents` reads — the service returns every
+    agent's whole definition, so the *definition* costs no second call. Spec 031 added what the
+    listing genuinely does not carry: the agent's versions, and the `agent_endpoint` that says
+    which of them is served. Those are read here and **only** here, so the agents screen keeps the
+    single-request property spec 030 verified (spec 031, AC12).
+
+    Read-only, like its sibling: this route describes an agent and never changes one. Editing has a
+    spec of its own (041) and a reason to stay out of the browser (§4).
 
     A failure carries a **code**, never prose (§7), and never an empty detail: "this project has no
     agent by that name" and "we could not read the project" are different facts and the screen
@@ -49,3 +64,35 @@ async def agent(name: str, request: Request, response: Response) -> dict:
     except AgentsUnavailable as exc:
         response.status_code = 404 if exc.code == "unknown_agent" else 502
         return {"agent": None, "error": exc.code}
+
+
+@router.post("/agents/{name}/versions/{version}/promote")
+async def promote(name: str, version: str, request: Request, response: Response) -> dict:
+    """Make an earlier version the one this agent serves (spec 031). **The app's only write.**
+
+    **It takes no body.** The agent and the version are path parameters and there is nowhere to put
+    anything else, so this route cannot become a way to author an agent — creating a version stays
+    with `apply_agent.py`, from a definition in the repository (§4, AC14). A body posted anyway is
+    not read.
+
+    Two gates, and they are different things. `allow_version_promote` is **off by default** and
+    decides whether this deployment offers the surface at all; `OWNED_AGENT_NAMES` decides whether
+    *this* agent is one this repository authored. Neither is a permission — RBAC on the deployment
+    identity is what actually enforces the write, and a build that passes both gates without the
+    role gets `forbidden`, which the screen renders as the configuration fact it is (AC8).
+
+    The answer is a **fresh read**, never an echo of the request: the served version on screen comes
+    from what the service says now (AC7). A failure carries a code and no agent, because nothing on
+    screen may claim a version that is not being served.
+    """
+    if not request.app.state.settings.allow_version_promote:
+        response.status_code = 403
+        return {"agent": None, "error": "write_disabled"}
+
+    try:
+        detail = request.app.state.promote_version(name, version)
+    except AgentsUnavailable as exc:
+        response.status_code = _STATUS.get(exc.code, 502)
+        return {"agent": None, "error": exc.code}
+
+    return {"agent": detail.as_dict(), "error": None}

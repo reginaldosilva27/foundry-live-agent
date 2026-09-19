@@ -176,6 +176,19 @@ violation.
   the BFF **drops `environment_variables`** rather than filtering them in the view (the real listing
   holds a `KEY_VAULT_URI`), and `null` — the service said nothing — stays distinct from `""` — the
   service said nothing *in it* — because five of ten agents really do have empty instructions.
+- **The newest version is not the served version, and this app can now change which is (spec 031).**
+  An agent endpoint pins a version through `agent_endpoint.version_selector`; `served_version()` in
+  `backend/app/agents.py` is the only place that distinction is decided, and `version_not_active`
+  follows it. The recorded listing has **no `agent_endpoint` key at all**, so the correction ships
+  dormant — and the **listing must stay one request** (§4's cost, spec 030's verified property), so
+  the rail reports the *latest* version and the agent detail screen resolves the pin. Promoting is
+  **the app's only write**: `update_details` with one `FixedRatioVersionSelectionRule` at 100%,
+  read from the SDK 2.6.0 typespec and **not verified against the live service** — recorded as an
+  open item in `docs/REFERENCES.md`, which is why it ships off by default. Three gates, and only
+  one is a permission: `FOUNDRY_ALLOW_VERSION_PROMOTE` (off), `OWNED_AGENT_NAMES` (this repo's own
+  agents, from the harness `agent.yaml` files), and RBAC — the flag reveals a control, it cannot
+  grant anything. The route takes **no body**, so no agent definition can travel on it, and the app
+  records nothing about a promotion because it has no identity to record (see `SECURITY.md`).
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

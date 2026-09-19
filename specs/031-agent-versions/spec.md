@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 031-agent-versions |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -41,13 +42,72 @@ inspector.
 - **No diffing a version against the repository's current YAML** — a good idea, and a different spec.
 - No change to the `AgentEvent` set (§9).
 
+## How promoting actually works
+
+Read from the shipped `azure-ai-projects` 2.6.0 typespec (§10 — see *Contract / data impact* for what
+that does and does not settle). There is **no promote verb**. Going back to a version is a
+merge-patch on the agent endpoint's *routing*:
+
+```
+agents.update_details(
+    agent_name,
+    agent_endpoint=AgentEndpointConfig(
+        version_selector=VersionSelector(
+            version_selection_rules=[
+                FixedRatioVersionSelectionRule(agent_version="3", traffic_percentage=100)
+            ]
+        )
+    ),
+)
+```
+
+Two consequences shape everything below. First, **the body carries no definition** — this call
+cannot author an agent even by mistake, which is the property the non-goals wanted and an
+acceptance criterion asserts. Second, **the selector, not `versions.latest`, is what answers.**
+
+## The served version is not the latest version
+
+Today `backend/app/agents.py` documents `data[].versions.latest.version` as *"the served version"*,
+and derives `version_not_active` from that version's status. That is true only because nobody has
+ever pinned anything. The moment this spec ships, pinning version 3 while 8 is the newest makes
+those two words come apart, and every screen that says "version" today would be lying.
+
+So the app gains **one** corrected concept, not two:
+
+> **`served_version`** — the version the endpoint's selector pins, when it carries one; otherwise
+> `versions.latest.version`.
+
+`version_not_active` follows it: the status that matters is the served version's, not the newest
+one's. The listing fixture has no `agent_endpoint` key at all, so the fallback branch is today's
+behaviour exactly — the correction ships **dormant**, changing nothing on screen until someone
+promotes, and a test covers both branches.
+
+**Where it is resolved matters.** `GET {project_endpoint}/agents` does not carry `agent_endpoint`
+(the field is absent, not null, on all ten agents — consistent with nothing ever being pinned, and
+not proof the listing would omit it if something were). Spec 030 verified that the listing needs no
+per-agent call, and this spec does not spend that: the **agents listing is unchanged**, one call,
+and the rail's badge is labelled as the *latest* version. The **agent detail screen** — which this
+spec is already extending with a version list — is authoritative: it reads the agent directly, and
+that is the only place `served_version` is resolved and shown.
+
 ## User-facing behavior
 
 All new prose ships `{ en, pt }` (§7).
 
 **The list** sits with the agent's detail (spec 030): each version with its identifier, its status,
-when it was created, and the model it names. The served one is marked. What the service does not
-report about a version is shown as not reported, never inferred.
+when it was created, and the model it names. The served one is marked, and when it is not the newest
+the screen says so plainly — a pinned project is an unusual state and reads as one. What the service
+does not report about a version is shown as not reported, never inferred. A hosted agent's version
+has no model at all (spec 030), which is that same rule, not a special case.
+
+**Versions of every agent list.** That is a read, and the other eight agents in the project are as
+interesting to look at as ours.
+
+**Promoting is offered on this repository's own agents only** — the names in `ai/harness/*/agent.yaml`,
+which is where that fact already lives (§4). A version row on any other agent carries the code
+`not_owned` and no control, and **the BFF refuses the write too**: a restriction only the UI honours
+is not a restriction. This bounds the blast radius to what this repository authored, which is the
+same sentence the non-goals use to justify promoting at all.
 
 **Promoting** is an explicit action on a version that is not the served one. It asks first, and the
 confirmation says what is actually true: this changes which version answers **for everyone using this
@@ -66,13 +126,19 @@ is not allowed to change the project, which is a configuration fact, not a bug.
 **A deployment whose BFF cannot write** does not render the promote control at all. It renders the
 list, which is a read. Showing a control that will always fail is the kind of thing §5 rules out.
 
+**Nothing is recorded in the app.** This app has no notion of a user, so a "who" it printed would be
+invented, which is the dishonesty §5 names. The screen shows current truth instead — the served
+version, freshly read. `SECURITY.md` says where the record does live: the actor is the BFF's own
+managed identity, the durable trail is Azure's, and a BFF shared by several people makes a promotion
+unattributable by design.
+
 ## Acceptance criteria
 
 1. **AC1** — An agent's versions render newest first with identifier, status, creation time and
    model, and the served one is marked.
 2. **AC2** — A field the service did not report renders as not reported.
-3. **AC3** — Promote is offered only on a version that is not served, and only when the BFF reports
-   it can write.
+3. **AC3** — Promote is offered only on a version that is not served, only when the BFF reports it
+   can write, and only on an agent this repository owns.
 4. **AC4** — Promote asks for confirmation, and the confirmation states that the change affects
    everyone using the project and applies from the next turn.
 5. **AC5** — Cancelling the confirmation changes nothing and issues no request.
@@ -83,31 +149,35 @@ list, which is a read. Showing a control that will always fail is the kind of th
    unchanged.
 9. **AC9** — With write capability absent from `GET /config`, no promote control renders anywhere.
 10. **AC10** — Every new string ships `en` + `pt`.
+11. **AC11** — `served_version` is the version the endpoint's selector pins when it carries one, and
+    `versions.latest.version` when it does not; `version_not_active` reads the served version's
+    status. Both branches are tested.
+12. **AC12** — The agents listing still makes exactly one upstream call and no per-agent call, and
+    its version is labelled as the latest rather than the served one. A test asserts the absence of
+    the extra call.
+13. **AC13** — The BFF refuses a promote on an agent this repository does not own, with the code
+    `not_owned`, even when the write flag is on and the caller holds the role.
+14. **AC14** — The promote request carries only an agent name and a version identifier. A test
+    asserts that no agent definition can travel on it.
 
 ## Contract / data impact
 
 | | |
 |---|---|
 | **BFF / `AgentEvent`** | Unchanged (§9). |
-| **New write endpoint** | The first one in the app. It names the agent and the version and does nothing else — no body that could carry a definition, so this route can never become a way to author an agent. |
+| **New write endpoint** | The first one in the app. It names the agent and the version and does nothing else — no body that could carry a definition, so this route can never become a way to author an agent (AC14). |
 | **`GET /config`** | Gains whether this deployment can write, so the UI can decline to offer what will fail. The BFF is the source of truth for that (§4). |
-| **RBAC / §-zero-secrets** | Writing needs a role on the project that reading does not. Entra ID via `DefaultAzureCredential`, as everywhere. The security consequence is real and belongs in the spec: **anyone who can reach this BFF can change which version the project serves.** The plan must say how a deployment turns that off, and off must be the default. |
-| **§10** | Which API promotes a version, under which `api-version`, and which role it requires, come from a doc read at the time of writing and recorded in `docs/REFERENCES.md`. |
-| **Docs** | `docs/architecture.md` and the harness docs — the rollback story gains its demonstrated form. `SECURITY.md` — the new write surface. |
-
-## Open questions (clarify before planning)
-
-- [ ] Does the Responses/Agents v2 API expose promoting an existing version, or only creating a new
-      one? If only creation, this spec becomes "create a version from an existing definition", which
-      is a different and more dangerous thing — and may be a reason not to build it.
-- [ ] Is write disabled by default by configuration, by RBAC, or by both?
-- [ ] Should promotion be restricted to the agents this repository owns, refusing on the other eight
-      in the project?
-- [ ] Does a promotion need to be recorded anywhere in the app — who did it, when — given the app has
-      no notion of a user?
+| **New setting** | One opt-in env var, **default false**, gating both the route and the `/config` capability. It is the first boolean capability flag here — every other one is derived from the presence of configuration (`pricing_enabled`, `voice_enabled`, `tracing_enabled`) — because the enabling fact is a *permission*, not an address. The plan names it. |
+| **RBAC / §-zero-secrets** | Writing needs a role on the project that reading does not. Entra ID via `DefaultAzureCredential`, as everywhere. The security consequence is real and belongs in the spec: **anyone who can reach this BFF can change which version the project serves** — which is why the flag is off by default. The flag reveals a control; it cannot grant a permission the identity lacks, so a deployment that turns it on without the role gets AC8's translated failure. No Bicep exists yet, so the role assignment is documented as a manual step rather than shipped as unverified IaC (§5). |
+| **Ownership** | The promotable set is derived from the `name` in each `ai/harness/*/agent.yaml` — no new source of truth, and a fork that edits those files gets its own agents. |
+| **§10 — what is and is not verified** | The call shape above is read from the shipped `azure-ai-projects` 2.6.0 typespec, not from memory and not from a doc page. **Not verified against the live service:** whether `agents.get()` returns `agent_endpoint` populated, whether `update_details` accepts this selector, and which role it requires. `az` on the author's machine is a broken build (`Bad CPU type in executable`), so no credential was available. This is recorded as an open item in `docs/REFERENCES.md` — *not* guessed silently — and is safe to ship because the path is off by default. No fixture is hand-written to make a test pass (§5); the write is tested at the seam, and the live round trip is recorded when `az` works. |
+| **Docs** | `docs/architecture.md` and the harness docs — the rollback story gains its demonstrated form. `SECURITY.md` — the new write surface, and where the audit trail actually lives. `docs/REFERENCES.md` — the call shape and the open verification item. |
 
 ## Out of scope / deferred
 
 - Creating or deleting versions.
 - Diffing a served version against the repository's YAML.
 - Any notion of an identity or an audit log in this app.
+- Traffic splitting. The type models a *list* of weighted rules while the documented behaviour is
+  one version at 100% (`docs/REFERENCES.md`); this app sends exactly one rule at 100% and records
+  the disagreement rather than exploring it.

@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { AgentContainer, AgentDetail, AgentRow, AgentTool } from './agents'
+import type { AgentContainer, AgentDetail, AgentRow, AgentTool, AgentVersion } from './agents'
 
 const AGENTS = join(import.meta.dirname, '../../../backend/app/agents.py')
 
@@ -49,6 +49,10 @@ describe('the TypeScript mirror of the agents listing', () => {
       tools: true,
       reasoning: true,
       container: true,
+      served_version: true,
+      latest_version: true,
+      pinned: true,
+      versions: true,
     }
     // `AgentDetail.as_dict` spreads the summary's, so the expected set is both.
     const expected = [...pythonKeys(source, 'AgentDetail'), ...pythonKeys(source)]
@@ -82,10 +86,36 @@ describe('the TypeScript mirror of the agents listing', () => {
     expect(keys).not.toContain('environment_variables')
   })
 
+  it('covers exactly the fields a version sends (spec 031)', () => {
+    const mirrored: Record<keyof AgentVersion, true> = {
+      version: true,
+      status: true,
+      created_at: true,
+      model: true,
+      served: true,
+      promotable: true,
+      promote_reason: true,
+    }
+    expect(Object.keys(mirrored).sort()).toEqual(pythonKeys(source, 'AgentVersion').sort())
+  })
+
   it('translates every reason code the backend can put on a row', () => {
     // AC5 names three, and a row dimmed with no reason is what it forbids. If the backend grows a
     // fourth, this fails here rather than rendering an unexplained disabled row.
-    const codes = [...source.matchAll(/^ {8}return "([a-z_]+)"$/gm)].map((m) => m[1])
+    //
+    // Scoped to `_reason` since spec 031: `_promote_code` also returns codes at this indentation,
+    // and they belong to a different vocabulary — a failed write, not an unselectable row.
+    const reason = source.split('def _reason(')[1]?.split('\ndef ')[0] ?? ''
+    const codes = [...reason.matchAll(/^ {8}return "([a-z_]+)"$/gm)].map((m) => m[1])
     expect(codes.sort()).toEqual(['disabled', 'no_harness', 'version_not_active'])
+  })
+
+  it('translates every promote code the backend can put on a version (spec 031)', () => {
+    // The same guard for the new vocabulary: a version that cannot be promoted must say why, and
+    // a code the UI has no string for would render as an unexplained missing control.
+    const source031 = readFileSync(AGENTS, 'utf8')
+    const block = source031.split('def versions_of(')[1]?.split('\ndef ')[0] ?? ''
+    const codes = new Set([...block.matchAll(/"(not_owned|served)"/g)].map((m) => m[1]))
+    expect([...codes].sort()).toEqual(['not_owned', 'served'])
   })
 })

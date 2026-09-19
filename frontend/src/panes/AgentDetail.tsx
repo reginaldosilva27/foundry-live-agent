@@ -15,6 +15,7 @@
  * **Instructions are rendered as text, never as Markdown.** They were written by somebody else for
  * eight of these ten agents, and this screen is a viewer, not a renderer of other people's markup.
  */
+import { useState } from 'react'
 import { HarnessBadge } from '../components/HarnessBadge'
 import { CopyIcon } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
@@ -32,6 +33,19 @@ interface Props {
   answering?: string
   onSelect: (name: string) => void
   onBack: () => void
+  /**
+   * Whether this deployment may change which version the project serves (spec 031, AC9).
+   *
+   * From `GET /config`, never inferred: a control this build cannot honour must not render at all,
+   * which is §5 applied to a button. Defaults to `false` so a caller that has not read the config
+   * yet shows nothing rather than something that will fail.
+   */
+  canPromote?: boolean
+  /** The version currently being promoted, so the control can be busy and refuse a second press. */
+  promoting?: string | null
+  /** A failure CODE from the last attempt, translated here. */
+  promoteError?: string | null
+  onPromote?: (version: string) => void
 }
 
 /** Shared with the listing, so a failure says the same thing on both screens (§4). */
@@ -53,7 +67,18 @@ const EXECUTOR_KEYS: Record<string, StringKey> = {
   foundry: 'agent.executedByFoundry',
 }
 
-export function AgentDetailScreen({ agent, error, loading, answering, onSelect, onBack }: Props) {
+export function AgentDetailScreen({
+  agent,
+  error,
+  loading,
+  answering,
+  onSelect,
+  onBack,
+  canPromote = false,
+  promoting = null,
+  promoteError = null,
+  onPromote,
+}: Props) {
   const s = useT()
 
   if (loading) return <section className="agent-detail" aria-busy="true" />
@@ -129,6 +154,16 @@ export function AgentDetailScreen({ agent, error, loading, answering, onSelect, 
           </dl>
         </Block>
       )}
+
+      <Block title={s('versions.title')} testId="agent-versions">
+        <Versions
+          agent={agent}
+          canPromote={canPromote}
+          promoting={promoting}
+          promoteError={promoteError}
+          onPromote={onPromote}
+        />
+      </Block>
 
       {/* What a hosted agent IS: it has no instructions, tools or model of its own. Its environment
           is not here because it is not sent — see `ContainerInfo` (AC11). */}
@@ -269,4 +304,188 @@ function Tools({ tools }: { tools: AgentTool[] }) {
       ))}
     </ul>
   )
+}
+
+
+/** Codes a version row can carry instead of a control. Translated here — the BFF ships none (§7). */
+const PROMOTE_REASON_KEYS: Record<string, StringKey> = {
+  served: 'versions.reason.served',
+  not_owned: 'versions.reason.not_owned',
+}
+
+const PROMOTE_ERROR_KEYS: Record<string, StringKey> = {
+  write_disabled: 'versions.error.write_disabled',
+  not_owned: 'versions.error.not_owned',
+  forbidden: 'versions.error.forbidden',
+  unknown_version: 'versions.error.unknown_version',
+  unavailable: 'versions.error.unavailable',
+}
+
+/**
+ * The agent's versions, and the way back to one (spec 031).
+ *
+ * **The rollback story, demonstrated.** `apply_agent.py` creates an immutable version on every run
+ * and has always said that is the rollback story; until this screen existed, the story was told and
+ * never shown.
+ *
+ * Three things here are deliberate. A version the service reported nothing about renders as *not
+ * reported*, never as healthy. A pinned project says so out loud, because "serving 6, newest is 8"
+ * is a surprising state nobody should have to infer from two numbers. And the control is absent —
+ * not disabled — when this build cannot write, since a button that will always fail teaches the
+ * reader something false (§5).
+ */
+function Versions({
+  agent,
+  canPromote,
+  promoting,
+  promoteError,
+  onPromote,
+}: {
+  agent: AgentDetail
+  canPromote: boolean
+  promoting: string | null
+  promoteError: string | null
+  onPromote?: (version: string) => void
+}) {
+  const s = useT()
+  // Which version the confirmation is asking about. Local, because a question nobody answered yet
+  // is not state anything else in the app has any business knowing.
+  const [asking, setAsking] = useState<string | null>(null)
+
+  // `== null` on purpose: `null` is the BFF saying it did not read them, and `undefined` is a BFF
+  // older than spec 031 that does not send the field at all. Both mean "not reported", and neither
+  // may take down a screen that worked perfectly well before this section existed.
+  if (agent.versions == null)
+    return <p className="agent-detail__absent">{s('versions.none')}</p>
+
+  return (
+    <>
+      {agent.pinned && (
+        <p className="agent-detail__pinned">
+          {s('versions.pinned')
+            .replace('{version}', agent.served_version)
+            .replace('{latest}', agent.latest_version)}
+        </p>
+      )}
+
+      {promoteError && (
+        <p className="agent-detail__error" role="alert">
+          {s(PROMOTE_ERROR_KEYS[promoteError] ?? 'versions.error.unavailable')}
+        </p>
+      )}
+
+      <ul className="agent-detail__versions">
+        {agent.versions.map((version) => (
+          <li
+            key={version.version}
+            className="agent-detail__version"
+            data-testid={`agent-version-${version.version}`}
+          >
+            <p className="agent-detail__version-head">
+              <span className="agent-detail__version-name">{version.version}</span>
+              <span className="agent-detail__version-status">
+                {version.status === null ? s('versions.notReported') : s(statusKey(version.status))}
+              </span>
+              {version.served && (
+                <span className="agent-detail__version-served">{s('versions.served')}</span>
+              )}
+            </p>
+
+            <p className="agent-detail__version-meta">
+              <span>{version.model === null ? s('versions.notReported') : version.model}</span>
+              {version.created_at !== null && (
+                <span>{s('versions.created').replace('{when}', when(version.created_at))}</span>
+              )}
+            </p>
+
+            {promoting === version.version ? (
+              <p className="agent-detail__version-busy" role="status">
+                {s('versions.promoting')}
+              </p>
+            ) : (
+              canPromote &&
+              (version.promotable ? (
+                <button
+                  type="button"
+                  className="agent-detail__promote"
+                  disabled={promoting !== null}
+                  onClick={() => setAsking(version.version)}
+                >
+                  {s('versions.promote')}
+                </button>
+              ) : (
+                <p className="agent-detail__version-why">
+                  {s(PROMOTE_REASON_KEYS[version.promote_reason] ?? 'versions.reason.served')}
+                </p>
+              ))
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {asking !== null && (
+        <Confirm
+          version={asking}
+          onCancel={() => setAsking(null)}
+          onConfirm={() => {
+            setAsking(null)
+            onPromote?.(asking)
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+/**
+ * The confirmation, which exists for one sentence.
+ *
+ * Every other persistent thing in this app is local to this browser — the history, the favourites,
+ * the collapsed rail. This one changes what the project serves for **everyone**, and a reader who
+ * has only ever seen the local ones has no reason to expect that. So the body says it, and says
+ * that it applies from the next turn (AC4).
+ */
+function Confirm({
+  version,
+  onCancel,
+  onConfirm,
+}: {
+  version: string
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const s = useT()
+
+  return (
+    <div className="agent-detail__confirm" role="dialog" aria-modal="true">
+      <p className="agent-detail__confirm-title">
+        {s('versions.confirm.title').replace('{version}', version)}
+      </p>
+      <p className="agent-detail__confirm-body">{s('versions.confirm.body')}</p>
+      <p className="agent-detail__confirm-actions">
+        <button type="button" onClick={onConfirm}>
+          {s('versions.confirm.ok')}
+        </button>
+        <button type="button" onClick={onCancel}>
+          {s('versions.confirm.cancel')}
+        </button>
+      </p>
+    </div>
+  )
+}
+
+/** The documented statuses, and an honest fallback for one the service adds later. */
+function statusKey(status: string): StringKey {
+  const known: Record<string, StringKey> = {
+    active: 'agents.status.active',
+    creating: 'agents.status.creating',
+    failed: 'agents.status.failed',
+    deleting: 'agents.status.deleting',
+  }
+  return known[status] ?? 'agents.status.unknown'
+}
+
+/** The service's Unix seconds, in the reader's own locale. Formatting is a §7 concern. */
+function when(seconds: number): string {
+  return new Date(seconds * 1000).toLocaleDateString()
 }

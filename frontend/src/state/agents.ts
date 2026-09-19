@@ -103,6 +103,8 @@ export interface AgentDetailState {
   /** A failure CODE, translated by the view — never prose from the BFF (§7). */
   error: string | null
   loading: boolean
+  /** Adopt an agent the app has just been handed a fresh read of (spec 031, AC7). */
+  replace: (agent: AgentDetail) => void
 }
 
 /**
@@ -149,9 +151,14 @@ export function useAgentDetail(name: string | null, bffUrl = BFF_URL): AgentDeta
     }
   }, [name, bffUrl])
 
-  if (!name) return { agent: null, error: null, loading: false }
-  // A stale answer is not this agent's answer: while the name has moved on, the screen is loading.
-  if (answered.name !== name) return { agent: null, error: null, loading: true }
+  // Put a freshly-read agent on screen without re-fetching it (spec 031, AC7). A promotion already
+  // answered with what the service says *now*; re-reading would be a second request asking a
+  // question this app has just been told the answer to.
+  const replace = (agent: AgentDetail) => setAnswered({ name: agent.name, agent, error: null })
 
-  return { agent: answered.agent, error: answered.error, loading: false }
+  if (!name) return { agent: null, error: null, loading: false, replace }
+  // A stale answer is not this agent's answer: while the name has moved on, the screen is loading.
+  if (answered.name !== name) return { agent: null, error: null, loading: true, replace }
+
+  return { agent: answered.agent, error: answered.error, loading: false, replace }
 }

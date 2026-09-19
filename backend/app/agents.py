@@ -10,13 +10,20 @@ lesson spec 018 paid for). One request answers the whole screen:
 
     data[].name                              the agent
     data[].state                             enabled | disabled
-    data[].versions.latest.version           the served version
+    data[].versions.latest.version           the NEWEST version (see below)
     data[].versions.latest.status            active | creating | failed | …
     data[].versions.latest.definition.kind   prompt | hosted | workflow
 
 `kind` being *in the listing* is what spec 019's AC2 was unsure about: no second call per agent is
 needed. `versions` carries only `latest`, which matches the documented rule that an agent endpoint
 serves one version and that traffic splitting is unsupported.
+
+**The newest version is not necessarily the one that answers** (spec 031). An agent endpoint can
+pin a version through `agent_endpoint.version_selector`, and once anything does, "latest" and
+"serving" are different facts. :func:`served_version` is the one place that distinction is decided.
+No agent in the recorded listing carries an `agent_endpoint` key, so today every agent takes the
+fallback and nothing on screen changes — but the listing is the wrong place to learn about a pin
+anyway: the field is absent here, and `GET /agents/{name}` is what resolves it (spec 031, AC12).
 
 **Two shapes that bite.** A *prompt* agent's definition carries `model`; a *hosted* agent's does
 not — it carries `cpu`, `memory`, `container_configuration`, and its deployment name inside
@@ -32,22 +39,27 @@ English by construction.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 __all__ = [
     "AgentDetail",
+    "AgentVersion",
     "AgentSummary",
     "AgentsUnavailable",
     "ContainerInfo",
     "ToolInfo",
     "build_agent_detail_reader",
     "build_agent_lister",
+    "build_version_promoter",
     "detail_of",
     "find_detail",
     "list_agents",
+    "promote_version",
     "read_listing",
+    "versions_of",
     "select_agent",
+    "served_version",
     "summarise",
 ]
 
@@ -172,6 +184,40 @@ class ContainerInfo:
 
 
 @dataclass(frozen=True)
+class AgentVersion:
+    """One version of an agent, as the rollback story needs it read (spec 031).
+
+    ``None`` means **the service did not report it**, the same rule the detail already uses: a
+    version with no ``model`` and a version whose model is the empty string are different facts. A
+    hosted version simply has no model, which is that rule and not a special case (spec 030).
+    """
+
+    version: str
+    #: ``creating`` · ``active`` · ``failed`` · ``deleting`` · ``deleted``, or ``None``.
+    status: str | None
+    #: The service's own Unix seconds, passed through — formatting a date here would be prose (§7).
+    created_at: int | None
+    model: str | None
+    #: Whether this is the version the endpoint actually serves.
+    served: bool
+    #: Whether this version can be rolled back to. Never true for the served one (spec 031, AC3).
+    promotable: bool = False
+    #: ``""`` when promotable; otherwise ``served`` · ``not_owned``. A CODE, never prose (§7).
+    promote_reason: str = ""
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "version": self.version,
+            "status": self.status,
+            "created_at": self.created_at,
+            "model": self.model,
+            "served": self.served,
+            "promotable": self.promotable,
+            "promote_reason": self.promote_reason,
+        }
+
+
+@dataclass(frozen=True)
 class AgentDetail:
     """Everything `GET /agents/{name}` answers. The single source of truth for its shape (§4).
 
@@ -190,6 +236,14 @@ class AgentDetail:
     tools: list[ToolInfo] | None
     reasoning: dict[str, Any] | None
     container: ContainerInfo | None
+    #: The version the endpoint serves. Equal to ``latest_version`` until someone rolls back.
+    served_version: str = ""
+    #: The newest version that exists, which is what the listing's rows report (spec 031, AC12).
+    latest_version: str = ""
+    #: Whether a `version_selector` chose the served version, rather than it simply being newest.
+    pinned: bool = False
+    #: ``None`` when the service did not report them — not the same as an agent with no versions.
+    versions: list[AgentVersion] | None = None
 
     # Read-through, so callers and tests say `detail.model` rather than `detail.summary.model`.
     @property
@@ -207,6 +261,10 @@ class AgentDetail:
     @property
     def version(self) -> str:
         return self.summary.version
+
+    @property
+    def version_status(self) -> str:
+        return self.summary.version_status
 
     @property
     def harness(self) -> str:
@@ -227,13 +285,45 @@ class AgentDetail:
             "tools": None if self.tools is None else [tool.as_dict() for tool in self.tools],
             "reasoning": self.reasoning,
             "container": None if self.container is None else self.container.as_dict(),
+            "served_version": self.served_version,
+            "latest_version": self.latest_version,
+            "pinned": self.pinned,
+            "versions": None if self.versions is None else [v.as_dict() for v in self.versions],
         }
 
 
-def detail_of(agent: dict[str, Any]) -> AgentDetail:
-    """Project one agent of the listing into its detail. Pure, so the recording drives it."""
+def detail_of(
+    agent: dict[str, Any], raw_versions: list[dict[str, Any]] | None = None
+) -> AgentDetail:
+    """Project one agent into its detail. Pure, so the recording drives it.
+
+    ``raw_versions`` is what `agents.list_versions()` returned, or ``None`` when it was not read.
+    It is what makes this the **authoritative** place for the served version (spec 031): the
+    listing does not carry `agent_endpoint`, and the served version's *status* lives in the version
+    list rather than in `versions.latest`. So a pinned agent's row here reports the pinned version
+    and that version's health — not the newest one's, which is what the rail shows and says so.
+    """
     definition = ((agent.get("versions") or {}).get("latest") or {}).get("definition") or {}
     summary = _summarise_one(agent)
+    versions = versions_of(agent, raw_versions)
+
+    served = served_version(agent)
+    latest = str(((agent.get("versions") or {}).get("latest") or {}).get("version") or "")
+    pinned = served != "" and served != latest or _has_selector(agent)
+
+    if pinned:
+        # The pinned version's own status decides selectability. Unknown when the version list was
+        # not read or does not contain it — a pin at something we cannot see is not servable, and
+        # reporting the newest version's health in its place would be the §5 lie this spec exists
+        # to remove.
+        status = next((v.status for v in versions or [] if v.version == served), None) or "unknown"
+        summary = replace(
+            summary,
+            version=served,
+            version_status=status,
+            reason=(reason := _reason(summary.kind, _enabled(agent), status)),
+            selectable=not reason,
+        )
 
     return AgentDetail(
         summary=summary,
@@ -241,15 +331,98 @@ def detail_of(agent: dict[str, Any]) -> AgentDetail:
         tools=_tools(definition, summary.harness),
         reasoning=definition.get("reasoning") or None,
         container=_container(definition),
+        served_version=served,
+        latest_version=latest,
+        pinned=pinned,
+        versions=versions,
     )
+
+
+def _enabled(agent: dict[str, Any]) -> bool:
+    return agent.get("state", "enabled") != "disabled"
+
+
+def _has_selector(agent: dict[str, Any]) -> bool:
+    """Whether the endpoint chose the version, rather than it merely being the newest one."""
+    rules = ((agent.get("agent_endpoint") or {}).get("version_selector") or {}).get(
+        "version_selection_rules"
+    ) or []
+    return any((rule or {}).get("agent_version") for rule in rules)
+
+
+def versions_of(
+    agent: dict[str, Any], raw: list[dict[str, Any]] | None
+) -> list[AgentVersion] | None:
+    """Project the service's version list, newest first, marking the one that is served.
+
+    ``None`` in, ``None`` out — "the service did not report this agent's versions" is a different
+    fact from "it has none", and the screen renders them differently (§5).
+
+    Ordered by the service's own ``created_at`` rather than by the version identifier, because a
+    version identifier is not documented to be numeric — drafts are ``draft-{timestamp}`` — and
+    sorting text as if it were a number is how ``v10`` ends up before ``v9``.
+    """
+    if raw is None:
+        return None
+
+    from app.harness_factory import OWNED_AGENT_NAMES
+
+    served = served_version(agent)
+    owned = (agent.get("name") or agent.get("id") or "") in OWNED_AGENT_NAMES
+    rows = []
+    for entry in raw:
+        version = str(entry.get("version") or "")
+        # Ordered: not-ours is the fact worth reporting even about the served version, because it
+        # is true of the whole agent and will not change by picking a different row.
+        reason = "not_owned" if not owned else ("served" if version == served else "")
+        rows.append(
+            AgentVersion(
+                version=version,
+                status=_reported_str(entry.get("status")),
+                created_at=entry.get("created_at"),
+                model=_reported_str(_model(entry.get("definition") or {}) or None),
+                served=version == served,
+                promotable=not reason,
+                promote_reason=reason,
+            )
+        )
+    return sorted(rows, key=lambda r: r.created_at or 0, reverse=True)
 
 
 def find_detail(listing: dict[str, Any], name: str) -> AgentDetail:
     """The named agent's detail, or :class:`AgentsUnavailable` with the listing's own code."""
+    return detail_of(_find_agent(listing, name))
+
+
+def _find_agent(listing: dict[str, Any], name: str) -> dict[str, Any]:
     for agent in listing.get("data") or []:
         if (agent.get("name") or agent.get("id")) == name:
-            return detail_of(agent)
+            return agent
     raise AgentsUnavailable("unknown_agent", name)
+
+
+def served_version(agent: dict[str, Any]) -> str:
+    """Which version this agent's endpoint actually serves.
+
+    The endpoint's `version_selector` when it carries one, and the newest version when it does not.
+    **One concept, two branches** — the alternative was teaching every reader two words ("latest"
+    and "serving") for something that is the same thing until someone rolls back (spec 031).
+
+    The selector shape is `azure-ai-projects` 2.6.0's `VersionSelector` →
+    `FixedRatioVersionSelectionRule`, the same one :func:`promote_version` builds. Only the first
+    rule is read: the service documents one version at 100% and forbids traffic splitting, so a
+    second rule would be a shape this app has no opinion about (spec 031, out of scope).
+
+    Defensive about *shape*, never about *facts*: a selector with no rules falls back rather than
+    raising, because a read of ten agents must not die on one unfamiliar endpoint.
+    """
+    rules = ((agent.get("agent_endpoint") or {}).get("version_selector") or {}).get(
+        "version_selection_rules"
+    ) or []
+    for rule in rules:
+        if pinned := (rule or {}).get("agent_version"):
+            return str(pinned)
+    return str(((agent.get("versions") or {}).get("latest") or {}).get("version") or "")
 
 
 def _reported_str(value: Any) -> str | None:
@@ -423,6 +596,65 @@ def read_listing(endpoint: str, fetch: Callable[[str], dict[str, Any]]) -> dict[
         raise AgentsUnavailable("unavailable", f"{type(exc).__name__}: {exc}") from exc
 
 
+def promote_version(agents: Any, name: str, version: str, *, owned: bool) -> None:
+    """Make ``version`` the one this agent's endpoint serves. **The first write in this app.**
+
+    There is no promote verb. Going back to a version is a merge-patch on the endpoint's routing —
+    `update_details` with a `version_selector` naming one version at 100%. Two properties follow,
+    and both are tested:
+
+    - **Nothing authoring can travel.** The payload has a version identifier and a percentage, and
+      nowhere to put a definition. Creating an agent stays with `apply_agent.py` (spec 031
+      non-goals), and this route cannot become a second way to do it even by accident.
+    - **One rule, 100%.** The type models a *list* of weighted rules, while the service documents
+      one version per endpoint and no traffic splitting. This app sends the documented shape and
+      records the disagreement rather than exploring it.
+
+    ``owned`` is decided by the caller from `OWNED_AGENT_NAMES`, and refused **here** rather than
+    only on the screen: a restriction the server does not keep is not a restriction (AC13).
+
+    **Not verified against the live service** (§10). `az` was a broken build when this was written,
+    so the call shape comes from the `azure-ai-projects` 2.6.0 typespec and the round trip is an
+    open item in `docs/REFERENCES.md`. That is why the route is off by default.
+    """
+    if not owned:
+        raise AgentsUnavailable("not_owned", name)
+
+    from azure.ai.projects.models import (
+        AgentEndpointConfig,
+        FixedRatioVersionSelectionRule,
+        VersionSelector,
+    )
+
+    endpoint = AgentEndpointConfig(
+        version_selector=VersionSelector(
+            version_selection_rules=[
+                FixedRatioVersionSelectionRule(agent_version=str(version), traffic_percentage=100)
+            ]
+        )
+    )
+    try:
+        agents.update_details(name, agent_endpoint=endpoint)
+    except AgentsUnavailable:
+        raise
+    except PermissionError as exc:
+        # The expected failure for a build without the role, and a configuration fact rather than
+        # a bug — which is what the screen says (spec 031, AC8).
+        raise AgentsUnavailable("forbidden", str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 - every other failure renders the same way
+        raise AgentsUnavailable(_promote_code(exc), f"{type(exc).__name__}: {exc}") from exc
+
+
+def _promote_code(exc: Exception) -> str:
+    """Map an upstream failure onto one of the screen's codes. Never prose (§7)."""
+    status = getattr(exc, "status_code", None)
+    if status in (401, 403):
+        return "forbidden"
+    if status == 404:
+        return "unknown_version"
+    return "unavailable"
+
+
 def _http_fetch(credential: Callable[[], Any] | None) -> Callable[[str], dict[str, Any]]:
     """The production fetch. Built lazily, so importing this module needs no Azure SDK.
 
@@ -452,11 +684,78 @@ def build_agent_lister(
 
 
 def build_agent_detail_reader(
-    settings, credential: Callable[[], Any] | None = None
+    settings, credential: Callable[[], Any] | None = None, clients: Any = None
 ) -> Callable[[str], AgentDetail]:
-    """One agent, inspected (spec 030). Reads the **same listing** the rows come from."""
+    """One agent, inspected (spec 030), with its versions (spec 031).
+
+    The **definition** still comes from the listing — one request, recorded, verified 2026-09-16,
+    and the path every existing test drives. Spec 031 adds only what that listing genuinely does
+    not carry: the agent's version list, and the `agent_endpoint` that says which version is
+    served. Those go through the SDK rather than a hand-built URL, because their REST routes are
+    not in `docs/REFERENCES.md` and §10 forbids inventing one.
+
+    **Their failure is not this route's failure.** An agent that reads but whose versions do not
+    comes back with ``versions=None`` — "the service did not report them" — which is a state the
+    screen already renders (AC2). The inspector kept working through spec 030 without any of this,
+    and a version list that cannot be read must not take it away.
+    """
     fetch = _http_fetch(credential)
-    return lambda name: find_detail(read_listing(settings.project_endpoint, fetch), name)
+
+    def read(name: str) -> AgentDetail:
+        agent = _find_agent(read_listing(settings.project_endpoint, fetch), name)
+        endpoint, raw_versions = _endpoint_and_versions(clients, settings, name)
+        if endpoint is not None:
+            agent = {**agent, "agent_endpoint": endpoint}
+        return detail_of(agent, raw_versions)
+
+    return read
+
+
+def _endpoint_and_versions(
+    clients: Any, settings, name: str
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]] | None]:
+    """The agent's routing and its versions, or ``(None, None)`` when they cannot be read.
+
+    Deliberately swallowing: see :func:`build_agent_detail_reader`. Both halves are **unverified
+    against the live service** (§10) — `az` was a broken build when this was written — so a
+    deployment where they behave differently degrades to the inspector spec 030 shipped rather
+    than to an error page.
+    """
+    if clients is None or not settings.project_endpoint:
+        return None, None
+    try:
+        agents = clients.project(settings).agents
+        endpoint = _as_dict(agents.get(name)).get("agent_endpoint")
+        versions = [_as_dict(v) for v in agents.list_versions(name)]
+    except Exception:  # noqa: BLE001 - an unreadable version list is "not reported", not a failure
+        return None, None
+    return endpoint, versions
+
+
+def _as_dict(model: Any) -> dict[str, Any]:
+    """An SDK model as plain data. They are documented as MutableMapping-compatible."""
+    if hasattr(model, "as_dict"):
+        return model.as_dict()
+    return dict(model)
+
+
+def build_version_promoter(settings, clients: Any = None) -> Callable[[str, str], AgentDetail]:
+    """Promote, then **read back** (spec 031).
+
+    The re-read is the point of AC7: what the screen shows afterwards is what the service says now,
+    not what this process asked for. A promotion that silently did not take effect must look like
+    one, and an echo of the request would hide exactly that.
+    """
+    read = build_agent_detail_reader(settings, clients.credential if clients else None, clients)
+
+    def promote(name: str, version: str) -> AgentDetail:
+        from app.harness_factory import OWNED_AGENT_NAMES
+
+        agents = clients.project(settings).agents if clients else None
+        promote_version(agents, name, version, owned=name in OWNED_AGENT_NAMES)
+        return read(name)
+
+    return promote
 
 
 def _credential(shared: Callable[[], Any] | None) -> Any:

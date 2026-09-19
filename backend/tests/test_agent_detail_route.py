@@ -70,3 +70,49 @@ def test_the_container_environment_never_appears_in_the_response():
 def test_the_route_is_read_only():
     """Editing is spec 041's, and it is not in the browser. A POST here must not exist."""
     assert client().post("/agents/foundry-live-agent", json={}).status_code == 405
+
+
+class TestTheVersionFields:
+    """Spec 031 — what the detail gained, and what it must keep saying when it gains nothing.
+
+    The recorded project has never had a pinned agent, so the honest default here is the one these
+    tests assert: served equals latest, nothing is pinned, and the versions are **not reported**
+    rather than reported as none.
+    """
+
+    def test_it_reports_the_served_and_the_latest_version(self):
+        agent = client().get("/agents/foundry-live-agent").json()["agent"]
+
+        assert agent["served_version"]
+        assert agent["served_version"] == agent["latest_version"] == agent["version"]
+        assert agent["pinned"] is False
+
+    def test_unread_versions_are_null_rather_than_an_empty_list(self):
+        """AC2 — "the service did not report them" is not "this agent has none"."""
+        agent = client().get("/agents/foundry-live-agent").json()["agent"]
+        assert agent["versions"] is None
+
+    def test_a_version_list_arrives_with_the_marks_the_screen_needs(self):
+        """AC1 · AC3 — newest first, the served one marked, and promotability per row."""
+        from app.agents import detail_of
+
+        raw = LISTING["data"]
+        ours = next(a for a in raw if a["name"] == "foundry-live-agent")
+        served = str(ours["versions"]["latest"]["version"])
+        older = str(int(served) - 1)
+
+        def reader(name: str):
+            return detail_of(
+                ours,
+                [
+                    {"version": older, "status": "active", "created_at": 1, "definition": {}},
+                    {"version": served, "status": "active", "created_at": 2, "definition": {}},
+                ],
+            )
+
+        agent = client(reader).get("/agents/foundry-live-agent").json()["agent"]
+
+        assert [v["version"] for v in agent["versions"]] == [served, older]
+        assert [v["served"] for v in agent["versions"]] == [True, False]
+        assert [v["promotable"] for v in agent["versions"]] == [False, True]
+        assert [v["promote_reason"] for v in agent["versions"]] == ["served", ""]

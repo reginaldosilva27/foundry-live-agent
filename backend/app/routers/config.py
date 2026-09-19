@@ -63,6 +63,10 @@ async def config(request: Request) -> dict:
             # this is the first place anyone will look.
             "webrtc_api_version": settings.voice_webrtc_api_version,
         },
+        # Whether this deployment may roll an agent back to an earlier version (spec 031). The
+        # BFF is the source of truth: a screen that offered a control the server always refuses is
+        # exactly the dishonesty §5 names, so the UI renders nothing at all when this is false.
+        "agents": {"can_promote": settings.allow_version_promote},
         "event_types": sorted(EVENT_TYPES),
         "event_mapping": _mapping_report(settings.harness),
     }

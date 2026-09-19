@@ -56,6 +56,18 @@ class Settings:
     # `ApplicationId` for a different API. It cannot be derived from anything else we hold, so it is
     # its own variable — and unset simply means the trace panel says tracing is not configured.
     appinsights_resource_id: str = ""
+    # Whether this deployment may change which version the project serves (spec 031).
+    #
+    # **Off by default, and the first boolean capability flag here.** Every other one is derived
+    # from the presence of configuration — `pricing_enabled` from a rate table, `voice_enabled`
+    # from an endpoint — because those capabilities need an address. This one needs a *permission*,
+    # and there is no address to key off: the project endpoint is already configured for reads.
+    #
+    # It reveals a control; it cannot grant anything. RBAC on the deployment identity is the actual
+    # enforcement, and a deployment that turns this on without the role gets the permission failure
+    # the screen renders as a configuration fact. Off is the default because anyone who can reach
+    # this BFF can otherwise change what every caller of the project gets. See SECURITY.md.
+    allow_version_promote: bool = False
     # What a turn costs (spec 028). **This repository ships no prices.** A rate compiled in here
     # would be a fact with no owner: prices vary by region and by agreement and change without
     # telling us, and a number rendered with a currency symbol reads as measured (§5). So the
@@ -139,6 +151,7 @@ def load_settings(**overrides: object) -> Settings:
         "speech_voice_en": os.environ.get("SPEECH_VOICE_EN", "en-US-AvaMultilingualNeural"),
         "speech_voice_pt": os.environ.get("SPEECH_VOICE_PT", "pt-BR-ThalitaMultilingualNeural"),
         "appinsights_resource_id": os.environ.get("APPLICATIONINSIGHTS_RESOURCE_ID", ""),
+        "allow_version_promote": _flag(os.environ.get("FOUNDRY_ALLOW_VERSION_PROMOTE")),
         "model_rates": _model_rates(os.environ.get("MODEL_RATES", "")),
         "rates_currency": os.environ.get("MODEL_RATES_CURRENCY", "USD"),
         "rates_recorded_at": os.environ.get("MODEL_RATES_RECORDED_AT", ""),
@@ -187,6 +200,16 @@ def _model_rates(raw: str) -> dict[str, dict[str, float]]:
         table[model] = clean
 
     return table
+
+
+def _flag(value: str | None) -> bool:
+    """An env var read as a deliberate yes, and anything else as no (spec 031).
+
+    Only an explicit affirmative turns a write surface on. A typo, a blank, or a shell that passed
+    the literal string "false" all mean off — which is the safe direction for the one setting in
+    this app that changes what other people's turns get.
+    """
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _resource_endpoint(project_endpoint: str) -> str:

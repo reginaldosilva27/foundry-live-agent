@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { AgentDetailScreen } from './AgentDetail'
 import { LangContext } from '../i18n/context'
 import { t } from '../i18n/strings'
-import type { AgentDetail } from '../types/agents'
+import type { AgentDetail, AgentVersion } from '../types/agents'
 
 const PROMPT: AgentDetail = {
   name: 'foundry-live-agent',
@@ -48,6 +48,10 @@ const PROMPT: AgentDetail = {
   ],
   reasoning: { summary: 'detailed' },
   container: null,
+  served_version: '8',
+  latest_version: '8',
+  pinned: false,
+  versions: null,
 }
 
 const HOSTED: AgentDetail = {
@@ -64,6 +68,10 @@ const HOSTED: AgentDetail = {
     memory: '2Gi',
     protocols: ['responses 2.0.0'],
   },
+  served_version: '1',
+  latest_version: '1',
+  pinned: false,
+  versions: null,
 }
 
 function show(props: Partial<React.ComponentProps<typeof AgentDetailScreen>> = {}) {
@@ -200,5 +208,183 @@ describe('when it could not be read', () => {
 
     expect(screen.queryByText(t('agent.notFound', 'en'))).toBeNull()
     expect(screen.queryByTestId('agent-instructions')).toBeNull()
+  })
+})
+
+// --- Versions, and going back to one (spec 031) -----------------------------------------
+
+const V = (version: string, over: Partial<AgentVersion> = {}): AgentVersion => ({
+  version,
+  status: 'active',
+  created_at: 1789580000 + Number(version),
+  model: 'gpt-5.5',
+  served: false,
+  promotable: true,
+  promote_reason: '',
+  ...over,
+})
+
+const WITH_VERSIONS: AgentDetail = {
+  ...PROMPT,
+  versions: [
+    V('8', { served: true, promotable: false, promote_reason: 'served' }),
+    V('7'),
+    V('6'),
+  ],
+}
+
+describe('the version list', () => {
+  it('renders each version with what distinguishes it (AC1)', () => {
+    show({ agent: WITH_VERSIONS, canPromote: true })
+    const list = screen.getByTestId('agent-versions')
+
+    expect(list).toHaveTextContent('8')
+    expect(list).toHaveTextContent('7')
+    expect(list).toHaveTextContent(t('agents.status.active', 'en'))
+    expect(list).toHaveTextContent('gpt-5.5')
+  })
+
+  it('marks the one that is being served (AC1)', () => {
+    show({ agent: WITH_VERSIONS, canPromote: true })
+
+    expect(screen.getByTestId('agent-version-8')).toHaveTextContent(t('versions.served', 'en'))
+    expect(screen.getByTestId('agent-version-7')).not.toHaveTextContent(t('versions.served', 'en'))
+  })
+
+  it('renders a field the service did not report as not reported (AC2)', () => {
+    const agent = { ...PROMPT, versions: [V('8', { served: true, status: null, model: null })] }
+    show({ agent, canPromote: true })
+
+    expect(screen.getByTestId('agent-version-8')).toHaveTextContent(
+      t('versions.notReported', 'en'),
+    )
+  })
+
+  it('says so when the project is pinned to something that is not the newest', () => {
+    const agent = { ...WITH_VERSIONS, served_version: '6', latest_version: '8', pinned: true }
+    show({ agent, canPromote: true })
+
+    expect(screen.getByTestId('agent-versions')).toHaveTextContent(
+      t('versions.pinned', 'en').replace('{version}', '6').replace('{latest}', '8'),
+    )
+  })
+
+  it('renders nothing rather than an empty list when versions were not reported (AC2)', () => {
+    show({ agent: PROMPT, canPromote: true })
+    expect(screen.getByTestId('agent-versions')).toHaveTextContent(t('versions.none', 'en'))
+  })
+
+  it('survives a BFF that does not send the field at all', () => {
+    // Older than spec 031, so `versions` is `undefined` rather than `null`. Both mean "not
+    // reported"; neither may take down a screen that worked before this section existed.
+    const { versions: _omitted, ...older } = PROMPT
+    show({ agent: older as AgentDetail, canPromote: true })
+
+    expect(screen.getByTestId('agent-versions')).toHaveTextContent(t('versions.none', 'en'))
+    expect(screen.getByRole('heading', { name: 'foundry-live-agent' })).toBeInTheDocument()
+  })
+})
+
+describe('the promote control', () => {
+  const promote = t('versions.promote', 'en')
+
+  it('does not render at all when this build cannot write (AC9)', () => {
+    show({ agent: WITH_VERSIONS, canPromote: false })
+
+    expect(screen.queryAllByRole('button', { name: promote })).toHaveLength(0)
+  })
+
+  it('renders on every version that is not the served one (AC3)', () => {
+    show({ agent: WITH_VERSIONS, canPromote: true })
+
+    expect(screen.queryAllByRole('button', { name: promote })).toHaveLength(2)
+    expect(screen.getByTestId('agent-version-8')).not.toHaveTextContent(promote)
+  })
+
+  it('does not render on an agent this repository did not author (AC3, AC13)', () => {
+    const theirs = {
+      ...PROMPT,
+      versions: [
+        V('2', { served: true, promotable: false, promote_reason: 'not_owned' }),
+        V('1', { promotable: false, promote_reason: 'not_owned' }),
+      ],
+    }
+    show({ agent: theirs, canPromote: true })
+
+    expect(screen.queryAllByRole('button', { name: promote })).toHaveLength(0)
+    expect(screen.getByTestId('agent-version-1')).toHaveTextContent(
+      t('versions.reason.not_owned', 'en'),
+    )
+  })
+
+  it('asks first, and says who the change affects and when (AC4)', async () => {
+    const onPromote = vi.fn()
+    show({ agent: WITH_VERSIONS, canPromote: true, onPromote })
+
+    await userEvent.click(screen.getAllByRole('button', { name: promote })[0])
+
+    expect(screen.getByRole('dialog')).toHaveTextContent(t('versions.confirm.body', 'en'))
+    expect(onPromote).not.toHaveBeenCalled()
+  })
+
+  it('says the same thing in Portuguese (AC4, AC10)', async () => {
+    render(
+      <LangContext.Provider value="pt">
+        <AgentDetailScreen
+          agent={WITH_VERSIONS}
+          error={null}
+          loading={false}
+          canPromote
+          onSelect={() => {}}
+          onBack={() => {}}
+        />
+      </LangContext.Provider>,
+    )
+
+    await userEvent.click(screen.getAllByRole('button', { name: t('versions.promote', 'pt') })[0])
+    expect(screen.getByRole('dialog')).toHaveTextContent(t('versions.confirm.body', 'pt'))
+  })
+
+  it('changes nothing and issues no request when the confirmation is cancelled (AC5)', async () => {
+    const onPromote = vi.fn()
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    show({ agent: WITH_VERSIONS, canPromote: true, onPromote })
+
+    await userEvent.click(screen.getAllByRole('button', { name: promote })[0])
+    await userEvent.click(screen.getByRole('button', { name: t('versions.confirm.cancel', 'en') }))
+
+    expect(onPromote).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
+  it('promotes the version that was confirmed (AC4)', async () => {
+    const onPromote = vi.fn()
+    show({ agent: WITH_VERSIONS, canPromote: true, onPromote })
+
+    await userEvent.click(screen.getByTestId('agent-version-7').querySelector('button')!)
+    await userEvent.click(screen.getByRole('button', { name: t('versions.confirm.ok', 'en') }))
+
+    expect(onPromote).toHaveBeenCalledWith('7')
+  })
+
+  it('is busy and cannot be pressed again while one is in flight (AC6)', () => {
+    show({ agent: WITH_VERSIONS, canPromote: true, promoting: '7' })
+
+    for (const button of screen.queryAllByRole('button', { name: promote })) {
+      expect(button).toBeDisabled()
+    }
+    expect(screen.getByTestId('agent-version-7')).toHaveTextContent(t('versions.promoting', 'en'))
+  })
+
+  it('renders a failure with its code translated, and claims no new version (AC8)', () => {
+    show({ agent: WITH_VERSIONS, canPromote: true, promoteError: 'forbidden' })
+
+    expect(screen.getByTestId('agent-versions')).toHaveTextContent(
+      t('versions.error.forbidden', 'en'),
+    )
+    expect(screen.getByTestId('agent-version-8')).toHaveTextContent(t('versions.served', 'en'))
   })
 })

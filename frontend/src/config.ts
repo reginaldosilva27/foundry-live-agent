@@ -24,6 +24,14 @@ export interface BffConfig {
    * table. The frontend holds no prices of its own; a test asserts it.
    */
   pricing?: Pricing
+  /**
+   * Whether this deployment may roll an agent back to an earlier version (spec 031).
+   *
+   * Optional because a BFF older than spec 031 does not send it, and absent must read as **no**:
+   * the one setting in this app that changes what other people's turns get defaults to off, and a
+   * control the server would refuse must never render (AC9).
+   */
+  agents?: { can_promote: boolean }
   project_name: string
   speech: {
     enabled: boolean

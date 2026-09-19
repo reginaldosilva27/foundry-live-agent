@@ -30,6 +30,7 @@ import { HistoryScreen } from './panes/HistoryScreen'
 import { type Command } from './state/keys'
 import { type Entry } from './state/palette'
 import { useAgentDetail, useAgents } from './state/agents'
+import { usePromote } from './state/promote'
 import { favouriteRows, useFavourites } from './state/favourites'
 import { titleFrom, useHistory } from './state/history'
 import { useCollapsed } from './state/ui'
@@ -60,6 +61,8 @@ export default function App() {
   // surface, and a second read on every render would be this app polling the service.
   const inspecting = route.name === 'agent' ? route.agentName : null
   const inspected = useAgentDetail(inspecting)
+  // The app's only write (spec 031). Off by default, and the screen renders nothing without it.
+  const promotion = usePromote()
   const setView = useCallback(
     (next: NavView) => navigate({ name: next === 'chat' ? 'chat' : next }),
     [navigate],
@@ -440,6 +443,18 @@ export default function App() {
               answering={answering}
               onSelect={selectAgent}
               onBack={() => navigate({ name: 'agents' })}
+              // Absent reads as no (spec 031, AC9): a control this build cannot honour never
+              // renders, and a BFF older than 031 does not send the field at all.
+              canPromote={config?.agents?.can_promote ?? false}
+              promoting={promotion.promoting}
+              promoteError={promotion.error}
+              onPromote={(version) => {
+                if (!inspecting) return
+                // The screen adopts what the SERVICE answered, not the version that was asked for.
+                void promotion.promote(inspecting, version).then((fresh) => {
+                  if (fresh) inspected.replace(fresh)
+                })
+              }}
             />
           ) : view === 'history' ? (
             <HistoryScreen history={history} onOpen={openConversation} />

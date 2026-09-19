@@ -426,3 +426,31 @@ def test_a_row_names_the_harness_that_would_drive_it():
         # Nothing drives it, so the row says nothing rather than naming a harness that would fail.
         ("workflow-one", ""),
     ]
+
+
+class TestTheListingStaysOneCall:
+    """Spec 031, AC12 — the served-version correction must not cost the listing anything.
+
+    Spec 030 verified that the whole agents screen is answerable from one request, and spec 031
+    deliberately did **not** spend that: a pin is resolved on the detail screen, which is the one
+    screen that can afford a call. These tests assert the *absence* of the extra request, the same
+    way spec 027 asserts that search makes none.
+    """
+
+    def test_lists_ten_agents_with_exactly_one_upstream_request(self, listing):
+        calls: list[str] = []
+
+        def fetch(url: str) -> dict:
+            calls.append(url)
+            return listing
+
+        rows = list_agents("https://example.invalid/api/projects/p", fetch)
+
+        assert len(rows) == 10
+        assert len(calls) == 1, f"one listing, not {len(calls)} — no per-agent call (AC12)"
+
+    def test_the_rows_version_is_the_newest_one(self, listing):
+        """Not the served one. The rail says "latest" and means it; the detail resolves the pin."""
+        rows = summarise(listing)
+        for r, agent in zip(rows, listing["data"], strict=True):
+            assert r.version == str(agent["versions"]["latest"]["version"])
