@@ -14,7 +14,7 @@ from typing import Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.agents import build_agent_lister
+from app.agents import build_agent_detail_reader, build_agent_lister
 from app.harness_factory import AzureClients, build_harness
 from app.routers import agents, chat, config, health, speech, traces, voice
 from app.settings import load_settings
@@ -31,14 +31,15 @@ def create_app(
     synthesize: Callable[..., Any] | None = None,
     trace_query: Callable[..., Any] | None = None,
     agent_lister: Callable[..., Any] | None = None,
+    agent_detail: Callable[..., Any] | None = None,
     **settings_overrides: object,
 ) -> FastAPI:
     """Build the app.
 
     ``stream_factory`` injects a raw Foundry stream, ``voice_connect`` a Voice Live control
-    channel, ``synthesize`` a text-to-speech call, ``trace_query`` a log query and ``agent_lister``
-    the project's agent listing. Production leaves all five unset; tests pass a replay, which
-    exercises the identical code path with no credential.
+    channel, ``synthesize`` a text-to-speech call, ``trace_query`` a log query, ``agent_lister``
+    the project's agent listing and ``agent_detail`` one agent of it. Production leaves all six
+    unset; tests pass a replay, which exercises the identical code path with no credential.
 
     The harness is resolved **here, at startup**, so a bad ``AGENT_HARNESS`` stops the process
     with an explanation instead of failing on someone's first message.
@@ -79,6 +80,8 @@ def create_app(
     # Reads the project's agents for the picker (spec 019). Injectable like every other Azure call
     # here, which is what keeps the suite credential-free.
     app.state.list_agents = agent_lister or build_agent_lister(settings, clients.credential)
+    # Spec 030. A second projection of the same listing, not a second call — see `agents.py`.
+    app.state.agent_detail = agent_detail or build_agent_detail_reader(settings, clients.credential)
     # Voice sessions live in this process, so the BFF is single-replica for voice. Said out loud
     # in docs/how-it-works/voice-live-lifecycle.md rather than solved: a session store is a
     # different feature, and pretending otherwise would be the kind of drawing-of-a-feature §5

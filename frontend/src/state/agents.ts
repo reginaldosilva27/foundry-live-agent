@@ -16,7 +16,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { BFF_URL } from '../config'
-import type { AgentRow, AgentsListing } from '../types/agents'
+import type { AgentRow, AgentsListing, AgentDetail, AgentDetailResponse } from '../types/agents'
 
 export interface AgentsState {
   agents: AgentRow[]
@@ -96,4 +96,62 @@ export function useAgents({ onSwitch, bffUrl = BFF_URL }: AgentsOptions): Agents
   const selectedRow = agents.find((agent) => agent.name === selected) ?? null
 
   return { agents, error, loading, selected, selectedRow, switched, select, adopt, clearNotice }
+}
+
+export interface AgentDetailState {
+  agent: AgentDetail | null
+  /** A failure CODE, translated by the view — never prose from the BFF (§7). */
+  error: string | null
+  loading: boolean
+}
+
+/**
+ * One agent's definition, read (spec 030).
+ *
+ * Separate from `useAgents` because it answers a different question about a different scope: the
+ * listing is ten cheap rows the rail and the screen both want, and this is one rich row carrying
+ * two thousand characters of instructions that nothing else needs.
+ *
+ * **A read, and only a read.** Nothing here writes, and nothing in the detail view does either —
+ * editing an agent is spec 041's, and it stays out of the browser because the definition's source
+ * of truth is the repository's YAML (§4).
+ *
+ * A dead BFF becomes `unavailable`, the same code a refused listing produces, because both are
+ * "we could not read it" — and neither may come back as an empty detail that reads like an answer
+ * (AC8, and spec 019 AC3's rule).
+ */
+export function useAgentDetail(name: string | null, bffUrl = BFF_URL): AgentDetailState {
+  // What arrived, and which name it arrived for. `loading` is DERIVED from the two rather than
+  // stored: setting it inside the effect would start a second render on every name change, and it
+  // would also be a second place that has to remember to turn it off.
+  const [answered, setAnswered] = useState<{
+    name: string | null
+    agent: AgentDetail | null
+    error: string | null
+  }>({ name: null, agent: null, error: null })
+
+  useEffect(() => {
+    if (!name) return
+
+    let live = true
+    fetch(`${bffUrl}/agents/${encodeURIComponent(name)}`)
+      // A 404 carries `unknown_agent` in its body, so the body is read whatever the status: the
+      // code is the point, and throwing on the status would replace it with `unavailable`.
+      .then((r) => r.json())
+      .then(
+        (body: AgentDetailResponse) =>
+          live && setAnswered({ name, agent: body.agent, error: body.error }),
+      )
+      .catch(() => live && setAnswered({ name, agent: null, error: 'unavailable' }))
+
+    return () => {
+      live = false
+    }
+  }, [name, bffUrl])
+
+  if (!name) return { agent: null, error: null, loading: false }
+  // A stale answer is not this agent's answer: while the name has moved on, the screen is loading.
+  if (answered.name !== name) return { agent: null, error: null, loading: true }
+
+  return { agent: answered.agent, error: answered.error, loading: false }
 }

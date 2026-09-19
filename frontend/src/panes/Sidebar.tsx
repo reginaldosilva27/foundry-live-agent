@@ -41,7 +41,15 @@ import type { AgentRow } from '../types/agents'
  * Derived from the address rather than stored beside it (spec 024) — `App` maps one to the other,
  * and `route.ts` stays the single definition of the scheme (§4).
  */
-export type View = 'chat' | 'agents' | 'history'
+export type View = 'chat' | 'agents' | 'history' | 'agent'
+
+/**
+ * The views the rail can switch to.
+ *
+ * `agent` is deliberately not one: a single agent's detail needs a name, so it is reached by naming
+ * one (from a card, or from the address) rather than by pressing a nav item (spec 030).
+ */
+export type NavView = Exclude<View, 'agent'>
 
 interface Props {
   config: BffConfig | null
@@ -62,7 +70,7 @@ interface Props {
   onOpenPalette: () => void
   onLang: (lang: Lang) => void
   onNewSession: () => void
-  onView: (view: View) => void
+  onView: (view: NavView) => void
   onOpenConversation: (id: string) => void
   onSelectAgent: (name: string) => void
 }

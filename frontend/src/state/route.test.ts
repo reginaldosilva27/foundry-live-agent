@@ -30,6 +30,13 @@ describe('parseRoute', () => {
     expect(parseRoute('/trace/resp_abc123')).toEqual({ name: 'trace', responseId: 'resp_abc123' })
   })
 
+  it('reads one agent’s detail (spec 030 AC1)', () => {
+    expect(parseRoute('/agents/foundry-live-agent')).toEqual({
+      name: 'agent',
+      agentName: 'foundry-live-agent',
+    })
+  })
+
   it('reads the history screen (spec 027 AC6)', () => {
     expect(parseRoute('/history')).toEqual({ name: 'history' })
   })
@@ -64,6 +71,7 @@ describe('buildPath', () => {
     { name: 'conversation', id: 'c_1' },
     { name: 'trace', responseId: 'resp_1' },
     { name: 'history' },
+    { name: 'agent', agentName: 'foundry-live-agent' },
     { name: 'compare' },
   ]
 

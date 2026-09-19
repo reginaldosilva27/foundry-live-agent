@@ -32,3 +32,48 @@ export interface AgentsListing {
   /** A failure code, or `null`. Never an empty `agents` standing in for one (AC3). */
   error: string | null
 }
+
+/**
+ * What `GET /agents/{name}` reports. Mirrors `AgentDetail` / `ToolInfo` / `ContainerInfo` in
+ * `backend/app/agents.py` (spec 030), with the same parity test guarding the drift.
+ *
+ * **`null` means the service did not report it**, and is not the same as empty. Five of the ten
+ * agents in the recorded project have instructions that really are the empty string; a hosted agent
+ * has no instructions key at all. The screen renders those two differently, so the type keeps them
+ * different.
+ */
+export interface AgentDetail extends AgentRow {
+  instructions: string | null
+  tools: AgentTool[] | null
+  /** The service's own object, rendered as reported. `null` when it configured none. */
+  reasoning: Record<string, unknown> | null
+  container: AgentContainer | null
+}
+
+export interface AgentTool {
+  /** `function` · `mcp`. Decided by the BFF — a copy of that rule here would be the §4 drift. */
+  kind: string
+  name: string
+  /** `app` · `foundry` — the contract's own vocabulary for the distinction this repo teaches. */
+  executor: string
+  description: string
+  /** A JSON string, rendered and copied verbatim. `null` when the service reported no schema. */
+  parameters: string | null
+  server_label: string
+  server_url: string
+  require_approval: string
+}
+
+/** What a hosted agent is. Its environment never travels — see `ContainerInfo` (spec 030 AC11). */
+export interface AgentContainer {
+  image: string
+  cpu: string
+  memory: string
+  protocols: string[]
+}
+
+export interface AgentDetailResponse {
+  agent: AgentDetail | null
+  /** A failure code, or `null`. Never an empty detail standing in for one (AC8). */
+  error: string | null
+}

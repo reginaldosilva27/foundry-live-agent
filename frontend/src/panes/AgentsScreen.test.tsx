@@ -47,6 +47,7 @@ const props: ComponentProps<typeof AgentsScreen> = {
   favourites: [] as string[],
   onSelect: () => {},
   onFavourite: () => {},
+  onInspect: () => {},
 }
 
 function show(overrides: Partial<typeof props> = {}, lang: 'en' | 'pt' = 'en') {

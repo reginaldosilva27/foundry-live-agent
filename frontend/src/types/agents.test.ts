@@ -7,13 +7,14 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { AgentRow } from './agents'
+import type { AgentContainer, AgentDetail, AgentRow, AgentTool } from './agents'
 
 const AGENTS = join(import.meta.dirname, '../../../backend/app/agents.py')
 
-/** The keys `AgentSummary.as_dict` actually emits — the response shape, not the dataclass's. */
-function pythonKeys(source: string): string[] {
-  const body = source.split('def as_dict(')[1]?.split('\n\n')[0] ?? ''
+/** The keys a dataclass's `as_dict` actually emits — the response shape, not the dataclass's. */
+function pythonKeys(source: string, className = 'AgentSummary'): string[] {
+  const after = source.split(`class ${className}:`)[1] ?? ''
+  const body = after.split('def as_dict(')[1]?.split('\n\n')[0] ?? ''
   return [...body.matchAll(/"([a-z_]+)":/g)].map((m) => m[1])
 }
 
@@ -32,6 +33,53 @@ describe('the TypeScript mirror of the agents listing', () => {
       reason: true,
     }
     expect(Object.keys(mirrored).sort()).toEqual(pythonKeys(source).sort())
+  })
+
+  it('covers exactly the fields the detail sends, including the row it extends (spec 030)', () => {
+    const mirrored: Record<keyof AgentDetail, true> = {
+      name: true,
+      kind: true,
+      version: true,
+      version_status: true,
+      model: true,
+      harness: true,
+      selectable: true,
+      reason: true,
+      instructions: true,
+      tools: true,
+      reasoning: true,
+      container: true,
+    }
+    // `AgentDetail.as_dict` spreads the summary's, so the expected set is both.
+    const expected = [...pythonKeys(source, 'AgentDetail'), ...pythonKeys(source)]
+    expect(Object.keys(mirrored).sort()).toEqual(expected.sort())
+  })
+
+  it('covers exactly the fields a tool sends', () => {
+    const mirrored: Record<keyof AgentTool, true> = {
+      kind: true,
+      name: true,
+      executor: true,
+      description: true,
+      parameters: true,
+      server_label: true,
+      server_url: true,
+      require_approval: true,
+    }
+    expect(Object.keys(mirrored).sort()).toEqual(pythonKeys(source, 'ToolInfo').sort())
+  })
+
+  it('covers exactly the fields a container sends, and no environment (AC11)', () => {
+    const mirrored: Record<keyof AgentContainer, true> = {
+      image: true,
+      cpu: true,
+      memory: true,
+      protocols: true,
+    }
+    const keys = pythonKeys(source, 'ContainerInfo')
+
+    expect(Object.keys(mirrored).sort()).toEqual(keys.sort())
+    expect(keys).not.toContain('environment_variables')
   })
 
   it('translates every reason code the backend can put on a row', () => {

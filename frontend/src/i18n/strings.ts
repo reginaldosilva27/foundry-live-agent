@@ -292,6 +292,32 @@ export const strings = {
 
   // Spec 029 — the shape of a turn. Every string here is about what the picture IS and is not:
   // one leg, measured from spans, with the app's own tool time necessarily missing.
+  // Spec 030 — the agent, inspected. `reasoning`, `cpu` and `container` are the service's own
+  // vocabulary: a reader matching this screen against the portal wants the same word.
+  'agent.back': { en: 'All agents', pt: 'Todos os agentes' },
+  'agent.choose': { en: 'Talk to this agent', pt: 'Falar com este agente' },
+  'agent.inspect': { en: 'Inspect this agent', pt: 'Inspecionar este agente' },
+  'agent.instructions': { en: 'Instructions', pt: 'Instruções' },
+  'agent.tools': { en: 'Tools', pt: 'Ferramentas' },
+  'agent.reasoning': { en: 'Reasoning', pt: 'Reasoning' },
+  'agent.container': { en: 'Container', pt: 'Container' },
+  'agent.image': { en: 'image', pt: 'imagem' },
+  'agent.cpu': { en: 'cpu', pt: 'cpu' },
+  'agent.memory': { en: 'memory', pt: 'memória' },
+  'agent.protocols': { en: 'protocols', pt: 'protocolos' },
+  'agent.notReported': {
+    en: 'not reported by the service',
+    pt: 'não reportado pelo serviço',
+  },
+  'agent.executedByApp': { en: 'executed by this app', pt: 'executada por este app' },
+  'agent.executedByFoundry': { en: 'executed by Foundry', pt: 'executada pelo Foundry' },
+  'agent.schema': { en: 'parameters', pt: 'parâmetros' },
+  'agent.approval': { en: 'approval', pt: 'aprovação' },
+  'agent.notFound': {
+    en: 'This project has no agent by that name.',
+    pt: 'Este projeto não tem um agente com esse nome.',
+  },
+
   'timeline.title': { en: 'Where the time went', pt: 'Onde o tempo foi' },
   'timeline.axisNote': {
     en: 'Measured from the spans of this leg',
@@ -511,6 +537,11 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   // `est.` is the abbreviation in both languages, and the whole job of this string is to be short
   // enough to sit inside the figure rather than under it (spec 028).
   'cost.estimate',
+  // The service's own words. A reader comparing this screen with the portal wants them unchanged
+  // (spec 030), the same reason `agents.kind.prompt` is on this list.
+  'agent.reasoning',
+  'agent.container',
+  'agent.cpu',
 ]
 
 export function t(key: StringKey, lang: Lang): string {

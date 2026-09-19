@@ -17,7 +17,7 @@
  */
 import { useState } from 'react'
 import { HarnessBadge } from '../components/HarnessBadge'
-import { SearchIcon, StarIcon } from '../components/Icon'
+import { InfoIcon, SearchIcon, StarIcon } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
 import { useLang, useT } from '../i18n/context'
 import { t as translate, type StringKey } from '../i18n/strings'
@@ -36,6 +36,14 @@ interface Props {
   favourites: string[]
   onSelect: (name: string) => void
   onFavourite: (name: string) => void
+  /**
+   * Open the agent's definition (spec 030).
+   *
+   * A control of its own rather than the card's main action: choosing an agent in one click is
+   * spec 019's behaviour and has tests, and inspecting is a different verb — looking at an agent is
+   * not talking to it.
+   */
+  onInspect: (name: string) => void
 }
 
 const KIND_KEYS: Record<string, StringKey> = {
@@ -72,6 +80,7 @@ export function AgentsScreen({
   favourites,
   onSelect,
   onFavourite,
+  onInspect,
 }: Props) {
   const s = useT()
   const lang = useLang()
@@ -139,6 +148,18 @@ export function AgentsScreen({
                 onClick={() => onFavourite(agent.name)}
               >
                 <StarIcon size={15} filled={favourites.includes(agent.name)} />
+              </button>
+
+              {/* Every agent can be inspected, including the ones this build cannot run: what an
+                  agent IS does not depend on whether we can drive it (spec 030). */}
+              <button
+                type="button"
+                className="agent-card__inspect"
+                title={s('agent.inspect')}
+                aria-label={`${s('agent.inspect')}: ${agent.name}`}
+                onClick={() => onInspect(agent.name)}
+              >
+                <InfoIcon size={15} />
               </button>
 
               <button

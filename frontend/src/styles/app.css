@@ -3466,3 +3466,252 @@ button:disabled {
   line-height: var(--lh-base);
   color: var(--ds-n-600);
 }
+
+/* ---------------------------------------------------------------------------
+   The agent, inspected (spec 030)
+
+   Built on the agents screen's bones — same column, same padding, same scroll —
+   because it is the same place, one level in. The two `pre` blocks are the
+   reason this is a screen and not a panel: two thousand characters of
+   instructions and a JSON schema need a column, not a 320px tunnel.
+   --------------------------------------------------------------------------- */
+
+.agent-detail {
+  display: flex;
+  min-height: 0;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-6) var(--sp-6) var(--sp-8);
+}
+
+.agent-detail__back {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-link);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  cursor: pointer;
+}
+
+.agent-detail__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.agent-detail__naming {
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-detail__name {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+  overflow-wrap: anywhere;
+}
+
+.agent-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  margin: var(--sp-1) 0 0;
+  gap: var(--sp-2);
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agent-detail__choose {
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-accent);
+  color: var(--fg-on-accent);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  cursor: pointer;
+}
+
+.agent-detail__choose:disabled {
+  background: var(--bg-3);
+  color: var(--fg-4);
+  cursor: not-allowed;
+}
+
+.agent-detail__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.agent-detail__subtitle {
+  margin: 0;
+  font-size: var(--fs-caption);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+
+/* "The service did not say" — italic, so it never reads as the value itself (§5). */
+.agent-detail__absent {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  font-style: italic;
+  color: var(--fg-4);
+}
+
+.agent-detail__error {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}
+
+/* Text, never Markdown: eight of the ten agents in the project were written by somebody else. */
+.agent-detail__instructions,
+.agent-detail__schema {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--fg-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-detail__schema {
+  max-height: 260px;
+}
+
+.agent-detail__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agent-detail__copy-button {
+  display: inline-flex;
+  padding: var(--sp-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+.agent-detail__tools {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: var(--sp-3);
+  list-style: none;
+}
+
+.agent-detail__tool {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+}
+
+.agent-detail__tool-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  gap: var(--sp-2);
+}
+
+.agent-detail__tool-name {
+  font-family: var(--font-mono);
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.agent-detail__tool-kind {
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+/* The project's central lesson, on the row where a reader is looking at it. */
+.agent-detail__tool-executor {
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agent-detail__tool-note {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.agent-detail__pairs {
+  display: grid;
+  margin: 0;
+  gap: var(--sp-1) var(--sp-3);
+  grid-template-columns: max-content minmax(0, 1fr);
+  font-size: var(--fs-body-s);
+}
+
+.agent-detail__pairs > div {
+  display: contents;
+}
+
+.agent-detail__pairs dt {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.agent-detail__pairs dd {
+  margin: 0;
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
+}
+
+.agent-detail__image {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+}
+
+.agent-card__inspect {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-6);
+  display: inline-flex;
+  padding: var(--sp-1);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--fg-4);
+  cursor: pointer;
+}
+
+.agent-card__inspect:hover {
+  color: var(--fg-1);
+}

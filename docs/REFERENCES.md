@@ -467,6 +467,22 @@ and what it needs, was checked against the live project **before** the screen wa
 | **The audience is `https://ai.azure.com`, not `https://cognitiveservices.azure.com`.** The same URL with the latter answers `401 Unauthorized. Access token is missing, invalid, audience is incorrect (https://ai.azure.com), or have expired.` | observed 2026-09-16 |
 | **Listing needs `Foundry User`.** Read from the live role definitions rather than assumed: `Foundry User` and `Foundry Project Manager` grant the **same** data action, `Microsoft.CognitiveServices/*`, which covers the agents data plane; they differ only on the control plane (Project Manager adds `accounts/projects/*` and `roleAssignments/write`). So listing — a data-plane read — needs the lesser of the two, and spec 019's decision 10 expectation holds. **Not tested with an identity holding only `Foundry User`**: the signed-in identity here has both, and the conclusion is read from the role definitions, not from a denial. | `az role definition list`, 2026-09-16 |
 
+## What the agents listing actually returns — spec 030, read from the recording 2026-09-19
+
+Spec 030 asked whether the Agents v2 read returns an agent's *definition* — instructions, tool
+schemas, the reasoning block — for agents this project did not create. The answer was already in
+`backend/tests/fixtures/agents-listing-20260916.json`, the real listing of a real project with ten
+agents in it, eight of them nothing to do with this repository.
+
+| Finding | Evidence |
+|---|---|
+| **The listing returns the whole definition.** A prompt agent's `versions.latest.definition` carries `instructions` · `model` · `tools` · `reasoning`. No per-agent call is needed — the same thing spec 019 found about `kind`, holding for everything else. | all 9 prompt agents in the fixture |
+| **A hosted agent's definition has none of those.** It carries `container_configuration.image` · `cpu` · `memory` · `protocol_versions` · `environment_variables`. A hosted agent *is* a container, and the screen shows what it is rather than blanks where a prompt agent's fields would be. | `foundry-live-agent-hosted` |
+| **Every tool is typed.** Three `function` and one `mcp` on our agent; an MCP tool additionally carries `server_label` · `server_url` · `require_approval`. | `foundry-live-agent` |
+| **`reasoning` is reported by 2 of 10.** Absent is the ordinary case, which is why an empty reasoning card is a normal state (spec 015) rather than a misconfiguration. | `foundry-live-agent`, `spike-reasoning` |
+| **Instructions come back empty for 5 of 10** — genuinely empty in the project, not redacted; the fixture is redacted by identifier only. So *reported and empty* and *not reported* are two different things the UI must keep apart (§5). | `testagentdemo`, `test-agent`, `globalpowerplataformaagent`, `dataagent`, `DatabricksGenie` |
+| **A container's environment reaches the listing**, and holds `KEY_VAULT_URI`. The BFF therefore drops the environment in its projection rather than filtering it at render time: a field the browser never receives cannot leak from it later. | `foundry-live-agent-hosted` |
+
 ## What a turn costs — spec 028, read and verified 2026-09-18
 
 The app estimates a turn's cost from token counts and rates the **operator** declares; this

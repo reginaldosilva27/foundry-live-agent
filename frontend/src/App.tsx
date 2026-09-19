@@ -16,7 +16,7 @@ import { AgentsScreen } from './panes/AgentsScreen'
 import { Composer } from './panes/Composer'
 import { Conversation } from './panes/Conversation'
 import { Header } from './panes/Header'
-import { Sidebar, type View } from './panes/Sidebar'
+import { Sidebar, type NavView, type View } from './panes/Sidebar'
 import { TraceDrawer } from './panes/TraceDrawer'
 import { VoiceOverlay } from './panes/VoiceOverlay'
 import { LangContext } from './i18n/context'
@@ -25,10 +25,11 @@ import { useAgentStream } from './hooks/useAgentStream'
 import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
 import { CommandPalette } from './panes/CommandPalette'
+import { AgentDetailScreen } from './panes/AgentDetail'
 import { HistoryScreen } from './panes/HistoryScreen'
 import { type Command } from './state/keys'
 import { type Entry } from './state/palette'
-import { useAgents } from './state/agents'
+import { useAgentDetail, useAgents } from './state/agents'
 import { favouriteRows, useFavourites } from './state/favourites'
 import { titleFrom, useHistory } from './state/history'
 import { useCollapsed } from './state/ui'
@@ -51,9 +52,16 @@ export default function App() {
    * reload. `/compare` is reserved for spec 020 and renders the chat until that spec builds it.
    */
   const { route, navigate } = useRoute()
-  const view: View = route.name === 'agents' || route.name === 'history' ? route.name : 'chat'
+  const view: View =
+    route.name === 'agents' || route.name === 'history' || route.name === 'agent'
+      ? route.name
+      : 'chat'
+  // Spec 030. Read only while the detail is on screen: the listing already answers every other
+  // surface, and a second read on every render would be this app polling the service.
+  const inspecting = route.name === 'agent' ? route.agentName : null
+  const inspected = useAgentDetail(inspecting)
   const setView = useCallback(
-    (next: View) => navigate({ name: next === 'chat' ? 'chat' : next }),
+    (next: NavView) => navigate({ name: next === 'chat' ? 'chat' : next }),
     [navigate],
   )
   const [tracesOpen, setTracesOpen] = useState(route.name === 'trace')
@@ -424,7 +432,16 @@ export default function App() {
             onToggleTraces={toggleTraces}
             onVoice={startVoiceSession}
           />
-          {view === 'history' ? (
+          {view === 'agent' ? (
+            <AgentDetailScreen
+              agent={inspected.agent}
+              error={inspected.error}
+              loading={inspected.loading}
+              answering={answering}
+              onSelect={selectAgent}
+              onBack={() => navigate({ name: 'agents' })}
+            />
+          ) : view === 'history' ? (
             <HistoryScreen history={history} onOpen={openConversation} />
           ) : view === 'agents' ? (
             <AgentsScreen
@@ -436,6 +453,7 @@ export default function App() {
               favourites={favourites.names}
               onSelect={selectAgent}
               onFavourite={favourites.toggle}
+              onInspect={(name) => navigate({ name: 'agent', agentName: name })}
             />
           ) : (
             <>

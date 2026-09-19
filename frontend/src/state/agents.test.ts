@@ -7,7 +7,7 @@
  */
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useAgents } from './agents'
+import { useAgents, useAgentDetail } from './agents'
 import type { AgentsListing } from '../types/agents'
 
 const ROWS = [
@@ -133,5 +133,97 @@ describe('the agents state', () => {
 
     expect(result.current.switched).toBeNull()
     expect(result.current.selected).toBe('foundry-live-agent-hosted')
+  })
+})
+
+/** Spec 030 AC8, AC10 — reading one agent, and the failures that must not look like answers. */
+describe('useAgentDetail', () => {
+  const DETAIL = {
+    name: 'foundry-live-agent',
+    kind: 'prompt',
+    version: '8',
+    version_status: 'active',
+    model: 'gpt-5.5',
+    harness: 'prompt-agent',
+    selectable: true,
+    reason: '',
+    instructions: 'You are the reference agent.',
+    tools: [],
+    reasoning: { summary: 'detailed' },
+    container: null,
+  }
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('reads the agent the caller named', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ agent: DETAIL, error: null })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useAgentDetail('foundry-live-agent', 'http://bff'))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.agent?.instructions).toBe('You are the reference agent.')
+    expect(fetchMock).toHaveBeenCalledWith('http://bff/agents/foundry-live-agent')
+  })
+
+  it('keeps the code a 404 carries, rather than turning it into "unavailable"', async () => {
+    // The body is what matters; a `r.ok` guard would replace `unknown_agent` with a generic
+    // failure and the screen would say the wrong true thing (AC8).
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ agent: null, error: 'unknown_agent' }), { status: 404 }),
+      ),
+    )
+
+    const { result } = renderHook(() => useAgentDetail('nope', 'http://bff'))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.error).toBe('unknown_agent')
+    expect(result.current.agent).toBeNull()
+  })
+
+  it('reports a dead BFF as unavailable, never as an agent with nothing in it', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('offline'))))
+
+    const { result } = renderHook(() => useAgentDetail('foundry-live-agent', 'http://bff'))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.error).toBe('unavailable')
+    expect(result.current.agent).toBeNull()
+  })
+
+  it('asks for nothing when no agent is named', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useAgentDetail(null, 'http://bff'))
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(result.current.loading).toBe(false)
+  })
+
+  it('encodes a name that needs it', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ agent: DETAIL, error: null })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderHook(() => useAgentDetail('a b/c', 'http://bff'))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('http://bff/agents/a%20b%2Fc'))
+  })
+
+  it('only ever reads (AC10)', async () => {
+    const fetchMock = vi.fn(
+      async (_url: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(JSON.stringify({ agent: DETAIL, error: null })),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useAgentDetail('foundry-live-agent', 'http://bff'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    // No `init` argument means GET. A write would have to pass one.
+    expect(fetchMock.mock.calls.every(([, init]) => init === undefined)).toBe(true)
   })
 })

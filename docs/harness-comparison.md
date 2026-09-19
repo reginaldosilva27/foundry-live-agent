@@ -16,6 +16,7 @@
 | **Autoscale** | With request volume | Container instances per session and request volume |
 | **Agent identity (Entra)** | Yes | Automatic, dedicated per agent |
 | **Cost model** | Per-call inference + tool usage | Per-call inference + tool usage **+ container compute** |
+| **What the inspector can show (spec 030)** | Instructions, tools with their schemas, model, reasoning configuration | No instructions, no tools, no model of its own: a container image, cpu, memory and the protocols it speaks |
 | **Cost the app can estimate (spec 028)** | Inference, from the token counts Foundry reports | **None today** — a hosted turn's `response.completed` carries `usage: null`, so there is nothing to price. Container compute is not estimable from the browser either. |
 | **State** | Foundry conversations | Conversations + per-session `$HOME` and `/files` (2–60 min idle, 15 default) |
 | **Best for** | Fast start; production agents without custom orchestration | Agents that call into custom code; custom orchestration |

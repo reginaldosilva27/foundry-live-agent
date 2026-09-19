@@ -24,11 +24,21 @@ export type Route =
   | { name: 'trace'; responseId: string }
   /** The record this browser kept, and the controls that move it (spec 027). */
   | { name: 'history' }
+  /** One agent's definition, as the service reports it (spec 030). The name is Foundry's. */
+  | { name: 'agent'; agentName: string }
   /** Reserved for spec 020. It parses; the app renders the chat until that spec builds it. */
   | { name: 'compare' }
 
 /** Every route the app can be at, in the order they are documented. */
-export const ROUTES = ['chat', 'agents', 'conversation', 'trace', 'history', 'compare'] as const
+export const ROUTES = [
+  'chat',
+  'agents',
+  'conversation',
+  'trace',
+  'history',
+  'agent',
+  'compare',
+] as const
 
 /**
  * What address is this?
@@ -46,6 +56,7 @@ export function parseRoute(pathname: string): Route {
     if (segments[0] === 'compare') return { name: 'compare' }
   }
   if (segments.length === 2) {
+    if (segments[0] === 'agents') return { name: 'agent', agentName: segments[1] }
     if (segments[0] === 'c') return { name: 'conversation', id: segments[1] }
     if (segments[0] === 'trace') return { name: 'trace', responseId: segments[1] }
   }
@@ -60,6 +71,8 @@ export function buildPath(route: Route): string {
       return '/agents'
     case 'history':
       return '/history'
+    case 'agent':
+      return `/agents/${encodeURIComponent(route.agentName)}`
     case 'compare':
       return '/compare'
     case 'conversation':

@@ -140,6 +140,17 @@ export const SearchIcon = (p: IconProps) =>
     p,
   )
 
+/** Inspect an agent (spec 030): look at what it is, without talking to it. */
+export const InfoIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="11" x2="12" y2="16.5" />
+      <line x1="12" y1="7.6" x2="12" y2="7.7" />
+    </>,
+    p,
+  )
+
 /** The history screen and its nav item (spec 027). A record is a thing with a time on it. */
 export const ClockIcon = (p: IconProps) =>
   svg(

@@ -1,8 +1,8 @@
-"""`GET /agents` — which agents the Foundry project has, and which of them this build can drive."""
+"""`GET /agents` — which agents the project has, and `GET /agents/{name}` — what one of them is."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 
 from app.agents import AgentsUnavailable
 
@@ -28,3 +28,24 @@ async def agents(request: Request) -> dict:
         return {"agents": [], "error": exc.code}
 
     return {"agents": [row.as_dict() for row in rows], "error": None}
+
+
+@router.get("/agents/{name}")
+async def agent(name: str, request: Request, response: Response) -> dict:
+    """One agent, inspected (spec 030).
+
+    Answered from the **same listing** `GET /agents` reads — the service returns every agent's whole
+    definition, so there is no second upstream call to make. Read-only, like its sibling: this route
+    describes an agent and never changes one. Editing has a spec of its own (041) and a reason to
+    stay out of the browser (§4).
+
+    A failure carries a **code**, never prose (§7), and never an empty detail: "this project has no
+    agent by that name" and "we could not read the project" are different facts and the screen
+    renders them differently (spec 019 AC3, and §5).
+    """
+    reader = request.app.state.agent_detail
+    try:
+        return {"agent": reader(name).as_dict(), "error": None}
+    except AgentsUnavailable as exc:
+        response.status_code = 404 if exc.code == "unknown_agent" else 502
+        return {"agent": None, "error": exc.code}

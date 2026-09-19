@@ -169,6 +169,13 @@ violation.
   você."* So an instruction conditioned on the modality is conditioned on nothing — that is why the
   voice session sends one `role: system` context item saying so (spec 017), the single **bounded**
   exception §8 carries.
+- **The agents listing carries the whole definition (spec 030).** `GET {project_endpoint}/agents`
+  returns each agent's `instructions`, `model`, `tools` and `reasoning` — for the agents this repo
+  never created too — so the inspector needs no per-agent call. A **hosted** agent's definition has
+  none of those: it is a container (`image`, `cpu`, `memory`, `protocol_versions`). Two rules there:
+  the BFF **drops `environment_variables`** rather than filtering them in the view (the real listing
+  holds a `KEY_VAULT_URI`), and `null` — the service said nothing — stays distinct from `""` — the
+  service said nothing *in it* — because five of ten agents really do have empty instructions.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is
