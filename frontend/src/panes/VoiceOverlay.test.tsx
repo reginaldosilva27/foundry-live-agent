@@ -5,7 +5,7 @@
  * bottom of the screen, and the newest line of the conversation sat below the fold.
  */
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { VoiceOverlay } from './VoiceOverlay'
 import { emptyTurn } from '../state/turn'
 import type { VoiceState } from '../hooks/useVoiceSession'
@@ -151,3 +151,81 @@ describe('the ordinal on a surface that lists newest-first', () => {
     expect(steps).toEqual(['2', '1'])
   })
 })
+
+// --- What the session is doing, while it does it (spec 039) ----------------------------
+
+describe('a call that is still running (AC3, AC11)', () => {
+  const running = {
+    ...emptyTurn(),
+    activities: [
+      {
+        kind: 'tool' as const,
+        step: 1,
+        executor: 'app' as const,
+        callId: 'call_1',
+        name: 'search_web',
+        arguments: '{}',
+        status: 'running' as const,
+      },
+    ],
+  }
+
+  it('shows elapsed time, because a tool round trip is otherwise silent', () => {
+    // Spec 016 fixed the silence for the LISTENER with a spoken preamble. This fixes it for the
+    // person standing in front of a room saying "it is searching right now".
+    render(<VoiceOverlay voice={voice({ turn: running })} elapsed={12} onEnd={() => {}} />)
+
+    expect(screen.getByTestId('voice-elapsed')).toBeInTheDocument()
+  })
+
+  it('shows none once nothing is running', () => {
+    render(<VoiceOverlay voice={voice({ turn: withCalls })} elapsed={12} onEnd={() => {}} />)
+    expect(screen.queryByTestId('voice-elapsed')).not.toBeInTheDocument()
+  })
+
+  it('keeps the finished call’s own duration', () => {
+    const { container } = render(
+      <VoiceOverlay voice={voice({ turn: withCalls })} elapsed={12} onEnd={() => {}} />,
+    )
+    // The duration comes from the event, not from our stopwatch: one is what happened, the other
+    // is what we observed.
+    expect(container.querySelector('[data-testid="voice-activity"]')).toBeInTheDocument()
+  })
+})
+
+describe('the reasoning, when there is one (AC12)', () => {
+  it('renders it', () => {
+    const reasoned = { ...emptyTurn(), reasoning: 'Checking the current time first.' }
+    render(<VoiceOverlay voice={voice({ turn: reasoned })} elapsed={3} onEnd={() => {}} />)
+
+    expect(screen.getByText(/Checking the current time first/)).toBeInTheDocument()
+  })
+
+  it('renders nothing at all when there is none', () => {
+    // An empty card would claim the turn reasoned and said nothing about it (spec 015).
+    const { container } = render(
+      <VoiceOverlay voice={voice()} elapsed={3} onEnd={() => {}} />,
+    )
+    expect(container.querySelector('.reasoning')).toBeNull()
+  })
+})
+
+describe('the guards (AC7, AC9)', () => {
+  it('issues no request — nothing here talks to the session', () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    render(<VoiceOverlay voice={voice({ turn: withCalls })} elapsed={5} onEnd={() => {}} />)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
+  it('writes nothing to storage — the replay is the record, not this', () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    render(<VoiceOverlay voice={voice({ turn: withCalls })} elapsed={5} onEnd={() => {}} />)
+
+    expect(setItem).not.toHaveBeenCalled()
+    setItem.mockRestore()
+  })
+})
+

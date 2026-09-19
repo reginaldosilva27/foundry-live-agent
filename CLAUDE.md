@@ -251,6 +251,13 @@ violation.
   it to find. **Absent** on a turn that never streamed (a replayed voice session, a restored
   conversation) — different from empty. The filter's vocabulary comes from `GET /config`; the only
   sanctioned mirror of the contract in the frontend is `types/events.ts`, and a test enforces it.
+- **The voice overlay shows the session working, and one thing it refuses to show (spec 039).**
+  No contract change: the data channel carries what was said and the session events carry what the
+  agent did, so `useVoiceSession` already exposes both live. A running call shows **elapsed** (our
+  observation, from `useElapsed`) while a finished one keeps its reported **duration** — two
+  different numbers on purpose. **Interruption is deferred**: barge-in is configured, but no
+  recorded session carries an event for it, and inferring it from silence would be a measurement we
+  did not make (§5). Recorded in `docs/REFERENCES.md`.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

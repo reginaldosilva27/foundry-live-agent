@@ -15,7 +15,9 @@
 import { useRef } from 'react'
 import { formatClock } from '../components/format'
 import { MicIcon } from '../components/Icon'
+import { ReasoningCard } from '../components/ReasoningCard'
 import { ToolRow } from '../components/ToolRow'
+import { useElapsed } from '../hooks/useElapsed'
 import { useT } from '../i18n/context'
 import { useModalFocus } from '../hooks/useModalFocus'
 import type { VoiceState } from '../hooks/useVoiceSession'
@@ -34,6 +36,12 @@ export function VoiceOverlay({ voice, elapsed, onEnd }: Props) {
   const scrim = useRef<HTMLDivElement>(null)
   useModalFocus(scrim)
   const starting = voice.status === 'starting'
+
+  // The call that is running, if any. Keyed so the stopwatch restarts per call rather than
+  // timing the whole session.
+  const running = voice.turn.activities.find((activity) => activity.status === 'running')
+  // Named apart from the session's own `elapsed` prop: one times the call, the other the call.
+  const toolElapsed = useElapsed(running ? `${running.step}` : null)
 
   return (
     <div
@@ -95,9 +103,26 @@ export function VoiceOverlay({ voice, elapsed, onEnd }: Props) {
             )}
           </div>
 
+          {/* The reasoning, when the session produced one (spec 039). Nothing when it did not —
+              an empty card would claim a turn reasoned and said nothing about it (spec 015). */}
+          {voice.turn.reasoning && (
+            <ReasoningCard text={voice.turn.reasoning} streaming={false} />
+          )}
+
           {voice.turn.activities.length > 0 && (
             <div className="voice-activity" data-testid="voice-activity">
-              <p className="voice-activity__title">{s('voice.toolRunning')}</p>
+              <p className="voice-activity__title">
+                {s('voice.toolRunning')}
+                {/* A tool round trip is silent, and the person demonstrating is saying "it is
+                    searching Learn right now" with nothing on screen to corroborate it (spec 016
+                    fixed this for the listener, not for them). Elapsed time is a fact about our
+                    OBSERVATION, which is why it comes from a hook and never from the events. */}
+                {running && (
+                  <span className="voice-activity__elapsed" data-testid="voice-elapsed">
+                    {s('voice.elapsed').replace('{seconds}', String(toolElapsed))}
+                  </span>
+                )}
+              </p>
               {/* The fact, not the payload. A `lookup_knowledge` result is a page of JSON, and
                   inside a 460px card over a live conversation it buries what you are listening to.
                   There is no trace panel beside a voice session, so the detail is simply not

@@ -590,6 +590,26 @@ because of it.
 | Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | read the role definitions, then test with the lesser one |
 | Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | pin one, then list |
 
+### Open — is barge-in observable? (spec 039)
+
+Spec 012 configures `interrupt_response` on the semantic detectors, so the service **does** cut the
+agent off when the user speaks over it. What is not established is whether the browser is **told**.
+
+Checked across every `voice-live-*` recording in `ai/tests/fixtures/recorded/`: no event names an
+interruption. The types present are `response.audio_transcript.delta`, `response.audio.delta`,
+`response.function_call_arguments.*`, `conversation.item.created`, `response.output_item.*`,
+`response.created` / `response.done`, and the VAD frames — nothing like
+`input_audio_buffer.speech_started` or a truncation notice.
+
+So spec 039's AC5 is **deferred rather than guessed**. An agent turn that stopped producing audio
+and one that finished sound identical, and inferring the difference from silence would be a
+measurement we did not make (§5).
+
+| Open question | How to close it |
+|---|---|
+| Does the control channel emit anything when the user barges in? | run a session, talk over the agent mid-answer, record the frames |
+| If it does, is it on the data channel or the control WebSocket? | the same recording answers both |
+
 ### Open — does the agent actually write a chart block? (spec 033)
 
 `ai/harness/_shared/agent_core.yaml` now tells the agent how to write a `foundry-chart` block, and

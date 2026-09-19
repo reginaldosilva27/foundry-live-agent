@@ -4625,3 +4625,14 @@ button:disabled {
   color: var(--fg-4);
   cursor: pointer;
 }
+
+/* --- What the voice session is doing (spec 039) ------------------------------------------
+   The overlay is the surface most often projected, so the elapsed figure is sized to be read
+   from across a room rather than at arm's length. */
+
+.voice-activity__elapsed {
+  margin-left: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}

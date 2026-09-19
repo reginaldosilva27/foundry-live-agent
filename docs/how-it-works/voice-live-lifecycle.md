@@ -262,3 +262,23 @@ this repository's lesson — the same honesty the in-process conversation memory
 **No test in CI proves a human can hear the agent.** The tests prove the negotiation, the round trip
 and the events, all against recorded frames. The audio path is verified by hand, and
 [`specs/006-voice-mode/tasks.md`](../../specs/006-voice-mode/tasks.md) records that it was.
+
+## What the screen shows during a session (spec 039)
+
+The overlay renders the running transcript and the session's tool calls — through the **same**
+`ToolRow` the chat uses, so a reader learns one vocabulary (§4). A call that is running shows
+elapsed time; a finished one keeps the duration the event reported. Those are different numbers on
+purpose: one is what we observed, the other is what happened.
+
+Spec 016 added a spoken preamble because a tool round trip is silent and the listener assumes the
+app has broken. That is the right fix for the listener. It is not a fix for the person standing in
+front of a room saying "it is searching Learn right now" with nothing on screen to corroborate it —
+which is what this adds.
+
+**No contract change.** The data channel already carries what was said and the session events
+already carry what the agent did; `useVoiceSession` exposes both live. Nothing here sends anything
+to the session, and nothing it holds is written to storage — spec 007's replay is the record.
+
+**Interruption is not shown**, because nothing observed says it happened. See the open item in
+[`REFERENCES.md`](../REFERENCES.md).
+

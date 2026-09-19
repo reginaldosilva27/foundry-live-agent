@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 039-voice-activity |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -46,6 +47,27 @@ already answers them and knows what it ran.
 
 All new prose ships `{ en, pt }` (§7).
 
+**This is a UI change, not a contract change.** The first open question decided the shape of the
+spec and the answer is the good one: `useVoiceSession` already exposes `transcript` and a live
+`turn`, because the data channel carries what was said and the BFF's session events carry what the
+agent did. **No new `AgentEvent`** (§9), no new endpoint.
+
+**Much of this already exists**, built by specs 012 and 015, and saying so is more useful than
+re-specifying it: the overlay already renders the running transcript newest-first and already
+renders the session's tool calls through the chat's own `ToolRow`, which already distinguishes
+running from finished from failed. What is missing is smaller than the draft assumed — the elapsed
+time of a call while it runs, and the reasoning summary when there is one.
+
+**Interruption is deferred, and the reason is recorded.** Barge-in is configured (spec 012's
+`interrupt_response`), but **no recorded session contains an event for it** — checked across every
+`voice-live-*` fixture. Inferring it from an agent turn that stopped producing audio would be
+drawing a conclusion we did not measure (§5), so AC5 becomes an open item in `docs/REFERENCES.md`
+with how to close it, rather than a guess shipped as a feature.
+
+**The overlay stays an overlay.** A layout with the chat visible behind it is what someone
+comparing spoken and typed answers wants, and it is a redesign — spec 020's reserved `/compare`
+address is where that belongs, not here.
+
 **The overlay grows an activity area**: the running transcript of both sides as it arrives, and the
 tool rows for the session's calls — the same rows the chat uses, so a reader learns one vocabulary
 (§4).
@@ -72,7 +94,9 @@ not a second record and is not stored.
 3. **AC3** — A tool call during the session renders a row with its name; while running it shows
    elapsed time; when finished it shows its duration.
 4. **AC4** — A tool that errored renders as failed, distinct from one that returned.
-5. **AC5** — An interrupted agent turn renders as interrupted, distinct from a completed one.
+5. **AC5** — ~~An interrupted agent turn renders as interrupted~~ — **deferred**: no recorded
+   session carries an event for barge-in, and inferring it from silence would be a measurement we
+   did not make (§5). Recorded in `docs/REFERENCES.md` with how to close it.
 6. **AC6** — The rows use the same components as the chat's activity panel (§4).
 7. **AC7** — Nothing in the overlay sends anything to the session: no request is issued from any
    control added here (asserted — the §8 guard).
@@ -80,28 +104,24 @@ not a second record and is not stored.
    unchanged and still passing).
 9. **AC9** — The overlay's content is not persisted to browser storage.
 10. **AC10** — Every new string ships `en` + `pt`.
+11. **AC11** — A tool running during a session shows elapsed time that advances, and the finished
+    row keeps its duration.
+12. **AC12** — A reasoning summary produced during a session renders; one that is absent renders
+    nothing rather than an empty card.
 
 ## Contract / data impact
 
 | | |
 |---|---|
-| **BFF / `AgentEvent`** | **To be determined, and it matters.** If the voice activity can be delivered over the existing session events channel using the existing vocabulary, nothing changes. If it needs a new event type, that is a §9 change — "any change to the `AgentEvent` set" needs a spec, always — and this spec must be amended to say so before implementation, not during. |
-| **`GET /voice/session/{id}/events`** | The existing channel. Whether it already carries what is needed is the first open question and the one that decides the shape of the whole spec. |
+| **BFF / `AgentEvent`** | **Unchanged (§9)** — settled at clarify by reading the code rather than assuming. `useVoiceSession` already exposes `transcript` and a live `turn`; the vocabulary is sufficient. |
+| **`GET /voice/session/{id}/events`** | Unchanged. It already carries the agent's activity, which is what spec 007's replay is built from. |
 | **Shared components** | The tool row, the duration bar and the live status line are shared with the chat, not copied (§4). Their larger presentation is styling. |
 | **Docs** | `docs/how-it-works/` — the Voice Live session lifecycle page gains what the screen now shows. |
-
-## Open questions (clarify before planning)
-
-- [ ] Does the session's event channel already deliver transcripts and tool calls to the browser, or
-      only session lifecycle? This decides whether the spec is a UI change or a contract change.
-- [ ] Is interruption observable from the events, or only inferable from an agent turn that stopped
-      producing audio? Inferring it would be drawing a conclusion we did not measure (§5).
-- [ ] Does the overlay show the reasoning summary during voice, when there is one?
-- [ ] Does it stay an overlay, or become a layout where the chat is visible behind it — which is what
-      someone comparing spoken and typed answers actually wants?
 
 ## Out of scope / deferred
 
 - Any control over the running session beyond ending it.
 - Storing the live activity separately from spec 007's replay.
 - A transcript export distinct from the conversation export (spec 027).
+- Rendering interruption — deferred for want of a measurement, not of an opinion.
+- A side-by-side layout of spoken and typed answers — that is spec 020's reserved address.

@@ -44,6 +44,9 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- What the voice session is doing (spec 039) --------------------------
+  'voice.elapsed': { en: '{seconds}s', pt: '{seconds}s' },
+
   // --- The event inspector (spec 038) --------------------------------------
   // Event TYPE names are never translated: they are contract identifiers, and a reader has
   // `contract.py` open beside the screen.
@@ -743,6 +746,8 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'about.field.harness',
   // A count, not a word: \u00d7{count} reads the same in both languages (spec 038).
   'events.runOf',
+  // A number and a unit symbol, identical in both languages (spec 039).
+  'voice.elapsed',
   // Foundry's own vocabulary. `prompt` and `workflow` are the literal `definition.kind` values the
   // service returns, and translating them would stop the screen matching the portal a reader has
   // open beside it. `hosted` DOES translate, because "hospedado" is an ordinary Portuguese word
