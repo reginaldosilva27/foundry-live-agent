@@ -31,7 +31,7 @@ export interface BffConfig {
    * the one setting in this app that changes what other people's turns get defaults to off, and a
    * control the server would refuse must never render (AC9).
    */
-  agents?: { can_promote: boolean }
+  agents?: { can_promote: boolean; can_propose?: boolean }
   project_name: string
   speech: {
     enabled: boolean

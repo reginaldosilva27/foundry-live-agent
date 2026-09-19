@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 041-propose-agent-change |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -51,6 +52,21 @@ applied.
 
 All new prose ships `{ en, pt }` (§7).
 
+**No pull-request creation.** It would cost a **second third-party secret** — a code-host token,
+which `DefaultAzureCredential` does not cover — for a convenience. `TAVILY_API_KEY` earned its
+exception by being the only way to have a tool at all; a button that saves a `git apply` does not.
+Download and copy are the whole of the output.
+
+**Instructions only.** Not tools, not the model. Tools are where a bad edit breaks a harness
+silently, and the model's *shape* decides whether inference routes through the gateway — a plain
+name bypasses it, which is exactly the accident `uses_gateway` exists to surface. Instructions are
+also where the iteration actually happened: specs 012, 015, 016 and 017 were every one of them an
+instructions change.
+
+**What the BFF reads is the definition this build was made from**, and the screen says exactly that
+— not "the repository", and not `main`. In a container the files are whatever was baked in, which
+may be neither. Calling it what it is costs one label and removes a whole class of quiet lie (§5).
+
 **Editing** starts from the agent's detail (spec 030) and opens the *repository's* definition — not
 the served one — clearly labelled as such, because those two can differ and the difference is
 information the reader needs.
@@ -87,9 +103,12 @@ applies to promotion.
 7. **AC7** — A proposal failing schema validation is reported with its validation failure and
    produces no output.
 8. **AC8** — With the deployment not configured for proposals, no editor is offered.
-9. **AC9** — Where pull-request creation is configured, a failure to create one is reported with its
-   code and leaves the diff available to take by hand.
+9. **AC9** — ~~Pull-request creation~~ — **cut at clarify**: a second third-party secret for a
+   convenience. The diff and the file are the output.
 10. **AC10** — Every new string ships `en` + `pt`.
+11. **AC11** — Only the instructions are editable; no control offers the tools or the model.
+12. **AC12** — The definition is labelled as the one this build was made from, never as "the
+    repository" or a branch.
 
 ## Contract / data impact
 
@@ -98,19 +117,8 @@ applies to promotion.
 | **BFF / `AgentEvent`** | Unchanged (§9). |
 | **Reading the repository's YAML** | New BFF capability: the definition files become something the BFF reads and renders. It reads; it does not write them from a request. |
 | **Schema** | `agent_spec.py` is the validator and stays the single source of truth for our schema (§4). The editor's fields are generated from it, or they are a second description of the schema. |
-| **Pull-request creation** | If configured, it needs a credential for a code host — which is **not** an Azure service and therefore not covered by `DefaultAzureCredential`. That is a second third-party secret after `TAVILY_API_KEY`, and the constitution requires saying why and where the reader will hit it. The clarify step decides whether it is worth that at all. |
+| **Pull-request creation** | **Cut.** It needs a code-host credential, which is not an Azure service and not covered by `DefaultAzureCredential` — a second third-party secret after `TAVILY_API_KEY`. That one earned its exception by being the only way to have a web-search tool at all; this would buy a button that saves a `git apply`. |
 | **Docs** | `docs/development-workflow.md` — the proposal path beside the file-and-`just agent` path. `SECURITY.md` if a code-host credential ships. |
-
-## Open questions (clarify before planning)
-
-- [ ] Is pull-request creation in scope at all, given it costs a second third-party secret? Download
-      and copy may be the whole of it.
-- [ ] Which fields are editable — instructions only, or tools and model too? Tools are where a bad
-      edit breaks a harness silently.
-- [ ] Where does the BFF read the repository from — the deployed image, a mounted checkout? In a
-      container the files are whatever was built, which may not be what `main` says.
-- [ ] Does the drift warning (AC2) deserve to be its own thing, shown on the agents screen without
-      anyone opening an editor?
 
 ## Out of scope / deferred
 
@@ -118,3 +126,6 @@ applies to promotion.
 - Editing agents outside this repository.
 - Any model-assisted authoring.
 - Previewing the proposed agent's behaviour.
+- Pull-request creation, and the second third-party secret it would cost.
+- Editing tools or the model.
+- Showing the drift warning on the agents listing — a good idea, and a wider change than this.

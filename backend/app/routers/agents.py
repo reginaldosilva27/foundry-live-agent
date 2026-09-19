@@ -4,6 +4,7 @@ and `POST /agents/{name}/versions/{version}/promote` — go back to one (spec 03
 from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response
+from pydantic import BaseModel
 
 from app.agents import AgentsUnavailable
 
@@ -15,6 +16,8 @@ _STATUS = {
     "forbidden": 403,
     "unknown_agent": 404,
     "unknown_version": 404,
+    "proposals_disabled": 403,
+    "invalid_definition": 502,
 }
 
 router = APIRouter()
@@ -96,3 +99,70 @@ async def promote(name: str, version: str, request: Request, response: Response)
         return {"agent": None, "error": exc.code}
 
     return {"agent": detail.as_dict(), "error": None}
+
+
+@router.get("/agents/{name}/definition")
+async def definition(name: str, request: Request, response: Response) -> dict:
+    """The definition **this build was made from**, and whether the service agrees (spec 041).
+
+    Not "the repository" and not `main`: in a container the files are whatever was baked into the
+    image, which may be neither, and the screen says exactly that.
+
+    The comparison with what is served is the most useful thing here. A deployment serving
+    something other than what this build describes is drift, and a reader about to edit needs to
+    know before they start rather than after they wonder why nothing changed.
+    """
+    if not request.app.state.settings.allow_proposals:
+        response.status_code = 403
+        return {"definition": None, "error": "proposals_disabled"}
+
+    from app.agent_definition import definition_for
+
+    try:
+        served = request.app.state.agent_detail(name).instructions
+    except AgentsUnavailable as exc:
+        # The file is still readable without the service; drift simply cannot be reported.
+        if exc.code == "unknown_agent":
+            response.status_code = 404
+            return {"definition": None, "error": exc.code}
+        served = None
+
+    try:
+        return {"definition": definition_for(name, served).as_dict(), "error": None}
+    except AgentsUnavailable as exc:
+        response.status_code = _STATUS.get(exc.code, 502)
+        return {"definition": None, "error": exc.code}
+
+
+class Proposal(BaseModel):
+    """The one field this screen edits.
+
+    Not tools, not the model: tools are where a bad edit breaks a harness silently, and the model's
+    *shape* decides whether inference routes through the gateway.
+    """
+
+    instructions: str
+
+
+@router.post("/agents/{name}/definition/proposal")
+async def proposal(name: str, body: Proposal, request: Request, response: Response) -> dict:
+    """Validate a proposed change and answer a diff. **Writes nothing** (spec 041).
+
+    Not the file, not Foundry. `agent_core.yaml` is the single source of truth for what the agent
+    is, and it exists because two copies of those instructions drifting a sentence at a time would
+    make this repository's central claim unfalsifiable. A save here creates the second copy.
+
+    The name says proposal and so does the behaviour: the output is a diff somebody reviews,
+    merges and applies with `apply_agent.py`.
+    """
+    if not request.app.state.settings.allow_proposals:
+        response.status_code = 403
+        return {"ok": False, "error": "proposals_disabled", "yaml": "", "diff": ""}
+
+    from app.agent_definition import propose
+
+    try:
+        return propose(name, body.instructions)
+    except AgentsUnavailable as exc:
+        response.status_code = _STATUS.get(exc.code, 502)
+        return {"ok": False, "error": exc.code, "yaml": "", "diff": ""}

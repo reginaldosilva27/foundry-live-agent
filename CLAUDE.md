@@ -265,6 +265,16 @@ violation.
   mapping (`--fg-3` at 4.38:1, `--fg-4` at 2.63:1), fixed by stepping the ramp. One polite live
   region says the answer is ready; the streaming answer is **never** in a live region, or it is
   read into the queue token by token. `document.lang` follows the interface language.
+- **The agent's definition can be edited on screen, and nothing is saved (spec 041).** §8 would
+  permit saving; **§4 refuses it** — `agent_core.yaml` exists so two copies of the instructions
+  cannot drift, and a save creates the second copy. So `POST /agents/{name}/definition/proposal`
+  validates through `agent_spec.py` and answers a **diff**, writing neither the file nor Foundry.
+  Three care points: it resolves `extends:` to the file that actually declares `instructions:`
+  — the shared core, so editing one agent's instructions edits **both**, and the screen says so; it
+  labels the definition as **the one this build was made from**, never "the repository" or a branch;
+  and it states drift before any editing. Instructions only — not tools, not the model. No PR
+  creation: a second third-party secret for a convenience. A test asserts no string in the feature
+  says *saved*, *updated* or *applied*, in either language.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

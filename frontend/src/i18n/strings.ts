@@ -44,6 +44,41 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Proposing a change to the agent (spec 041) --------------------------
+  //
+  // THE WORDING IS THE FEATURE. Nothing here may say saved, updated or applied, because nothing
+  // was: the output is a diff somebody still has to review, merge and apply. `propose.test.tsx`
+  // asserts that over these strings, in both languages \u2014 a screen that let a reader leave
+  // believing the agent changed would be the \u00a75 failure this whole spec is built to avoid.
+  'propose.title': { en: 'Propose a change', pt: 'Propor uma altera\u00e7\u00e3o' },
+  'propose.fromThisBuild': {
+    en: 'The definition this build was made from \u2014 not a branch, and not necessarily what is deployed.',
+    pt: 'A defini\u00e7\u00e3o a partir da qual esta build foi feita \u2014 n\u00e3o um branch, e n\u00e3o necessariamente o que est\u00e1 implantado.',
+  },
+  'propose.sharedWith': {
+    en: 'These instructions are shared by: {agents}. A change here changes all of them.',
+    pt: 'Estas instru\u00e7\u00f5es s\u00e3o compartilhadas por: {agents}. Uma altera\u00e7\u00e3o aqui muda todos.',
+  },
+  'propose.drift': {
+    en: 'What is being served differs from this file. It came from somewhere other than this build.',
+    pt: 'O que est\u00e1 sendo servido difere deste arquivo. Veio de outro lugar, n\u00e3o desta build.',
+  },
+  'propose.noDrift': {
+    en: 'What is being served matches this file.',
+    pt: 'O que est\u00e1 sendo servido corresponde a este arquivo.',
+  },
+  'propose.instructions': { en: 'Instructions', pt: 'Instru\u00e7\u00f5es' },
+  'propose.produce': { en: 'Produce the diff', pt: 'Gerar o diff' },
+  'propose.diff': { en: 'The change', pt: 'A altera\u00e7\u00e3o' },
+  'propose.download': { en: 'Download the file', pt: 'Baixar o arquivo' },
+  'propose.copyPatch': { en: 'Copy as a patch', pt: 'Copiar como patch' },
+  'propose.remaining': {
+    en: 'Nothing has changed yet. Review this diff, merge it, then run the apply step.',
+    pt: 'Nada mudou ainda. Revise este diff, fa\u00e7a o merge e ent\u00e3o rode a etapa de apply.',
+  },
+  'propose.invalid': { en: 'This would not validate: {error}', pt: 'Isto n\u00e3o validaria: {error}' },
+  'propose.unchanged': { en: 'Nothing is different yet.', pt: 'Nada est\u00e1 diferente ainda.' },
+
   // --- The keyboard and screen-reader pass (spec 040) ----------------------
   // `a11y.answerReady` is deliberately short. The turn's shape \u2014 three tools, twelve seconds \u2014 is
   // already on screen; reading it into the announcement queue would turn the one moment that

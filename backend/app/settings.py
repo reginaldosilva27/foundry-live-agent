@@ -68,6 +68,12 @@ class Settings:
     # the screen renders as a configuration fact. Off is the default because anyone who can reach
     # this BFF can otherwise change what every caller of the project gets. See SECURITY.md.
     allow_version_promote: bool = False
+    # Whether this deployment offers the definition editor (spec 041).
+    #
+    # Off by default like the promote flag, and for a smaller reason: nothing here writes anything,
+    # so the risk is not damage but noise — a deployed demo does not need an editor on it. What it
+    # gates is a surface, not a permission.
+    allow_proposals: bool = False
     # What a turn costs (spec 028). **This repository ships no prices.** A rate compiled in here
     # would be a fact with no owner: prices vary by region and by agreement and change without
     # telling us, and a number rendered with a currency symbol reads as measured (§5). So the
@@ -152,6 +158,7 @@ def load_settings(**overrides: object) -> Settings:
         "speech_voice_pt": os.environ.get("SPEECH_VOICE_PT", "pt-BR-ThalitaMultilingualNeural"),
         "appinsights_resource_id": os.environ.get("APPLICATIONINSIGHTS_RESOURCE_ID", ""),
         "allow_version_promote": _flag(os.environ.get("FOUNDRY_ALLOW_VERSION_PROMOTE")),
+        "allow_proposals": _flag(os.environ.get("FOUNDRY_ALLOW_PROPOSALS")),
         "model_rates": _model_rates(os.environ.get("MODEL_RATES", "")),
         "rates_currency": os.environ.get("MODEL_RATES_CURRENCY", "USD"),
         "rates_recorded_at": os.environ.get("MODEL_RATES_RECORDED_AT", ""),

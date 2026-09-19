@@ -41,3 +41,41 @@ they don't edit.
 
 `CLAUDE.md` ↔ `AGENTS.md`, and each `.claude/skills`+`.claude/agents` ↔ its `.codex/prompts/`
 counterpart. Change a rule in one, change it in the others in the same commit.
+
+## Proposing a change to the agent from the screen (spec 041)
+
+The file stays the truth; the screen is a better editor **of the file**. You edit the instructions,
+and the app hands back a diff to review, merge and apply — it does not save, and it says so.
+
+```
+/agents/{name}  ──edit──>  POST /agents/{name}/definition/proposal
+                             validates through agent_spec.py
+                             answers { yaml, diff }        <- writes NOTHING
+                           review · merge · just agent
+```
+
+**Why it cannot simply save.** §8 would permit it: a person configuring an agent is configuring,
+not running a loop. §4 refuses it. `agent_core.yaml` exists *because* two copies of those
+instructions drifting a sentence at a time would make the repository's central claim — that only
+the harness differs between the two agents — unfalsifiable. A save creates the second copy on the
+first click, and `docs/harness-comparison.md` quietly stops meaning anything.
+
+Three things the screen is careful about:
+
+- **It edits the file that actually declares the instructions.** A harness's own `agent.yaml` does
+  not: it `extends:` the shared core. So editing "the prompt agent's" instructions edits the hosted
+  agent's too, and the screen names both.
+- **It calls the definition what it is**: the one this build was made from. Not "the repository",
+  not `main`. In a container the files are whatever was baked into the image.
+- **It states drift before any editing.** A deployment serving something other than what this build
+  describes is the most useful thing on the screen, and a reader needs it before they start rather
+  than after they wonder why nothing changed.
+
+**Instructions only.** Tools are where a bad edit breaks a harness silently, and the model's shape
+decides whether inference routes through the gateway. **No pull-request creation**: it would cost a
+code-host credential — a second third-party secret after `TAVILY_API_KEY` — to buy a button that
+saves a `git apply`.
+
+Off by default (`FOUNDRY_ALLOW_PROPOSALS`). Nothing here writes, so the flag gates a surface rather
+than a permission.
+

@@ -4673,3 +4673,115 @@ button:disabled {
   overflow: hidden;
   white-space: nowrap;
 }
+
+/* --- Proposing a change to the agent (spec 041) ------------------------------------------
+   The diff is the output, so it gets the room. The editor is a plain field: this is an editor of
+   a FILE, and dressing it up as a settings screen would suggest it saves something. */
+
+.propose {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--sp-4);
+  padding: var(--sp-4);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  gap: var(--sp-2);
+}
+
+.propose__title {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.propose__note,
+.propose__path,
+.propose__shared,
+.propose__ok,
+.propose__remaining {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.propose__path {
+  font-family: var(--font-mono);
+  color: var(--fg-4);
+}
+
+.propose__drift,
+.propose__invalid {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--ds-warning);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+}
+
+.propose__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.propose__field textarea {
+  padding: var(--sp-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-1);
+  resize: vertical;
+}
+
+.propose__produce {
+  align-self: flex-start;
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.propose__produce:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.propose__result pre {
+  max-height: 340px;
+  margin: var(--sp-1) 0;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  overflow: auto;
+}
+
+.propose__actions {
+  display: flex;
+  margin: 0;
+  gap: var(--sp-2);
+}
+
+.propose__actions a,
+.propose__actions button {
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  text-decoration: none;
+  cursor: pointer;
+}
