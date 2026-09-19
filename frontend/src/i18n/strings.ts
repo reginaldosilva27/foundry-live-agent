@@ -271,6 +271,25 @@ export const strings = {
   'keys.language': { en: 'Switch language', pt: 'Trocar idioma' },
   'keys.openHistory': { en: 'Open history', pt: 'Abrir histórico' },
 
+  // Spec 028 — what a turn cost. Every one of these is written so the figure cannot be read as
+  // measured: it is an estimate from token counts and declared rates, and it says so.
+  'cost.estimate': { en: 'est.', pt: 'est.' },
+  'cost.turn': { en: 'Estimated cost', pt: 'Custo estimado' },
+  'cost.conversation': { en: 'This conversation so far', pt: 'Esta conversa até agora' },
+  'cost.partial': {
+    en: 'Partial — {count} turns could not be priced',
+    pt: 'Parcial — {count} turns não puderam ser precificados',
+  },
+  'cost.ratesTitle': { en: 'Rates recorded {date}', pt: 'Taxas anotadas em {date}' },
+  'cost.rateInput': { en: 'input / 1M', pt: 'entrada / 1M' },
+  'cost.rateCachedInput': { en: 'cached input / 1M', pt: 'entrada em cache / 1M' },
+  'cost.rateOutput': { en: 'output / 1M', pt: 'saída / 1M' },
+  'cost.excludesContainer': {
+    en: 'Inference only — the hosted harness also bills container compute, which this figure excludes.',
+    pt: 'Somente inferência — o harness hosted também cobra compute de container, que esta figura não inclui.',
+  },
+  'meta.cachedInput': { en: 'cached input', pt: 'entrada em cache' },
+
   // --- Addresses (spec 024) ------------------------------------------------
   // An address naming a conversation this browser never had is a normal thing to open — a link
   // from another machine. It is stated, not redirected away from.
@@ -473,6 +492,9 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   // `turn` is the unit this app counts, and pt already keeps the word: `keys.previousTurn` reads
   // "Turn anterior". A history row saying "3 turns" matches the trace panel beside it (spec 027).
   'history.turns',
+  // `est.` is the abbreviation in both languages, and the whole job of this string is to be short
+  // enough to sit inside the figure rather than under it (spec 028).
+  'cost.estimate',
 ]
 
 export function t(key: StringKey, lang: Lang): string {

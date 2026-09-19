@@ -59,7 +59,17 @@ export interface Turn {
   reasoning: string
   activities: Activity[]
   text: string
-  usage?: { inputTokens: number; outputTokens: number; reasoningTokens?: number }
+  /**
+   * Token accounting. Two of these are breakdowns, not additions (spec 028):
+   * `reasoningTokens` is part of `outputTokens`, and `cachedInputTokens` is part of `inputTokens`.
+   * `cost.ts` is the only place that does arithmetic with them.
+   */
+  usage?: {
+    inputTokens: number
+    outputTokens: number
+    reasoningTokens?: number
+    cachedInputTokens?: number
+  }
   trace?: {
     responseId: string
     conversationId?: string
@@ -164,6 +174,7 @@ export function reduceTurn(turn: Turn, raw: unknown): Turn {
           inputTokens: event.input_tokens,
           outputTokens: event.output_tokens,
           reasoningTokens: event.reasoning_tokens,
+          cachedInputTokens: event.cached_input_tokens,
         },
       }
 

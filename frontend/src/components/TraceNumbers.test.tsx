@@ -1,96 +1,102 @@
 /**
- * Spec 014 AC2, AC3 — the run's numbers, in the panel a reader opens to look at the run.
+ * Spec 028 AC4, AC9 — the panel is where a reader compares two runs, so it is where the figure has
+ * to be traceable to its inputs: which rates, from when, applied to which token classes.
  *
- * AC3 is the one worth being strict about: a turn that has not reported usage yet must show
- * nothing rather than `0 tokens`, which is a measurement and not an absence.
+ * A total that silently omitted the turns it could not price would be a smaller number presented as
+ * the whole conversation. That is the §5 failure this file is mostly about.
  */
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { TraceNumbers } from './TraceNumbers'
-import { emptyTurn, type Turn } from '../state/turn'
+import { LangContext } from '../i18n/context'
+import { t } from '../i18n/strings'
+import type { Pricing } from '../state/cost'
+import type { Turn } from '../state/turn'
 
-const settled: Turn = {
-  ...emptyTurn(),
-  status: 'done',
-  usage: { inputTokens: 120, outputTokens: 34, reasoningTokens: 64 },
+const PRICING: Pricing = {
+  currency: 'USD',
+  recorded_at: '2026-09-18',
+  per_tokens: 1_000_000,
+  rates: { 'gpt-5.5': { input: 2, cached_input: 0.2, output: 10 } },
 }
 
-describe('the run numbers', () => {
-  it('shows model, total tokens, reasoning tokens and latency (AC2)', () => {
-    render(<TraceNumbers turn={settled} model="gpt-5.5" latencyMs={2400} />)
+function turn(usage?: Turn['usage']): Turn {
+  return {
+    reasoning: '',
+    activities: [],
+    text: 'answer',
+    status: 'done',
+    unknownEvents: {},
+    ...(usage ? { usage } : {}),
+  }
+}
 
-    const row = screen.getByTestId('trace-numbers')
-    expect(row).toHaveTextContent('gpt-5.5')
-    expect(row).toHaveTextContent('154') // 120 + 34, summed rather than shown as two figures
-    expect(row).toHaveTextContent('64')
-    expect(row).toHaveTextContent('2.4 s')
+const USED = { inputTokens: 1_000_000, outputTokens: 1_000_000, cachedInputTokens: 500_000 }
+
+function show(props: Partial<React.ComponentProps<typeof TraceNumbers>> = {}) {
+  return render(
+    <LangContext.Provider value="en">
+      <TraceNumbers turn={turn(USED)} model="gpt-5.5" pricing={PRICING} {...props} />
+    </LangContext.Provider>,
+  )
+}
+
+describe('the turn figure and its rates', () => {
+  it('renders the estimated cost for the turn', () => {
+    show()
+    // 500k fresh at 2 + 500k cached at 0.2 + 1M output at 10 = 1 + 0.1 + 10.
+    expect(screen.getByTestId('trace-cost')).toHaveTextContent(/11\.10/)
   })
 
-  it('omits the figures it does not have instead of showing zeros (AC3)', () => {
-    render(<TraceNumbers turn={emptyTurn()} />)
+  it('renders the rate applied to input, cached input and output, and the date (AC4)', () => {
+    show()
+    const rates = screen.getByTestId('trace-rates')
 
-    expect(screen.getByTestId('trace-numbers')).not.toHaveTextContent('0')
+    expect(rates).toHaveTextContent(t('cost.rateInput', 'en'))
+    expect(rates).toHaveTextContent(t('cost.rateCachedInput', 'en'))
+    expect(rates).toHaveTextContent(t('cost.rateOutput', 'en'))
+    expect(rates).toHaveTextContent('2026-09-18')
   })
 
-  it('omits reasoning tokens for a model that reports none', () => {
-    const { reasoningTokens: _drop, ...usage } = settled.usage!
-    render(<TraceNumbers turn={{ ...settled, usage }} model="gpt-4o" latencyMs={900} />)
+  it('reads the cache off the stream, so a deployment with no spans still shows it', () => {
+    show({ trace: undefined })
+    expect(screen.getByText('500000')).toBeInTheDocument()
+  })
 
-    const row = screen.getByTestId('trace-numbers')
-    expect(row).toHaveTextContent('154')
-    expect(row).not.toHaveTextContent(/reasoning|racioc/i)
+  it('lets the spans win where they disagree with the stream', () => {
+    show({ trace: { status: 'ok', spans: [], usage: { cached_tokens: 777 } } as never })
+    expect(screen.getByText('777')).toBeInTheDocument()
+  })
+
+  it('renders no money and no rates when nothing is configured (AC3)', () => {
+    show({ pricing: undefined })
+
+    expect(screen.queryByTestId('trace-cost')).toBeNull()
+    expect(screen.queryByTestId('trace-rates')).toBeNull()
+    expect(screen.getByText('2000000')).toBeInTheDocument()
   })
 })
 
-/** Spec 005 AC16, AC18 — what the spans know that the event stream never reported. */
-describe('what the spans add', () => {
-  it('shows prompt-cache tokens when the spans report them (AC16)', () => {
-    render(
-      <TraceNumbers
-        turn={settled}
-        model="gpt-5.5"
-        trace={{
-          status: 'ok',
-          spans: [],
-          usage: { input_tokens: 3145, output_tokens: 851, cached_tokens: 2620 },
-        }}
-      />,
-    )
-
-    const row = screen.getByTestId('trace-numbers')
-    expect(row).toHaveTextContent('2620')
-    expect(row).toHaveTextContent(/cached|cache/i)
+describe('the conversation total', () => {
+  it('sums the turns of the conversation (AC9)', () => {
+    show({ conversationTurns: [turn(USED), turn(USED)] })
+    expect(screen.getByTestId('trace-conversation-cost')).toHaveTextContent(/22\.20/)
   })
 
-  it('omits the cache figure when the spans do not report one (AC16)', () => {
-    render(
-      <TraceNumbers
-        turn={settled}
-        model="gpt-5.5"
-        trace={{ status: 'ok', spans: [], usage: { input_tokens: 10, output_tokens: 2 } }}
-      />,
-    )
+  it('says the total is partial, and how many turns it could not price (AC9)', () => {
+    show({ conversationTurns: [turn(USED), turn(), turn()] })
 
-    expect(screen.getByTestId('trace-numbers')).not.toHaveTextContent(/cached|cache/i)
+    expect(screen.getByTestId('trace-conversation-cost')).toHaveTextContent(/11\.10/)
+    expect(screen.getByText(t('cost.partial', 'en').replace('{count}', '2'))).toBeInTheDocument()
   })
 
-  it('prefers the model snapshot the spans name over the configured one (AC18)', () => {
-    render(
-      <TraceNumbers
-        turn={settled}
-        model="gpt-5.5"
-        trace={{ status: 'ok', spans: [], model: 'gpt-5.5-2026-04-24', agent_version: '3' }}
-      />,
-    )
-
-    const row = screen.getByTestId('trace-numbers')
-    expect(row).toHaveTextContent('gpt-5.5-2026-04-24')
-    expect(row).toHaveTextContent('3')
+  it('does not call a complete total partial', () => {
+    show({ conversationTurns: [turn(USED)] })
+    expect(screen.queryByText(/Partial/)).toBeNull()
   })
 
-  it('falls back to the configured model when there is no trace', () => {
-    render(<TraceNumbers turn={settled} model="gpt-5.5" />)
-
-    expect(screen.getByTestId('trace-numbers')).toHaveTextContent('gpt-5.5')
+  it('is absent when no turn of the conversation could be priced', () => {
+    show({ turn: turn(), conversationTurns: [turn(), turn()] })
+    expect(screen.queryByTestId('trace-conversation-cost')).toBeNull()
   })
 })

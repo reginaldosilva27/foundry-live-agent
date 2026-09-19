@@ -9,6 +9,7 @@ import { MetaLine } from '../components/MetaLine'
 import { useT } from '../i18n/context'
 import type { Message } from '../hooks/useAgentStream'
 import { useElapsed } from '../hooks/useElapsed'
+import type { Pricing } from '../state/cost'
 import { isSettled, turnStatus, type Turn } from '../state/turn'
 import { ActivityPanel } from './ActivityPanel'
 import { EmptyState } from './EmptyState'
@@ -18,6 +19,10 @@ interface Props {
   model?: string
   /** Who is answering — it goes into the Markdown a reader downloads (spec 021). */
   agent?: string
+  /** The declared rate table, or nothing (spec 028). Passed straight to the meta line. */
+  pricing?: Pricing
+  /** Which harness is answering, so a hosted turn can say what its estimate leaves out (AC11). */
+  harness?: string
   /** Something true about the address the reader opened, when there is something (spec 024). */
   notice?: string
   onSuggestion: (text: string) => void
@@ -90,6 +95,8 @@ export function Conversation({
   messages,
   model,
   agent,
+  pricing,
+  harness,
   notice,
   onSuggestion,
   onOpenTrace,
@@ -206,6 +213,8 @@ export function Conversation({
                     <MetaLine
                       turn={message.turn}
                       model={model}
+                      pricing={pricing}
+                      harness={harness}
                       latencyMs={
                         message.endedAt ? message.endedAt - message.startedAt : undefined
                       }

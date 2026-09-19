@@ -35,7 +35,7 @@ async def config(request: Request) -> dict:
     the point: a reader can see the gap without reading the source (§5, §10).
     """
     settings = request.app.state.settings
-    return {
+    body = {
         "harness": settings.harness,
         # ASK THE HARNESS which agent it drives, don't report AGENT_NAME. The header renders this,
         # and `settings.agent_name` is the PROMPT agent's: on the hosted harness the badge named
@@ -66,3 +66,17 @@ async def config(request: Request) -> dict:
         "event_types": sorted(EVENT_TYPES),
         "event_mapping": _mapping_report(settings.harness),
     }
+
+    # Absent, not empty (spec 028 AC3). `{"rates": {}}` would be this BFF claiming to have a rate
+    # table with nothing in it; the truth is that nobody declared one, and the browser must render
+    # no money at all rather than a zero. The rates are per MILLION tokens, which is how every
+    # price page reads them — the factor is reported so nothing downstream has to assume it.
+    if settings.pricing_enabled:
+        body["pricing"] = {
+            "currency": settings.rates_currency,
+            "recorded_at": settings.rates_recorded_at,
+            "per_tokens": 1_000_000,
+            "rates": settings.model_rates,
+        }
+
+    return body

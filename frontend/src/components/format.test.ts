@@ -7,7 +7,7 @@
  * beside a sidebar that said `gpt-5.5`. One fact, two spellings, which is the failure §4 names.
  */
 import { describe, expect, it } from 'vitest'
-import { callSubject, formatMs, formatClock, modelName } from './format'
+import { callSubject, formatMs, formatClock, modelName, formatMoney } from './format'
 
 describe('modelName', () => {
   it('keeps the model half of a <connection>/<model> deployment name', () => {
@@ -62,5 +62,34 @@ describe('callSubject', () => {
     expect(callSubject('["query"]')).toBe('')
     expect(callSubject('{"limit": 5}')).toBe('')
     expect(callSubject('{"query": ""}')).toBe('')
+  })
+})
+
+/** Spec 028 — money, and the one amount that must not round to nothing. */
+describe('formatMoney', () => {
+  it('formats in the declared currency, in the reader’s language', () => {
+    expect(formatMoney(12.5, 'USD', 'en')).toMatch(/12\.50/)
+    expect(formatMoney(12.5, 'USD', 'pt')).toMatch(/12,50/)
+  })
+
+  it('does not render a sub-cent amount as zero (§5)', () => {
+    // A turn really did cost something. Rendering $0.00 would say it was free, which is a
+    // different claim from "this is small".
+    const shown = formatMoney(0.00042, 'USD', 'en')
+    expect(shown).not.toMatch(/^\D*0\.00\D*$/)
+    expect(shown).toMatch(/0\.0004/)
+  })
+
+  it('keeps two decimals once the amount is worth more than a cent', () => {
+    expect(formatMoney(0.04, 'USD', 'en')).toMatch(/0\.04/)
+    expect(formatMoney(1.239, 'USD', 'en')).toMatch(/1\.24/)
+  })
+
+  it('renders an exact zero as zero, because that is what it is', () => {
+    expect(formatMoney(0, 'USD', 'en')).toMatch(/0\.00/)
+  })
+
+  it('survives a currency code it does not know rather than throwing', () => {
+    expect(formatMoney(1, 'NOTACURRENCY', 'en')).toContain('1')
   })
 })

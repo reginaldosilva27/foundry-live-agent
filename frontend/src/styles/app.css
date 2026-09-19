@@ -3270,3 +3270,47 @@ button:disabled {
   font-family: var(--font-mono);
   text-transform: lowercase;
 }
+
+/* ---------------------------------------------------------------------------
+   The money (spec 028)
+
+   Deliberately quiet. A cost figure is the one number on these screens a reader
+   is most likely to take as measured, so it is styled as a sibling of the token
+   counts rather than as a headline — and the qualifier rides inside the text,
+   which is why nothing here tries to shrink or grey it away.
+   --------------------------------------------------------------------------- */
+
+.meta-line__cost {
+  color: var(--fg-3);
+}
+
+/* The one sentence that keeps a side-by-side comparison honest: it breaks to its own line, because
+   folded into the meta row it read as another metric instead of a caveat about one. */
+.meta-line__excludes {
+  flex-basis: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-base);
+  color: var(--fg-4);
+}
+
+.trace-numbers__cell--wide {
+  grid-column: 1 / -1;
+}
+
+.trace-numbers__partial {
+  margin: 2px 0 0;
+  font-size: var(--fs-caption);
+  color: var(--ds-warning);
+}
+
+/* The rates, under the figures they produced. Stacked rather than a row: three rate lines side by
+   side in a 320px panel is three truncated numbers, which is worse than not showing them. */
+.trace-numbers__rates {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--ds-n-300);
+}

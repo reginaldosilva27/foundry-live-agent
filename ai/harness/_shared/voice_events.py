@@ -243,11 +243,18 @@ def _convert(frame: Mapping[str, Any]) -> Iterator[AgentEvent]:
     if ftype == "response.done":
         response = frame.get("response") or {}
         if (usage := response.get("usage")) is not None:
-            yield {
+            emitted: dict[str, Any] = {
                 "type": "usage",
                 "input_tokens": int(usage.get("input_tokens", 0)),
                 "output_tokens": int(usage.get("output_tokens", 0)),
             }
+            # `input_token_details` — SINGULAR. The Responses API spells the same idea
+            # `input_tokens_details`, and `prompt_agent/events.py` reads that one. Sharing a reader
+            # between them would silently find nothing here (spec 028).
+            details = usage.get("input_token_details") or {}
+            if (cached := details.get("cached_tokens")) is not None:
+                emitted["cached_input_tokens"] = int(cached)
+            yield emitted  # type: ignore[misc]
         return
 
 

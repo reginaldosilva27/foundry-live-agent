@@ -21,11 +21,27 @@ gaps (see [harness-comparison.md](../harness-comparison.md)):
   missing `mcp_call` as an error.**
 - **`usage`.** A hosted turn's `response.completed` carries `usage: null`. The contract always
   allowed `usage` to be absent — `check_stream` forbids a second one, never requires a first — so a
-  cost line must render "not reported", never zero.
+  cost line must render "not reported", never zero. **This is why a hosted turn shows no cost
+  estimate today** (spec 028): there are no token counts to price, and inventing one would be the
+  §5 failure the whole feature is built around.
 
-And one it produces differently: a hosted `function_call` is a **report of a call the container
-already made and answered**, arriving with its `function_call_output` in the same stream, not a
-request waiting on the app.
+### Two fields of `usage` are breakdowns, not additions
+
+`reasoning_tokens` is part of `output_tokens`, and `cached_input_tokens` is part of `input_tokens`.
+Reading either as an addition produces a cost estimate that looks perfectly plausible and is
+roughly double the truth, which is why the rule lives in the contract's own docstring and is pinned
+by a test in `frontend/src/state/cost.test.ts`.
+
+Both are measured, not assumed: every recorded turn in `ai/tests/fixtures/recorded/` satisfies
+`total_tokens == input_tokens + output_tokens`, with the two details nested one level down. See
+[REFERENCES.md](../REFERENCES.md#what-a-turn-costs--spec-028-read-and-verified-2026-09-18).
+
+One spelling trap: the Responses API sends `input_tokens_details` (plural) and Voice Live sends
+`input_token_details` (singular). Each normaliser reads its own.
+
+And one event Foundry produces differently: a hosted `function_call` is a **report of a call the
+container already made and answered**, arriving with its `function_call_output` in the same stream,
+not a request waiting on the app.
 
 ## Why SSE and not WebSocket
 
@@ -171,7 +187,7 @@ event: text_delta
 data: {"type":"text_delta","text":"It is 17:00 in São Paulo."}
 
 event: usage
-data: {"type":"usage","input_tokens":312,"output_tokens":28}
+data: {"type":"usage","input_tokens":312,"output_tokens":28,"reasoning_tokens":68,"cached_input_tokens":1024}
 
 event: trace_ids
 data: {"type":"trace_ids","response_id":"resp_1"}

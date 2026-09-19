@@ -7,8 +7,9 @@ the agent rather than in the environment.
 
 from __future__ import annotations
 
+import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 __all__ = ["Settings", "SettingsError", "load_settings"]
 
@@ -55,6 +56,20 @@ class Settings:
     # `ApplicationId` for a different API. It cannot be derived from anything else we hold, so it is
     # its own variable — and unset simply means the trace panel says tracing is not configured.
     appinsights_resource_id: str = ""
+    # What a turn costs (spec 028). **This repository ships no prices.** A rate compiled in here
+    # would be a fact with no owner: prices vary by region and by agreement and change without
+    # telling us, and a number rendered with a currency symbol reads as measured (§5). So the
+    # operator declares the table, the currency and the DATE they read it, and an unconfigured
+    # deployment renders tokens exactly as before and no money at all.
+    #
+    # Rates are per million tokens, which is how every price page reads them.
+    model_rates: dict[str, dict[str, float]] = field(default_factory=dict)
+    rates_currency: str = ""
+    rates_recorded_at: str = ""
+
+    @property
+    def pricing_enabled(self) -> bool:
+        return bool(self.model_rates)
 
     @property
     def voice_enabled(self) -> bool:
@@ -124,9 +139,54 @@ def load_settings(**overrides: object) -> Settings:
         "speech_voice_en": os.environ.get("SPEECH_VOICE_EN", "en-US-AvaMultilingualNeural"),
         "speech_voice_pt": os.environ.get("SPEECH_VOICE_PT", "pt-BR-ThalitaMultilingualNeural"),
         "appinsights_resource_id": os.environ.get("APPLICATIONINSIGHTS_RESOURCE_ID", ""),
+        "model_rates": _model_rates(os.environ.get("MODEL_RATES", "")),
+        "rates_currency": os.environ.get("MODEL_RATES_CURRENCY", "USD"),
+        "rates_recorded_at": os.environ.get("MODEL_RATES_RECORDED_AT", ""),
     }
+    if values["model_rates"] and not values["rates_recorded_at"]:
+        raise SettingsError(
+            "MODEL_RATES_RECORDED_AT is required alongside MODEL_RATES: a rate with no date is a "
+            "number nobody can judge the staleness of"
+        )
     values.update({k: v for k, v in overrides.items() if v is not None})
     return Settings(**values)  # type: ignore[arg-type]
+
+
+_RATE_KEYS = ("input", "cached_input", "output")
+
+
+def _model_rates(raw: str) -> dict[str, dict[str, float]]:
+    """Parse the declared rate table, or refuse it.
+
+    Validated eagerly for the reason the module docstring gives: a table that only fails when
+    somebody opens the trace panel looks like a bug in the agent rather than in the environment.
+    Empty is the DEFAULT and is not a failure — it is how most deployments of this repo will run.
+    """
+    if not raw.strip():
+        return {}
+
+    try:
+        parsed = json.loads(raw)
+    except ValueError as exc:
+        raise SettingsError(f"MODEL_RATES is not valid JSON: {exc}") from exc
+
+    if not isinstance(parsed, dict):
+        raise SettingsError("MODEL_RATES must be an object of model -> rates")
+
+    table: dict[str, dict[str, float]] = {}
+    for model, rates in parsed.items():
+        if not isinstance(rates, dict):
+            raise SettingsError(f"MODEL_RATES[{model!r}] must be an object")
+        clean: dict[str, float] = {}
+        for key, value in rates.items():
+            if key not in _RATE_KEYS:
+                raise SettingsError(f"MODEL_RATES[{model!r}] has unknown rate {key!r}")
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise SettingsError(f"MODEL_RATES[{model!r}][{key!r}] must be a number")
+            clean[key] = float(value)
+        table[model] = clean
+
+    return table
 
 
 def _resource_endpoint(project_endpoint: str) -> str:

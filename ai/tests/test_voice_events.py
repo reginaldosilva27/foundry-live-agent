@@ -324,3 +324,29 @@ def test_the_preamble_survived_the_new_rule():
     assert types.index("response.audio_transcript.delta") < types.index(
         "response.function_call_arguments.done"
     )
+
+
+# --- spec 028 AC5: the cache, over the control channel ----------------------
+
+
+def test_voice_usage_carries_the_cache_under_its_own_spelling():
+    """Voice Live says `input_token_details`; the Responses API says `input_tokens_details`.
+
+    One letter, two APIs, and a copied reader would find `None` every time and price every cached
+    token at the full rate without ever failing. That is why each emitter reads its own spelling and
+    each has its own recording behind it — here, a real session that served 1024 of its input tokens
+    from cache (spec 028).
+    """
+    events = [e for e in normalise_voice(frames(PREAMBLE)) if e["type"] == "usage"]
+    assert events, "the recorded session reported usage"
+
+    cached = [e["cached_input_tokens"] for e in events]
+    assert 1024 in cached
+
+    for event in events:
+        assert event["cached_input_tokens"] <= event["input_tokens"], "cache is part of the input"
+
+
+def test_voice_usage_stays_a_contract_event_with_the_new_field():
+    for event in normalise_voice(frames(PREAMBLE)):
+        validate_event(event)

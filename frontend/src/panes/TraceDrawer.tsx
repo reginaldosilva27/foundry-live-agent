@@ -21,6 +21,7 @@ import { ToolRow } from '../components/ToolRow'
 import { SpanTree } from '../components/SpanTree'
 import { TraceNumbers } from '../components/TraceNumbers'
 import { useT } from '../i18n/context'
+import type { Pricing } from '../state/cost'
 import { longestDuration, type Turn } from '../state/turn'
 import type { Trace } from '../types/trace'
 
@@ -43,6 +44,10 @@ interface Props {
   trace?: Trace
   /** Whether this deployment's inference routes through the gateway, from `GET /config`. */
   usesGateway?: boolean
+  /** The declared rate table, or nothing (spec 028). */
+  pricing?: Pricing
+  /** Every turn of the conversation on screen, for the running total (spec 028 AC9). */
+  conversationTurns?: readonly Turn[]
   /** Ask for the spans again — the answer to `pending`, which is the common case. */
   onRetryTrace?: () => void
   /** The call to bring into view, when the reader opened the panel by pressing its row. */
@@ -144,6 +149,8 @@ export function TraceDrawer({
   latencyMs,
   trace,
   usesGateway,
+  pricing,
+  conversationTurns,
   onRetryTrace,
   selectedCall,
   onStep,
@@ -191,7 +198,14 @@ export function TraceDrawer({
         <>
           <section className="trace__run">
             <h3 className="trace__subtitle">{s('trace.numbersTitle')}</h3>
-            <TraceNumbers turn={turn} model={model} latencyMs={latencyMs} trace={trace} />
+            <TraceNumbers
+              turn={turn}
+              model={model}
+              latencyMs={latencyMs}
+              trace={trace}
+              pricing={pricing}
+              conversationTurns={conversationTurns}
+            />
           </section>
 
           <section className="trace__ids">

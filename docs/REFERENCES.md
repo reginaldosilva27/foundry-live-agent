@@ -467,6 +467,31 @@ and what it needs, was checked against the live project **before** the screen wa
 | **The audience is `https://ai.azure.com`, not `https://cognitiveservices.azure.com`.** The same URL with the latter answers `401 Unauthorized. Access token is missing, invalid, audience is incorrect (https://ai.azure.com), or have expired.` | observed 2026-09-16 |
 | **Listing needs `Foundry User`.** Read from the live role definitions rather than assumed: `Foundry User` and `Foundry Project Manager` grant the **same** data action, `Microsoft.CognitiveServices/*`, which covers the agents data plane; they differ only on the control plane (Project Manager adds `accounts/projects/*` and `roleAssignments/write`). So listing — a data-plane read — needs the lesser of the two, and spec 019's decision 10 expectation holds. **Not tested with an identity holding only `Foundry User`**: the signed-in identity here has both, and the conclusion is read from the role definitions, not from a denial. | `az role definition list`, 2026-09-16 |
 
+## What a turn costs — spec 028, read and verified 2026-09-18
+
+The app estimates a turn's cost from token counts and rates the **operator** declares; this
+repository ships no prices (§5 — a price compiled in here is a fact with no owner). What had to come
+from a doc is not the price but the **arithmetic**: which token classes are billed, and whether the
+numbers Foundry reports are breakdowns or additions. Getting that wrong produces a plausible figure
+that is quietly double the truth.
+
+### Documentation
+
+| Source | What it settles |
+|---|---|
+| [Azure OpenAI reasoning models](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/reasoning) | **"Reasoning tokens ... are billed as output tokens."** And: *"Reasoning tokens are billed as output tokens, so a request that thinks longer costs more even when the visible answer is short."* Reported at `output_tokens_details.reasoning_tokens` in the Responses API (`completion_tokens_details.reasoning_tokens` in Chat Completions). Page `ms.date` 2026-08-20, updated 2026-09-16; read 2026-09-18. |
+
+### Verified against this repository's recordings
+
+The doc says reasoning is *billed as* output. Whether it is *counted inside* `output_tokens` or
+beside it is the part that decides the formula, and that is measured here rather than assumed.
+
+| Finding | Evidence |
+|---|---|
+| **`reasoning_tokens` is inside `output_tokens`, and `cached_tokens` is inside `input_tokens`.** Every recorded turn satisfies `total_tokens == input_tokens + output_tokens`, with both details nested one level down. So the estimate prices `output_tokens` (reasoning included) and splits `input_tokens` into cached and fresh — adding either detail on top would bill it twice. | `ai/tests/fixtures/recorded/prompt-agent-turn-20260915.jsonl`: `1091 + 132 = 1223`, `17520 + 754 = 18274`, with `reasoning_tokens` 68 / 342 and `cached_tokens` 0 / 1024 |
+| **The stream reports the prompt cache** — it is not spans-only, as spec 028's draft assumed. `input_tokens_details.cached_tokens` arrives in the same `response.completed` payload the normaliser already reads `output_tokens_details` from. This is why spec 028 extends the `usage` event (§9) instead of waiting on Application Insights, which most deployments of this repo do not configure. | same fixtures: cached values of 1024, 3584 and 4096 across recorded turns |
+| **The two APIs spell the field differently.** The Responses API sends `input_tokens_details` (plural); Voice Live sends `input_token_details` (singular). Each normaliser reads its own spelling, and each has its own recorded test, because a shared reader would find `None` forever and price every cached token at the full rate without failing. | `prompt-agent-turn-20260915.jsonl` vs `voice-live-preamble-20260916.jsonl` |
+
 ## Versions this repo pins
 
 | Thing | Value | Source |

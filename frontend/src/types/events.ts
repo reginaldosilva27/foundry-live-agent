@@ -67,7 +67,10 @@ export interface UsageEvent {
   type: 'usage'
   input_tokens: number
   output_tokens: number
+  /** Part of `output_tokens`, not additional to it. The service bills it as output (spec 028). */
   reasoning_tokens?: number
+  /** Part of `input_tokens`, not additional to it — the portion served from the prompt cache. */
+  cached_input_tokens?: number
 }
 
 export interface TraceIdsEvent {

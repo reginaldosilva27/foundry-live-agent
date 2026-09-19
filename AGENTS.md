@@ -176,6 +176,18 @@ violation.
   você."* So an instruction conditioned on the modality is conditioned on nothing — that is why the
   voice session sends one `role: system` context item saying so (spec 017), the single **bounded**
   exception §8 carries.
+- **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
+  `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
+  `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is
+  roughly double the truth. Measured, not assumed: `total_tokens == input_tokens + output_tokens` in
+  every recorded turn. Foundry also **sends the cache on the stream** (`input_tokens_details.cached_tokens`),
+  so it is not spans-only — and the Responses API spells it `input_tokens_details` while Voice Live
+  spells it `input_token_details`, singular. Each normaliser reads its own; a shared reader finds
+  `None` forever and never fails.
+- **This repository ships no prices.** Rates come from the operator's environment through
+  `GET /config`, with the date they were read; no rate literal may exist in `frontend/`, and
+  `noPriceLiterals.test.ts` is the tripwire. Unconfigured is the default and renders **no money at
+  all** — never a zero, which would claim a turn was free.
 - **Reasoning summaries are configured on the agent definition, not per request.** Sending
   `reasoning` alongside an `agent_reference` is rejected: *"Not allowed when agent is specified."*
   Without it the card is empty forever, though the model still spends reasoning tokens. And

@@ -116,6 +116,30 @@ def test_accepts_optional_field():
     assert event["reasoning_tokens"] == 3
 
 
+def test_accepts_cached_input_tokens():
+    """Spec 028 AC5 — the cache portion of the input, which Foundry reports and we now carry.
+
+    It is a *subset* of ``input_tokens``, never an addition, and the contract says nothing about
+    that arithmetic: the schema's job is the shape. The sum is pinned in `cost.test.ts`.
+    """
+    event = validate_event(
+        {
+            "type": "usage",
+            "input_tokens": 17401,
+            "output_tokens": 382,
+            "cached_input_tokens": 1024,
+        }
+    )
+    assert event["cached_input_tokens"] == 1024
+
+
+def test_rejects_non_integer_cached_input_tokens():
+    with pytest.raises(ContractError, match="cached_input_tokens"):
+        validate_event(
+            {"type": "usage", "input_tokens": 1, "output_tokens": 2, "cached_input_tokens": "1k"}
+        )
+
+
 # --- AC3: field types ------------------------------------------------------
 
 

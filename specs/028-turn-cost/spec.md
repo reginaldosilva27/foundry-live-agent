@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 028-turn-cost |
-| **Status** | clarified |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 

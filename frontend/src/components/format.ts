@@ -47,3 +47,35 @@ export function callSubject(args: string): string {
   }
   return ''
 }
+
+/** Below this, two decimals would render a real charge as nothing at all. */
+const SUB_CENT = 0.01
+
+/**
+ * An amount of money, in the currency whoever declared the rates declared (spec 028).
+ *
+ * Locale-dependent, unlike every other formatter here, because this one *is* prose: `US$ 12,50` and
+ * `$12.50` are the same number written for two readers (§7). Nothing is ever converted — the
+ * currency is rendered as declared.
+ *
+ * The sub-cent branch is a §5 rule, not a nicety. A turn that cost four hundredths of a cent really
+ * did cost something, and `$0.00` says it was free. An **exact** zero still renders as zero, because
+ * that is what it is.
+ */
+export function formatMoney(amount: number, currency: string, lang: string): string {
+  const small = amount > 0 && amount < SUB_CENT
+  const options: Intl.NumberFormatOptions = {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: small ? 4 : 2,
+    maximumFractionDigits: small ? 6 : 2,
+  }
+
+  try {
+    return new Intl.NumberFormat(lang, options).format(amount)
+  } catch {
+    // An unknown currency code throws rather than falling back, and a code comes from an operator's
+    // environment — a typo there must not take the panel down with it.
+    return `${amount.toFixed(small ? 4 : 2)} ${currency}`
+  }
+}

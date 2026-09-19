@@ -169,6 +169,34 @@ async def test_usage_is_the_whole_turn_not_the_last_leg():
     assert usage["reasoning_tokens"] == 68 + 342
 
 
+async def test_usage_carries_the_cache_foundry_reported():
+    """Spec 028 AC5 — the prompt cache, from the stream rather than from spans.
+
+    Foundry puts `cached_tokens` in `input_tokens_details`, in the very payload the normaliser
+    already reads `output_tokens_details` from. Recorded here: leg one cached nothing, leg two
+    served 1024 of its 17520 input tokens from cache. The number is Foundry's, not ours.
+
+    It is a **subset** of `input_tokens`, which the same recording proves: `total_tokens` is
+    17783 == 17401 + 382 on that leg, with the cache counted inside the input, not beside it.
+    """
+    usage = next(e for e in await collect(replay(WITH_REASONING)) if e["type"] == "usage")
+
+    assert usage["cached_input_tokens"] == 0 + 1024
+    assert usage["cached_input_tokens"] < usage["input_tokens"]
+
+
+async def test_usage_reports_a_cache_of_zero_rather_than_omitting_it():
+    """Zero cache is a measurement, and `0` is what Foundry said.
+
+    The distinction that matters is *absent* vs *zero*: a turn Foundry said nothing about must not
+    render as free (§5), and a turn it said `0` about is honestly zero. This recording contains
+    both legs, so the summed field is present and the pricing layer can trust it.
+    """
+    usage = next(e for e in await collect(replay(PREAMBLE)) if e["type"] == "usage")
+
+    assert usage["cached_input_tokens"] == 0 + 0 + 3584
+
+
 # --- spec 016 AC3: the agent speaks before it goes quiet --------------------
 
 

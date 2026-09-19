@@ -241,3 +241,24 @@ describe('stopTurn', () => {
     expect(turnStatus(stopTurn(reduceEvents(twoToolTurn.slice(0, 4)))).kind).toBe('settled')
   })
 })
+
+/** Spec 028 AC5 — the cache reaches the renderer, or the estimate silently overstates every turn. */
+describe('usage carries the prompt cache', () => {
+  it('keeps the cached portion Foundry reported', () => {
+    const turn = reduceEvents([
+      { type: 'usage', input_tokens: 17401, output_tokens: 382, cached_input_tokens: 1024 },
+      { type: 'done' },
+    ])
+
+    expect(turn.usage?.cachedInputTokens).toBe(1024)
+  })
+
+  it('leaves it absent when the stream did not report one', () => {
+    const turn = reduceEvents([
+      { type: 'usage', input_tokens: 10, output_tokens: 2 },
+      { type: 'done' },
+    ])
+
+    expect(turn.usage?.cachedInputTokens).toBeUndefined()
+  })
+})

@@ -443,6 +443,8 @@ export default function App() {
                 messages={messages}
                 model={config?.model}
                 agent={answering}
+                pricing={config?.pricing}
+                harness={selectedRow?.harness ?? config?.harness}
                 notice={missing ? translate('route.conversationMissing', lang) : undefined}
                 onSuggestion={sendToSelected}
                 onOpenTrace={openTrace}
@@ -481,6 +483,8 @@ export default function App() {
 
         <TraceDrawer
           turn={shownTurn?.role === 'agent' ? shownTurn.turn : undefined}
+          pricing={config?.pricing}
+          conversationTurns={shown.agentMessages.map((message) => message.turn)}
           responseId={routeResponseId}
           selectedCall={trace.callId}
           open={tracesOpen}

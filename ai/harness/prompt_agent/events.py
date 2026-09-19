@@ -214,6 +214,13 @@ def convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
             details = usage.get("output_tokens_details") or {}
             if (reasoning := details.get("reasoning_tokens")) is not None:
                 emitted["reasoning_tokens"] = int(reasoning)
+            # The cache is in the SAME payload, one key over, and was being stepped straight past
+            # (spec 028). Note the spelling: the Responses API says `input_tokens_details`, plural;
+            # Voice Live says `input_token_details`, singular. Copying one into the other reads
+            # `None` forever and prices every cached token at the full rate, in silence.
+            input_details = usage.get("input_tokens_details") or {}
+            if (cached := input_details.get("cached_tokens")) is not None:
+                emitted["cached_input_tokens"] = int(cached)
             yield emitted  # type: ignore[misc]
 
         trace: dict[str, Any] = {"type": "trace_ids", "response_id": response.get("id", "")}

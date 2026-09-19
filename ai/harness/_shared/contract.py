@@ -121,12 +121,24 @@ class McpCall(TypedDict):
 
 
 class Usage(TypedDict):
-    """Token accounting for the run. At most one per stream."""
+    """Token accounting for the run. At most one per stream.
+
+    Two of these fields are **breakdowns, not additions**, and reading them as additions is the
+    easiest way to compute a wrong number from a right payload (spec 028):
+
+    - ``reasoning_tokens`` is part of ``output_tokens``. The service bills it as output.
+    - ``cached_input_tokens`` is part of ``input_tokens``. It is the portion served from the prompt
+      cache, which is billed at a different rate.
+
+    Both are measured, not assumed: every recorded turn in ``tests/fixtures/recorded/`` satisfies
+    ``total_tokens == input_tokens + output_tokens`` with the two details nested inside.
+    """
 
     type: Literal["usage"]
     input_tokens: int
     output_tokens: int
     reasoning_tokens: NotRequired[int]
+    cached_input_tokens: NotRequired[int]
 
 
 class TraceIds(TypedDict):
@@ -185,7 +197,10 @@ _SCHEMA: dict[str, tuple[dict[str, type | tuple[type, ...]], dict[str, type]]] =
         {"server_label": str, "name": str, "arguments": str},
         {"output": str, "error": str},
     ),
-    "usage": ({"input_tokens": int, "output_tokens": int}, {"reasoning_tokens": int}),
+    "usage": (
+        {"input_tokens": int, "output_tokens": int},
+        {"reasoning_tokens": int, "cached_input_tokens": int},
+    ),
     "trace_ids": (
         {"response_id": str},
         {"conversation_id": str, "otel_trace_id": str, "gateway_request_id": str},
