@@ -4463,3 +4463,165 @@ button:disabled {
   color: var(--fg-2);
   cursor: pointer;
 }
+
+/* --- The event inspector (spec 038) ------------------------------------------------------
+   A developer surface, and it reads as one: monospaced, dense, and out of the way of anyone
+   using the app to talk to an agent. */
+
+.events {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  max-width: 100%;
+  padding: var(--sp-3);
+  border-left: 1px solid var(--border-1);
+  background: var(--bg-1);
+  gap: var(--sp-2);
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+}
+
+.events__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.events__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.events__close {
+  border: 0;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+  cursor: pointer;
+}
+
+.events__contract {
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--fg-3);
+}
+
+.events__count {
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+.events__unverified {
+  margin: var(--sp-1) 0 0;
+  padding-left: var(--sp-4);
+  color: var(--fg-4);
+}
+
+.events__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.events__filter button {
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+  cursor: pointer;
+}
+
+.events__filter button[aria-pressed='true'] {
+  border-color: var(--border-accent);
+  color: var(--fg-1);
+}
+
+.events__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  gap: 1px;
+  list-style: none;
+}
+
+.events__row {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  padding: 2px var(--sp-1);
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  text-align: left;
+  cursor: pointer;
+}
+
+.events__row:hover,
+.events__row[aria-expanded='true'] {
+  background: var(--bg-3);
+}
+
+.events__at {
+  min-width: 2ch;
+  color: var(--fg-4);
+  text-align: right;
+}
+
+.events__type {
+  color: var(--fg-2);
+}
+
+.events__run {
+  color: var(--fg-4);
+}
+
+.events__summary {
+  color: var(--fg-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.events__empty,
+.events__truncated {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--fg-4);
+}
+
+.events__payload {
+  position: relative;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+}
+
+.events__payload pre {
+  margin: 0;
+  overflow-x: auto;
+  color: var(--fg-2);
+}
+
+.events__copy {
+  position: absolute;
+  top: var(--sp-1);
+  right: var(--sp-1);
+  padding: var(--sp-1);
+  border: 0;
+  background: none;
+  color: var(--fg-4);
+  cursor: pointer;
+}

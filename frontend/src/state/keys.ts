@@ -38,6 +38,7 @@ export type Command =
   | 'startVoice'
   | 'switchLanguage'
   | 'openHistory'
+  | 'toggleEvents'
 
 export interface Binding {
   key: string
@@ -57,6 +58,9 @@ export const BINDINGS: Binding[] = [
   { key: '/', whenTyping: false, command: 'focusComposer', label: 'keys.focusComposer' },
   { key: 'n', whenTyping: false, command: 'newConversation', label: 'keys.newConversation' },
   { key: 't', whenTyping: false, command: 'toggleTraces', label: 'keys.toggleTraces' },
+  // The developer surface (spec 038). Off by default, and out of the way of anyone using the app
+  // to talk to an agent.
+  { key: 'e', whenTyping: false, command: 'toggleEvents', label: 'keys.toggleEvents' },
   { key: 'ArrowLeft', whenTyping: false, command: 'previousTurn', label: 'keys.previousTurn' },
   { key: 'ArrowRight', whenTyping: false, command: 'nextTurn', label: 'keys.nextTurn' },
 ]

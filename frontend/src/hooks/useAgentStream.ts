@@ -33,7 +33,28 @@ export interface AgentMessage {
    * answered the first.
    */
   repeatOf?: { turnId: string; agent?: string }
+  /**
+   * Every event of this turn, raw, in arrival order (spec 038).
+   *
+   * Kept **unconditionally**, not only while the inspector is open: a panel opened mid-turn would
+   * otherwise show "some of what happened", and the turn a reader opens it for is usually the one
+   * that just went wrong.
+   *
+   * `unknown[]` rather than `AgentEvent[]` on purpose. The inspector's job is to show what crossed
+   * the wire, and typing this would quietly hide an event the contract does not know about — which
+   * is exactly what somebody opens it to find.
+   *
+   * **Absent** on a turn that did not come from the SSE stream — a replayed voice session (spec
+   * 007) or a restored conversation (spec 021). That is a different fact from a turn which
+   * streamed and produced none, and the two stay distinguishable (§5).
+   */
+  events?: unknown[]
+  /** The cap bit. Said out loud rather than dropping the rest silently (AC12). */
+  truncated?: boolean
 }
+
+/** A pathological turn's ceiling. A long answer is a few hundred deltas; nothing ordinary hits this. */
+export const MAX_RETAINED_EVENTS = 2000
 
 /** The line that opens a replayed voice session in the chat (spec 007). */
 export interface VoiceSessionMessage {
@@ -135,18 +156,33 @@ export function useAgentStream(): AgentStream {
         id,
         turn: emptyTurn(),
         startedAt,
+        events: [],
         ...(repeatOf ? { repeatOf: { turnId: repeatOf, agent } } : {}),
       },
     ])
     setStreaming(true)
 
-    const apply = (mutate: (turn: Turn) => Turn, ended: boolean) =>
+    /**
+     * Fold one event into the turn and keep the event itself (spec 038).
+     *
+     * `raw` is retained whether or not anything is watching, which is what lets the inspector be
+     * opened at any moment and see the whole turn. Past the cap the events stop accumulating and
+     * the message says so — dropping them silently would make the panel lie about what arrived.
+     */
+    const apply = (mutate: (turn: Turn) => Turn, ended: boolean, raw?: unknown) =>
       setMessages((prev) =>
-        prev.map((m) =>
-          m.role === 'agent' && m.id === id
-            ? { ...m, turn: mutate(m.turn), endedAt: ended ? Date.now() : m.endedAt }
-            : m,
-        ),
+        prev.map((m) => {
+          if (m.role !== 'agent' || m.id !== id) return m
+          const kept = m.events ?? []
+          const full = raw !== undefined && kept.length >= MAX_RETAINED_EVENTS
+          return {
+            ...m,
+            turn: mutate(m.turn),
+            endedAt: ended ? Date.now() : m.endedAt,
+            events: raw !== undefined && !full ? [...kept, raw] : kept,
+            truncated: m.truncated || full,
+          }
+        }),
       )
 
     try {
@@ -179,7 +215,7 @@ export function useAgentStream(): AgentStream {
             remember(event.conversation_id)
           }
           const terminal = isTerminal(event)
-          apply((turn) => reduceTurn(turn, event), terminal)
+          apply((turn) => reduceTurn(turn, event), terminal, event)
         }
       }
     } catch (cause) {
@@ -191,15 +227,14 @@ export function useAgentStream(): AgentStream {
       }
       // A dead BFF is not a contract event, so nothing upstream will produce one. Synthesising it
       // here keeps the single rule the UI relies on: a turn always ends in `done` or `error`.
-      apply(
-        (turn) =>
-          reduceTurn(turn, {
-            type: 'error',
-            message: cause instanceof Error ? cause.message : String(cause),
-            code: 'transport_error',
-          }),
-        true,
-      )
+      const synthesised = {
+        type: 'error',
+        message: cause instanceof Error ? cause.message : String(cause),
+        code: 'transport_error',
+      }
+      // Retained like any other: a reader inspecting a failed turn wants to see that the error
+      // was synthesised here rather than sent, which the payload shows.
+      apply((turn) => reduceTurn(turn, synthesised), true, synthesised)
     } finally {
       // The reader may have stopped this turn and started another before this one unwound; only
       // the turn that is still in flight gets to say the app is no longer streaming.

@@ -247,3 +247,24 @@ the real Learn payload it finds nothing at the top level and pulls dozens of inc
 of the Markdown in `content`, listing pages the agent never opened as though it had (§5). The tests
 are driven by the recorded payloads for exactly that reason.
 
+## Watching it happen (spec 038)
+
+The event inspector is the live counterpart to this page: the nine types, arriving in order, with
+the mapping report above them. It is opened from the command palette and is closed by default — a
+developer surface, out of the way of anyone using the app to talk to an agent.
+
+Three properties are the point:
+
+- **The events are retained whether or not it is open.** Opening it mid-turn shows the whole turn,
+  not the remainder of one — which matters because the turn somebody opens it for is usually the
+  one that just went wrong. Each turn keeps at most 2000 raw events and says so if it hits the cap.
+- **They are kept raw and untyped.** `unknown[]`, not `AgentEvent[]`: the job is to show what
+  crossed the wire, and typing them would hide an event the contract does not know about — which is
+  exactly what somebody opens it to find.
+- **The filter's vocabulary comes from `GET /config`.** A list of type names in the frontend would
+  be a fourth place the contract is written down, after `contract.py`, its parity-tested mirror in
+  `types/events.ts`, and the config.
+
+A turn replayed from a voice session or restored from this browser's history has **no** events —
+absent, not empty, because it never came from the stream.
+

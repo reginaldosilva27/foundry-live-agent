@@ -44,6 +44,25 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- The event inspector (spec 038) --------------------------------------
+  // Event TYPE names are never translated: they are contract identifiers, and a reader has
+  // `contract.py` open beside the screen.
+  'events.title': { en: 'Events', pt: 'Eventos' },
+  'events.close': { en: 'Close', pt: 'Fechar' },
+  'events.all': { en: 'all', pt: 'todos' },
+  'events.empty': { en: 'No events yet', pt: 'Nenhum evento ainda' },
+  'events.runOf': { en: '\u00d7{count}', pt: '\u00d7{count}' },
+  'events.verified': {
+    en: '{verified} of {total} Foundry event names verified against a recorded run',
+    pt: '{verified} de {total} nomes de eventos do Foundry verificados em uma execu\u00e7\u00e3o gravada',
+  },
+  'events.truncated': {
+    en: 'This turn produced more events than are kept; the rest are not shown.',
+    pt: 'Este turno produziu mais eventos do que s\u00e3o guardados; o restante n\u00e3o \u00e9 exibido.',
+  },
+  'events.copy': { en: 'Copy this payload', pt: 'Copiar este payload' },
+  'keys.toggleEvents': { en: 'Show the events', pt: 'Mostrar os eventos' },
+
   // --- Preferences, and a second theme (spec 036) --------------------------
   // The lead is the load-bearing one: it says these are THIS BROWSER's, which is the distinction
   // between this screen and /about, where the deployment's facts are read-only.
@@ -722,6 +741,8 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   // rather than of the term, and a reader comparing the panel with the endpoint would lose the
   // thread (spec 032).
   'about.field.harness',
+  // A count, not a word: \u00d7{count} reads the same in both languages (spec 038).
+  'events.runOf',
   // Foundry's own vocabulary. `prompt` and `workflow` are the literal `definition.kind` values the
   // service returns, and translating them would stop the screen matching the portal a reader has
   // open beside it. `hosted` DOES translate, because "hospedado" is an ordinary Portuguese word

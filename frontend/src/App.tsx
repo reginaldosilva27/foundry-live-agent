@@ -44,6 +44,7 @@ import { useVoiceSession } from './hooks/useVoiceSession'
 import type { VoiceErrorCode } from './voice/session'
 import { voiceMessages } from './state/voiceLog'
 import { ErrorCard } from './components/ErrorCard'
+import { EventInspector } from './components/EventInspector'
 import { LogViewer } from './components/LogViewer'
 import { useT } from './i18n/context'
 
@@ -78,6 +79,8 @@ export default function App() {
     [navigate],
   )
   const [tracesOpen, setTracesOpen] = useState(route.name === 'trace')
+  // Closed by default (spec 038, AC9): a developer surface, not part of talking to an agent.
+  const [eventsOpen, setEventsOpen] = useState(false)
   /** The response the address names, for a turn this browser may not have at all (AC6). */
   const routeResponseId = route.name === 'trace' ? route.responseId : undefined
   /** An address pointing at a conversation this browser does not have (AC7). */
@@ -390,6 +393,7 @@ export default function App() {
         startVoice: startVoiceSession,
         switchLanguage: () => setLang((current) => (current === 'en' ? 'pt' : 'en')),
         openHistory: () => navigate({ name: 'history' }),
+        toggleEvents: () => setEventsOpen((open) => !open),
       }
       actions[command]()
     },
@@ -571,6 +575,16 @@ export default function App() {
             voiceEnabled={config?.voice?.enabled ?? false}
             onRun={runEntry}
             onClose={() => setPaletteOpen(false)}
+          />
+        )}
+
+        {eventsOpen && (
+          <EventInspector
+            events={(shownTurn?.role === 'agent' ? shownTurn.events : undefined) ?? []}
+            truncated={shownTurn?.role === 'agent' ? shownTurn.truncated : undefined}
+            types={config?.event_types ?? []}
+            mapping={config?.event_mapping}
+            onClose={() => setEventsOpen(false)}
           />
         )}
 

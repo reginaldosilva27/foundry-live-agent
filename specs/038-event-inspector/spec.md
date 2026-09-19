@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 038-event-inspector |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -57,6 +58,23 @@ frontend (§4).
 total, and the unverified Foundry event names listed individually. That list is §10 in numeric form
 and it is the reason to build this panel rather than a prettier one.
 
+**The events are kept for every turn, always**, not only while the inspector is open. "Only while
+open" would mean opening it mid-turn shows a partial list, and a panel whose first answer is "some
+of what happened" is worth less than one that is always complete — especially since the turn a
+reader opens it for is usually the one that just went wrong.
+
+The cost is bounded and stated: each turn keeps at most **2000** raw events, and a turn that
+exceeds that says so rather than silently dropping the rest. A long answer is a few hundred
+`text_delta`s, so the cap is reached by a pathological turn and by nothing ordinary.
+
+**It reads the events the app already received.** No second stream, no SSE frames — the frames are
+a level below the contract this panel exists to show, and a framing bug would need a different tool.
+Noted as deferred rather than folded in.
+
+**It is toggled, not navigated to.** It shows the events of the turn on screen, so it lives beside
+the chat like the trace panel does, reachable from the command palette and the keyboard (spec 025).
+A route would take the reader away from the thing being inspected.
+
 **It is a developer surface and reads as one**: monospaced, dense, off by default, and not in the way
 of anyone using the app to talk to an agent.
 
@@ -80,6 +98,9 @@ useful exactly there.
 9. **AC9** — The inspector is closed by default.
 10. **AC10** — Every new string ships `en` + `pt`; event type names are not translated, being
     contract identifiers.
+11. **AC11** — Events are retained for a turn whether or not the inspector was open, so opening it
+    mid-turn shows the whole turn.
+12. **AC12** — A turn exceeding the retention cap says so, and does not silently drop events.
 
 ## Contract / data impact
 
@@ -90,20 +111,10 @@ useful exactly there.
 | **Contract vocabulary** | `contract.py` is the source of truth; `events.ts` mirrors it with the existing parity test; the inspector renders from config (§4). Three places, one fact, already checked. |
 | **Docs** | `docs/how-it-works/` — the streaming-events page gains its live counterpart. |
 
-## Open questions (clarify before planning)
-
-- [ ] Are events retained for every turn in the session, or only the current one? Memory against
-      usefulness.
-- [ ] Opening the inspector mid-turn: partial list with a note, or retain always so it is never
-      partial?
-- [ ] Does the inspector also show the *SSE frames* as delivered, which is a level below the events
-      and is where a framing bug would be visible?
-- [ ] Is it reachable only by a preference (spec 036) or a URL (spec 024), keeping it out of the main
-      surface entirely?
-
 ## Out of scope / deferred
 
 - Injecting, editing or replaying events.
 - Recording a session to a fixture file from the browser — tempting, and it would need a §5
   conversation about what counts as a recorded run.
 - Any view of the voice session's events (spec 039).
+- The SSE frames as delivered — a level below the contract, and where a framing bug would show.

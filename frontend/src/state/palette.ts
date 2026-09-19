@@ -33,6 +33,8 @@ const EXTRA_ACTIONS: { command: Command; label: string }[] = [
   { command: 'startVoice', label: 'keys.startVoice' },
   { command: 'switchLanguage', label: 'keys.language' },
   { command: 'openHistory', label: 'keys.openHistory' },
+  // A developer surface (spec 038): reachable, but not on the main screen.
+  { command: 'toggleEvents', label: 'keys.toggleEvents' },
 ]
 
 export interface PaletteInput {

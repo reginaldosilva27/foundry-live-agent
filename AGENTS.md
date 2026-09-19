@@ -251,6 +251,13 @@ violation.
   because the app never asks a model what to ask it (§8). **The service has no field for these**,
   so the BFF joins its rows against our own YAML by name and an agent we did not write carries
   none; "ours only" is a permanent limitation, not a gap.
+- **The events are retained and watchable (spec 038).** `AgentMessage.events` keeps every raw event
+  of a turn **whether or not the inspector is open** — opening it mid-turn must show the whole turn
+  — capped at 2000 with `truncated` said out loud. They are `unknown[]`, not `AgentEvent[]`: the
+  panel exists to show what crossed the wire, and typing them would hide the event somebody opened
+  it to find. **Absent** on a turn that never streamed (a replayed voice session, a restored
+  conversation) — different from empty. The filter's vocabulary comes from `GET /config`; the only
+  sanctioned mirror of the contract in the frontend is `types/events.ts`, and a test enforces it.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

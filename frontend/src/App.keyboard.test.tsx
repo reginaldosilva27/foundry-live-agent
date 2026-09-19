@@ -182,8 +182,9 @@ describe('the shortcuts (AC1, AC3)', () => {
 describe('every command has a control (AC3)', () => {
   it('names a command for each binding, and each is reachable without the keyboard', () => {
     // The rail carries new conversation, the rail carries the palette and the collapse, the header
-    // carries traces, the composer is a field you can click, and the trace panel carries its own
-    // arrows. This asserts the table has not grown a command with no home.
+    // carries traces, the composer is a field you can click, the trace panel carries its own
+    // arrows, and the event inspector is in the palette — a developer surface, reachable but not on
+    // the main screen (spec 038). This asserts the table has not grown a command with no home.
     const commands = BINDINGS.map((binding) => binding.command)
     expect(commands).toEqual([
       'openPalette',
@@ -191,6 +192,7 @@ describe('every command has a control (AC3)', () => {
       'focusComposer',
       'newConversation',
       'toggleTraces',
+      'toggleEvents',
       'previousTurn',
       'nextTurn',
     ])
