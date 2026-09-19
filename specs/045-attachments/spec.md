@@ -3,9 +3,11 @@
 | | |
 |---|---|
 | **ID** | 045-attachments |
-| **Status** | draft |
+| **Status** | clarified — blocked |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
+| **Blocked on** | a Foundry doc nobody has read (see below) |
 
 ## Problem / motivation
 
@@ -43,6 +45,46 @@ file input.
   CSV before sending — that is the app deciding what the model gets to see.
 - **No multi-file, no folders, no drag-and-drop of a directory** in the first pass.
 - **No attachment during a voice session.**
+
+## Clarify outcome: this one does not ship, and the reason is the spec's own
+
+The draft's first open question says it plainly: *does the Responses API accept file input
+alongside a message, and how — until this is answered from a doc, nothing else in this spec can be
+planned.* It has not been answered. `az` on this machine is a broken build, no doc has been read
+for file input, and **§10 forbids writing the rest from memory.**
+
+That is not the only blocker, and the others are not the kind a developer should resolve alone:
+
+- **It changes the app's public request shape.** `POST /chat` is `message · conversation_id ·
+  agent`, and `App.routing.test.tsx` asserts exactly those three keys — deliberately, because that
+  test is how spec 021 keeps this browser's local record from leaking into Foundry's state. Adding
+  a fourth field is a §9/§4 change with a spec, fixtures and every consumer moved, not an addition
+  made while implementing something else.
+- **"Where does the file live" is an infrastructure and retention decision**, not a frontend one.
+  What is stored, for how long, and who can read it has to be answered **before** an upload
+  endpoint exists, not after. That is the operator's call.
+- **The two harnesses may not behave the same.** If the hosted agent handles file input differently
+  from the prompt agent, the contract has to express the difference, and §9's adapter-parameterised
+  suite is where that would surface. Unknown, for the same reason as the first blocker.
+
+### What the last open question turned out to be worth
+
+*"Is a file worth it at all, or is the real want pasting a long snippet?"*
+
+Checked rather than guessed: **the composer is already a `textarea` with `Shift+Enter` for a line
+break** (spec 023). A Bicep file, an error log or a CSV can be pasted today and travels as the
+`message` it is — no contract change, no upload endpoint, no retention question. That covers a
+large share of the motivating cases at zero architectural cost.
+
+A **screenshot of a Foundry blade** is the case it does not cover, and it is a real one. It is also
+precisely the case that needs the unanswered question answered first.
+
+### What would unblock this
+
+Recorded in [`docs/REFERENCES.md`](../../docs/REFERENCES.md) rather than left in a spec nobody
+opens. In short: read the Responses API's file-input documentation, establish whether content is
+inlined, uploaded to Foundry, or read from storage the agent has access to, and decide retention
+before writing an endpoint.
 
 ## User-facing behavior
 
@@ -97,19 +139,15 @@ so, or the feature teaches the wrong thing.
 | **§10** | How Foundry's Responses API accepts a file alongside a message — if it does — comes from a doc read at the time of writing, recorded in `docs/REFERENCES.md`. This is the question the whole spec waits on. |
 | **Docs** | `docs/architecture.md`, `docs/how-it-works/`, `SECURITY.md` — an upload endpoint is a new attack surface. |
 
-## Open questions (clarify before planning)
+## Open questions — resolved, or blocking
 
-- [ ] **Does the Responses API accept file input alongside a message, and how?** Until this is
-      answered from a doc, nothing else in this spec can be planned.
-- [ ] Does the file go to Foundry directly, to a storage account the agent can read, or into the
-      message as content? Three different specs wear the same name.
-- [ ] Does the hosted harness handle attachments identically to the prompt harness? If not, the
-      contract has to express the difference, and §9's "parameterised over adapters" test suite is
-      where it shows up.
-- [ ] What is retained after the conversation, and who can read it? This must be answered before an
-      upload endpoint exists, not after.
-- [ ] Is a file worth it at all for this project's subject matter, or is the real want pasting a long
-      snippet — which spec 023's composer already solves?
+| Question | Outcome |
+|---|---|
+| Does the Responses API accept file input, and how? | **Blocking.** Unanswered; no doc read, no credential to probe with (§10). |
+| Does the file go to Foundry, to storage, or into the message? | Blocked by the above — "three different specs wear the same name" is exactly right. |
+| Do both harnesses handle it identically? | Blocked by the above. |
+| What is retained, and who can read it? | **The operator's decision**, and it must precede an upload endpoint. |
+| Is a file worth it, or is the want pasting a snippet? | **Largely the latter**, measured: the composer is already a multi-line `textarea` (spec 023), so logs, Bicep and CSV paste today. A screenshot is the remaining case. |
 
 ## Out of scope / deferred
 

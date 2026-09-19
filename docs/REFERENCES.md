@@ -590,6 +590,32 @@ because of it.
 | Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | read the role definitions, then test with the lesser one |
 | Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | pin one, then list |
 
+### Open — can a question carry a file? (spec 045)
+
+Spec 045 is **clarified and blocked**, on its own first question: does the Responses API accept file
+input alongside a message, and how? No doc has been read for it and there is no credential to probe
+with, so everything downstream — whether content is inlined, uploaded to Foundry, or read from
+storage the agent can reach — is unanswerable. Three different designs wear the same name and §10
+forbids picking one from memory.
+
+Two further blockers are not documentation questions at all:
+
+- It would add a fourth field to `POST /chat`, whose shape `App.routing.test.tsx` pins to
+  `message · conversation_id · agent` — the test spec 021 uses to keep this browser's record out of
+  Foundry's state. That is a §9/§4 change with its own spec.
+- **Retention is the operator's decision**: what is stored, for how long, and who can read it has to
+  be settled before an upload endpoint exists, not after.
+
+| Open question | How to close it |
+|---|---|
+| Does the Responses API take file input beside a message? | read the file-input documentation for `api-version=v1` |
+| Inlined content, uploaded file, or storage the agent reads? | the same doc; the answer picks the spec |
+| Do the prompt and hosted harnesses agree? | once the above is known, the adapter-parameterised suite is where a difference shows |
+
+Measured in the meantime: the composer is already a multi-line `textarea` (spec 023), so a log, a
+Bicep file or a CSV pastes today and travels as the `message` it is. A screenshot is the case that
+genuinely needs the answer.
+
 ### Open — how would the agent produce an image? (spec 044)
 
 Spec 044 shipped its rendering half and **deferred its generation half**, deliberately.

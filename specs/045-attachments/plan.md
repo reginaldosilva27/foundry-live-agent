@@ -1,34 +1,35 @@
 # Plan: Attachments on a question
 
-> The HOW. Written after `spec.md` is `clarified`. Decisions here must respect every
-> principle in `.specify/constitution.md`; if one must bend, amend the constitution
-> first and note it.
+> **There is no plan yet, on purpose.** `spec.md` reached `clarified — blocked` on 2026-09-19.
+>
+> Its own first open question governs: *does the Responses API accept file input alongside a
+> message, and how — until this is answered from a doc, nothing else in this spec can be planned.*
+> It has not been answered, and §10 forbids writing the rest from memory.
 
-## Approach
-<!-- The shape of the solution in a few sentences. Alternatives considered + why this one. -->
+Writing an approach now would mean choosing between three designs that wear the same name — content
+inlined in the message, a file uploaded to Foundry, or storage the agent reads — with nothing to
+choose on. The one that is wrong would not fail until it met the service.
 
-## Affected files
+Two blockers are not documentation questions and do not go away when that one is answered:
 
-- `path/to/file` — <what changes>
+- **The request shape.** `POST /chat` is `message · conversation_id · agent`, pinned by a test that
+  exists to keep this browser's record out of Foundry's state (spec 021). A fourth field is a
+  §9/§4 change with its own spec, fixtures and consumers — not something to slip in.
+- **Retention.** What is stored, for how long, and who can read it is the operator's decision and
+  must precede an upload endpoint existing.
 
-## Contract / data model changes (constitution §4)
-<!-- Public API, schema, config defaults, any cross-cutting contract. Name the single source
-     of truth and every place that must move with it (mirrors, docs, types). Migrations? -->
+## What to do when it unblocks
 
-## i18n strings (constitution §7 — only if the project is bilingual)
-<!-- Every new user-facing string, in both languages, so nothing ships en-only. Else "n/a". -->
+1. Read the file-input documentation for `api-version=v1`; record it in `docs/REFERENCES.md` (§10).
+2. Decide which of the three designs the answer implies. **Rewrite this spec** to be that one — not
+   all three behind a flag.
+3. Settle retention with whoever owns the deployment, and write it into `SECURITY.md` before any
+   endpoint exists.
+4. Only then: the contract change, its fixtures, and the adapter-parameterised suite proving both
+   harnesses agree.
 
-| key / location | en | pt |
-|---|---|---|
-| | | |
+## What already covers most of the want
 
-## Test strategy (constitution §2 — TDD)
-<!-- Which test files, which level. Each acceptance criterion → at least one test. -->
-
-| Acceptance criterion | Test | File |
-|---|---|---|
-| AC1 | | |
-| AC2 | | |
-
-## Risks / trade-offs
-<!-- Perf, backward-compat, assumptions, anything that could bite. -->
+The composer is a multi-line `textarea` (spec 023). A log, a Bicep file or a CSV pastes today and
+travels as the `message` it is — no contract change, no upload, no retention question. A screenshot
+is the case that genuinely needs the answer, and it is the case to build for.

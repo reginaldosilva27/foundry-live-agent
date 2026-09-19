@@ -1,24 +1,20 @@
 # Tasks: Attachments on a question
 
-> The work, ordered, as a TDD checklist. Each implementation task is preceded by the
-> test that should fail first (red → green → refactor). Check boxes as you go.
+**Blocked.** No task here can be started honestly, and the first one is not a coding task.
 
-## Tasks
-
-- [ ] **T1 — <test first>**: write failing test for AC1
-- [ ] **T2 — <implement>**: make T1 pass
-- [ ] **T3 — <test first>**: write failing test for AC2
-- [ ] **T4 — <implement>**: make T3 pass
-- [ ] **T5 — contract/docs**: update the single source of truth + docs in the same change (§4)
-- [ ] **T6 — i18n**: add en + pt strings (constitution §7, if applicable)
-- [ ] **T7 — refactor**: clean up, keep tests green
+- [ ] **T0 — read the doc**: does the Responses API accept file input beside a message, and how?
+      Record it in `docs/REFERENCES.md` (§10). *Every task below is blocked on this one.*
+- [ ] **T1 — decide**: which of the three designs the answer implies, and rewrite `spec.md` as that
+      one rather than keeping all three.
+- [ ] **T2 — settle retention** with whoever owns the deployment; write it into `SECURITY.md`
+      before any upload endpoint exists.
+- [ ] **T3 — spec the contract change**: `POST /chat` gains a field, which is §9/§4 work with
+      fixtures and every consumer moved — the test pinning the three keys changes deliberately.
+- [ ] **T4 — prove both harnesses agree**, in the adapter-parameterised suite.
+- [ ] **T5 — then, and only then**: the composer, the limits, the transcript.
 
 ## Definition of done
 
-- [ ] Every acceptance criterion in `spec.md` maps to a passing test
-- [ ] Lint clean
-- [ ] Tests green
-- [ ] Type-check / build passes
-- [ ] Docs updated in the same change; cross-cutting contract in sync (§4)
-- [ ] (If bilingual) all new user-facing text exists in en **and** pt
-- [ ] `spec.md` status updated to `done`
+- [ ] T0 answered from a doc, not from memory
+- [ ] Every acceptance criterion maps to a passing test
+- [ ] Lint clean · Tests green · `verify-gates` green
