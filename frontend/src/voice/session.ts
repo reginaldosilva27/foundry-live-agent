@@ -35,6 +35,13 @@ export interface StartVoiceOptions {
   bffUrl?: string
   /** Which agent to attach to; absent means the BFF's configured one (spec 019, AC8). */
   agent?: string
+  /**
+   * Which of the deployment's OFFERED voices to speak in (spec 043).
+   *
+   * Absent means its default. The BFF refuses anything outside the list it declared, so this is a
+   * choice among things the deployment offered rather than a name the browser invented.
+   */
+  voice?: string
   getUserMedia?: (constraints: MediaStreamConstraints) => Promise<MediaStream>
   createPeer?: () => RTCPeerConnection
   fetchImpl?: typeof fetch
@@ -55,6 +62,7 @@ export async function startVoice(options: StartVoiceOptions = {}): Promise<Voice
     createPeer = () => new RTCPeerConnection(),
     fetchImpl = fetch,
     agent,
+    voice,
     onRemoteStream,
     onServerEvent,
     onClosed,
@@ -89,7 +97,7 @@ export async function startVoice(options: StartVoiceOptions = {}): Promise<Voice
     await gathered(peer)
 
     const sdp = peer.localDescription?.sdp ?? offer.sdp
-    const { session_id, sdp_answer } = await negotiate(fetchImpl, bffUrl, sdp!, agent)
+    const { session_id, sdp_answer } = await negotiate(fetchImpl, bffUrl, sdp!, agent, voice)
     await peer.setRemoteDescription({ type: 'answer', sdp: sdp_answer })
 
     return handles(session_id, peer, microphone, fetchImpl, bffUrl)
@@ -126,11 +134,12 @@ async function negotiate(
   bffUrl: string,
   sdp: string,
   agent?: string,
+  voice?: string,
 ): Promise<{ session_id: string; sdp_answer: string }> {
   const response = await fetchImpl(`${bffUrl}/voice/session`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sdp, agent }),
+    body: JSON.stringify({ sdp, agent, voice }),
   })
 
   if (response.status === 503) {

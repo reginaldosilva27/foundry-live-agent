@@ -4938,3 +4938,44 @@ button:disabled {
   font-size: var(--fs-body-s);
   color: var(--fg-2);
 }
+
+/* --- Choosing the voice (spec 043) -------------------------------------------------------
+   Above the composer row, because the choice is made before a session starts and a control that
+   sat beside the mic would read as something you press during one. */
+
+.voice-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-bottom: var(--sp-2);
+  gap: var(--sp-2);
+}
+
+.voice-picker__label,
+.voice-picker__note {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--fg-4);
+}
+
+.voice-picker__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.voice-picker__options button {
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+.voice-picker__options button[aria-pressed='true'] {
+  border-color: var(--border-accent);
+  color: var(--fg-1);
+}

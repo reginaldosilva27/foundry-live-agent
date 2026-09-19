@@ -11,6 +11,7 @@
  */
 import type { ReactNode } from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
+import { VoicePicker } from '../components/VoicePicker'
 import { MicIcon, SendIcon, StopIcon } from '../components/Icon'
 import { useT } from '../i18n/context'
 
@@ -26,6 +27,10 @@ interface Props {
   /** Stop the turn in flight. The browser stops listening; Foundry's run does not stop (spec 023). */
   onStop: () => void
   onVoice: () => void
+  /** What the deployment offers (spec 043). Fewer than two renders no chooser at all. */
+  voices?: string[]
+  voice?: string
+  onVoiceChange?: (voice: string) => void
   /** So the `focusComposer` command can reach it (spec 025). */
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
   /**
@@ -48,6 +53,9 @@ export function Composer({
   onSend,
   onStop,
   onVoice,
+  voices = [],
+  voice,
+  onVoiceChange,
   inputRef,
   draft,
 }: Props) {
@@ -127,6 +135,12 @@ export function Composer({
       {/* One row under the question: who answers on the left, what to do with it on the right.
           The controls used to sit beside the input with the chip stranded underneath them, which
           read as two unrelated bars stacked. */}
+      {/* Before the session starts, where the voice control is (spec 043). A session already
+          running is not reconfigured. */}
+      {voiceEnabled && onVoiceChange && (
+        <VoicePicker voices={voices} value={voice} onChange={onVoiceChange} />
+      )}
+
       <div className="composer__row">
         {chip}
         <div className="composer__actions">

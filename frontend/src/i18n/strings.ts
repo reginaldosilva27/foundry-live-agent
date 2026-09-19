@@ -44,6 +44,16 @@ export const strings = {
   'agents.status.deleting': { en: 'deleting', pt: 'excluindo' },
   'agents.status.unknown': { en: 'unknown', pt: 'desconhecido' },
   // The three reasons a row cannot be chosen, distinguished (AC5). The BFF sends the code.
+  // --- Choosing the voice on the screen (spec 043) -------------------------
+  // The voice IDENTIFIERS are never translated and never described: no "natural", no "expressive",
+  // because nobody measured them. The identifier carries the locale and the tier, which is what a
+  // reader comparing two of them actually uses.
+  'voice.choose': { en: 'Voice', pt: 'Voz' },
+  'voice.chooseLocal': {
+    en: 'Kept in this browser. It does not change the deployment.',
+    pt: 'Guardado neste navegador. N\u00e3o altera a implanta\u00e7\u00e3o.',
+  },
+
   // --- The tool playground (spec 042) --------------------------------------
   // The framing is the safety argument, so it is the headline and not a disclaimer in small type:
   // this is not a conversation, no agent chose anything, and nothing was sent to a model.

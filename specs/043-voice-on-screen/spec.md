@@ -3,9 +3,10 @@
 | | |
 |---|---|
 | **ID** | 043-voice-on-screen |
-| **Status** | draft |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
+| **Clarified** | 2026-09-19 |
 
 ## Problem / motivation
 
@@ -62,6 +63,17 @@ the deployment and the screen says so, the same way history and favourites do.
 **What each voice is** is named honestly: its identifier and its tier, as declared. No adjectives we
 have not measured — "natural", "expressive" — because we have not measured them (§5).
 
+**The deployment declares the list explicitly.** Not read from the service: which voice
+identifiers are valid on this api-version is a §10 question, and no doc has been read for it. A
+declared list needs no verification and cannot go stale against a service we did not ask.
+
+**Before the session starts, and only then.** Changing the voice mid-call would be `session.update`
+— which spec 012 *noted* as the way a future version would work, which is not the same as having
+measured it. Deferred rather than guessed (§5).
+
+**No sample button.** Playing a voice without a session would need an audio path this app does not
+have, and inventing one for a preview is a larger thing than the feature it previews.
+
 **Turn detection and noise suppression stay deployment configuration.** They change behaviour in ways
 a reader cannot evaluate in one session, and 012's reasoning for them is unchanged. Only the voice
 moves to the screen.
@@ -94,18 +106,11 @@ moves to the screen.
 | **§10** | Which voice identifiers are valid for `azure-standard` on this api-version comes from a doc read at the time of writing, recorded in `docs/REFERENCES.md`. |
 | **Docs** | `docs/how-it-works/` — the Voice Live session lifecycle page. |
 
-## Open questions (clarify before planning)
-
-- [ ] Can the voice be changed mid-session with `session.update` — 012 noted it as the way a future
-      "change the voice mid-call" would work — and is that worth building, or is before-start enough?
-- [ ] Does the deployment declare voices explicitly, or does the BFF read a supported list from the
-      service? Reading it is a §10 question first.
-- [ ] Should the chooser offer a sample without starting a real session, and is there any way to do
-      that without inventing an audio path this app does not have?
-- [ ] Does spec 036 ship first, so this uses its preferences module rather than creating one?
-
 ## Out of scope / deferred
 
 - Turn detection, VAD thresholds, noise suppression from the UI.
 - Custom or trained voices.
 - Anything that configures what the agent says.
+- Changing the voice mid-session — `session.update` is documented as the mechanism and has not been
+  measured here.
+- A sample button, which would need an audio path this app does not have.

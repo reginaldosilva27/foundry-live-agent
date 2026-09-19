@@ -62,6 +62,10 @@ async def config(request: Request) -> dict:
             # the WebRTC control route exists only on the preview version, and when that changes
             # this is the first place anyone will look.
             "webrtc_api_version": settings.voice_webrtc_api_version,
+            # What the browser may choose from (spec 043). One entry means no chooser renders,
+            # which is every deployment that has not opted in.
+            "voice": settings.voicelive_voice,
+            "voices": settings.offered_voices,
         },
         # Whether this deployment may roll an agent back to an earlier version (spec 031). The
         # BFF is the source of truth: a screen that offered a control the server always refuses is

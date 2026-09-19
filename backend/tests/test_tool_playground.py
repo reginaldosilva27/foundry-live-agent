@@ -14,9 +14,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from harness._shared.tools import registry
 
 from app.main import create_app
-from harness._shared.tools import registry
 
 
 def client(*, allow: bool = True) -> TestClient:
@@ -51,9 +51,9 @@ class TestTheListing:
         app_dir = Path(__file__).resolve().parents[1] / "app"
         for path in app_dir.rglob("*.py"):
             text = path.read_text()
-            assert not (
-                "get_current_datetime" in text and "search_web" in text
-            ), f"{path.name} enumerates the tools; the registry is their one home"
+            assert not ("get_current_datetime" in text and "search_web" in text), (
+                f"{path.name} enumerates the tools; the registry is their one home"
+            )
 
 
 class TestTheSwitch:
@@ -98,16 +98,16 @@ class TestRunning:
             return real(name, arguments)
 
         monkeypatch.setattr(tool_executor, "execute", spy)
-        client().post(
-            "/tools/get_current_datetime/run", json={"arguments": '{"timezone":"UTC"}'}
-        )
+        client().post("/tools/get_current_datetime/run", json={"arguments": '{"timezone":"UTC"}'})
 
         assert seen == [("get_current_datetime", '{"timezone":"UTC"}')]
 
     def test_answers_the_raw_output_and_a_duration(self):
-        body = client().post(
-            "/tools/get_current_datetime/run", json={"arguments": '{"timezone":"UTC"}'}
-        ).json()
+        body = (
+            client()
+            .post("/tools/get_current_datetime/run", json={"arguments": '{"timezone":"UTC"}'})
+            .json()
+        )
 
         assert '"timezone": "UTC"' in body["output"]
         assert body["duration_ms"] >= 0
@@ -167,9 +167,7 @@ class TestArguments:
         from app import tool_executor
 
         called: list[str] = []
-        monkeypatch.setattr(
-            tool_executor, "execute", lambda name, arguments: called.append(name)
-        )
+        monkeypatch.setattr(tool_executor, "execute", lambda name, arguments: called.append(name))
         client().post("/tools/get_current_datetime/run", json={"arguments": '{"timezone": 1}'})
 
         assert called == []
@@ -179,9 +177,11 @@ class TestOutsideTheConversation:
     """AC6, AC7 — the §8 guard, and the reason this screen is allowed to exist."""
 
     def test_creates_sends_and_stores_no_conversation_id(self):
-        body = client().post(
-            "/tools/get_current_datetime/run", json={"arguments": '{"timezone":"UTC"}'}
-        ).json()
+        body = (
+            client()
+            .post("/tools/get_current_datetime/run", json={"arguments": '{"timezone":"UTC"}'})
+            .json()
+        )
 
         assert "conversation_id" not in body
         assert "conversation" not in str(body).lower()
@@ -189,14 +189,13 @@ class TestOutsideTheConversation:
     def test_the_router_reaches_no_model(self):
         """Structural: nothing in this router can talk to a model, because nothing imports one.
 
-        Comments are stripped first \u2014 the docstring necessarily NAMES what it refuses to touch, and
-        a grep over raw source would match the explanation instead of the code.
+        Comments are stripped first: the docstring necessarily NAMES what it
+        refuses to touch, and a grep over raw source would match the explanation.
         """
         source = (Path(__file__).resolve().parents[1] / "app" / "routers" / "tools.py").read_text()
-        code = "\n".join(
-            line for line in source.splitlines() if not line.strip().startswith("#")
-        )
-        code = code.split('"""')[0] + '"""'.join(code.split('"""')[2::2])
+        code = "\n".join(line for line in source.splitlines() if not line.strip().startswith("#"))
+        parts = code.split('"""')
+        code = parts[0] + '"""'.join(parts[2::2])
 
         for forbidden in ("build_harness", "openai", "AIProjectClient", "conversation_id"):
             assert forbidden not in code, f"the playground must not reach {forbidden}"

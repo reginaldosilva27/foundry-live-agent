@@ -32,6 +32,9 @@ class SessionRequest(BaseModel):
     #: this BFF is configured with. Voice Live attaching to a *hosted* agent was verified live on
     #: 2026-09-16 (spec 018, AC9), so both kinds honour the selection.
     agent: str | None = None
+    #: Which voice to speak in (spec 043). Absent means the deployment's default. Validated against
+    #: the declared list: a free-text value would let the browser ask the service for anything.
+    voice: str | None = None
 
 
 @router.post("/session")
@@ -49,6 +52,11 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
         raise HTTPException(status_code=429, detail="Too many voice sessions are already open.")
 
     settings = request.app.state.settings
+    if body.voice is not None and body.voice not in settings.offered_voices:
+        # Refused at the BFF, not merely absent from the UI (AC6). A list the browser could step
+        # outside of would not be a list.
+        raise HTTPException(status_code=400, detail="voice_not_offered")
+
     from harness._shared.voice_events import attachment_query
 
     try:
@@ -65,7 +73,9 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
             version=attachment.get("agent_version"),
         )
     )
-    session = VoiceSession(uuid.uuid4().hex, socket, session_config=settings.voice_session_config)
+    session = VoiceSession(
+        uuid.uuid4().hex, socket, session_config=settings.session_config_for(body.voice)
+    )
 
     try:
         answer = await session.negotiate(body.sdp)

@@ -40,6 +40,13 @@ class Settings:
     # The semantic detector is what makes barge-in configurable. Blank any of them to fall back to
     # the service.
     voicelive_voice: str = "pt-BR-Thalita:DragonHDLatestNeural"
+    # The voices this deployment offers (spec 043). Empty means "only the configured one", which is
+    # every deployment that has not opted in — so the default experience is exactly spec 012's.
+    #
+    # DECLARED, not read from the service: which identifiers are valid on this api-version is a §10
+    # question and no doc has been read for it. A declared list needs no verification and cannot go
+    # stale against a service we never asked.
+    voicelive_voices: list[str] = field(default_factory=list)
     voicelive_vad: str = "azure_semantic_vad_multilingual"
     # Pinning a language would make the other half of a bilingual app worse, so it is opt-in.
     voicelive_input_language: str = ""
@@ -117,6 +124,32 @@ class Settings:
         )
 
     @property
+    def offered_voices(self) -> list[str]:
+        """What the browser may choose from, with the configured default first.
+
+        A deployment that declared nothing offers exactly one voice, and the screen shows no
+        chooser — spec 012's behaviour, unchanged.
+        """
+        # The default first, always: it is what a session uses when nobody chooses, so a chooser
+        # that listed it third would be describing a different default from the one in force.
+        rest = [v for v in self.voicelive_voices if v and v != self.voicelive_voice]
+        return [self.voicelive_voice, *rest]
+
+    def session_config_for(self, voice: str | None) -> dict:
+        """The session configuration, with a chosen voice if the deployment offers it.
+
+        `None` and an unoffered value both fall back to the configured default; the ROUTE refuses
+        an unoffered value outright, so this is belt and braces rather than the check itself.
+        """
+        from harness._shared.voice_events import voice_session_config
+
+        return voice_session_config(
+            voice=voice if voice in self.offered_voices else self.voicelive_voice,
+            vad=self.voicelive_vad,
+            input_language=self.voicelive_input_language,
+        )
+
+    @property
     def speech_enabled(self) -> bool:
         """Both halves or neither: the resource id alone cannot address a host, and the host alone
         cannot build the `aad#` token."""
@@ -156,6 +189,7 @@ def load_settings(**overrides: object) -> Settings:
         ),
         "voice_ws_api_version": os.environ.get("VOICELIVE_WS_API_VERSION", "2026-04-10"),
         "voicelive_voice": os.environ.get("VOICELIVE_VOICE", "pt-BR-Thalita:DragonHDLatestNeural"),
+        "voicelive_voices": _voices(os.environ.get("VOICELIVE_VOICES", "")),
         "voicelive_vad": os.environ.get("VOICELIVE_VAD", "azure_semantic_vad_multilingual"),
         "voicelive_input_language": os.environ.get("VOICELIVE_INPUT_LANGUAGE", ""),
         "speech_endpoint": os.environ.get("SPEECH_ENDPOINT", ""),
@@ -214,6 +248,11 @@ def _model_rates(raw: str) -> dict[str, dict[str, float]]:
         table[model] = clean
 
     return table
+
+
+def _voices(value: str) -> list[str]:
+    """The declared voice list, comma-separated. Blank means none were declared."""
+    return [voice.strip() for voice in value.split(",") if voice.strip()]
 
 
 def _flag(value: str | None) -> bool:

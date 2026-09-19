@@ -41,6 +41,10 @@ export interface BffConfig {
   voice: {
     enabled: boolean
     webrtc_api_version: string
+    /** The deployment's default (spec 043). */
+    voice?: string
+    /** What the browser may choose from. One entry means no chooser renders. */
+    voices?: string[]
   }
   event_types: string[]
   event_mapping: {

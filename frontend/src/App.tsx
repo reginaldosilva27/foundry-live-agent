@@ -190,8 +190,10 @@ export default function App() {
   )
 
   const startVoiceSession = useCallback(
-    () => void voice.start(selectedAgent ?? undefined),
-    [selectedAgent, voice],
+    // The choice is read at START (spec 043, AC5): changing it does not reconfigure a session
+    // already running, because a running session was negotiated with the voice it has.
+    () => void voice.start(selectedAgent ?? undefined, prefs.voice),
+    [prefs.voice, selectedAgent, voice],
   )
 
   // A session that ends hands back what it produced; the chat is where it becomes readable, and
@@ -597,6 +599,9 @@ export default function App() {
                 }
                 onSend={sendToSelected}
                 onVoice={startVoiceSession}
+                voices={config?.voice?.voices ?? []}
+                voice={prefs.voice}
+                onVoiceChange={(chosen) => prefs.set('voice', chosen)}
                 inputRef={composer}
                 draft={draft}
               />

@@ -282,3 +282,36 @@ to the session, and nothing it holds is written to storage — spec 007's replay
 **Interruption is not shown**, because nothing observed says it happened. See the open item in
 [`REFERENCES.md`](../REFERENCES.md).
 
+## Choosing the voice (spec 043)
+
+Spec 012 declared "no per-session choice in the UI" and was right to. The record of what followed is
+the argument for revisiting it: the default voice changed three times in two days — multilingual
+Thalita, then Luana Flash for latency, then Thalita DragonHD after the listening test 012 admitted
+it had not run — and every one of those iterations needed an environment variable and a restart,
+with no way to hear the alternatives back to back.
+
+This revisits that one non-goal, **for the voice only**. Turn detection and noise suppression stay
+deployment configuration, because a reader cannot evaluate them in one session.
+
+```
+VOICELIVE_VOICES=a,b,c   ──>  GET /config  ──>  chooser renders (2+ offered)
+                                                 │
+POST /voice/session { sdp, agent, voice }  <─────┘   refused if not offered
+```
+
+- **The deployment declares the list.** Not read from the service: which identifiers are valid on
+  this api-version is a §10 question and no doc has been read for it.
+- **The BFF refuses anything outside it**, rather than the UI merely not offering it. A list the
+  browser could step outside of would not be a list.
+- **Blank declares nothing**, no chooser renders, and the session behaves exactly as spec 012
+  shipped it.
+- **The choice is this browser's**, stored with the other preferences (spec 036), and the screen
+  says so.
+- **Read at start.** Changing it does not reconfigure a running session, which was negotiated with
+  the voice it has.
+
+**Nothing here says anything to the model.** `instructions` is unsupported with a custom agent, and
+§8's single bounded exception — one context item stating the conversation is spoken (spec 017) — is
+spent and stays spent. Changing the voice mid-call would be `session.update`, which spec 012 *noted*
+as the mechanism and which nobody here has measured; it is deferred rather than guessed.
+

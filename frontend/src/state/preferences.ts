@@ -25,6 +25,11 @@ export interface Preferences {
    * doing for a reader who never chose. Absent and `'en'` are different facts (§5).
    */
   lang?: Lang
+  /**
+   * Which voice to speak in (spec 043). `undefined` means the deployment's default — absent and
+   * "the same as the default" are different facts, and a stored name could outlive the list.
+   */
+  voice?: string
   speakAnswers: boolean
   reasoningOpen: boolean
   activityOpen: boolean

@@ -292,6 +292,14 @@ violation.
   schema and would hide that `arguments` is a string. `search_unavailable` renders verbatim — it is
   the tool's answer, not an error. Its **own** flag, off by default: an enabled playground spends
   `TAVILY_API_KEY` without authentication (SECURITY.md).
+- **The voice can be chosen on screen, and only the voice (spec 043).** Spec 012's "no per-session
+  choice" non-goal, revisited by a new spec rather than edited. The deployment **declares** the list
+  (`VOICELIVE_VOICES`) — reading it from the service is a §10 question with no doc read — and the
+  **BFF refuses** anything outside it, because a list the browser could step outside of is not a
+  list. Blank declares nothing and no chooser renders, which is 012's behaviour unchanged. The
+  choice is this browser's (spec 036's store), read at session **start**, and turn detection and
+  noise suppression stay deployment configuration. Nothing here says anything to the model:
+  §8's single bounded exception (spec 017) is spent and stays spent.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is
