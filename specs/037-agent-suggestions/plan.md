@@ -47,7 +47,7 @@ because they are gone rather than half-translated.
 
 | AC | Test | File |
 |---|---|---|
-| AC1/AC9 | the prompt agent's row carries the three current suggestions, unchanged | `backend/tests/test_agent_suggestions.py` |
+| AC1/AC9 | the prompt agent's row carries the three current suggestions, unchanged | `backend/tests/test_agent_versions.py` (`TestSuggestions`) |
 | AC2/AC10 | an unowned agent's row carries `[]`, and the screen renders no list | backend + `EmptyState.test.tsx` |
 | AC3 | changing the row changes what renders | `EmptyState.test.tsx` |
 | AC4 | each suggestion renders in the interface language | `EmptyState.test.tsx` |

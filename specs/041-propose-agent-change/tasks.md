@@ -15,5 +15,5 @@
 
 ## Definition of done
 
-- [ ] Every acceptance criterion maps to a passing test, or is cut with its reason recorded
-- [ ] Lint clean · Tests green · `verify-gates` green
+- [x] Every acceptance criterion maps to a passing test, or is cut with its reason recorded
+- [x] Lint clean · Tests green · `verify-gates` green

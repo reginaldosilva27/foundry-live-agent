@@ -13,5 +13,5 @@
 
 ## Definition of done
 
-- [ ] Every acceptance criterion maps to a passing test
-- [ ] Lint clean · Tests green · `verify-gates` green
+- [x] Every acceptance criterion maps to a passing test
+- [x] Lint clean · Tests green · `verify-gates` green

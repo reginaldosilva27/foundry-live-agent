@@ -58,7 +58,7 @@
       halves of AC3/AC4 — to a dated observation recorded in `docs/REFERENCES.md`
 - [x] Lint clean
 - [x] Tests green
-- [ ] Type-check / build passes
+- [x] Type-check / build passes
 - [x] Docs updated in the same change; the default voice states the same value in all four places (§4)
 - [x] (Bilingual) n/a — no new UI string; the preamble is the model's, in the user's language
 - [x] The agent version applied by T4 is recorded, so the behavior is reproducible

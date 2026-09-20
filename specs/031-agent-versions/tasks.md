@@ -86,7 +86,7 @@
 
 ## Definition of done
 
-- [ ] Every acceptance criterion in `spec.md` maps to a passing test
-- [ ] Lint clean
-- [ ] Tests green
-- [ ] `verify-gates` skill run and green
+- [x] Every acceptance criterion in `spec.md` maps to a passing test
+- [x] Lint clean
+- [x] Tests green
+- [x] `verify-gates` skill run and green

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 045-attachments |
-| **Status** | clarified — blocked |
+| **Status** | clarified — blocked on a decision, not on a doc (amended 2026-09-20) |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 | **Clarified** | 2026-09-19 |

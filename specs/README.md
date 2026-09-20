@@ -105,8 +105,10 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 
 `*` — **done with a named exception.** Spec 020 ships every acceptance criterion but AC16, which
 needs a measured run against the live service; the reason and what closes it are in the spec and in
-[`../docs/REFERENCES.md`](../docs/REFERENCES.md). Spec 045 is **blocked** by design, on a question
-no document has answered.
+[`../docs/REFERENCES.md`](../docs/REFERENCES.md). Spec 045 is **blocked** by design — since
+2026-09-20 no longer on a document (that one is read and recorded) but on two decisions: which of
+the four documented file-input shapes to offer, and what the deployment retains. The second is the
+operator's, not this repository's.
 
 > The status column is the spec's own `Status` field, transcribed. It drifted once — 027–045 sat at
 > `draft` here for a week after being built — so when the two disagree, the spec wins (§4).

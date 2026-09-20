@@ -55,13 +55,13 @@ means the same thing in five places now and is decided in one.
 | AC2 | the control is a button with an accessible name | `CodeBlock.test.tsx` |
 | AC3 | copying places exactly the code, no language line, no trailing newline | `CodeBlock.test.tsx` |
 | AC4 | success and failure render the existing feedback | `CodeBlock.test.tsx` |
-| AC5 | the TSV's rows and columns match the rendered table | `TableBlock.test.tsx` |
+| AC5 | the TSV's rows and columns match the rendered table | `CodeBlock.test.tsx` |
 | AC6 | a cell with a tab, a quote and a newline round-trips | `tsv.test.ts` |
-| AC7 | the wrapper scrolls; the conversation column does not | `TableBlock.test.tsx`, `layout.test.ts` |
+| AC7 | the wrapper scrolls; the conversation column does not | `CodeBlock.test.tsx`, `layout.test.ts` |
 | AC8/AC12 | a streaming turn renders no control, a settled one does | `Markdown.test.tsx` |
 | AC9 | rendering and copying issue no request | `CodeBlock.test.tsx` |
 | AC10 | both languages | `strings.test.ts` |
-| AC11 | no control offers Markdown — asserted on the rendered controls | `TableBlock.test.tsx` |
+| AC11 | no control offers Markdown — asserted on the rendered controls | `CodeBlock.test.tsx` |
 
 ## Risks / trade-offs
 
