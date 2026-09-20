@@ -192,6 +192,11 @@ button:disabled {
 .main {
   display: grid;
   grid-template-rows: 60px minmax(0, 1fr) auto;
+  /* The horizontal twin of the `min-height: 0` below, and it was missing. Declaring only rows
+     leaves the implicit COLUMN track at `auto`, which is floored at the widest child's max-content
+     — measured at 900px, that track resolved to 806px inside a 652px column and the whole shell
+     scrolled sideways with the header's buttons off-screen. */
+  grid-template-columns: minmax(0, 1fr);
   padding-bottom: var(--sp-5);
   min-width: 0;
   /* Same reason, one level down: without it this item is floored at its content height and the
@@ -677,14 +682,23 @@ button:disabled {
   background: var(--bg-1);
 }
 
+/* The header gives way in a chosen order, because at 652px it wants ~767.
+
+   The name truncates but keeps a readable stub: pinning everything else and letting this be the
+   only flexible item collapsed it to zero width, which loses the most important thing in the
+   header to save the least. */
 .header__agent {
   margin: 0;
   font-size: var(--fs-h5);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--ls-snug);
   white-space: nowrap;
+  min-width: 8ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Branding, and the rail's head already says it — so this is what gives way first. */
 .header__pill {
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-pill);
@@ -693,6 +707,9 @@ button:disabled {
   font-size: var(--fs-caption);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header__status {
@@ -701,6 +718,7 @@ button:disabled {
   gap: var(--sp-2);
   font-size: var(--fs-caption);
   color: var(--fg-3);
+  flex-shrink: 0;
 }
 
 .header__status[data-streaming='true'] .dot {
@@ -712,10 +730,12 @@ button:disabled {
   flex: 1;
 }
 
+/* Never shrinks: a control that shrinks is a target that moves. */
 .pill-button {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
+  flex-shrink: 0;
   padding: var(--sp-2) var(--sp-4);
   border: 1px solid var(--border-1);
   border-radius: var(--r-pill);

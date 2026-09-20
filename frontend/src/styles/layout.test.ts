@@ -74,6 +74,50 @@ describe('app.css', () => {
     expect(query).toBeGreaterThan(base)
   })
 
+  /**
+   * The main column must be able to be narrower than its contents.
+   *
+   * Measured in a browser at a 900px viewport: `.app` resolved correctly to `248px 652px`, and
+   * `.main`'s own column track resolved to **806.4px** — because `.main` declares grid *rows* and
+   * no columns, so its implicit column is `auto`, and an `auto` track is floored at the widest
+   * child's max-content. Everything in it — header, conversation, composer — was laid out 806px
+   * wide inside a 652px column, and `document.body.scrollWidth` was 1054 against a 900px viewport:
+   * the whole shell scrolled sideways with the Voice and Traces buttons off-screen.
+   *
+   * `.main` already carries `min-height: 0` with a comment explaining the vertical version of this
+   * exact trap. This is the horizontal twin, and it was missing.
+   */
+  it('gives the main column a column track that can shrink, not an implicit auto one', () => {
+    const main = css.split('\n.main {')[1].split('}')[0]
+    expect(main).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/)
+  })
+
+  /**
+   * And inside it, the header has to be able to give way — in a chosen order.
+   *
+   * A flex item is floored at its own min-content unless told otherwise, and the agent name is
+   * `white-space: nowrap`, so it could not shrink at all: at 900px the header needed ~767px in
+   * 652 and pushed its two buttons past the edge of the window.
+   *
+   * The order matters and is the reason this is three rules rather than `flex-shrink: 0`
+   * everywhere. Pinning everything made the agent name collapse to **zero width** — the most
+   * important thing in the header, gone. So: the name truncates but never below a readable floor,
+   * the "Microsoft Foundry" pill is branding and gives way first, and the controls never shrink,
+   * because a control that shrinks is a target that moves.
+   */
+  it('lets the header truncate its name and its pill, and never its controls', () => {
+    const name = css.split('\n.header__agent {')[1].split('}')[0]
+    expect(name).toContain('text-overflow: ellipsis')
+    expect(name).toMatch(/min-width:\s*\d/)
+
+    const pill = css.split('\n.header__pill {')[1].split('}')[0]
+    expect(pill).toContain('text-overflow: ellipsis')
+    expect(pill).toContain('min-width: 0')
+
+    const button = css.split('\n.pill-button {')[1].split('}')[0]
+    expect(button).toContain('flex-shrink: 0')
+  })
+
   it('turns the trace panel into an overlay below the breakpoint', () => {
     const breakpoint = css.split('@media (max-width: 1100px)')[1]
     expect(breakpoint).toBeDefined()
