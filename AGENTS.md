@@ -309,6 +309,19 @@ violation.
   `referrerpolicy="no-referrer"`. Base64 cannot arrive: `react-markdown` sanitises `data:` away,
   measured rather than implemented. An undescribed image says it has no description; it never gets
   an invented one (§5).
+- **The focus ring is the default, and the exceptions are named (spec 048).** Spec 040 stated it
+  once as an **allowlist**, and its own comment described the trap it then fell into: a control
+  added later inherits a ring "by belonging to the list rather than by remembering to style it".
+  Belonging is remembering — **34 of 62** rendered control classes had drifted outside it, two of
+  them added by the specs immediately before. So `*:focus-visible` draws it and three kinds of
+  element opt out by name: the modal scrims (focus targets of last resort), `.main` (the skip
+  link's landing, which would otherwise ring the whole conversation) and the composed fields whose
+  **wrapper** carries `:focus-within`. The colour follows the **surface** — `.sidebar` and `.trace`
+  redeclare `--fg-focus` — instead of a second list of sixteen selectors. Two things to carry: the
+  bar is **3:1** (WCAG 1.4.11, non-text), not the 4.5:1 that applies to text; and a ring with a
+  positive `outline-offset` is painted **outside** the control, so it is measured against the
+  background behind it, never against the control's own fill — that error reported a blue ring on a
+  blue button as 1.39:1 when it is 4.17:1.
 - **The rail is never hidden; on a narrow screen it comes over the conversation (spec 047).**
   Below 760px the stylesheet used to say `.sidebar { display: none }`, and that was the entire
   narrow-screen story — which removed the **only** route to five of the seven screens, and removed

@@ -159,3 +159,30 @@ specificity, so the same selector declared later in the file wins regardless of 
 bit three times across specs 020, 046 and 047 — stacked columns that refused to stack, a menu
 control invisible at every width — and it is now enforced by `layout.test.ts` rather than
 remembered.
+
+## The focus ring (spec 048)
+
+Three rules, and no list:
+
+```
+*:focus-visible                 the ring — 2px, offset 2px, var(--fg-focus)
+.sidebar *, .trace *            redeclare --fg-focus to the lighter step, because those are ink
+.log-scrim, .voice-scrim, .main and the composed fields — no ring, each with its reason
+```
+
+**The ring is the default and the exceptions are named**, which is the opposite of how spec 040
+shipped it. That version was an allowlist, and its own comment described the trap: a control added
+later inherits a ring "by belonging to the list rather than by remembering to style it". Belonging
+to the list *is* remembering — by the time it was counted, 34 of the 62 rendered control classes
+were outside it.
+
+**The colour follows the surface, not the selector.** A second list of sixteen selectors used to
+name the controls sitting on ink; they were exactly the descendants of the rail and the trace panel,
+so one statement per surface replaced them.
+
+**A focus indicator is measured against what it is drawn on.** With a positive `outline-offset` the
+ring sits outside the control, on the background behind it — not on the control's own fill.
+Measuring it against the fill reports a blue ring on a blue button as 1.39:1 when it is really
+4.17:1 against the surface it touches.
+
+The bar is **3:1**, WCAG 1.4.11's for a non-text indicator — not the 4.5:1 that applies to text.

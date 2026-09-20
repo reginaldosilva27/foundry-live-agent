@@ -192,6 +192,71 @@ describe('app.css', () => {
    * So the rule is now checked rather than remembered: every selector a breakpoint overrides must
    * already have been declared above it.
    */
+  /**
+   * Spec 048 — a control cannot ship without a focus ring, because there is no list to be left off.
+   *
+   * Spec 040 stated the ring once and made it an **allowlist**, whose own comment described the
+   * trap: a control added later inherits a ring "by belonging to the list rather than by
+   * remembering to style it". Belonging to the list *is* remembering, and by the time this was
+   * counted, 34 of the 62 rendered control classes were outside it — including two added by the
+   * specs immediately before this one.
+   *
+   * So the assertion is about the **shape** of the stylesheet rather than its contents. A test that
+   * enumerated selectors would be the allowlist again, in a test file.
+   */
+  describe('the focus ring (spec 048)', () => {
+    const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
+
+    it('draws on everything that can take focus', () => {
+      expect(clean).toMatch(/(^|[\s,}])\*:focus-visible[^{]*\{[^}]*outline:/)
+    })
+
+    it('removes the ring only from the elements named as exceptions', () => {
+      const EXPECTED = [
+        // Focus targets of last resort: their modal focuses them so focus can be trapped.
+        '.log-scrim',
+        '.voice-scrim',
+        // Where the skip link lands; a ring here rings the whole conversation.
+        '.main',
+        // Composed fields: the WRAPPER carries `:focus-within`, which is the correct place to
+        // indicate focus for a field that is drawn as part of a larger control. Measured — all
+        // four wrappers already meet the bar, and doubling the ring up would draw two.
+        '.composer__input',
+        '.agents-screen__search-input',
+        '.history-screen__search-input',
+        '.history__search-input',
+        // The palette's field is focused the moment the palette opens, so the focus location is
+        // not in question, and nothing else in the dialog is focusable until you move.
+        '.palette__field',
+      ]
+
+      const removing = new Set<string>()
+      for (const [, selectors, body] of clean.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+        if (!/outline:\s*none/.test(body)) continue
+        for (const selector of selectors.split(',')) {
+          removing.add(selector.trim().split(':')[0].trim())
+        }
+      }
+
+      expect([...removing].sort()).toEqual([...EXPECTED].sort())
+    })
+
+    it('lets the surface decide the colour, instead of a second list of selectors', () => {
+      // Sixteen selectors used to name the controls that sit on ink. They are exactly the
+      // descendants of the rail and the trace panel, so one statement per surface replaces them
+      // and a control added inside either inherits the right colour by being there.
+      expect(clean).toMatch(/\.sidebar\s+\*:focus-visible[^{]*\{[^}]*--fg-focus/)
+      expect(clean).toMatch(/\.trace\s+\*:focus-visible[^{]*\{[^}]*--fg-focus/)
+
+      // And the list itself is gone: no rule may set `outline-color` on a named control any more.
+      const colourLists = [...clean.matchAll(/([^{}]+)\{([^}]*)\}/g)].filter(
+        ([, selectors, body]) =>
+          /outline-color:/.test(body) && !/^\s*\.(sidebar|trace)\s+\*/.test(selectors),
+      )
+      expect(colourLists.map(([, s]) => s.trim().slice(0, 40))).toEqual([])
+    })
+  })
+
   it('declares every base rule before the breakpoint that overrides it', () => {
     const offenders: string[] = []
 
@@ -324,11 +389,20 @@ describe('app.css regressions', () => {
     expect([...used].filter((name) => !defined.has(name) && !declared.has(name))).toEqual([])
   })
 
-  it('draws a focus ring on every control a keyboard can reach', () => {
-    // The app's controls carry their own backgrounds — Dataside blue, ink, transparent-on-ink —
-    // and the user-agent ring is all but invisible against them. Without these rules, tabbing
-    // through the app shows nothing at all.
-    const focusable = [
+  /**
+   * Spec 048 AC4 — nothing that had a ring may lose one.
+   *
+   * This list *was* the test: each of these selectors had to appear beside `:focus-visible` in the
+   * stylesheet. That assertion guarded an allowlist, and spec 048 removed the allowlist — the ring
+   * is now the default, so none of these appears individually any more and the old form fails for
+   * the right reason.
+   *
+   * The intent survives: these are the controls known to have been indicated before, so none of
+   * them may turn up among the exceptions that draw no ring. The list is evidence now, not a
+   * mechanism — it never needs another entry.
+   */
+  it('keeps the ring on every control that already had one', () => {
+    const hadARing = [
       '.pill-button',
       '.tool-row',
       '.chip',
@@ -354,9 +428,16 @@ describe('app.css regressions', () => {
       '.agent-card__star',
       '.favourites__row',
     ]
-    const ringed = css.match(/^[^{}]*:focus-visible[^{}]*\{/gm)?.join('\n') ?? ''
+    const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
+    const excepted = new Set<string>()
+    for (const [, selectors, body] of clean.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      if (!/outline:\s*none/.test(body)) continue
+      for (const selector of selectors.split(',')) {
+        excepted.add(selector.trim().split(':')[0].trim())
+      }
+    }
 
-    expect(focusable.filter((selector) => !ringed.includes(selector))).toEqual([])
+    expect(hadARing.filter((selector) => excepted.has(selector))).toEqual([])
   })
 })
 

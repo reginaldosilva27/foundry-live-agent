@@ -101,6 +101,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 045 | [Attachments on a question](045-attachments/spec.md) | 4 | ⛔ blocked |
 | 046 | [The contrast nobody guarded — the muted ink and the accent fill](046-muted-ink-and-accent-fill/spec.md) | 4 | ✅ done |
 | 047 | [The app on a narrow screen](047-narrow-screen/spec.md) | 4 | ✅ done |
+| 048 | [A focus ring by default, not by remembering](048-focus-by-default/spec.md) | 4 | ✅ done |
 
 `*` — **done with a named exception.** Spec 020 ships every acceptance criterion but AC16, which
 needs a measured run against the live service; the reason and what closes it are in the spec and in

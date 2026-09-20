@@ -166,6 +166,50 @@ describe('who may wear the quietest ink', () => {
   })
 })
 
+/**
+ * Spec 048 AC5 — the focus ring against the surfaces it is drawn on.
+ *
+ * **3:1, not 4.5:1.** A focus indicator is a non-text element, and WCAG 1.4.11 sets 3:1 for it.
+ * Holding it to the text bar would be inventing a stricter rule than the one being cited, which is
+ * the opposite of what this repository spends its honesty on.
+ *
+ * Two colours, because the rail and the trace panel are ink in both themes and the accent blue is
+ * the same hue as their neighbours there: `--fg-focus` is the default, redeclared on those two
+ * surfaces to the lighter step.
+ */
+describe('the focus ring', () => {
+  const base = ramp()
+  const light = semantic(lightBlock(), base)
+  const dark = semantic(darkBlock(), light)
+
+  /** The ring on an ordinary surface, per theme, and on the ink the deep surfaces are. */
+  const CASES: [string, string, string][] = [
+    ['default ring on --bg-1', '--fg-focus', '--bg-1'],
+    ['default ring on --bg-2', '--fg-focus', '--bg-2'],
+    ['default ring on --bg-3', '--fg-focus', '--bg-3'],
+  ]
+
+  it('resolved the token, so the assertions below are not vacuous', () => {
+    expect(light['--fg-focus'], 'light').toMatch(/^#[0-9a-fA-F]{3,8}$/)
+    expect(dark['--fg-focus'], 'dark').toMatch(/^#[0-9a-fA-F]{3,8}$/)
+  })
+
+  it.each(CASES)('%s meets 3:1 in light', (_label, fg, bg) => {
+    expect(ratio(light[fg], light[bg])).toBeGreaterThanOrEqual(3)
+  })
+
+  it.each(CASES)('%s meets 3:1 in dark', (_label, fg, bg) => {
+    expect(ratio(dark[fg], dark[bg])).toBeGreaterThanOrEqual(3)
+  })
+
+  it('separates on the ink of the rail and the trace panel, in both themes', () => {
+    // Those two surfaces redeclare `--fg-focus` to the lighter step precisely because the default
+    // accent does not separate there. This is the assertion that says so in numbers.
+    const onInk = base['--ds-blue-500']
+    expect(ratio(onInk, base['--ds-ink'])).toBeGreaterThanOrEqual(3)
+  })
+})
+
 describe('text on the rail', () => {
   const base = ramp()
   const INK = base['--ds-ink']
