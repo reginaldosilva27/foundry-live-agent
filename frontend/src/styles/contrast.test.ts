@@ -37,10 +37,19 @@ function darkBlock(): string {
   return APP.slice(start, APP.indexOf('}', start))
 }
 
-/** The vendored file's own `:root`, which is the light mapping. */
+/**
+ * The light mapping: the vendored file's `:root`, **plus** `app.css`'s own.
+ *
+ * Light is the base declaration and mostly lives in the design system. A token this app adds for
+ * itself is declared in `app.css` beside the dark override that answers it, so both halves have to
+ * be read here or the light half of such a pair resolves to nothing and its assertion passes
+ * vacuously.
+ */
 function lightBlock(): string {
   const start = DS.indexOf(':root')
-  return DS.slice(start, DS.indexOf('/* ---- Typography', start))
+  const vendored = DS.slice(start, DS.indexOf('/* ---- Typography', start))
+  const ours = APP.indexOf('\n:root {')
+  return vendored + (ours === -1 ? '' : APP.slice(ours, APP.indexOf('}', ours)))
 }
 
 function srgb(channel: number): number {
@@ -63,6 +72,10 @@ function ratio(a: string, b: string): number {
 /** Body text and above. `--fg-4` is placeholder and disabled text, which WCAG exempts. */
 const PAIRS: [string, string][] = [
   ['--fg-1', '--bg-1'],
+  // The harness name in the header. It was `--ds-blue-700` — a ramp step, fine on white at 5.90
+  // and **2.70 on the dark surface**, because a ramp step does not move when the theme does. Now a
+  // token with a mapping in each theme, so this pair is checked in both.
+  ['--fg-harness', '--bg-1'],
   ['--fg-1', '--bg-2'],
   ['--fg-2', '--bg-1'],
   ['--fg-2', '--bg-2'],
@@ -85,12 +98,77 @@ const PAIRS: [string, string][] = [
  * The rail and the panels that deliberately stay dark in both themes still name ramp steps, and
  * that is correct (spec 036: the rail does not invert). This is about the surfaces that must.
  */
+/**
+ * The rail does not invert (spec 036): it is `--ds-ink` in both themes, so text on it correctly
+ * names a step on the ramp rather than a semantic token. The steps chosen were unreadable.
+ *
+ * Measured in a browser, identically in both themes, because the surface is the same in both:
+ * `.sidebar__key` at **1.57:1** and five more at **2.46:1** — the section titles, the transport and
+ * gateway lines in the footer, and the history note. `contrast.test.ts` could not see them because
+ * they are not semantic pairs, and spec 040's sweep was over the semantic layer.
+ *
+ * This is the whole family, listed rather than pattern-matched: a selector that renders on the rail
+ * is a fact about the markup, not something a regex over the stylesheet can decide.
+ */
+describe('text on the rail', () => {
+  const base = ramp()
+  const INK = base['--ds-ink']
+
+  /** Every selector whose text is painted on the rail, with the ramp step it declares. */
+  const ON_THE_RAIL = [
+    '.sidebar__section-title',
+    '.sidebar__note',
+    // `.sidebar__transport` declares no colour of its own and inherits this one, which is how it
+    // reached 2.46:1 while its own rule looked innocent.
+    '.sidebar__footer',
+    '.sidebar__gateway',
+    '.sidebar__key',
+    '.sidebar__about',
+    '.history__note',
+  ]
+
+  it('resolved the ink, so the assertions below are not vacuous', () => {
+    expect(INK).toMatch(/^#[0-9a-fA-F]{3,8}$/)
+  })
+
+  it.each(ON_THE_RAIL)('%s is readable on the ink', (selector) => {
+    const rule = APP.split(`\n${selector} {`)[1]
+    expect(rule, `${selector} has no rule in app.css`).toBeDefined()
+
+    const declared = /color:\s*var\((--[a-z0-9-]+)\)/.exec(rule.split('}')[0])
+    expect(declared, `${selector} declares no colour`).not.toBeNull()
+
+    const hex = base[declared![1]]
+    expect(hex, `${declared![1]} is not a ramp step`).toMatch(/^#[0-9a-fA-F]{3,8}$/)
+    expect(ratio(hex, INK)).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
 describe('the surface the app actually paints', () => {
   it('gives the main column a semantic background, not a step on the ramp', () => {
     const rule = APP.split('\n.main {')[1].split('}')[0]
     const background = /background:\s*var\((--[a-z0-9-]+)\)/.exec(rule)
 
     expect(background, '.main declares no background at all').not.toBeNull()
+    expect(background![1]).toMatch(/^--bg-/)
+  })
+
+  /**
+   * The same bug, one level down, and in the vendored file: `code, .ds-code` declares
+   * `background: var(--ds-n-100)` with `color: var(--fg-1)` — a fixed ramp step under a foreground
+   * that moves. Measured in dark: **white on #F2F4F8, 1.10:1**, so every inline `code` span in an
+   * answer was a white block.
+   *
+   * The vendored sheet is not edited (spec 036: colour literals live there and nowhere else), so
+   * `app.css` overrides the surface with the semantic token. Light `--bg-3` *is* `--ds-n-100`, so
+   * nothing moves there.
+   */
+  it('gives inline code a semantic background too', () => {
+    const rule = APP.split('\ncode,\n.ds-code {')[1]
+    expect(rule, 'app.css does not override the vendored code chip').toBeDefined()
+
+    const background = /background:\s*var\((--[a-z0-9-]+)\)/.exec(rule.split('}')[0])
+    expect(background, 'the override sets no background').not.toBeNull()
     expect(background![1]).toMatch(/^--bg-/)
   })
 })

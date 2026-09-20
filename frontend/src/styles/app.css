@@ -390,7 +390,7 @@ button:disabled {
   font-size: var(--fs-caption);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
-  color: var(--ds-n-600);
+  color: var(--ds-n-400);
 }
 
 .sidebar__note {
@@ -398,7 +398,7 @@ button:disabled {
   padding-inline: var(--sp-2);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
-  color: var(--ds-n-500);
+  color: var(--ds-n-400);
 }
 
 /* --- Who is answering, in the rail (spec 021) ----------------------------
@@ -586,7 +586,7 @@ button:disabled {
   padding-inline: var(--sp-2);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
-  color: var(--ds-n-600);
+  color: var(--ds-n-400);
 }
 
 .agents__reason,
@@ -645,7 +645,7 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
-  color: var(--ds-n-600);
+  color: var(--ds-n-400);
   overflow-wrap: anywhere;
 }
 
@@ -658,11 +658,11 @@ button:disabled {
 /* A 58px rail under `model` bought a column nothing else lined up with, and spent it on a gap. */
 .sidebar__key {
   margin-right: var(--sp-2);
-  color: var(--ds-n-700);
+  color: var(--ds-n-400);
 }
 
 .sidebar__gateway {
-  color: var(--ds-n-500);
+  color: var(--ds-n-400);
 }
 
 .sidebar__transport {
@@ -776,7 +776,7 @@ button:disabled {
 }
 
 .harness-badge__value {
-  color: var(--ds-blue-700);
+  color: var(--fg-harness);
 }
 
 .harness-badge[data-known='false'] .harness-badge__value {
@@ -4015,7 +4015,7 @@ button:disabled {
   border: 0;
   background: none;
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--ds-n-400);
   text-align: left;
   cursor: pointer;
 }
@@ -4279,6 +4279,8 @@ button:disabled {
     --fg-3: var(--ds-n-400);
     --fg-4: var(--ds-n-500);
     --fg-link: var(--ds-blue-500);
+    --fg-harness: var(--ds-blue-500);
+  --fg-harness: var(--ds-blue-500);
 
     --border-1: var(--ds-n-700);
     --border-2: var(--ds-n-600);
@@ -4304,6 +4306,7 @@ button:disabled {
   --fg-3: var(--ds-n-400);
   --fg-4: var(--ds-n-500);
   --fg-link: var(--ds-blue-500);
+  --fg-harness: var(--ds-blue-500);
 
   --border-1: var(--ds-n-700);
   --border-2: var(--ds-n-600);
@@ -5068,6 +5071,15 @@ button:disabled {
   cursor: pointer;
 }
 
+/* The harness name in the header, which is brand-coloured technical text.
+
+   It named `--ds-blue-700` directly: 5.90:1 on white and **2.70:1 on the dark surface**, because a
+   ramp step does not move when the theme does. One token, a mapping in each theme, and
+   `contrast.test.ts` checks the pair in both. */
+:root {
+  --fg-harness: var(--ds-blue-700);
+}
+
 /* --- Side by side (spec 020) ---------------------------------------------
    Two columns of equal weight: the screen IS the comparison, so neither side
    may look like the main one with a second beside it. Below the breakpoint
@@ -5192,4 +5204,16 @@ button:disabled {
     border-left: none;
     border-top: 1px solid var(--border-1);
   }
+}
+
+/* The vendored sheet declares `code, .ds-code { background: var(--ds-n-100); color: var(--fg-1) }`
+   — a fixed ramp step under a foreground that moves, so in dark it was white on #F2F4F8 at
+   **1.10:1** and every inline `code` span in an answer rendered as a white block.
+
+   The vendored file is not edited (spec 036: colour literals live there and nowhere else), so the
+   surface is overridden here with the semantic token. Light `--bg-3` *is* `--ds-n-100`, so nothing
+   moves in the theme that was already correct. */
+code,
+.ds-code {
+  background: var(--bg-3);
 }
