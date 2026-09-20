@@ -45,6 +45,10 @@ az bicep build --file main.bicep   # compiles (syntax + type errors are gate fai
 az bicep lint --file main.bicep    # linter rules
 ```
 
+**`infra/` is empty today** — there is no `main.bicep`, so this layer **skips**: `ci.yml` and the
+`gate-infra` recipe both guard the pair with `[ -f main.bicep ]`. A skip here is green (§3); an
+error saying the file is missing means the guard drifted.
+
 ## Cross-cutting gates (the ones tools won't fully catch)
 
 Check these by inspecting the diff — they are constitution principles, not just CI steps:

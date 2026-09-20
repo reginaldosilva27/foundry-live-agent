@@ -123,6 +123,11 @@ merecem atenção:
   o *agente* e o *modelo*. O "AI Gateway" de projeto governa chamadas diretas de modelo e **não**
   carrega a inferência do agente; rotear o agente pelo seu APIM é outro recurso (*bring your own
   model*), e ele muda o nome do modelo para `<conexão>/<modelo>`.
+  **O padrão entregue não segue esse caminho.** O `ai/harness/_shared/agent_core.yaml` nomeia um
+  deployment simples de propósito, então a inferência passa ao largo do gateway enquanto a API do
+  APIM não estiver ligada ao seu backend — que é também por que `otel_trace_id` e
+  `gateway_request_id` continuam pendentes no painel de trace. A caixa âmbar é o desenho, não a
+  configuração de hoje.
 - O áudio da voz vai **do navegador direto para o Voice Live**; só o canal de controle (e as chamadas
   de ferramenta nele) passa pelo nosso servidor. Nenhuma credencial do Azure chega ao navegador, e o
   **Voice Live nunca passa por gateway nenhum**.
@@ -283,11 +288,17 @@ cd foundry-live-agent
 
 just env            # 1. cria o .env a partir do template
 just login          # 2. az login — Entra ID; nenhum serviço Azure usa key
-just infra          # 3. azd up: recurso Foundry, projeto, modelo, App Insights (~5 min)
-just agent          # 4. aplica a definição do agente de ai/harness/prompt-agent/agent.yaml
+just infra          # 3. provisiona o Foundry — imprime os passos manuais; ainda não há IaC aqui
+just agent          # 4. aplica a definição do agente de ai/harness/prompt_agent/agent.yaml
 just backend        # 5. o BFF na :8000
 just frontend       # 6. a interface na :5173
 ```
+
+**O passo 3 é manual, e o `just infra` diz isso em vez de fingir.** Este repositório não entrega
+Bicep: o recurso Foundry, o projeto, o deployment do modelo e o Application Insights são criados no
+portal ou pela CLI, seguindo as duas páginas registradas em
+[`docs/REFERENCES.md`](docs/REFERENCES.md). IaC não verificado seria pior que um passo manual
+honesto (constituição §5) — veja [`infra/README.md`](infra/README.md).
 
 Depois pergunte algo que force os dois caminhos de ferramenta ao mesmo tempo:
 

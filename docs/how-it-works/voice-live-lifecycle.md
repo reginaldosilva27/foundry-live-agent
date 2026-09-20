@@ -255,6 +255,23 @@ this release still persists no conversation anywhere.
 the server also caps concurrent sessions and closes everything on shutdown rather than trusting the
 client to hang up.
 
+**The cap alone was not enough, and made things worse rather than better.** Nothing removed a
+session nobody ended, so four abandoned tabs filled `MAX_SESSIONS` and voice became unavailable on
+that process until somebody restarted it — with four control channels still open to a service that
+bills per second. Two things close that hole, and neither is a timer:
+
+- **The activity stream is the liveness signal.** The browser holds
+  `GET /voice/session/{id}/events` open for the whole call, so that stream unwinding *is* the tab
+  going away. The session is released there. The trade-off is stated rather than hidden: a
+  transient drop on that stream ends the call too, which is the safe direction to err in when the
+  alternative is a meter running that nobody can see.
+- **A finished session does not hold a slot.** Sessions whose control channel already died are
+  dropped before the cap is checked, so a dead one can never keep a live one out.
+
+Both are asserted in `backend/tests/test_voice_reaping.py`, which drives the streaming response's
+own iterator: `httpx.ASGITransport` buffers a response whole, so neither it nor `TestClient` can
+observe a client walking away from an endless stream.
+
 **Sessions live in the BFF's process memory, so the BFF is single-replica for voice.** This is
 stated rather than solved. Fixing it means a session store, which is a different feature and not
 this repository's lesson — the same honesty the in-process conversation memory gets elsewhere (§5).

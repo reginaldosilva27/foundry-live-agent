@@ -23,7 +23,23 @@ login:
 
 # ── Run each service (one command per service) ────────────────────────────
 # Provision Foundry (resource, project, model deployment, App Insights).
+#
+# There is NO IaC in this repository yet: `infra/` carries no `main.bicep` and no azd project, so
+# this recipe used to run `azd up` in a directory with nothing to provision and fail on the third
+# line of the Quickstart. Until a spec fills that layer, it says what to do by hand -- the same
+# shape as `just gateway` below, for the same reason: documenting a manual step beats shipping
+# IaC nobody verified (constitution §5).
 infra:
+    #!/usr/bin/env bash
+    if [ ! -f infra/main.bicep ]; then
+      echo "infra/ has no main.bicep -- this repository ships no IaC yet, so there is nothing to run."
+      echo "Provisioning is a documented MANUAL step. See infra/README.md."
+      echo "The two pages it needs are already recorded in docs/REFERENCES.md, 'Provisioning (azd / Bicep)':"
+      echo "  Foundry resource via Bicep   https://learn.microsoft.com/en-us/azure/foundry/how-to/create-resource-template"
+      echo "  azd Foundry agent extension  https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/extensions/azure-ai-foundry-extension"
+      echo "Then fill the FOUNDRY_* variables in .env and continue at step 4 ('just agent')."
+      exit 1
+    fi
     cd infra && azd up
 
 # Apply the agent definition from the selected harness's agent.yaml.
@@ -70,7 +86,16 @@ gate-ai:
 gate-frontend:
     cd frontend && npm run lint && npm test && npm run build
 
+# The only gate recipe with a guard, and it is a mirror rather than an exception: ci.yml's infra
+# job skips with a notice while `main.bicep` is absent (`if [ ! -f main.bicep ]`). Without the same
+# line here, `just verify` failed locally on a layer CI calls green -- the four mirrors (§4, §6)
+# disagreeing about what "done" means.
 gate-infra:
+    #!/usr/bin/env bash
+    if [ ! -f infra/main.bicep ]; then
+      echo "infra/ not set up yet -- skipping."
+      exit 0
+    fi
     cd infra && az bicep build --file main.bicep && az bicep lint --file main.bicep
 
 # Everything CI runs. A layer with no code yet skips clean — that is green.
@@ -83,6 +108,12 @@ fmt:
 
 # ── Teardown ──────────────────────────────────────────────────────────────
 down:
+    #!/usr/bin/env bash
+    if [ ! -f infra/main.bicep ]; then
+      echo 'infra/ has no main.bicep -- azd never created anything here, so there is nothing to tear down.'
+      echo "Delete the Foundry resource group (and the APIM instance, if you created one) in the portal."
+      exit 1
+    fi
     cd infra && azd down
 
 # ── Manual step: the AI Gateway has no documented IaC path (see infra/README.md) ──

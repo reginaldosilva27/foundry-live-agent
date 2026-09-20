@@ -1,18 +1,23 @@
 # `infra/` — Bicep + azd
 
-Provisions the Foundry side: resource, project, model deployment, Application Insights.
+> **Nothing is provisioned from here yet.** This directory holds no `main.bicep` and no azd project,
+> so `azd up` has nothing to run. `just infra` prints the manual steps instead of failing on an
+> empty directory, and `just gate-infra` skips exactly as `ci.yml` does. What follows is the
+> *intended* shape, kept as the record of what a spec would build — not a description of today.
+
+The Foundry side, when it exists: resource, project, model deployment, Application Insights.
 
 ```bash
-azd up      # provision + apply the agent definition
-azd down    # tear everything down
+azd up      # provision + apply the agent definition   (not available yet)
+azd down    # tear everything down                     (not available yet)
 ```
 
-## What this provisions
+## What this would provision
 
 | Resource | Why |
 |---|---|
 | Foundry resource + project | Hosts the prompt agent; the project endpoint is the single API surface |
-| Model deployment | `gpt-5.4` by default (configurable) |
+| Model deployment | `gpt-5.5` — the value `.env.example` and `agent_core.yaml` carry (configurable) |
 | Application Insights | Agent tracing lands here; the trace drawer queries it |
 
 ## What this does *not* provision
@@ -29,6 +34,10 @@ helper. If a supported IaC path appears, this becomes a spec.
 ```bash
 az bicep build --file main.bicep && az bicep lint --file main.bicep
 ```
+
+Both `ci.yml` and the `gate-infra` recipe guard that pair with `[ -f main.bicep ]`, so the gate is
+green by **skipping**, not by passing. When a `main.bicep` lands, both start running it with no
+edit to either.
 
 **Still empty.** Spec 002 declared Bicep a non-goal — *"`infra/` stays empty until the spike
 confirms what to provision"* — and the spike's answer never became a spec. The CI job skips this

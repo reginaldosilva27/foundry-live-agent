@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.get("/trace/{response_id}")
-async def trace(response_id: str, request: Request) -> dict:
+def trace(response_id: str, request: Request) -> dict:
     """The run's spans.
 
     A BFF with no Application Insights answers `unavailable` rather than failing: tracing is

@@ -2,6 +2,9 @@
 
 The browser holds no Azure credential, so synthesis happens here. Nothing about the agent passes
 through: this endpoint reads text aloud and knows nothing about turns, tools or conversations.
+
+`def`, not `async def`: synthesis is a blocking `httpx.post`, and a spoken answer calls this
+once per sentence *while* the answer is streaming — the worst possible moment to own the loop.
 """
 
 from __future__ import annotations
@@ -22,7 +25,7 @@ class SpeechRequest(BaseModel):
 
 
 @router.post("/speech")
-async def speech(body: SpeechRequest, request: Request) -> Response:
+def speech(body: SpeechRequest, request: Request) -> Response:
     synthesize = request.app.state.synthesize
     if synthesize is None:
         raise HTTPException(

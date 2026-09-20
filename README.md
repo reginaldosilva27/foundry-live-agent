@@ -123,6 +123,10 @@ staring at:
   between the *agent* and the *model*. The project-level "AI Gateway" governs direct model calls and
   does **not** carry agent inference; routing the agent through your APIM is a separate feature
   (*bring your own model*), and it changes the model's name to `<connection>/<model>`.
+  **The shipped default does not take that path.** `ai/harness/_shared/agent_core.yaml` names a
+  plain deployment on purpose, so inference bypasses the gateway until the APIM API is bound to its
+  backend — which is also why `otel_trace_id` and `gateway_request_id` are still pending in the
+  trace panel. The amber box is the design, not today's configuration.
 - Voice audio goes **browser → Voice Live directly**; only the control channel (and the tool calls
   on it) touches our server. No Azure credential ever reaches the browser, and **Voice Live never
   passes through any gateway**.
@@ -282,11 +286,17 @@ cd foundry-live-agent
 
 just env            # 1. create .env from the template
 just login          # 2. az login — Entra ID; no key for any Azure service
-just infra          # 3. azd up: Foundry resource, project, model, App Insights (~5 min)
-just agent          # 4. apply the agent definition from ai/harness/prompt-agent/agent.yaml
+just infra          # 3. provision Foundry — prints the manual steps; there is no IaC here yet
+just agent          # 4. apply the agent definition from ai/harness/prompt_agent/agent.yaml
 just backend        # 5. the BFF on :8000
 just frontend       # 6. the UI on :5173
 ```
+
+**Step 3 is manual, and `just infra` says so rather than pretending.** This repository ships no
+Bicep: the Foundry resource, project, model deployment and Application Insights are created in the
+portal or with the CLI, following the two pages recorded in
+[`docs/REFERENCES.md`](docs/REFERENCES.md). Unverified IaC would be worse than an honest manual step
+(constitution §5) — see [`infra/README.md`](infra/README.md).
 
 Then ask something that forces both tool paths at once:
 

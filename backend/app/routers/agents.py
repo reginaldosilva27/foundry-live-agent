@@ -1,5 +1,13 @@
 """`GET /agents` — which agents the project has, `GET /agents/{name}` — what one of them is,
-and `POST /agents/{name}/versions/{version}/promote` — go back to one (spec 031)."""
+and `POST /agents/{name}/versions/{version}/promote` — go back to one (spec 031).
+
+**Why these handlers are `def` and not `async def`.** Everything below waits on a synchronous
+client — the Azure SDKs and `httpx.get` are what this app has — and a blocking call inside an
+`async def` handler owns the whole worker while it waits: every SSE stream in flight and every live
+voice session stops with it. Declared `def`, FastAPI runs them in its threadpool and the loop stays
+free. Asserted in `tests/test_concurrency.py`, which `TestClient` alone cannot catch because it
+serves one request at a time.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +32,7 @@ router = APIRouter()
 
 
 @router.get("/agents")
-async def agents(request: Request) -> dict:
+def agents(request: Request) -> dict:
     """List the project's agents.
 
     **A failure is never an empty list** (spec 019, AC3). "The project has no agents" and "we could
@@ -45,7 +53,7 @@ async def agents(request: Request) -> dict:
 
 
 @router.get("/agents/{name}")
-async def agent(name: str, request: Request, response: Response) -> dict:
+def agent(name: str, request: Request, response: Response) -> dict:
     """One agent, inspected (spec 030).
 
     Mostly answered from the **same listing** `GET /agents` reads — the service returns every
@@ -70,7 +78,7 @@ async def agent(name: str, request: Request, response: Response) -> dict:
 
 
 @router.post("/agents/{name}/versions/{version}/promote")
-async def promote(name: str, version: str, request: Request, response: Response) -> dict:
+def promote(name: str, version: str, request: Request, response: Response) -> dict:
     """Make an earlier version the one this agent serves (spec 031). **The app's only write.**
 
     **It takes no body.** The agent and the version are path parameters and there is nowhere to put
@@ -102,7 +110,7 @@ async def promote(name: str, version: str, request: Request, response: Response)
 
 
 @router.get("/agents/{name}/definition")
-async def definition(name: str, request: Request, response: Response) -> dict:
+def definition(name: str, request: Request, response: Response) -> dict:
     """The definition **this build was made from**, and whether the service agrees (spec 041).
 
     Not "the repository" and not `main`: in a container the files are whatever was baked into the
@@ -145,7 +153,7 @@ class Proposal(BaseModel):
 
 
 @router.post("/agents/{name}/definition/proposal")
-async def proposal(name: str, body: Proposal, request: Request, response: Response) -> dict:
+def proposal(name: str, body: Proposal, request: Request, response: Response) -> dict:
     """Validate a proposed change and answer a diff. **Writes nothing** (spec 041).
 
     Not the file, not Foundry. `agent_core.yaml` is the single source of truth for what the agent

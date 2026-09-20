@@ -86,9 +86,9 @@ where an agent is **authored**, and authoring an agent is not the same as the ap
 
 The distinction that carries it, inside a single harness:
 
-| | where it runs | may it loop? |
+| | where it runs | may it run the agent loop? |
 |---|---|---|
-| the **adapter** (`ai/harness/<name>/adapter.py`) | imported by the BFF | **No.** It normalises a stream; it chooses nothing. |
+| the **adapter** (`ai/harness/<name>/adapter.py`) | imported by the BFF | **No.** It normalises a stream; it chooses nothing. It does carry **one bounded loop, and only one**: the tool round trip — Foundry emits a function call and *stops*, so a turn is several legs and somebody has to submit the outputs and read the next one. Capped (`DEFAULT_MAX_TURNS`), driven entirely by what the platform asked for, reading nothing the model said in order to decide. That is the client-side contract named below, not an agent loop. |
 | the **agent** (`ai/harness/<name>/agent/`, or a Foundry agent version) | on Foundry | **Yes** — all the loop it likes. That is what an agent is. |
 
 §8's own test survives intact: swap the harness, and the BFF is still not choosing tools.
@@ -176,6 +176,7 @@ This document changes only by intent, not by accident:
 | `infra/` gate: Terraform → **Bicep** | The brief specifies Bicep + azd |
 | Added §8, §9, §10 | The repo's educational value depends on these invariants holding under review |
 | §8 exception: session context for the voice transport (2026-09-16) | The agent cannot perceive that it is being spoken to, and Voice Live's `instructions` field is unsupported with a custom agent — so a fact about the channel had nowhere else to live. Bounded to one static sentence; spec 017 |
+| §8 table: *"may it loop?"* → **"may it run the agent loop?"**, and the adapter's one bounded loop named (2026-09-20) | The table answered **No** flatly while `PromptAgentAdapter` has always looped over the legs of a turn, up to `DEFAULT_MAX_TURNS`. The distinction that makes that legal — a loop over the platform's own round trip, deciding nothing — lived only in the adapter's docstring, and it is the *table* somebody quotes in a review. No rule changed; the rule now says what it always meant |
 | §8 headline: "never in this repo" → **never in the app** (2026-09-16) | A hosted agent is a container this repository authors and Foundry runs, so its loop is *in the repo* by construction. The prohibition on `backend/` and `frontend/` is unchanged; the headline was overreaching. Adapter (in the BFF, no loop) is now distinguished from agent (on Foundry, all loop); spec 018 |
 
 ---

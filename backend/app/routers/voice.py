@@ -7,6 +7,7 @@ channel — and therefore the credential, and therefore the tool execution — s
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from collections.abc import AsyncIterator
 
@@ -47,6 +48,12 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
         )
 
     sessions: dict[str, VoiceSession] = request.app.state.voice_sessions
+    # Sessions that are already over do not hold a slot. Without this the bound below turned the
+    # leak it guards against into a wedge: four sessions whose control channel had died left voice
+    # permanently unavailable on this process, and restarting the BFF was the only way back.
+    for dead in [key for key, session in sessions.items() if session.closed]:
+        sessions.pop(dead, None)
+
     if len(sessions) >= MAX_SESSIONS:
         # Bounded here rather than trusting the browser to hang up: a closed tab sends no DELETE.
         raise HTTPException(status_code=429, detail="Too many voice sessions are already open.")
@@ -60,7 +67,9 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
     from harness._shared.voice_events import attachment_query
 
     try:
-        attachment = _attachment(request, body.agent)
+        # Off the loop: resolving a named agent reads the project's listing over a synchronous
+        # client, and this route is holding an event loop that other live sessions share.
+        attachment = await asyncio.to_thread(_attachment, request, body.agent)
     except AgentsUnavailable as refused:
         # Refused before anything is dialled. The detail is the agent's name and the code is the
         # row's own, so the browser can say the same thing the dimmed row on the screen says.
@@ -98,8 +107,16 @@ async def session_events(session_id: str, request: Request) -> StreamingResponse
     session = _require(request, session_id)
 
     async def frames() -> AsyncIterator[str]:
-        async for event in session.events():
-            yield format_event(event)
+        try:
+            async for event in session.events():
+                yield format_event(event)
+        finally:
+            # The browser holds this stream open for the whole call, so it ending means the tab is
+            # gone — and a tab that went away sends no DELETE. Releasing here is what stops an
+            # abandoned session from holding both a slot and a socket to a service that bills per
+            # second. A transient drop on this stream therefore ends the call too: the wrong
+            # direction to err in is the one that leaves a meter running nobody can see (§5).
+            await _release(request.app, session_id)
 
     return StreamingResponse(
         frames(),
@@ -110,10 +127,20 @@ async def session_events(session_id: str, request: Request) -> StreamingResponse
 
 @router.delete("/session/{session_id}", status_code=204)
 async def end_session(session_id: str, request: Request) -> Response:
-    session = _require(request, session_id)
-    await session.close()
-    del request.app.state.voice_sessions[session_id]
+    _require(request, session_id)
+    await _release(request.app, session_id)
     return Response(status_code=204)
+
+
+async def _release(app, session_id: str) -> None:
+    """Close a session and forget it. Idempotent, because two things now end a call.
+
+    A hangup and the activity stream unwinding can arrive in either order — and do, since closing
+    the session is what makes that stream finish — so this must be safe to run twice.
+    """
+    session = app.state.voice_sessions.pop(session_id, None)
+    if session is not None:
+        await session.close()
 
 
 def _require(request: Request, session_id: str) -> VoiceSession:

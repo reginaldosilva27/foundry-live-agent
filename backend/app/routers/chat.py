@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Request
@@ -36,7 +37,11 @@ class ChatRequest(BaseModel):
 async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
     # Resolved before the stream opens, and never by mutating `app.state.harness`: a process-global
     # swap would let one browser's choice decide another browser's turn (spec 019 plan).
-    harness, refused = _harness_for(request, body.agent)
+    # Off the loop: resolving the agent reads the project's listing over a SYNCHRONOUS client,
+    # and this runs on the path of every turn that names an agent. Run inline it would freeze
+    # every other stream in the process for the length of that read — the same reason the
+    # adapter reads the Foundry stream in a worker thread (tests/test_concurrency.py).
+    harness, refused = await asyncio.to_thread(_harness_for, request, body.agent)
 
     async def frames() -> AsyncIterator[str]:
         """Re-stream the harness as SSE, guaranteeing a terminal frame no matter what.

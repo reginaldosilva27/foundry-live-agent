@@ -128,7 +128,14 @@ class PromptAgentAdapter:
                 # Answer every collected call, then feed the outputs back as the next leg.
                 inputs = []
                 for call_id, name, arguments in pending:
-                    output, duration_ms, error = self._executor(name, arguments)
+                    # In a worker thread, for the reason `_stream_events` explains about the
+                    # Foundry stream: this is the OTHER blocking call on the turn's path, and
+                    # the longer one. `search_web` is an HTTP round trip to a third party, and
+                    # holding the loop through it stops every other stream this process is
+                    # serving (tests/test_adapter_concurrency.py).
+                    output, duration_ms, error = await asyncio.to_thread(
+                        self._executor, name, arguments
+                    )
                     result: dict[str, Any] = {
                         "type": "tool_result",
                         "call_id": call_id,

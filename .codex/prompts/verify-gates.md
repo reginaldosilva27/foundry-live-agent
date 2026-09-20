@@ -45,6 +45,10 @@ az bicep build --file main.bicep
 az bicep lint --file main.bicep
 ```
 
+**`infra/` is empty today** — there is no `main.bicep`, so this layer **skips**: `ci.yml` and the
+`gate-infra` recipe both guard the pair with `[ -f main.bicep ]`. A skip here is green (§3); an
+error saying the file is missing means the guard drifted.
+
 ## Cross-cutting gates
 
 - **§1 SDD** — a spec exists under `specs/`, at least `planned`.

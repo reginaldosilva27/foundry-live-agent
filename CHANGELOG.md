@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Every blocking Azure call was made on the event loop, and this app streams.** The BFF is
+  asynchronous and every client it uses — the Azure SDKs, `httpx.get`, the Speech POST, Tavily — is
+  synchronous. Run inside an `async def` handler, one of those owns the whole worker while it waits:
+  a slow agent listing froze every SSE stream in flight and every live voice session with it. Seven
+  sites, all of them on a path somebody waits on: `GET /agents` and its four siblings, `GET /trace`,
+  `POST /speech`, `POST /tools/{name}/run`, the agent listing on **`POST /chat`** (every turn that
+  names an agent), the Voice Live attachment, and — the longest of them — **executing the function
+  tool itself**, in both `PromptAgentAdapter` and `VoiceSession._answer`. The adapter had already
+  solved exactly this for *reading* the Foundry stream, with the measurement to prove it, and then
+  called `search_web` inline. Routes whose work is blocking are now `def` (FastAPI's threadpool);
+  the rest go through `asyncio.to_thread`. `TestClient` cannot catch this — it serves one request at
+  a time — so the regression tests make several slow calls at once and time them
+  (`backend/tests/test_concurrency.py`, `ai/tests/test_adapter_concurrency.py`).
+- **Four closed tabs and voice was dead until the BFF restarted.** Nothing ever released a session
+  nobody ended, so `MAX_SESSIONS` turned the leak its comment names — *a closed tab sends no
+  DELETE* — into a wedge, with four control channels still open to a service that bills per second.
+  The signal was already there and unread: the browser holds `GET /voice/session/{id}/events` open
+  for the whole call, so that stream unwinding is the tab going away, and the session is released
+  there; a session that is already closed no longer counts against the cap. A transient drop on
+  that stream now ends the call too, which is said out loud — it is the safe direction when the
+  alternative is a meter running that nobody can see. `backend/tests/test_voice_reaping.py` drives
+  the streaming response's own iterator, because `httpx.ASGITransport` buffers a response whole and
+  neither it nor `TestClient` can watch a client walk away from an endless stream.
+- **The Quickstart's third command could not work, and three docs said it could.** `just infra` ran
+  `azd up` in a directory with no `main.bicep` and no azd project, so the first provisioning step of
+  the ten-minute Quickstart failed for everyone who ran it. `just down` had the same hole, and
+  `gate-infra` ran `az bicep build` unguarded while `ci.yml` skipped that layer with a notice — so
+  `just verify` was red locally on a layer CI called green, the four mirrors (§4, §6) disagreeing
+  about what *done* means. All three now carry the CI guard: `gate-infra` **skips** exactly as CI
+  does, and `infra`/`down` print the manual step and the two pages already recorded in
+  `docs/REFERENCES.md` instead of dialling nothing. No IaC was invented to close this — that would
+  be exactly the unverified infrastructure §5 forbids; the gap is now stated where the reader hits
+  it, in `README.md`, `README.pt-BR.md` and `infra/README.md`.
+- **The README drew a gateway the shipped configuration bypasses.** `agent_core.yaml` names a plain
+  deployment on purpose (the comment has always said so), so inference does not pass through APIM —
+  while the architecture diagram's amber box and the cost table read as though it did. Both READMEs
+  now say it on the spot, and connect it to the two trace fields still pending.
+- **Two stale paths and a stale model name.** The Quickstart pointed at
+  `ai/harness/prompt-agent/agent.yaml` (the directory is `prompt_agent`), in both languages, and
+  `infra/README.md` still named `gpt-5.4` where `.env.example` and `agent_core.yaml` say `gpt-5.5`.
+
+### Changed
+- **Constitution §8's table said the adapter may not loop; it always has.** `PromptAgentAdapter`
+  loops over the *legs* of a turn — Foundry emits a function call and stops, so the outputs have to
+  be submitted and the next leg read — capped at `DEFAULT_MAX_TURNS`. The distinction that makes
+  that legal (a loop over the platform's own round trip, deciding nothing, reading nothing the model
+  said) lived only in the adapter's docstring, and the *table* is what gets quoted in a review. The
+  column is now "may it run the agent loop?", the row names the one bounded loop, and the amendment
+  table records it. **No rule changed** — the rule now says what it always meant. `CLAUDE.md` and
+  `AGENTS.md` moved with it (§6).
+
 ### Added
 - **Spec 017 — a spoken answer no longer reads URLs out loud.** In voice, the agent used to finish a
   web-search answer by reading `https://www.sofascore.com/pt/football/team/corinthians/1957` slash

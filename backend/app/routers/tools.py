@@ -67,8 +67,11 @@ class RunRequest(BaseModel):
 
 
 @router.post("/tools/{name}/run")
-async def run(name: str, body: RunRequest, request: Request, response: Response) -> dict:
+def run(name: str, body: RunRequest, request: Request, response: Response) -> dict:
     """Run one tool with the given arguments, through the path a real function call takes.
+
+    `def`, not `async def`: `search_web` is an HTTP round trip to a third-party service, and
+    running it on the event loop would freeze the app for its duration.
 
     A failure is rendered as the failure it was. A tool that raised, and a tool that returned
     `search_unavailable` because no key is configured, are different facts and the second one is

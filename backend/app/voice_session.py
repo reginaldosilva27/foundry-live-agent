@@ -124,6 +124,16 @@ class VoiceSession:
                 return
             yield event
 
+    @property
+    def closed(self) -> bool:
+        """Whether this session is over.
+
+        Public because the router has to tell a session that is merely *idle* from one that is
+        *finished*: a finished one must not keep a slot under `MAX_SESSIONS`, and nothing else can
+        see the difference.
+        """
+        return self._closed
+
     async def close(self) -> None:
         if self._closed:
             return
@@ -173,8 +183,14 @@ class VoiceSession:
             await self._answer(frame["call_id"], frame["name"], frame.get("arguments") or "{}")
 
     async def _answer(self, call_id: str, name: str, arguments: str) -> None:
-        """Run the tool and hand the output back. Never raises: `execute` already can't."""
-        result = self._executor(name, arguments)
+        """Run the tool and hand the output back. Never raises: `execute` already can't.
+
+        **In a worker thread.** `execute` is synchronous and `search_web` is an HTTP round trip to a
+        third party; run inline it would hold this loop — which is also the one reading this socket
+        — for the length of the call, silencing every other session in the process as well as this
+        one. Asserted in `tests/test_concurrency.py`.
+        """
+        result = await asyncio.to_thread(self._executor, name, arguments)
 
         event: dict[str, Any] = {
             "type": "tool_result",

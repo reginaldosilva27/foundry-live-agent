@@ -98,9 +98,10 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
    re-prompt the model, loop on model output, or duplicate state Foundry owns. Executing a function
    tool Foundry asked for, and submitting its output, is the documented client-side contract and is
    fine. Test: *"would this still be true if the harness were swapped?"* Inside a harness, the
-   **adapter** is imported by the BFF and contains no loop; the **agent** (`ai/harness/<name>/agent/`)
-   is deployed to Foundry and may contain all the loop it likes — authoring an agent is not the app
-   running one (amended 2026-09-16, spec 018). **One bounded exception**
+   **adapter** is imported by the BFF and contains no *agent* loop — only the bounded tool round
+   trip Foundry's protocol requires, capped and deciding nothing (clarified 2026-09-20); the
+   **agent** (`ai/harness/<name>/agent/`) is deployed to Foundry and may contain all the loop it
+   likes — authoring an agent is not the app running one (amended 2026-09-16, spec 018). **One bounded exception**
    (amended 2026-09-16, spec 017): a voice session states one static fact about the transport — that
    the conversation is spoken — because the agent cannot perceive it and `instructions` is
    unsupported with a custom agent. One item, one sentence, once; not a licence to prompt.
@@ -204,6 +205,21 @@ violation.
   agents, from the harness `agent.yaml` files), and RBAC — the flag reveals a control, it cannot
   grant anything. The route takes **no body**, so no agent definition can travel on it, and the app
   records nothing about a promotion because it has no identity to record (see `SECURITY.md`).
+- **Every Azure client in this app is synchronous, and that is an event-loop problem.** The BFF
+  streams: one blocking call inside an `async def` handler stops the whole worker for its duration —
+  every SSE stream in flight and every live voice session with it. So a route whose work is blocking
+  is declared **`def`** (FastAPI runs it in the threadpool), and a blocking call inside something
+  that must stay `async` goes through **`asyncio.to_thread`** — the agent listing on `POST /chat`,
+  the tool executor in the adapter and in `VoiceSession._answer`. `TestClient` cannot see this
+  (it serves one request at a time), so `backend/tests/test_concurrency.py` and
+  `ai/tests/test_adapter_concurrency.py` assert it by making several slow calls at once and timing
+  them.
+- **An abandoned voice session used to keep its slot for ever.** A closed tab sends no `DELETE`, and
+  `MAX_SESSIONS` turned that leak into a wedge: four of them and voice was dead on that process. The
+  browser holds `GET /voice/session/{id}/events` open for the whole call, so **that stream unwinding
+  is the tab going away** and the session is released there; a session that is already `closed` no
+  longer counts against the cap. A transient drop therefore ends the call — the safe direction when
+  the alternative is a metered socket nobody can see.
 - **`GET /config` has a screen now, and it is drift-tested (spec 032).** `/about` renders every
   top-level field the endpoint returns — including the event-mapping report, which is §10 in numeric
   form. **Adding a field to `GET /config` and not rendering it fails CI**: `About.coverage.test.ts`
