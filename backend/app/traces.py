@@ -16,6 +16,14 @@ internally consistent.
 Foundry traces what *Foundry* runs. A function tool this app executes leaves no span, which is
 constitution §8 showing up in telemetry; `kind` exists so the panel can say so rather than leaving
 the reader to read the gap as data loss.
+
+**The response id is untrusted input and is refused, never escaped.** It arrives from the URL and
+used to be pasted into a single-quoted KQL literal, where one quote closes the literal and the rest
+is query text. The identity running that query holds Log Analytics Reader on a workspace that stores
+prompts, tool arguments and tool results, and this app has no sign-in — so the blast radius was the
+whole workspace, to anyone who could reach the BFF. :data:`ID_SHAPE` bounds what may enter a query;
+it is **not** a claim about how Foundry formats an id (§10 — no doc says), it is this app declining
+to put anything that could end a string literal into one. Escaping is what gets subtly wrong.
 """
 
 from __future__ import annotations
@@ -26,6 +34,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 __all__ = [
+    "ID_SHAPE",
     "Span",
     "Trace",
     "TraceUnavailable",
@@ -66,6 +75,16 @@ class Trace:
     model: str = ""
     agent_version: str = ""
     message: str = ""
+
+
+#: What this app is willing to put inside a KQL string literal.
+#:
+#: Deliberately narrow: an id is an opaque token, so letters, digits and the three separators a
+#: token plausibly uses are enough, and everything that could end a literal or a statement is out.
+#: An id this refuses is reported as a failed query rather than sent — a shape we do not recognise
+#: is not a shape we should hand to a query engine. If Foundry ever issues an id outside this set,
+#: the failure is loud and in one place, which is the trade this makes on purpose.
+ID_SHAPE = re.compile(r"[A-Za-z0-9_.\-]{1,256}")
 
 
 #: Resolve the run's operation and return its spans, in one answer.
@@ -129,6 +148,12 @@ def read_trace(query: QueryClient | None, response_id: str) -> Trace:
     """
     if query is None:
         raise TraceUnavailable("no Application Insights resource is configured")
+
+    if not ID_SHAPE.fullmatch(response_id):
+        # Refused before a query exists, so there is nothing to get the escaping of wrong. `failed`
+        # rather than a fifth status: the drawer already renders it, and a caller passing a
+        # malformed id is looking at a broken link, not at a new kind of outcome (§7).
+        return Trace(status="failed", message="the response id is not a shape this app will query")
 
     try:
         rows = query(TRACE_QUERY.format(response_id=response_id))

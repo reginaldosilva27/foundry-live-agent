@@ -33,6 +33,11 @@ These are properties the project intends to hold. A break in any of them is a se
   the Entra token stays on the BFF's control channel.
 - **Tool arguments and tool outputs are untrusted input.** They are validated before use, and the
   function tools are read-only by design — no side effects that could be triggered by injected text.
+- **So is anything that arrives in a URL.** `GET /trace/{response_id}` puts its path parameter into
+  a KQL query run with the BFF's own identity, against a workspace holding prompts and tool
+  arguments. The id is checked against `ID_SHAPE` in `backend/app/traces.py` and **refused** when it
+  does not match, rather than escaped on the way in — escaping is the part that gets subtly wrong.
+  Anything else reaching a query, a path or a command deserves the same treatment.
 - **Telemetry is treated as production data.** Traces capture prompts, tool arguments and tool
   results; secrets must never be placed in them, and access is controlled like any other log.
 - **The app reads Foundry. It writes in exactly one place, and that place is off by default.**

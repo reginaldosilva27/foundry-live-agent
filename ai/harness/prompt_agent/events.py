@@ -200,6 +200,13 @@ def convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
         return
 
     if etype == "response.mcp_call.failed":
+        # UNVERIFIED, and it contradicts its own sibling. `response.mcp_call.completed` was measured
+        # on 2026-09-15 to carry NO `item` — only `item_id` — which is why the success path is built
+        # from `response.output_item.done`. There is no reason to think the failure event is shaped
+        # differently, in which case this produces a card labelled `unknown/unknown`. Nothing has
+        # failed on the wire yet, so the shape is recorded as an open question rather than guessed
+        # at (§5, §10 — docs/REFERENCES.md, O-33-1). `_mcp_call` degrades to `unknown` rather than
+        # raising, so a failure is reported as one either way.
         yield _mcp_call(raw.get("item") or {}, failed=True)
         return
 

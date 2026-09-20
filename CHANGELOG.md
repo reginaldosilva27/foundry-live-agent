@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **A response id from the URL was pasted into KQL.** `GET /trace/{response_id}` built its query
+  with `str.format`, putting the path parameter inside a single-quoted literal: one quote closed the
+  literal and everything after it was query text. What made it worth a heading rather than a line:
+  the query runs with the BFF's own identity, holding Log Analytics Reader on a workspace that
+  stores **prompts, tool arguments and tool results** — `SECURITY.md` says so itself — and this
+  application has no notion of a user, so the reach was "anyone who can reach the BFF". It was also
+  a plain bug: an id carrying a quote produced a KQL syntax error the drawer reported as a failed
+  query. The id is now checked against `ID_SHAPE` and **refused** before a query exists, rather than
+  escaped on the way in. The rule is not a claim about Foundry's id format (§10 — no doc read says
+  what it is); it is a bound on what this app will hand a query engine, failing loudly in one place
+  if that ever stops being true.
+
 ### Fixed
 - **Every blocking Azure call was made on the event loop, and this app streams.** The BFF is
   asynchronous and every client it uses — the Azure SDKs, `httpx.get`, the Speech POST, Tavily — is

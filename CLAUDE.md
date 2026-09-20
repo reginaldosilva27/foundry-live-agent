@@ -198,6 +198,12 @@ violation.
   agents, from the harness `agent.yaml` files), and RBAC — the flag reveals a control, it cannot
   grant anything. The route takes **no body**, so no agent definition can travel on it, and the app
   records nothing about a promotion because it has no identity to record (see `SECURITY.md`).
+- **Anything arriving in a URL is untrusted, and `GET /trace/{response_id}` proved it.** The id went
+  into a KQL literal by `str.format`, and the query runs with the BFF's identity against a workspace
+  holding prompts and tool arguments — with no sign-in in front of it. `ID_SHAPE` in `traces.py`
+  **refuses** an id it does not recognise instead of escaping one; escaping is the part that gets
+  subtly wrong. It is a bound on what this app hands a query engine, **not** a claim about Foundry's
+  id format (§10). The same treatment is owed to anything else that reaches a query or a path.
 - **Every Azure client in this app is synchronous, and that is an event-loop problem.** The BFF
   streams: one blocking call inside an `async def` handler stops the whole worker for its duration —
   every SSE stream in flight and every live voice session with it. So a route whose work is blocking

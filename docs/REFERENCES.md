@@ -735,6 +735,23 @@ Measured in the meantime: the composer is already a multi-line `textarea` (spec 
 Bicep file or a CSV pastes today and travels as the `message` it is. A screenshot is the case that
 genuinely needs the answer.
 
+### Open — what shape does `response.mcp_call.failed` have? (O-33-1, noted 2026-09-20)
+
+The normaliser builds a failed MCP call from `raw["item"]`, and **its own sibling proves that is
+probably wrong**: `response.mcp_call.completed` was measured on 2026-09-15 to carry only `item_id`,
+`output_index` and `sequence_number` — no `item` at all — which is exactly why the success path is
+built from `response.output_item.done` instead. If `.failed` is shaped the same way, the card reads
+`unknown / unknown` with a generic message.
+
+Not fixed, because fixing it means choosing a shape nobody has seen, and both candidate designs
+(read `output_item.done`; correlate by `item_id`) are guesses until a failure is observed. It is
+marked `verified=False` in `MAPPINGS`, `GET /config` reports it among the unverified entries, and
+`_mcp_call` degrades rather than raising, so the failure is still reported as a failure.
+
+| To close it | How |
+|---|---|
+| The real payload of a failed MCP call | Point the Learn MCP tool at an unreachable `server_url`, record the stream with `ai/scripts/spike.py`, and build the handler from the recording |
+
 ### Open — how would the agent produce an image? (spec 044)
 
 Spec 044 shipped its rendering half and **deferred its generation half**, deliberately.

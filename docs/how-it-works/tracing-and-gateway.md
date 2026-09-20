@@ -25,6 +25,20 @@ Sources for everything this page will assert: [../REFERENCES.md](../REFERENCES.m
   Application Insights, 100% sampling for testing), then `requests` / `dependencies` in App Insights
   for request tracing, and `ApiManagementGatewayLogs` in Log Analytics for gateway diagnostics.
 
+## The response id is untrusted, and is refused rather than escaped
+
+The browser asks for a trace by the `response_id` the `trace_ids` event gave it, and that id
+arrives as a URL path parameter. It used to go straight into the KQL below, inside a single-quoted
+literal — where one quote ends the literal and the rest is query text. The identity running that
+query holds **Log Analytics Reader on the workspace**, which is where Foundry writes prompts, tool
+arguments and tool results, and this application has no sign-in of its own.
+
+`ID_SHAPE` in `backend/app/traces.py` bounds what may enter a query — letters, digits and three
+separators — and an id outside it is reported as a failed query without one being built. That is
+deliberately **not** a claim about how Foundry formats an id: no doc read says (§10). It is this app
+declining to hand a query engine a shape it does not recognise, failing loudly and in one place if
+that ever becomes wrong. `backend/tests/test_trace_injection.py` drives seven break-out payloads.
+
 ## What the panel shows today (spec 014)
 
 The trace panel already renders the two identifiers the run produces — `response_id` and
