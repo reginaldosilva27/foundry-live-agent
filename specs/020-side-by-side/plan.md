@@ -135,7 +135,7 @@ them except to add the compare screen to `a11y.test.tsx`.
 | AC13 | the voice control is disabled and names the reason in the active language | `Compare.test.tsx` |
 | AC14 | leaving `/compare` returns the chat with its own transcript intact | `Compare.test.tsx` |
 | AC15 | every new key exists in `en` and `pt` | `strings.test.ts` (existing, automatic) |
-| AC16 | **deferred — see below** | — |
+| AC16 | **met 2026-09-20** — `ai/scripts/compare_harnesses.py`, 6 recorded turns | `ai/tests/fixtures/recorded/compare-*` |
 
 **AC16 cannot be met in this change and is not pretended to be.** It asks for a live run of the same
 question against both agents, recorded as a dated fixture, with the observed differences written

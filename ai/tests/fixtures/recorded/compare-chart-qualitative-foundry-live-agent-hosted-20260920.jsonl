@@ -1,0 +1,491 @@
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " look"}
+{"type": "text_delta", "text": " that"}
+{"type": "text_delta", "text": " up"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " project"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": " base"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0000", "name": "lookup_knowledge", "arguments": "{\"query\": \"Compare the prompt agent harness and hosted agent harness costs to operate and what each gives you\"}", "executor": "foundry"}
+{"type": "tool_result", "call_id": "call_0000", "name": "lookup_knowledge", "output": "{\"query\": \"Compare the prompt agent harness and hosted agent harness costs to operate and what each gives you\", \"passages\": [{\"text\": \"What the gateway does not tell you\\n\\nThe gateway does not log tool traces. Tool-level detail comes only from Foundry tracing, which lands\\nin Application Insights. Voice Live traffic never passes through any gateway.\", \"source\": \"gateway.md\", \"score\": 1.5357}, {\"text\": \"Gateway and tracing\", \"source\": \"gateway.md\", \"score\": 1.0}, {\"text\": \"The AgentEvent contract\\n\\nNine event types: reasoning_summary, text_delta, tool_call, tool_result, mcp_call, usage, trace_ids,\\nerror and done. Every harness emits only these; the BFF and frontend consume only these.\", \"source\": \"architecture.md\", \"score\": 0.7258}]}"}
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": " found"}
+{"type": "text_delta", "text": " only"}
+{"type": "text_delta", "text": " a"}
+{"type": "text_delta", "text": " partial"}
+{"type": "text_delta", "text": " match"}
+{"type": "text_delta", "text": ";"}
+{"type": "text_delta", "text": " I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " search"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " repository"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": " base"}
+{"type": "text_delta", "text": " more"}
+{"type": "text_delta", "text": " directly"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0001", "name": "lookup_knowledge", "arguments": "{\"query\": \"prompt agent harness hosted agent harness\"}", "executor": "foundry"}
+{"type": "tool_call", "call_id": "call_0002", "name": "lookup_knowledge", "arguments": "{\"query\": \"harnesses prompt agent hosted agent cost operate benefits\"}", "executor": "foundry"}
+{"type": "tool_call", "call_id": "call_0003", "name": "lookup_knowledge", "arguments": "{\"query\": \"Azure AI Foundry prompt agent hosted agent harness comparison\"}", "executor": "foundry"}
+{"type": "tool_result", "call_id": "call_0001", "name": "lookup_knowledge", "output": "{\"query\": \"prompt agent harness hosted agent harness\", \"passages\": [{\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.2308}, {\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.2222}, {\"text\": \"Two things called AI Gateway\\n\\nThe project-level AI Gateway governs direct model calls. Foundry Agent Service does not route its\\ninternal inference through it. To route the agent's inference through your own Azure API Management\\ninstance you use bring your own model, which is a separate Admin-connected model connection. With\\nthat connection the agent's model is named connection-name/model-name.\", \"source\": \"gateway.md\", \"score\": 0.1}]}"}
+{"type": "tool_result", "call_id": "call_0002", "name": "lookup_knowledge", "output": "{\"query\": \"harnesses prompt agent hosted agent cost operate benefits\", \"passages\": [{\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.6111}, {\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.2308}, {\"text\": \"Two things called AI Gateway\\n\\nThe project-level AI Gateway governs direct model calls. Foundry Agent Service does not route its\\ninternal inference through it. To route the agent's inference through your own Azure API Management\\ninstance you use bring your own model, which is a separate Admin-connected model connection. With\\nthat connection the agent's model is named connection-name/model-name.\", \"source\": \"gateway.md\", \"score\": 0.1}]}"}
+{"type": "tool_result", "call_id": "call_0003", "name": "lookup_knowledge", "output": "{\"query\": \"Azure AI Foundry prompt agent hosted agent harness comparison\", \"passages\": [{\"text\": \"Two things called AI Gateway\\n\\nThe project-level AI Gateway governs direct model calls. Foundry Agent Service does not route its\\ninternal inference through it. To route the agent's inference through your own Azure API Management\\ninstance you use bring your own model, which is a separate Admin-connected model connection. With\\nthat connection the agent's model is named connection-name/model-name.\", \"source\": \"gateway.md\", \"score\": 0.65}, {\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.3077}, {\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.2037}]}"}
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " check"}
+{"type": "text_delta", "text": " once"}
+{"type": "text_delta", "text": " more"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " any"}
+{"type": "text_delta", "text": " notes"}
+{"type": "text_delta", "text": " that"}
+{"type": "text_delta", "text": " name"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": " explicitly"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0004", "name": "lookup_knowledge", "arguments": "{\"query\": \"hosted agent harness\"}", "executor": "foundry"}
+{"type": "tool_call", "call_id": "call_0005", "name": "lookup_knowledge", "arguments": "{\"query\": \"langgraph harness hosted by Foundry own container costs\"}", "executor": "foundry"}
+{"type": "tool_call", "call_id": "call_0006", "name": "lookup_knowledge", "arguments": "{\"query\": \"Foundry tracing Application Insights harness voice frontend traces\"}", "executor": "foundry"}
+{"type": "tool_result", "call_id": "call_0004", "name": "lookup_knowledge", "output": "{\"query\": \"hosted agent harness\", \"passages\": [{\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.1154}, {\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.1111}, {\"text\": \"Two things called AI Gateway\\n\\nThe project-level AI Gateway governs direct model calls. Foundry Agent Service does not route its\\ninternal inference through it. To route the agent's inference through your own Azure API Management\\ninstance you use bring your own model, which is a separate Admin-connected model connection. With\\nthat connection the agent's model is named connection-name/model-name.\", \"source\": \"gateway.md\", \"score\": 0.05}]}"}
+{"type": "tool_result", "call_id": "call_0005", "name": "lookup_knowledge", "output": "{\"query\": \"langgraph harness hosted by Foundry own container costs\", \"passages\": [{\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.1852}, {\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.0769}, {\"text\": \"Microsoft Learn MCP\\n\\nA remote MCP server at https://learn.microsoft.com/api/mcp, with no authentication. Foundry calls\\nit directly; our application only observes the call. It answers questions about Azure and Foundry\\ndocumentation.\", \"source\": \"tools.md\", \"score\": 0.0625}]}"}
+{"type": "tool_result", "call_id": "call_0006", "name": "lookup_knowledge", "output": "{\"query\": \"Foundry tracing Application Insights harness voice frontend traces\", \"passages\": [{\"text\": \"Gateway and tracing\", \"source\": \"gateway.md\", \"score\": 0.5}, {\"text\": \"What the gateway does not tell you\\n\\nThe gateway does not log tool traces. Tool-level detail comes only from Foundry tracing, which lands\\nin Application Insights. Voice Live traffic never passes through any gateway.\", \"source\": \"gateway.md\", \"score\": 0.2143}, {\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.1538}]}"}
+{"type": "text_delta", "text": "Using"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " repository"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": " base"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " two"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "es"}
+{"type": "text_delta", "text": " differ"}
+{"type": "text_delta", "text": " mainly"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "who"}
+{"type": "text_delta", "text": " runs"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " therefore"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "oper"}
+{"type": "text_delta", "text": "ational"}
+{"type": "text_delta", "text": " burden"}
+{"type": "text_delta", "text": "/c"}
+{"type": "text_delta", "text": "ost"}
+{"type": "text_delta", "text": " shape"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": ".\n\n"}
+{"type": "text_delta", "text": "|"}
+{"type": "text_delta", "text": " Harness"}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " What"}
+{"type": "text_delta", "text": " operates"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " Operating"}
+{"type": "text_delta", "text": " cost"}
+{"type": "text_delta", "text": " /"}
+{"type": "text_delta", "text": " burden"}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " What"}
+{"type": "text_delta", "text": " it"}
+{"type": "text_delta", "text": " gives"}
+{"type": "text_delta", "text": " you"}
+{"type": "text_delta", "text": " |\n"}
+{"type": "text_delta", "text": "|"}
+{"type": "text_delta", "text": "---"}
+{"type": "text_delta", "text": "|"}
+{"type": "text_delta", "text": "---"}
+{"type": "text_delta", "text": "|"}
+{"type": "text_delta", "text": "---"}
+{"type": "text_delta", "text": "|"}
+{"type": "text_delta", "text": "---"}
+{"type": "text_delta", "text": "|\n"}
+{"type": "text_delta", "text": "|"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Prompt"}
+{"type": "text_delta", "text": "-agent"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": " runs"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " Lower"}
+{"type": "text_delta", "text": " operational"}
+{"type": "text_delta", "text": " burden"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " this"}
+{"type": "text_delta", "text": " app"}
+{"type": "text_delta", "text": ":"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " project"}
+{"type": "text_delta", "text": " does"}
+{"type": "text_delta", "text": " not"}
+{"type": "text_delta", "text": " run"}
+{"type": "text_delta", "text": " its"}
+{"type": "text_delta", "text": " own"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": "-loop"}
+{"type": "text_delta", "text": " container"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " You"}
+{"type": "text_delta", "text": " still"}
+{"type": "text_delta", "text": " pay"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " underlying"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": "/model"}
+{"type": "text_delta", "text": "/tool"}
+{"type": "text_delta", "text": " usage"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " but"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " repo"}
+{"type": "text_delta", "text": " KB"}
+{"type": "text_delta", "text": " does"}
+{"type": "text_delta", "text": " not"}
+{"type": "text_delta", "text": " give"}
+{"type": "text_delta", "text": " exact"}
+{"type": "text_delta", "text": " pricing"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " A"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": "-managed"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": " behind"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " same"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "Harness"}
+{"type": "text_delta", "text": "Adapter"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " contract"}
+{"type": "text_delta", "text": " as"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " other"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " It"}
+{"type": "text_delta", "text": " emits"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " same"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "Agent"}
+{"type": "text_delta", "text": "Event"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " stream"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " so"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " frontend"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " tracing"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " voice"}
+{"type": "text_delta", "text": " path"}
+{"type": "text_delta", "text": " work"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " same"}
+{"type": "text_delta", "text": " way"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " |\n"}
+{"type": "text_delta", "text": "|"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Hosted"}
+{"type": "text_delta", "text": "-agent"}
+{"type": "text_delta", "text": " /"}
+{"type": "text_delta", "text": " Lang"}
+{"type": "text_delta", "text": "Graph"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " The"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": " runs"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "in"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " project"}
+{"type": "text_delta", "text": "\u2019s"}
+{"type": "text_delta", "text": " own"}
+{"type": "text_delta", "text": " container"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " by"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " Higher"}
+{"type": "text_delta", "text": " operational"}
+{"type": "text_delta", "text": " burden"}
+{"type": "text_delta", "text": ":"}
+{"type": "text_delta", "text": " you"}
+{"type": "text_delta", "text": " own"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": " implementation"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " container"}
+{"type": "text_delta", "text": "ized"}
+{"type": "text_delta", "text": " runtime"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " That"}
+{"type": "text_delta", "text": " implies"}
+{"type": "text_delta", "text": " more"}
+{"type": "text_delta", "text": " to"}
+{"type": "text_delta", "text": " build"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " deploy"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " observe"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " maintain"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " The"}
+{"type": "text_delta", "text": " KB"}
+{"type": "text_delta", "text": " does"}
+{"type": "text_delta", "text": " not"}
+{"type": "text_delta", "text": " provide"}
+{"type": "text_delta", "text": " exact"}
+{"type": "text_delta", "text": " hosting"}
+{"type": "text_delta", "text": " or"}
+{"type": "text_delta", "text": " compute"}
+{"type": "text_delta", "text": " prices"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " |"}
+{"type": "text_delta", "text": " More"}
+{"type": "text_delta", "text": " control"}
+{"type": "text_delta", "text": " over"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": " because"}
+{"type": "text_delta", "text": " it"}
+{"type": "text_delta", "text": " runs"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " your"}
+{"type": "text_delta", "text": " container"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " while"}
+{"type": "text_delta", "text": " still"}
+{"type": "text_delta", "text": " being"}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " by"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " It"}
+{"type": "text_delta", "text": " uses"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " same"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "Harness"}
+{"type": "text_delta", "text": "Adapter"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " contract"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " emits"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " same"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "Agent"}
+{"type": "text_delta", "text": "Event"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " stream"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " so"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " rest"}
+{"type": "text_delta", "text": " of"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " app"}
+{"type": "text_delta", "text": " does"}
+{"type": "text_delta", "text": " not"}
+{"type": "text_delta", "text": " need"}
+{"type": "text_delta", "text": " to"}
+{"type": "text_delta", "text": " change"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " |\n\n"}
+{"type": "text_delta", "text": "The"}
+{"type": "text_delta", "text": " key"}
+{"type": "text_delta", "text": " architecture"}
+{"type": "text_delta", "text": " point"}
+{"type": "text_delta", "text": " is"}
+{"type": "text_delta", "text": " that"}
+{"type": "text_delta", "text": " both"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "es"}
+{"type": "text_delta", "text": " are"}
+{"type": "text_delta", "text": " intentionally"}
+{"type": "text_delta", "text": " interchangeable"}
+{"type": "text_delta", "text": ":"}
+{"type": "text_delta", "text": " both"}
+{"type": "text_delta", "text": " sit"}
+{"type": "text_delta", "text": " behind"}
+{"type": "text_delta", "text": " one"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "Harness"}
+{"type": "text_delta", "text": "Adapter"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " emit"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " same"}
+{"type": "text_delta", "text": " nine"}
+{"type": "text_delta", "text": "-event"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "Agent"}
+{"type": "text_delta", "text": "Event"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " contract"}
+{"type": "text_delta", "text": " \u2014"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "reason"}
+{"type": "text_delta", "text": "ing"}
+{"type": "text_delta", "text": "_summary"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "text"}
+{"type": "text_delta", "text": "_delta"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "tool"}
+{"type": "text_delta", "text": "_call"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "tool"}
+{"type": "text_delta", "text": "_result"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "m"}
+{"type": "text_delta", "text": "cp"}
+{"type": "text_delta", "text": "_call"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "usage"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "trace"}
+{"type": "text_delta", "text": "_ids"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "error"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "done"}
+{"type": "text_delta", "text": "`."}
+{"type": "text_delta", "text": " That"}
+{"type": "text_delta", "text": " means"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " B"}
+{"type": "text_delta", "text": "FF"}
+{"type": "text_delta", "text": "/frontend"}
+{"type": "text_delta", "text": " consume"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " same"}
+{"type": "text_delta", "text": " stream"}
+{"type": "text_delta", "text": " either"}
+{"type": "text_delta", "text": " way"}
+{"type": "text_delta", "text": ".\n\n"}
+{"type": "text_delta", "text": "So"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " practical"}
+{"type": "text_delta", "text": " trade"}
+{"type": "text_delta", "text": "off"}
+{"type": "text_delta", "text": " is"}
+{"type": "text_delta", "text": ":\n\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Choose"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "prompt"}
+{"type": "text_delta", "text": "-agent"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " when"}
+{"type": "text_delta", "text": " you"}
+{"type": "text_delta", "text": " want"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " simplest"}
+{"type": "text_delta", "text": " operating"}
+{"type": "text_delta", "text": " model"}
+{"type": "text_delta", "text": ":"}
+{"type": "text_delta", "text": " let"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": " run"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Choose"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "host"}
+{"type": "text_delta", "text": "ed"}
+{"type": "text_delta", "text": "/L"}
+{"type": "text_delta", "text": "ang"}
+{"type": "text_delta", "text": "Graph"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " when"}
+{"type": "text_delta", "text": " you"}
+{"type": "text_delta", "text": " want"}
+{"type": "text_delta", "text": " more"}
+{"type": "text_delta", "text": " control"}
+{"type": "text_delta", "text": " over"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " are"}
+{"type": "text_delta", "text": " willing"}
+{"type": "text_delta", "text": " to"}
+{"type": "text_delta", "text": " operate"}
+{"type": "text_delta", "text": " your"}
+{"type": "text_delta", "text": " own"}
+{"type": "text_delta", "text": " container"}
+{"type": "text_delta", "text": "ized"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": ".\n\n"}
+{"type": "text_delta", "text": "Sources"}
+{"type": "text_delta", "text": " from"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " project"}
+{"type": "text_delta", "text": " KB"}
+{"type": "text_delta", "text": ":"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "architecture"}
+{"type": "text_delta", "text": ".md"}
+{"type": "text_delta", "text": "`,"}
+{"type": "text_delta", "text": " `"}
+{"type": "text_delta", "text": "gateway"}
+{"type": "text_delta", "text": ".md"}
+{"type": "text_delta", "text": "`."}
+{"type": "trace_ids", "response_id": "caresp_0007"}
+{"type": "done", "response_id": "caresp_0007"}

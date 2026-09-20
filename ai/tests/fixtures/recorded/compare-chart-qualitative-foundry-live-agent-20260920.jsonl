@@ -1,0 +1,311 @@
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " check"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " project"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": " base"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " two"}
+{"type": "text_delta", "text": " shipped"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "es"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0000", "name": "lookup_knowledge", "arguments": "{\"query\":\"Compare prompt agent harness and hosted agent harness costs to operate and what each gives you foundry-live-agent\"}", "executor": "app"}
+{"type": "trace_ids", "response_id": "resp_0001", "conversation_id": "conv_0241653013e0057200rpPdKb4qLgFt1c99lQM9OnfSfQ9dAmdJ"}
+{"type": "tool_result", "call_id": "call_0000", "name": "lookup_knowledge", "output": "{\"query\": \"Compare prompt agent harness and hosted agent harness costs to operate and what each gives you foundry-live-agent\", \"passages\": [{\"text\": \"What the gateway does not tell you\\n\\nThe gateway does not log tool traces. Tool-level detail comes only from Foundry tracing, which lands\\nin Application Insights. Voice Live traffic never passes through any gateway.\", \"source\": \"gateway.md\", \"score\": 1.0714}, {\"text\": \"Gateway and tracing\", \"source\": \"gateway.md\", \"score\": 1.0}, {\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.5385}]}", "duration_ms": 1}
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " look"}
+{"type": "text_delta", "text": " up"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "-specific"}
+{"type": "text_delta", "text": " notes"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " repository"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": " base"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0002", "name": "lookup_knowledge", "arguments": "{\"query\":\"prompt-agent harness hosted-agent harness operating cost capabilities\"}", "executor": "app"}
+{"type": "trace_ids", "response_id": "resp_0003", "conversation_id": "conv_0241653013e0057200rpPdKb4qLgFt1c99lQM9OnfSfQ9dAmdJ"}
+{"type": "tool_result", "call_id": "call_0002", "name": "lookup_knowledge", "output": "{\"query\": \"prompt-agent harness hosted-agent harness operating cost capabilities\", \"passages\": [{\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.2308}, {\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.2222}, {\"text\": \"Two things called AI Gateway\\n\\nThe project-level AI Gateway governs direct model calls. Foundry Agent Service does not route its\\ninternal inference through it. To route the agent's inference through your own Azure API Management\\ninstance you use bring your own model, which is a separate Admin-connected model connection. With\\nthat connection the agent's model is named connection-name/model-name.\", \"source\": \"gateway.md\", \"score\": 0.1}]}", "duration_ms": 0}
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " query"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " project"}
+{"type": "text_delta", "text": " notes"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " \u201c"}
+{"type": "text_delta", "text": "host"}
+{"type": "text_delta", "text": "ed"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": "\u201d"}
+{"type": "text_delta", "text": " wording"}
+{"type": "text_delta", "text": " specifically"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0004", "name": "lookup_knowledge", "arguments": "{\"query\":\"hosted agent prompt agent harness costs operate gives you\"}", "executor": "app"}
+{"type": "trace_ids", "response_id": "resp_0005", "conversation_id": "conv_0241653013e0057200rpPdKb4qLgFt1c99lQM9OnfSfQ9dAmdJ"}
+{"type": "tool_result", "call_id": "call_0004", "name": "lookup_knowledge", "output": "{\"query\": \"hosted agent prompt agent harness costs operate gives you\", \"passages\": [{\"text\": \"What the gateway does not tell you\\n\\nThe gateway does not log tool traces. Tool-level detail comes only from Foundry tracing, which lands\\nin Application Insights. Voice Live traffic never passes through any gateway.\", \"source\": \"gateway.md\", \"score\": 0.5}, {\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.2308}, {\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.1667}]}", "duration_ms": 0}
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " search"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " repository"}
+{"type": "text_delta", "text": "\u2019s"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": " architecture"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " deployment"}
+{"type": "text_delta", "text": " trade"}
+{"type": "text_delta", "text": "offs"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0006", "name": "lookup_knowledge", "arguments": "{\"query\":\"foundry-live-agent harness architecture prompt-agent langgraph hosted by Foundry cost tradeoffs\"}", "executor": "app"}
+{"type": "trace_ids", "response_id": "resp_0007", "conversation_id": "conv_0241653013e0057200rpPdKb4qLgFt1c99lQM9OnfSfQ9dAmdJ"}
+{"type": "tool_result", "call_id": "call_0006", "name": "lookup_knowledge", "output": "{\"query\": \"foundry-live-agent harness architecture prompt-agent langgraph hosted by Foundry cost tradeoffs\", \"passages\": [{\"text\": \"Architecture\\n\\nfoundry-live-agent is a full-stack application built around an agent that runs inside Microsoft\\nFoundry. The frontend and backend contain no agent-loop logic.\", \"source\": \"architecture.md\", \"score\": 0.9231}, {\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.2778}, {\"text\": \"Tools\\n\\nThe agent has four tools, owned by two different runtimes.\", \"source\": \"tools.md\", \"score\": 0.15}]}", "duration_ms": 0}
+{"type": "reasoning_summary", "text": "\n\n"}
+{"type": "reasoning_summary", "text": "**Clarifying agent types**\n\nIt"}
+{"type": "reasoning_summary", "text": " seems"}
+{"type": "reasoning_summary", "text": " like"}
+{"type": "reasoning_summary", "text": " the"}
+{"type": "reasoning_summary", "text": " user"}
+{"type": "reasoning_summary", "text": " is"}
+{"type": "reasoning_summary", "text": " mentioning"}
+{"type": "reasoning_summary", "text": " \""}
+{"type": "reasoning_summary", "text": "prompt"}
+{"type": "reasoning_summary", "text": " agent"}
+{"type": "reasoning_summary", "text": "\""}
+{"type": "reasoning_summary", "text": " and"}
+{"type": "reasoning_summary", "text": " \""}
+{"type": "reasoning_summary", "text": "host"}
+{"type": "reasoning_summary", "text": "ed"}
+{"type": "reasoning_summary", "text": " agent"}
+{"type": "reasoning_summary", "text": ",\""}
+{"type": "reasoning_summary", "text": " and"}
+{"type": "reasoning_summary", "text": " I"}
+{"type": "reasoning_summary", "text": " need"}
+{"type": "reasoning_summary", "text": " to"}
+{"type": "reasoning_summary", "text": " use"}
+{"type": "reasoning_summary", "text": " my"}
+{"type": "reasoning_summary", "text": " knowledge"}
+{"type": "reasoning_summary", "text": " base"}
+{"type": "reasoning_summary", "text": " to"}
+{"type": "reasoning_summary", "text": " differentiate"}
+{"type": "reasoning_summary", "text": " them"}
+{"type": "reasoning_summary", "text": "."}
+{"type": "reasoning_summary", "text": " Perhaps"}
+{"type": "reasoning_summary", "text": " the"}
+{"type": "reasoning_summary", "text": " \""}
+{"type": "reasoning_summary", "text": "host"}
+{"type": "reasoning_summary", "text": "ed"}
+{"type": "reasoning_summary", "text": " agent"}
+{"type": "reasoning_summary", "text": "\""}
+{"type": "reasoning_summary", "text": " refers"}
+{"type": "reasoning_summary", "text": " to"}
+{"type": "reasoning_summary", "text": " something"}
+{"type": "reasoning_summary", "text": " hosted"}
+{"type": "reasoning_summary", "text": " by"}
+{"type": "reasoning_summary", "text": " Found"}
+{"type": "reasoning_summary", "text": "ry"}
+{"type": "reasoning_summary", "text": ","}
+{"type": "reasoning_summary", "text": " like"}
+{"type": "reasoning_summary", "text": " Lang"}
+{"type": "reasoning_summary", "text": "Graph"}
+{"type": "reasoning_summary", "text": "."}
+{"type": "reasoning_summary", "text": " I"}
+{"type": "reasoning_summary", "text": " should"}
+{"type": "reasoning_summary", "text": " look"}
+{"type": "reasoning_summary", "text": " into"}
+{"type": "reasoning_summary", "text": " potential"}
+{"type": "reasoning_summary", "text": " costs"}
+{"type": "reasoning_summary", "text": " as"}
+{"type": "reasoning_summary", "text": " well"}
+{"type": "reasoning_summary", "text": " and"}
+{"type": "reasoning_summary", "text": " clarify"}
+{"type": "reasoning_summary", "text": " how"}
+{"type": "reasoning_summary", "text": " they"}
+{"type": "reasoning_summary", "text": " differ"}
+{"type": "reasoning_summary", "text": "."}
+{"type": "reasoning_summary", "text": " If"}
+{"type": "reasoning_summary", "text": " the"}
+{"type": "reasoning_summary", "text": " user"}
+{"type": "reasoning_summary", "text": " in"}
+{"type": "reasoning_summary", "text": "quires"}
+{"type": "reasoning_summary", "text": " further"}
+{"type": "reasoning_summary", "text": " about"}
+{"type": "reasoning_summary", "text": " \""}
+{"type": "reasoning_summary", "text": "why"}
+{"type": "reasoning_summary", "text": " two"}
+{"type": "reasoning_summary", "text": " harness"}
+{"type": "reasoning_summary", "text": "es"}
+{"type": "reasoning_summary", "text": ",\""}
+{"type": "reasoning_summary", "text": " I"}
+{"type": "reasoning_summary", "text": " might"}
+{"type": "reasoning_summary", "text": " need"}
+{"type": "reasoning_summary", "text": " to"}
+{"type": "reasoning_summary", "text": " gather"}
+{"type": "reasoning_summary", "text": " more"}
+{"type": "reasoning_summary", "text": " context"}
+{"type": "reasoning_summary", "text": " from"}
+{"type": "reasoning_summary", "text": " my"}
+{"type": "reasoning_summary", "text": " knowledge"}
+{"type": "reasoning_summary", "text": " base"}
+{"type": "reasoning_summary", "text": "."}
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " check"}
+{"type": "text_delta", "text": " whether"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": " base"}
+{"type": "text_delta", "text": " has"}
+{"type": "text_delta", "text": " notes"}
+{"type": "text_delta", "text": " on"}
+{"type": "text_delta", "text": " why"}
+{"type": "text_delta", "text": " both"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "es"}
+{"type": "text_delta", "text": " are"}
+{"type": "text_delta", "text": " shipped"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0008", "name": "lookup_knowledge", "arguments": "{\"query\":\"why two harnesses prompt agent hosted agent foundry-live-agent frontend traces voice same AgentEvent stream\"}", "executor": "app"}
+{"type": "trace_ids", "response_id": "resp_0009", "conversation_id": "conv_0241653013e0057200rpPdKb4qLgFt1c99lQM9OnfSfQ9dAmdJ"}
+{"type": "tool_result", "call_id": "call_0008", "name": "lookup_knowledge", "output": "{\"query\": \"why two harnesses prompt agent hosted agent foundry-live-agent frontend traces voice same AgentEvent stream\", \"passages\": [{\"text\": \"Harnesses\\n\\nA harness is a way of running the agent loop. The prompt-agent harness lets Foundry run the loop.\\nThe langgraph harness would run the loop in our own container, hosted by Foundry. Both sit behind\\none HarnessAdapter contract and emit the same AgentEvent stream, so the frontend, traces and voice\\nwork with either.\", \"source\": \"architecture.md\", \"score\": 0.7963}, {\"text\": \"Two things called AI Gateway\\n\\nThe project-level AI Gateway governs direct model calls. Foundry Agent Service does not route its\\ninternal inference through it. To route the agent's inference through your own Azure API Management\\ninstance you use bring your own model, which is a separate Admin-connected model connection. With\\nthat connection the agent's model is named connection-name/model-name.\", \"source\": \"gateway.md\", \"score\": 0.6667}, {\"text\": \"The AgentEvent contract\\n\\nNine event types: reasoning_summary, text_delta, tool_call, tool_result, mcp_call, usage, trace_ids,\\nerror and done. Every harness emits only these; the BFF and frontend consume only these.\", \"source\": \"architecture.md\", \"score\": 0.5323}]}", "duration_ms": 0}
+{"type": "text_delta", "text": "Using"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " repository"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": " base"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " two"}
+{"type": "text_delta", "text": " harness"}
+{"type": "text_delta", "text": "es"}
+{"type": "text_delta", "text": " differ"}
+{"type": "text_delta", "text": " mainly"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "who"}
+{"type": "text_delta", "text": " runs"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " loop"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": ".\n\n"}
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019m"}
+{"type": "text_delta", "text": " treating"}
+{"type": "text_delta", "text": " \u201c"}
+{"type": "text_delta", "text": "host"}
+{"type": "text_delta", "text": "ed"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": "\u201d"}
+{"type": "text_delta", "text": " as"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " knowledge"}
+{"type": "text_delta", "text": "-base entry"}
+{"type": "text_delta", "text": " that describes"}
+{"type": "text_delta", "text": " the **"}
+{"type": "text_delta", "text": "LangGraph"}
+{"type": "text_delta", "text": " harness running"}
+{"type": "text_delta", "text": " in the"}
+{"type": "text_delta", "text": " project\u2019s"}
+{"type": "text_delta", "text": " own container"}
+{"type": "text_delta", "text": ", hosted"}
+{"type": "text_delta", "text": " by Found"}
+{"type": "text_delta", "text": "ry**"}
+{"type": "text_delta", "text": ". The"}
+{"type": "text_delta", "text": " KB did"}
+{"type": "text_delta", "text": " not return"}
+{"type": "text_delta", "text": " a separate"}
+{"type": "text_delta", "text": " \u201chosted"}
+{"type": "text_delta", "text": "-agent"}
+{"type": "text_delta", "text": "\u201d page/name"}
+{"type": "text_delta", "text": ".\n\n| Harness"}
+{"type": "text_delta", "text": " | What runs"}
+{"type": "text_delta", "text": " the agent loop"}
+{"type": "text_delta", "text": " | Operating cost"}
+{"type": "text_delta", "text": " profile | What"}
+{"type": "text_delta", "text": " it gives you"}
+{"type": "text_delta", "text": " |\n|---"}
+{"type": "text_delta", "text": "|---|"}
+{"type": "text_delta", "text": "---|---"}
+{"type": "text_delta", "text": "|\n| **Prompt"}
+{"type": "text_delta", "text": "-agent harness** |"}
+{"type": "text_delta", "text": " **Foundry runs"}
+{"type": "text_delta", "text": " the loop** |"}
+{"type": "text_delta", "text": " Lowest app-side operational"}
+{"type": "text_delta", "text": " burden."}
+{"type": "text_delta", "text": " You do"}
+{"type": "text_delta", "text": " not run your own"}
+{"type": "text_delta", "text": " agent-loop container. The"}
+{"type": "text_delta", "text": " KB"}
+{"type": "text_delta", "text": " does not give dollar pricing"}
+{"type": "text_delta", "text": ", but architect"}
+{"type": "text_delta", "text": "urally"}
+{"type": "text_delta", "text": " this means you avoid paying"}
+{"type": "text_delta", "text": " for and operating a separate"}
+{"type": "text_delta", "text": " loop runtime owned by the"}
+{"type": "text_delta", "text": " app. | A"}
+{"type": "text_delta", "text": " managed Foundry"}
+{"type": "text_delta", "text": " agent loop. The frontend and"}
+{"type": "text_delta", "text": " backend stay free of agent-loop"}
+{"type": "text_delta", "text": " logic. It still emits the"}
+{"type": "text_delta", "text": " shared `AgentEvent` stream"}
+{"type": "text_delta", "text": " used by the app. |\n|"}
+{"type": "text_delta", "text": " **Hosted /"}
+{"type": "text_delta", "text": " LangGraph harness** | The loop"}
+{"type": "text_delta", "text": " runs in **your own container**,"}
+{"type": "text_delta", "text": " hosted by Foundry | Higher operational"}
+{"type": "text_delta", "text": " footprint. In"}
+{"type": "text_delta", "text": " addition to model/tool"}
+{"type": "text_delta", "text": " usage, you now operate the container that"}
+{"type": "text_delta", "text": " owns the loop. The KB does"}
+{"type": "text_delta", "text": " not"}
+{"type": "text_delta", "text": " state exact pricing or billing"}
+{"type": "text_delta", "text": " units, only"}
+{"type": "text_delta", "text": " that this runtime is owned"}
+{"type": "text_delta", "text": " by the project rather than Found"}
+{"type": "text_delta", "text": "ry\u2019s"}
+{"type": "text_delta", "text": " built-in loop. | More control over"}
+{"type": "text_delta", "text": " orches"}
+{"type": "text_delta", "text": "tration because the loop is your code"}
+{"type": "text_delta", "text": ", e"}
+{"type": "text_delta", "text": ".g. LangGraph-style control flow"}
+{"type": "text_delta", "text": ". It still sits"}
+{"type": "text_delta", "text": " behind the same `HarnessAdapter`"}
+{"type": "text_delta", "text": " contract and emits"}
+{"type": "text_delta", "text": " the same `AgentEvent` stream. |\n\nShared"}
+{"type": "text_delta", "text": " behavior from"}
+{"type": "text_delta", "text": " the KB:\n\n- Both harnesses sit behind one"}
+{"type": "text_delta", "text": " **`HarnessAdapter`** contract.\n"}
+{"type": "text_delta", "text": "- Both emit the same **`AgentEvent"}
+{"type": "text_delta", "text": "`**"}
+{"type": "text_delta", "text": " stream.\n- The BFF and frontend consume only"}
+{"type": "text_delta", "text": " that event"}
+{"type": "text_delta", "text": " contract.\n- The frontend, traces"}
+{"type": "text_delta", "text": ", and voice path are intended"}
+{"type": "text_delta", "text": " to work with either harness.\n"}
+{"type": "text_delta", "text": "- The app architecture keeps"}
+{"type": "text_delta", "text": " agent-loop logic out of the frontend and"}
+{"type": "text_delta", "text": " backend.\n\nSo the short"}
+{"type": "text_delta", "text": " version is:\n\n-"}
+{"type": "text_delta", "text": " **Prompt-agent** buys"}
+{"type": "text_delta", "text": " you simplicity:"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry owns the loop, less project"}
+{"type": "text_delta", "text": "-owned runtime to operate.\n- **Hosted/L"}
+{"type": "text_delta", "text": "ang"}
+{"type": "text_delta", "text": "Graph** buys you control: your container"}
+{"type": "text_delta", "text": " owns the loop, at the"}
+{"type": "text_delta", "text": " cost of operating that extra runtime.\n\nSource: repository KB"}
+{"type": "text_delta", "text": " entries from `architecture.md"}
+{"type": "text_delta", "text": "`, especially \u201cHarnesses\u201d and \u201cThe"}
+{"type": "text_delta", "text": " AgentEvent contract.\u201d"}
+{"type": "trace_ids", "response_id": "resp_0010", "conversation_id": "conv_0241653013e0057200rpPdKb4qLgFt1c99lQM9OnfSfQ9dAmdJ"}
+{"type": "usage", "input_tokens": 13059, "output_tokens": 1389, "reasoning_tokens": 636, "cached_input_tokens": 9216}
+{"type": "done", "response_id": "resp_0010"}

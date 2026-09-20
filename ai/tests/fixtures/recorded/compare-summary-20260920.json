@@ -1,0 +1,132 @@
+[
+  {
+    "agent": "foundry-live-agent",
+    "probe": "round-trip",
+    "first_token_s": 6.38,
+    "total_s": 22.82,
+    "events": 387,
+    "kinds": {
+      "reasoning_summary": 250,
+      "text_delta": 127,
+      "tool_call": 2,
+      "trace_ids": 2,
+      "tool_result": 2,
+      "mcp_call": 2,
+      "usage": 1,
+      "done": 1
+    },
+    "usage": {
+      "input_tokens": 20464,
+      "output_tokens": 898,
+      "reasoning_tokens": 455,
+      "cached_input_tokens": 1024
+    },
+    "chars": 1363,
+    "fences": [],
+    "fixture": "compare-round-trip-foundry-live-agent-20260920.jsonl"
+  },
+  {
+    "agent": "foundry-live-agent-hosted",
+    "probe": "round-trip",
+    "first_token_s": 14.55,
+    "total_s": 27.58,
+    "events": 373,
+    "kinds": {
+      "text_delta": 365,
+      "tool_call": 3,
+      "tool_result": 3,
+      "trace_ids": 1,
+      "done": 1
+    },
+    "usage": null,
+    "chars": 1765,
+    "fences": [],
+    "fixture": "compare-round-trip-foundry-live-agent-hosted-20260920.jsonl"
+  },
+  {
+    "agent": "foundry-live-agent",
+    "probe": "chart-qualitative",
+    "first_token_s": 4.27,
+    "total_s": 43.54,
+    "events": 311,
+    "kinds": {
+      "text_delta": 205,
+      "tool_call": 5,
+      "trace_ids": 6,
+      "tool_result": 5,
+      "reasoning_summary": 88,
+      "usage": 1,
+      "done": 1
+    },
+    "usage": {
+      "input_tokens": 13059,
+      "output_tokens": 1389,
+      "reasoning_tokens": 636,
+      "cached_input_tokens": 9216
+    },
+    "chars": 2483,
+    "fences": [],
+    "fixture": "compare-chart-qualitative-foundry-live-agent-20260920.jsonl"
+  },
+  {
+    "agent": "foundry-live-agent-hosted",
+    "probe": "chart-qualitative",
+    "first_token_s": 13.61,
+    "total_s": 30.73,
+    "events": 491,
+    "kinds": {
+      "text_delta": 475,
+      "tool_call": 7,
+      "tool_result": 7,
+      "trace_ids": 1,
+      "done": 1
+    },
+    "usage": null,
+    "chars": 2155,
+    "fences": [],
+    "fixture": "compare-chart-qualitative-foundry-live-agent-hosted-20260920.jsonl"
+  },
+  {
+    "agent": "foundry-live-agent",
+    "probe": "chart-quantities",
+    "first_token_s": 6.64,
+    "total_s": 28.27,
+    "events": 198,
+    "kinds": {
+      "reasoning_summary": 79,
+      "text_delta": 106,
+      "tool_call": 4,
+      "trace_ids": 3,
+      "tool_result": 4,
+      "usage": 1,
+      "done": 1
+    },
+    "usage": {
+      "input_tokens": 17238,
+      "output_tokens": 742,
+      "reasoning_tokens": 308,
+      "cached_input_tokens": 5632
+    },
+    "chars": 991,
+    "fences": [],
+    "fixture": "compare-chart-quantities-foundry-live-agent-20260920.jsonl"
+  },
+  {
+    "agent": "foundry-live-agent-hosted",
+    "probe": "chart-quantities",
+    "first_token_s": 13.94,
+    "total_s": 27.21,
+    "events": 269,
+    "kinds": {
+      "text_delta": 265,
+      "tool_call": 1,
+      "tool_result": 1,
+      "trace_ids": 1,
+      "done": 1
+    },
+    "usage": null,
+    "chars": 993,
+    "fences": [],
+    "fixture": "compare-chart-quantities-foundry-live-agent-hosted-20260920.jsonl"
+  }
+]

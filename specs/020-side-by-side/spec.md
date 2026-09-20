@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 020-side-by-side |
-| **Status** | done — AC16 outstanding |
+| **Status** | done |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 
@@ -153,10 +153,15 @@ Taken 2026-09-16 with the user.
 
 ## What shipped, and what did not
 
-Built 2026-09-19. Every acceptance criterion has a passing test except **AC16**, which asks for a
-**measured** run against the live service. That needs a credential this machine does not have, and
-§5 forbids hand-writing a recording to stand in for one — so `docs/harness-comparison.md` carries
-the section with no numbers in it and `docs/REFERENCES.md` carries the open item.
+Built 2026-09-19. Every acceptance criterion had a passing test except **AC16**, which asks for a
+**measured** run against the live service.
+
+**AC16 met 2026-09-20.** Six turns, three probes, both agents, through the real BFF
+(`ai/scripts/compare_harnesses.py`); recordings under `ai/tests/fixtures/recorded/compare-*` and
+the measurements in `docs/harness-comparison.md` with their date. The headline is that **time to
+first token differs 2–3×** while total time does not, which is the difference a reader of this
+screen actually feels. The credential was never missing — see `docs/REFERENCES.md`, *The credential,
+and what it turned out to be*.
 
 Three things this spec expected to decide turned out to need no decision, and that is worth
 recording rather than quietly enjoying:

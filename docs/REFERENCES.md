@@ -714,7 +714,7 @@ measurement we did not make (§5).
 | Does the control channel emit anything when the user barges in? | run a session, talk over the agent mid-answer, record the frames |
 | If it does, is it on the data channel or the control WebSocket? | the same recording answers both |
 
-### Open — what does the comparison actually measure? (spec 020)
+### What the comparison measures — answered (spec 020, AC16)
 
 `/compare` puts one question to two agents at once and draws two columns. Everything about **how**
 it does that is verified: the two requests are two ordinary `POST /chat` calls, each already
@@ -729,32 +729,60 @@ run that spends model tokens, which the read-only 2026-09-20 session deliberatel
 §5 forbids hand-writing a recording to stand in for one. So `harness-comparison.md` gains the section and **no numbers** — a table of
 plausible latencies nobody measured is worse than an empty one.
 
-| Open question | How to close it |
+**Closed 2026-09-20.** Six turns, three probes, both agents, through the real BFF. The measurements
+are in [`harness-comparison.md`](harness-comparison.md) and every turn is committed under
+`ai/tests/fixtures/recorded/compare-*`.
+
+| Question | Answer |
 |---|---|
-| How far apart are the two harnesses on the same question — first token, total, tokens, cost? | run one comparison against both deployed agents and record both turns |
-| Does the hosted column really report `usage: null`, as spec 018 measured? | the same run; `MetaLine` already renders nothing rather than a zero if it does |
-| Does a hosted turn emit `mcp_call` at all? | the same run — spec 018 says it is harness-specific, and the column is built to render its absence as normal (AC6) |
+| How far apart are the two harnesses on the same question? | **Time to first token: 2–3×**, consistently — 6.4/4.3/6.6s for the prompt agent against 14.6/13.6/13.9s for the hosted one. *Total* time is comparable, so the gap is where the container plans before speaking, not throughput. |
+| Does the hosted column really report `usage: null`? | **Yes**, in all three probes. Spec 018's measurement holds, and `MetaLine` renders nothing rather than a zero. |
+| Does a hosted turn emit `mcp_call` at all? | **No — not once.** Learn arrives as `microsoft_docs_search` / `microsoft_docs_fetch` with `executor: "foundry"`, because the container is the MCP client. The prompt agent emits `mcp_call` for the same work. |
+
+These are **two samples per probe from one machine on one day**, not a benchmark, and the numbers
+include a localhost hop. Said here rather than left for a reader to assume.
 
 One property this spec did **not** need a credential for, and which is asserted rather than assumed:
 the BFF resolves the harness per request and never mutates `app.state.harness` (spec 019), so two
 concurrent turns from one browser cannot change each other's agent.
 
-### Open — does the agent actually write a chart block? (spec 033)
+### Does the agent actually write a chart block? — answered, and the answer is no (spec 033)
 
 `ai/harness/_shared/agent_core.yaml` now tells the agent how to write a `foundry-chart` block, and
 CI proves the **instructions and the renderer agree**: every worked example in that YAML is parsed
 by `parseChart` (`frontend/src/state/chartContract.test.ts`). That is a real guard against the two
 drifting apart, which is what `agent_core.yaml` exists to prevent.
 
-It is **not** evidence that the model follows them. No turn has been recorded in which the agent
-wrote a chart block unprompted, because that needs a turn to be run and the 2026-09-20 session was
-read-only, and §5 forbids hand-writing a recording to stand in for one.
+It was **not** evidence that the model follows them. It has now been asked, and the answer is no.
 
-| Open question | How to close it |
+### Answered 2026-09-20 — the agent does not reach for a chart
+
+Four turns, two probes, both agents. **Not one produced a `foundry-chart` block**, or a `mermaid`
+one. Recorded under `ai/tests/fixtures/recorded/compare-chart-*`.
+
+| Probe | What was asked | What came back |
+|---|---|---|
+| `chart-qualitative` | compare the two harnesses on cost to operate and what each gives you | Prose and headings. **This is the correct behaviour**: the instruction says "a comparison *of quantities*", the repository's own comparison doc deliberately carries no numbers, and another rule in the same block forbids inventing a value it does not have. Recorded because declining for the right reason is a finding. |
+| `chart-quantities` | the populations of São Paulo, Rio and Brasília, compared | **A Markdown table** — three real figures from IBGE via `search_web`, ranked, with ratios and percentages in prose. Every condition the instruction describes was met. It still chose a table. |
+
+So the gap is not the renderer and not the schema — CI proves those agree — it is that **`gpt-5.5`
+prefers a table for a three-value comparison**, and the instruction's "you **may** draw it" gives it
+every right to. Two honest ways forward, and neither is free:
+
+- Make the instruction directive for the case it describes ("when the answer compares three or more
+  quantities, draw it") and measure again. That is a change to `agent_core.yaml` and therefore a
+  change to how the agent behaves in *every* turn, including voice.
+- Accept it. A table of three numbers is not a worse answer, spec 035 gives it a copy-as-TSV
+  control, and an agent that charts because it was told to rather than because it helps is the
+  over-reach the same spec listed as a risk.
+
+**Not decided here.** The measurement is the deliverable; changing the agent's behaviour on the back
+of one probe would be the reflex this repository exists to argue against.
+
+| Still open | How to close it |
 |---|---|
-| Does the agent write a valid `foundry-chart` block when an answer is a comparison? | apply the agent, ask it to compare the two harnesses' latencies, record the turn |
-| Does it over-reach — charting a single number, or a breakdown it invented? | the same turn, plus one where the data is thin |
-| Does the hosted harness produce the same block? | both harnesses read the same instructions, so a difference would be a spec 018 finding |
+| Does a more directive instruction produce a chart, and at what cost to ordinary answers? | edit `agent_core.yaml`, apply, re-run `compare_harnesses.py --probe chart-quantities`, compare against these recordings |
+| Does it over-reach once told to — charting a single number, or a breakdown it invented? | the same run, plus one where the data is thin |
 
 The recorded listing (`backend/tests/fixtures/agents-listing-20260916.json`, 10 agents) carries **no
 `agent_endpoint` key at all** — consistent with nothing ever having been pinned, and not proof that

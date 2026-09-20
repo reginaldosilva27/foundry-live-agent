@@ -73,7 +73,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 017 | [A spoken answer does not read URLs out loud](017-no-urls-out-loud/spec.md) | 3 | ✅ done |
 | 018 | [The second harness — a LangGraph graph running as a Foundry hosted agent](018-hosted-agent-harness/spec.md) | 4 | ✅ done |
 | 019 | [The agents screen — pick which Foundry agent answers](019-agent-picker/spec.md) | 4 | ✅ done |
-| 020 | [Side by side — one question, two agents, two streams](020-side-by-side/spec.md) | 4 | ✅ done * |
+| 020 | [Side by side — one question, two agents, two streams](020-side-by-side/spec.md) | 4 | ✅ done |
 | 021 | [The shell, elaborated — navigation, an agents screen, answer actions, local history](021-ui-shell/spec.md) | 4 | ✅ done |
 | 022 | [Favourite agents — the two you actually use, in the rail](022-agent-favourites/spec.md) | 4 | ✅ done |
 | 023 | [The composer, and stopping a turn](023-composer-and-stop/spec.md) | 4 | ✅ done |
@@ -103,9 +103,9 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 047 | [The app on a narrow screen](047-narrow-screen/spec.md) | 4 | ✅ done |
 | 048 | [A focus ring by default, not by remembering](048-focus-by-default/spec.md) | 4 | ✅ done |
 
-`*` — **done with a named exception.** Spec 020 ships every acceptance criterion but AC16, which
-needs a measured run against the live service; the reason and what closes it are in the spec and in
-[`../docs/REFERENCES.md`](../docs/REFERENCES.md). Spec 045 is **blocked** by design — since
+`*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
+numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is
+**blocked** by design — since
 2026-09-20 no longer on a document (that one is read and recorded) but on two decisions: which of
 the four documented file-input shapes to offer, and what the deployment retains. The second is the
 operator's, not this repository's.

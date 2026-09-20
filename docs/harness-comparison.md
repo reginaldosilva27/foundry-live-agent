@@ -27,16 +27,41 @@ Spec 020 puts the two columns of this table on a screen: `/compare` sends one qu
 at once and each answers into its own column, with its own tool rows, its own executor tags and its
 own figures. It is the demonstration of what the table argues.
 
-**The measured run is outstanding.** AC16 asks for the same question put to both agents against the
-**live** service, recorded as a dated fixture, with the differences written here as measurements.
+### Measured — 2026-09-20
 
-It is no longer blocked on tooling: the credential was there all along behind a shadowed `az`
-binary (see [REFERENCES.md](REFERENCES.md), *The credential, and what it turned out to be*), and
-reads against the project were made on 2026-09-20. What AC16 needs is not a read — it is **two
-turns actually run**, which spends model tokens on somebody's subscription, and that was outside
-the scope of the read-only session. Constitution §5 forbids hand-writing a recording to stand in
-for one. So this section states what the screen does and **no numbers**: a table of plausible
-latencies nobody measured would be worse than an empty one. One comparison run closes it.
+AC16, run. Six turns through the real BFF (`ai/scripts/compare_harnesses.py`, which posts to
+`/chat` exactly as the screen does), against the live project `ai-admin2354ai223634534-project`,
+`gpt-5.5`, from São Paulo. Every turn is committed under
+[`ai/tests/fixtures/recorded/`](../ai/tests/fixtures/recorded/) with its summary; **these are two
+samples per probe, not a benchmark** — they are what one run looked like, on one day, from one
+machine, and the numbers include one localhost hop.
+
+| | prompt agent | hosted agent |
+|---|---|---|
+| First `text_delta` | **6.4s** · 4.3s · 6.6s | **14.6s** · 13.6s · 13.9s |
+| Total | 22.8s · 43.5s · 28.3s | 27.6s · 30.7s · 27.2s |
+| Events in the turn | 387 · 311 · 198 | 373 · 491 · 269 |
+| `reasoning_summary` | 250 · 88 · 79 | **none, ever** |
+| `usage` | reported | **`null`** |
+| `mcp_call` | 2 · 0 · 0 | **none, ever** |
+
+Three differences are structural rather than incidental, and each confirms something this table
+already argued:
+
+- **Time to first token is the gap that matters.** The hosted agent took 2–3× longer to say its
+  first word in all three probes, while *total* time was comparable or better. The container is
+  doing its own planning before it speaks; the prompt agent starts streaming reasoning almost
+  immediately. For a chat UI, that difference is the whole felt experience.
+- **The hosted turn reports no usage at all** — `usage: null`, exactly as spec 018 measured, so
+  `MetaLine` renders nothing rather than a zero and the cost column stays honestly empty (§5).
+- **The hosted turn emits no `mcp_call`.** Microsoft Learn is reached as `microsoft_docs_search`
+  and `microsoft_docs_fetch` with `executor: "foundry"` — plain tool calls — because the container
+  is the MCP client, not Foundry. Spec 018 predicted this; here it is, in both chart probes too.
+
+One more, which is a property and not a measurement: the prompt agent's function tools arrive with
+`executor: "app"` (`get_current_datetime`, `lookup_knowledge`, `search_web` — our BFF answers them),
+and the hosted agent's arrive with `executor: "foundry"`. Same tools, same question, different side
+of the boundary, visible in the recordings.
 
 ## What you give up by choosing each
 

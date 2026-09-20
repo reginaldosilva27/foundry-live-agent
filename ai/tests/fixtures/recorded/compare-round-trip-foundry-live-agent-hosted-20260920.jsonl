@@ -1,0 +1,373 @@
+{"type": "text_delta", "text": "I"}
+{"type": "text_delta", "text": "\u2019ll"}
+{"type": "text_delta", "text": " check"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " current"}
+{"type": "text_delta", "text": " S\u00e3o"}
+{"type": "text_delta", "text": " Paulo"}
+{"type": "text_delta", "text": " time"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " official"}
+{"type": "text_delta", "text": " Microsoft"}
+{"type": "text_delta", "text": " documentation"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": "."}
+{"type": "tool_call", "call_id": "call_0000", "name": "get_current_datetime", "arguments": "{\"timezone\": \"America/Sao_Paulo\"}", "executor": "foundry"}
+{"type": "tool_call", "call_id": "call_0001", "name": "microsoft_docs_search", "arguments": "{\"query\": \"Microsoft Foundry hosted agents\"}", "executor": "foundry"}
+{"type": "tool_result", "call_id": "call_0000", "name": "get_current_datetime", "output": "{\"iso\": \"2026-09-20T12:18:30.204452-03:00\", \"timezone\": \"America/Sao_Paulo\", \"utc_offset\": \"-03:00\", \"formatted\": \"Sunday, 20 September 2026, 12:18\"}"}
+{"type": "tool_result", "call_id": "call_0001", "name": "microsoft_docs_search", "output": "{\"results\":[{\"title\":\"What are hosted agents?\",\"content\":\"# What are hosted agents?\\nWhen you build agentic applications by using open-source frameworks, you typically manage many cross-cutting concerns: containerization, web server setup, security, memory persistence, scaling, instrumentation, and version rollbacks. These tasks become even more challenging in heterogeneous cloud environments.\\nHosted agents in Foundry Agent Service solve these challenges for Microsoft Foundry users. Hosted agents call models from the Foundry model catalog to perform reasoning while your custom code handles orchestration. By using this managed platform, you can deploy and operate AI agents securely and at scale. You can use your custom agent code or a preferred agent framework with streamlined deployment and management.\\nIf you\\u0027re exploring hosted agents with an AI coding agent, the [Microsoft Foundry Skill](https://learn.microsoft.com/azure/foundry/how-to/develop/use-microsoft-foundry-skill) can help connect these concepts to implementation, deployment, and operations tasks.\\n### When to use hosted agents\\nChoose Hosted agents over prompt-based agents when you need to:\\n1. **Bring your own code** - use any framework (Agent Framework, LangGraph, Semantic Kernel, or custom code) rather than prompt-only definitions.\\n2. **Use custom protocols** - accept webhooks or non-OpenAI payloads via the Invocations protocol.\\n3. **Control compute resources** - specify CPU and memory for your agent\\u0027s sandbox.\\n4. **Run stateful workloads** - persist files and state across turns via $HOME and the /files endpoint.\\n5. **Run long-lived work resiliently** - preserve in-progress agent work across process interruptions and replay streamed results to reconnecting clients.\\n### How it works\\nYou package your agent as a container image and push it to Azure Container Registry. When you deploy, Agent Service pulls the image, assigns a dedicated Microsoft Entra ID (agent identity), and exposes a dedicated endpoint for the agent.\\nAt runtime, Agent Service provisions compute for the session and routes requests to your container. Your agent code handles those requests and can call Foundry models, Toolbox tools, and downstream Azure services using its agent identity. The platform handles scaling, session state persistence, observability, and lifecycle management.\\nThe following diagram shows how responsibility is divided. You own the code that runs inside the sandbox. The platform owns the endpoint, identity, scaling, and session state around it.\",\"contentUrl\":\"https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents\"},{\"title\":\"What are hosted agents?\",\"content\":\"# What are hosted agents?\\n## Platform details\\n### Versioning\\nEach call to create a version produces an **immutable agent version**. The version is a snapshot of the container image, resource allocation, environment variables, and protocol configuration. To update your agent, create and deploy a new version.\\nAn agent endpoint serves one version at a time and routes 100% of its traffic to that version. Traffic splitting between versions isn\\u0027t supported.\\nEnvironment variables are the primary mechanism for passing configuration to your container at runtime (for example, the project endpoint, model deployment name, and custom settings). They\\u0027re set per version and are immutable once the version is created.\\n### Observability\\nHosted agents provide built-in observability. The platform automatically injects an Application Insights connection string into your agent container via environment variables. Agents that use the protocol libraries emit OpenTelemetry traces by default, which appear in the linked Application Insights resource under **Investigate** \\u003E **Transaction search** or **Performance**.\\nFor configuration and analysis guidance, see [Enable tracing in your project](https://learn.microsoft.com/azure/foundry/observability/concepts/trace-agent-concept).\\n### Toolbox in Foundry\\nHosted agents have full access to Foundry-managed tools, including Code Interpreter, Web Search (with Grounding with Bing Custom Search), Azure AI Search, OpenAPI, MCP, A2A, Skills, and more. You connect these tools through a **Toolbox MCP endpoint** provisioned in your Foundry project rather than by adding them directly to the agent definition. The toolbox gives you consolidated authentication across OAuth identity passthrough, agent identity, key-based auth, and more. If you use Microsoft Agent Framework, connect through \\u0060FoundryToolbox\\u0060 in Python or \\u0060AddFoundryToolboxes\\u0060 in .NET instead of a generic MCP client. Other runtimes connect by using standard MCP client libraries. For details, see [Curate intent-based toolbox in Foundry](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox).\\n### Language support\\nHosted agents support **Python** and **C#**. You can use any agent framework\\u2014the protocol libraries are framework-agnostic. For samples using Microsoft Agent Framework, LangGraph, and custom code, see the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents).\\n### Sandbox sizes\\nHosted agent sandboxes support the following CPU and memory combinations:\",\"contentUrl\":\"https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#platform-details\"},{\"title\":\"Foundry Hosted Agents (programming-language-csharp)\",\"content\":\"# Foundry Hosted Agents (programming-language-csharp)\\n[Hosted agents](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents) in Microsoft Foundry Agent Service let you deploy Agent Framework agents as containerized applications to Microsoft-managed infrastructure. The platform handles scaling, session state persistence, security, and lifecycle management so you can focus on your agent\\u0027s logic. Microsoft Foundry Hosted Agents is generally available.\\nWith the Agent Framework hosting integration, you can expose an \\u0060Agent\\u0060, including a workflow wrapped with \\u0060Workflow.as_agent()\\u0060, through the Foundry Responses or Invocations protocol with minimal code.\\n## When to use hosted agents\\nChoose Foundry hosted agents when you want:\\n1. **Managed infrastructure** \\u2014 no need to configure containers, web servers, or scaling rules yourself.\\n2. **Built-in session management** \\u2014 the platform persists \\u0060$HOME\\u0060 and uploaded files across turns and idle periods.\\n3. **Dedicated agent identity** \\u2014 every deployed agent gets its own Entra identity for secure access to models, tools, and downstream services.\\n4. **OpenAI-compatible endpoints** \\u2014 clients can interact with your agent using any OpenAI-compatible SDK through the Responses protocol.\\nNote\\nThe Python \\u0060agent-framework-foundry-hosting\\u0060 integration is prerelease. Microsoft Foundry Hosted Agents, the managed hosting service, is generally available.\",\"contentUrl\":\"https://learn.microsoft.com/agent-framework/hosting/foundry-hosted-agent\"},{\"title\":\"Agents in Microsoft Foundry\",\"content\":\"# Agents in Microsoft Foundry\\n## Agent types\\nAgent Service offers two agent types. Your choice sets how much you build versus how much Foundry manages:\\n1. **Prompt agents**: the fastest path. Define instructions, a model, and tools, and Foundry runs the agent for you with no code or infrastructure to manage.\\n2. **Hosted agents**: the most control. Bring your own code and framework, and Foundry runs it as a container with a managed endpoint, scaling, and identity.\\n### Prompt agents\\nYou define prompt agents entirely through configuration, including instructions, model selection, and tools. Author them in the Foundry portal for a quick start, or define them programmatically with the SDKs or REST API to integrate with your CI/CD workflows. Either way, Foundry runs the agent for you. There\\u0027s no application code to maintain, and no containers or packages to optimize, scale, or monitor for security.\\nTwo paths to get started:\\n1. **Portal-first**: create an agent interactively in the Foundry portal, test it in the playground, then call it from your application code.\\n2. **Code-first**: define the agent using the SDK or REST API in your deployment pipeline, enabling version control, code review, and automated rollout.\\n**Best for**: Getting started fast, internal tools, production agents that don\\u0027t need custom orchestration logic, and teams that want a managed runtime without infrastructure overhead.\\n### Hosted agents\\n[Hosted agents](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents) are code-based agents you build with [Agent Framework](https://github.com/microsoft/agent-framework), [LangGraph](https://github.com/langchain-ai/langgraph), the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python), the [Anthropic Agent SDK](https://github.com/anthropics/anthropic-sdk-python), the [GitHub Copilot SDK](https://github.com/github/copilot-sdk), or your own code. Ship your agent as either a container image or a .zip file of your source code (Foundry builds the image for you when you bring a .zip file), and Foundry runs it with a managed endpoint, automatic scaling, a dedicated Microsoft Entra identity, session-level state persistence, and end-to-end observability.\",\"contentUrl\":\"https://learn.microsoft.com/azure/foundry/agents/overview#agent-types\"},{\"title\":\"Foundry Hosted Agents (programming-language-go)\",\"content\":\"# Foundry Hosted Agents (programming-language-go)\\n## When to use hosted agents\\nChoose Foundry hosted agents when you want:\\n1. **Managed infrastructure** \\u2014 no need to configure containers, web servers, or scaling rules yourself.\\n2. **Built-in session management** \\u2014 the platform persists \\u0060$HOME\\u0060 and uploaded files across turns and idle periods.\\n3. **Dedicated agent identity** \\u2014 every deployed agent gets its own Entra identity for secure access to models, tools, and downstream services.\\n4. **OpenAI-compatible endpoints** \\u2014 clients can interact with your agent using any OpenAI-compatible SDK through the Responses protocol.\\nNote\\nThe Python \\u0060agent-framework-foundry-hosting\\u0060 integration is prerelease. Microsoft Foundry Hosted Agents, the managed hosting service, is generally available.\\n## Prerequisites\\n1. An Azure subscription\\n2. [Azure Developer CLI (\\u0060azd\\u0060)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd) with the AI agent extension: \\u0060azd ext install azure.ai.agents\\u0060\\nFor local testing, you also need:\\n1. A [Microsoft Foundry](https://learn.microsoft.com/en-us/azure/foundry/) project with a model deployment (for example, \\u0060gpt-4o\\u0060)\\n2. [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed and authenticated (\\u0060az login\\u0060)\\nIn Foundry, the platform supplies the caller\\u0027s user context and call context; the hosting infrastructure uses them to isolate state per user and forward request context to Foundry services. Local runs don\\u0027t receive that platform context, so applications must supply their own identity and state controls when needed.\\n## Responses protocol\\nThe **Responses** protocol is the recommended starting point for most agents. It exposes an OpenAI-compatible \\u0060/responses\\u0060 endpoint, and the platform manages conversation history, streaming, and session lifecycle automatically.\",\"contentUrl\":\"https://learn.microsoft.com/agent-framework/hosting/foundry-hosted-agent#when-to-use-hosted-agents\"},{\"title\":\"What are hosted agents?\",\"content\":\"# What are hosted agents?\\n## Key concepts\\nEvery Hosted agent deployed to a Foundry project gets its own **dedicated Microsoft Entra ID (agent identity)** and **dedicated endpoint**\\u2014both created automatically at deploy time. You don\\u0027t need to configure managed identities or routing manually.\\nThe endpoint is available immediately after deployment\\u2014publishing isn\\u0027t required for programmatic access:\\n1. **Responses**: {project\\\\_endpoint}/agents/{name}/endpoint/protocols/openai/responses\\n2. **Invocations**: {project\\\\_endpoint}/agents/{name}/endpoint/protocols/invocations\\n3. **Invocations (WebSocket)**: wss://{account}.services.ai.azure.com/api/projects/{project}/agents/{name}/endpoint/protocols/invocations\\\\_ws?api-version=v1\\n4. **A2A v1.0 (GA) and v0.3 (preview)**: {project\\\\_endpoint}/agents/{name}/endpoint/protocols/a2a\\nWhich endpoints are active depends on the protocols declared in the agent version definition. Set this definition in the \\u0060azure.ai.agent\\u0060 service in \\u0060azure.yaml\\u0060 when using \\u0060azd\\u0060, or via \\u0060protocol_versions\\u0060 when using the SDK.\\nTwo identities are involved:\\n| Identity | Scope | Purpose| \\n|  --- | --- | ---  |\\n| **Microsoft Entra ID** (agent identity, per-agent) | Created automatically at deploy time | The identity the agent container authenticates with at runtime. Used for model invocation, tool access, and downstream Azure services. |\\n| **Project managed identity** (project-wide) | System-assigned on the Foundry project | Used by the platform for infrastructure operations (for example, Container Registry Repository Reader on the container registry). Not the agent\\u0027s runtime identity. |\\n\\nThe agent identity can access model inferencing through the project endpoint and session storage by default. For external resources (for example, your own Azure Storage), assign RBAC roles manually to the agent\\u0027s Microsoft Entra ID. For more information, see [Agent access beyond defaults](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agent-permissions#agent-access-beyond-defaults).\\nWhen integrated via Microsoft 365 channels (for example, Teams), hosted agents can operate in two identity modes depending on how they\\u0027re invoked:\",\"contentUrl\":\"https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#key-concepts\"},{\"title\":\"Foundry Hosted Agents (programming-language-python)\",\"content\":\"# Foundry Hosted Agents (programming-language-python)\\n## Deploying to Foundry\\nOnce you\\u0027ve verified your agent locally, deploy it to Microsoft Foundry:\\n1. **Provision resources** (if you don\\u0027t already have a Foundry project):\\n\\u0060\\u0060\\u0060bash\\n azd provision\\n\\u0060\\u0060\\u0060\\n This creates a resource group with a Foundry instance, project, model deployment, Application Insights, and a container registry.\\n2. **Deploy the agent:**\\n\\u0060\\u0060\\u0060bash\\n azd deploy\\n\\u0060\\u0060\\u0060\\n This packages your agent as a container image, pushes it to Azure Container Registry, and deploys it to Foundry Agent Service.\\nThe Foundry hosting infrastructure automatically injects the following environment variables into your agent container at runtime:\\n| Variable | Description| \\n|  --- | ---  |\\n| \\u0060FOUNDRY_PROJECT_ENDPOINT\\u0060 | The endpoint URL for the Foundry project. |\\n| \\u0060AZURE_AI_MODEL_DEPLOYMENT_NAME\\u0060 | The model deployment name (configured during \\u0060azd ai agent init\\u0060). |\\n| \\u0060APPLICATIONINSIGHTS_CONNECTION_STRING\\u0060 | The Application Insights connection string for telemetry. |\\n\\nOnce deployed, your agent is accessible through its dedicated Foundry endpoint and can also be tested from the Foundry portal.\\n# Foundry Hosted Agents (programming-language-go)\\n[Hosted agents](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents) in Microsoft Foundry Agent Service let you deploy Agent Framework agents as containerized applications to Microsoft-managed infrastructure. The platform handles scaling, session state persistence, security, and lifecycle management so you can focus on your agent\\u0027s logic. Microsoft Foundry Hosted Agents is generally available.\\nWith the Agent Framework hosting integration, you can expose an \\u0060Agent\\u0060, including a workflow wrapped with \\u0060Workflow.as_agent()\\u0060, through the Foundry Responses or Invocations protocol with minimal code.\",\"contentUrl\":\"https://learn.microsoft.com/agent-framework/hosting/foundry-hosted-agent#deploying-to-foundry\"},{\"title\":\"Foundry Hosted Agents (programming-language-csharp)\",\"content\":\"# Foundry Hosted Agents (programming-language-csharp)\\n## Deploying to Foundry\\nOnce you\\u0027ve verified your agent locally, deploy it to Microsoft Foundry:\\n1. **Provision resources** (if you don\\u0027t already have a Foundry project):\\n\\u0060\\u0060\\u0060bash\\n azd provision\\n\\u0060\\u0060\\u0060\\n This creates a resource group with a Foundry instance, project, model deployment, Application Insights, and a container registry.\\n2. **Deploy the agent:**\\n\\u0060\\u0060\\u0060bash\\n azd deploy\\n\\u0060\\u0060\\u0060\\n This packages your agent as a container image, pushes it to Azure Container Registry, and deploys it to Foundry Agent Service.\\nThe Foundry hosting infrastructure automatically injects the following environment variables into your agent container at runtime:\\n| Variable | Description| \\n|  --- | ---  |\\n| \\u0060FOUNDRY_PROJECT_ENDPOINT\\u0060 | The endpoint URL for the Foundry project. |\\n| \\u0060AZURE_AI_MODEL_DEPLOYMENT_NAME\\u0060 | The model deployment name (configured during \\u0060azd ai agent init\\u0060). |\\n| \\u0060APPLICATIONINSIGHTS_CONNECTION_STRING\\u0060 | The Application Insights connection string for telemetry. |\\n\\nOnce deployed, your agent is accessible through its dedicated Foundry endpoint and can also be tested from the Foundry portal.\\n# Foundry Hosted Agents (programming-language-python)\\n[Hosted agents](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents) in Microsoft Foundry Agent Service let you deploy Agent Framework agents as containerized applications to Microsoft-managed infrastructure. The platform handles scaling, session state persistence, security, and lifecycle management so you can focus on your agent\\u0027s logic. Microsoft Foundry Hosted Agents is generally available.\\nWith the Agent Framework hosting integration, you can expose an \\u0060Agent\\u0060, including a workflow wrapped with \\u0060Workflow.as_agent()\\u0060, through the Foundry Responses or Invocations protocol with minimal code.\",\"contentUrl\":\"https://learn.microsoft.com/agent-framework/hosting/foundry-hosted-agent#deploying-to-foundry\"},{\"title\":\"What are hosted agents?\",\"content\":\"# What are hosted agents?\\n## Platform details\\nHosted agents support deployment within network-isolated Foundry resources and can use a customer-provided Azure Virtual Network for outbound traffic. This enables agents in network-isolated Foundry deployments to reach private resources such as databases or internal APIs. For more information, see [Configure virtual networks](https://learn.microsoft.com/azure/foundry/agents/how-to/virtual-networks).\\nNote\\nFoundry projects created after June 25, 2026 support a private (network-secured) Azure Container Registry for your agent image. Projects created before that date require the registry to remain reachable over its public endpoint. Existing projects aren\\u0027t affected. For more information, see [Limitations](https://learn.microsoft.com/azure/foundry/agents/how-to/virtual-networks#limitations).\\n## Limits, pricing, and availability\\n### Pricing\\nManaged hosting runtime billing is based on consumption of CPU and memory resources during active sessions. For current rates, see the Foundry [pricing page](https://azure.microsoft.com/pricing/details/foundry-agent-service/).\\n### Region availability\\nHosted agents are currently available in the following regions:\\n1. Australia East\\n2. Brazil South\\n3. Canada Central\\n4. Canada East\\n5. Central US\\n6. East US\\n7. East US 2\\n8. France Central\\n9. Germany West Central\\n10. Italy North\\n11. Japan East\\n12. Japan West\\n13. Korea Central\\n14. North Central US\\n15. Norway East\\n16. Poland Central\\n17. South Africa North\\n18. South Central US\\n19. South India\\n20. Southeast Asia\\n21. Spain Central\\n22. Sweden Central\\n23. Switzerland North\\n24. Switzerland West\\n25. UAE North\\n26. UK South\\n27. UK West\\n28. West Central US\\n29. West Europe\\n30. West US\\n31. West US 3\\nNote\\nThis list will be updated as additional regions become available.\",\"contentUrl\":\"https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#platform-details\"},{\"title\":\"Foundry Hosted Agents (programming-language-python)\",\"content\":\"# Foundry Hosted Agents (programming-language-python)\\n## When to use hosted agents\\nChoose Foundry hosted agents when you want:\\n1. **Managed infrastructure** \\u2014 no need to configure containers, web servers, or scaling rules yourself.\\n2. **Built-in session management** \\u2014 the platform persists \\u0060$HOME\\u0060 and uploaded files across turns and idle periods.\\n3. **Dedicated agent identity** \\u2014 every deployed agent gets its own Entra identity for secure access to models, tools, and downstream services.\\n4. **OpenAI-compatible endpoints** \\u2014 clients can interact with your agent using any OpenAI-compatible SDK through the Responses protocol.\\nNote\\nThe Python \\u0060agent-framework-foundry-hosting\\u0060 integration is prerelease. Microsoft Foundry Hosted Agents, the managed hosting service, is generally available.\\n## Prerequisites\\n1. An Azure subscription\\n2. [Azure Developer CLI (\\u0060azd\\u0060)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd) with the AI agent extension: \\u0060azd ext install azure.ai.agents\\u0060\\nFor local testing, you also need:\\n1. A [Microsoft Foundry](https://learn.microsoft.com/en-us/azure/foundry/) project with a model deployment (for example, \\u0060gpt-4o\\u0060)\\n2. [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed and authenticated (\\u0060az login\\u0060)\\n3. Python 3.10 or later\\nInstall the prerelease hosting package, Foundry client, and Azure authentication package:\\n\\u0060\\u0060\\u0060bash\\npip install --pre agent-framework-foundry agent-framework-foundry-hosting azure-identity\\n\\u0060\\u0060\\u0060\\nIn Foundry, the platform supplies the caller\\u0027s user context and call context; the hosting infrastructure uses them to isolate state per user and forward request context to Foundry services. Local runs don\\u0027t receive that platform context, so applications must supply their own identity and state controls when needed.\",\"contentUrl\":\"https://learn.microsoft.com/agent-framework/hosting/foundry-hosted-agent#when-to-use-hosted-agents\"}]}"}
+{"type": "tool_call", "call_id": "call_0002", "name": "microsoft_docs_fetch", "arguments": "{\"url\": \"https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents\"}", "executor": "foundry"}
+{"type": "tool_result", "call_id": "call_0002", "name": "microsoft_docs_fetch", "output": "# What are hosted agents?\r\n\r\nWhen you build agentic applications by using open-source frameworks, you typically manage many cross-cutting concerns: containerization, web server setup, security, memory persistence, scaling, instrumentation, and version rollbacks. These tasks become even more challenging in heterogeneous cloud environments.\r\n\r\nHosted agents in Foundry Agent Service solve these challenges for Microsoft Foundry users. Hosted agents call models from the Foundry model catalog to perform reasoning while your custom code handles orchestration. By using this managed platform, you can deploy and operate AI agents securely and at scale. You can use your custom agent code or a preferred agent framework with streamlined deployment and management.\r\n\r\nIf you're exploring hosted agents with an AI coding agent, the [Microsoft Foundry Skill](../../how-to/develop/use-microsoft-foundry-skill) can help connect these concepts to implementation, deployment, and operations tasks.\r\n\r\n### When to use hosted agents\r\n\r\nChoose Hosted agents over prompt-based agents when you need to:\r\n\r\n- **Bring your own code** - use any framework (Agent Framework, LangGraph, Semantic Kernel, or custom code) rather than prompt-only definitions.\r\n- **Use custom protocols** - accept webhooks or non-OpenAI payloads via the Invocations protocol.\r\n- **Control compute resources** - specify CPU and memory for your agent's sandbox.\r\n- **Run stateful workloads** - persist files and state across turns via $HOME and the /files endpoint.\r\n- **Run long-lived work resiliently** - preserve in-progress agent work across process interruptions and replay streamed results to reconnecting clients.\r\n\r\n### How it works\r\n\r\nYou package your agent as a container image and push it to Azure Container Registry. When you deploy, Agent Service pulls the image, assigns a dedicated Microsoft Entra ID (agent identity), and exposes a dedicated endpoint for the agent.\r\n\r\nAt runtime, Agent Service provisions compute for the session and routes requests to your container. Your agent code handles those requests and can call Foundry models, Toolbox tools, and downstream Azure services using its agent identity. The platform handles scaling, session state persistence, observability, and lifecycle management.\r\n\r\nThe following diagram shows how responsibility is divided. You own the code that runs inside the sandbox. The platform owns the endpoint, identity, scaling, and session state around it.\r\n\r\n[![Diagram that shows the architecture of a hosted agent. Clients call a dedicated agent endpoint over the Responses, Invocations, Invocations (WebSocket), or Activity protocol, authenticated with Microsoft Entra ID. Agent Service holds the container image, agent versions, agent identity, and conversations, and starts a per-session VM-isolated sandbox that moves between active, idle, and resumed states. The sandbox calls models, a Toolbox MCP endpoint, and your own Azure services.](../media/hosted-agents/hosted-agent-architecture.svg)](../media/hosted-agents/hosted-agent-architecture.svg#lightbox)\r\n\r\nImportant\r\n\r\nWhen you use Hosted Agents with other Microsoft products and services, you must read all relevant documentation for such products and services and understand related risks and compliance considerations.\r\n\r\nIf you use Hosted Agent with any third-party servers, agents, code, or non-Azure Direct models (\"Third-Party Systems\"), you do so at your own risk. Third-Party Systems are Non-Microsoft Products under the Microsoft Product Terms and are governed by their own third-party license terms. You're responsible for any usage and associated costs.\r\n\r\nWe recommend reviewing all data being shared with and received from Third-Party Systems and being cognizant of third-party practices for handling, sharing, retention, and location of data. Similarly, if you connect to or integrate with non-Foundry Microsoft services and features, it is important to review their data practices. It is your responsibility to manage whether your data will flow outside of your organization's compliance and geographic boundaries and any related implications, and that appropriate permissions, boundaries, and approvals are provisioned.\r\n\r\nYou're responsible for carefully reviewing and testing applications you build in the context of your specific use cases and making all appropriate decisions and customizations. This includes implementing your own responsible AI mitigations, such as metaprompts, content filters, or other safety systems, and ensuring your applications meet appropriate quality, reliability, security, and trustworthiness standards. See the [Foundry Agent Service transparency note](../../responsible-ai/agents/transparency-note#what-is-a-transparency-note).\r\n\r\n## Key concepts\r\n\r\n### Hosted agents\r\n\r\nHosted agents are containerized agentic AI applications that run on Agent Service. Unlike prompt-based agents\u2014which are defined entirely through prompts and tool configuration in the Foundry portal\u2014Hosted agents are your own code packaged as a container image. You choose the framework, control the runtime behavior, and deploy the image to Microsoft-managed infrastructure.\r\n\r\nThe platform automatically manages the container lifecycle based on activity, provisioning resources when you create a version and deprovisioning when the idle timeout is reached.\r\n\r\n#### Isolation model\r\n\r\nHosted agents run in per-session VM-isolated sandboxes. Each session gets a dedicated sandbox with a persistent filesystem (`$HOME` and `/files`), enabling scale-to-zero with stateful resume and predictable cold starts. Sessions are isolated from each other, and state is automatically restored when a session resumes after going idle.\r\n\r\n### Protocols: Responses, Invocations, and Invocations (WebSocket)\r\n\r\nHosted agent containers can expose one or more protocols. Each protocol is provided by a lightweight library that handles the HTTP or WebSocket server, health checks, and OpenTelemetry integration. The Responses, Invocations, and Invocations (WebSocket) protocols are available in all regions that support Hosted agents.\r\n\r\n#### Which protocol should I use?\r\n\r\n| Scenario | Protocol | Why |\r\n| --- | --- | --- |\r\n| Conversational chatbot or assistant | **Responses** | The platform manages conversation history, streaming events, and session lifecycle\u2014use any OpenAI-compatible SDK as the client. |\r\n| Multi-turn Q&A with RAG or tools | **Responses** | Built-in conversation ID threading and tool result handling. |\r\n| Background / async processing | **Responses** | `background: true` with platform-managed polling and cancellation. Opt in separately when the handler must recover after a process interruption. |\r\n| Agent published to Teams or Microsoft 365 | **Responses** + **Activity** | The Responses protocol powers the agent logic; the platform automatically bridges Responses to the Activity protocol for channel delivery. |\r\n| Webhook receiver (GitHub, Stripe, Jira, etc.) | **Invocations** | The external system sends its own payload format\u2014you can't change it to match /responses. |\r\n| Non-conversational processing (classification, extraction, batch) | **Invocations** | The input is structured data, not a chat message. Arbitrary JSON in, arbitrary JSON out. |\r\n| Custom streaming protocol (AG-UI, etc.) | **Invocations** | AG-UI and other agent-UI protocols aren't OpenAI-compatible\u2014you need raw SSE control. |\r\n| Protocol bridge (GitHub Copilot, proprietary systems) | **Invocations** | The caller has its own protocol that doesn't map to /responses. |\r\n| Real-time voice agent (microphone in, speech out) | **Invocations (WebSocket)** | Bidirectional streaming over a single persistent connection. Pair with Pipecat, LiveKit, or Voice Live in your container. See [Build a voice agent](../how-to/build-voice-agent). |\r\n\r\nTip\r\n\r\n**Not sure?** Start with **Responses**. You can always add an Invocations endpoint later\u2014a Hosted agent can support both protocols simultaneously.\r\n\r\nThe protocol you choose determines the payload your container receives, and how much of the session, streaming, and background lifecycle the platform manages for you. A single agent can support more than one protocol, so this choice isn't permanent. Use the following decision tree to pick a starting point.\r\n\r\n[![Decision tree for choosing a hosted agent protocol. If the client is a chat-style conversation, choose Responses. If the client needs real-time voice or two-way streaming, choose Invocations (WebSocket). Otherwise choose Invocations for webhooks, batch work, and custom payloads. Activity is bridged automatically when you publish to Teams or Microsoft 365. If you aren't sure, start with Responses, because an agent can expose more than one protocol.](../media/hosted-agents/hosted-agent-protocol-choice.svg)](../media/hosted-agents/hosted-agent-protocol-choice.svg#lightbox)\r\n\r\n#### Protocol comparison\r\n\r\n| - | **Responses** | **Invocations** |\r\n| --- | --- | --- |\r\n| **Best for** | Most agents\u2014the platform manages conversation history, streaming lifecycle, and background execution | Agents that need full HTTP control, custom payloads, or long-running async workflows |\r\n| **Payload** | OpenAI-compatible /responses contract | Arbitrary JSON via /invocations\u2014you define the schema |\r\n| **Client SDK** | Any OpenAI-compatible SDK (Python, JS, C#) works out of the box | Custom client\u2014you define the contract |\r\n| **Session history** | Platform-managed via conversation ID | You manage sessions (in-memory, Cosmos DB, etc.) |\r\n| **Streaming** | Platform-managed ResponseEventStream with lifecycle events | Raw SSE\u2014you format and write events directly |\r\n| **Background / long-running** | Built-in background mode and polling; optional resilient recovery for stored background responses | Resilient tasks in the AgentServer SDK; you define polling or streaming endpoints |\r\n\r\nBackground mode and resilient execution solve different problems. Background mode lets work continue after the initiating request returns. Resilient execution preserves work after the hosting process stops. For the recovery model and application responsibilities, see [Resilience for long-running hosted agents](long-running-agent-resilience).\r\n\r\n#### Additional protocols\r\n\r\nHosted agents also support the **Activity** protocol for Teams and Microsoft 365 channel integration. When you use the Responses protocol for agent logic and publish to Microsoft 365 channels such as Teams, the platform automatically bridges Responses to the Activity protocol for channel delivery\u2014no separate wiring is required. The **A2A** protocol supports agent-to-agent delegation. Supported protocols can be combined in a single agent.\r\n\r\n### Agent identity and endpoint\r\n\r\nEvery Hosted agent deployed to a Foundry project gets its own **dedicated Microsoft Entra ID (agent identity)** and **dedicated endpoint**\u2014both created automatically at deploy time. You don't need to configure managed identities or routing manually.\r\n\r\nThe endpoint is available immediately after deployment\u2014publishing isn't required for programmatic access:\r\n\r\n- **Responses**: {project\\_endpoint}/agents/{name}/endpoint/protocols/openai/responses\r\n- **Invocations**: {project\\_endpoint}/agents/{name}/endpoint/protocols/invocations\r\n- **Invocations (WebSocket)**: wss://{account}.services.ai.azure.com/api/projects/{project}/agents/{name}/endpoint/protocols/invocations\\_ws?api-version=v1\r\n- **A2A v1.0 (GA) and v0.3 (preview)**: {project\\_endpoint}/agents/{name}/endpoint/protocols/a2a\r\n\r\nWhich endpoints are active depends on the protocols declared in the agent version definition. Set this definition in the `azure.ai.agent` service in `azure.yaml` when using `azd`, or via `protocol_versions` when using the SDK.\r\n\r\nTwo identities are involved:\r\n\r\n| Identity | Scope | Purpose |\r\n| --- | --- | --- |\r\n| **Microsoft Entra ID** (agent identity, per-agent) | Created automatically at deploy time | The identity the agent container authenticates with at runtime. Used for model invocation, tool access, and downstream Azure services. |\r\n| **Project managed identity** (project-wide) | System-assigned on the Foundry project | Used by the platform for infrastructure operations (for example, Container Registry Repository Reader on the container registry). Not the agent's runtime identity. |\r\n\r\nThe agent identity can access model inferencing through the project endpoint and session storage by default. For external resources (for example, your own Azure Storage), assign RBAC roles manually to the agent's Microsoft Entra ID. For more information, see [Agent access beyond defaults](hosted-agent-permissions#agent-access-beyond-defaults).\r\n\r\nWhen integrated via Microsoft 365 channels (for example, Teams), hosted agents can operate in two identity modes depending on how they're invoked:\r\n\r\n- **User-invoked scenarios (interactive)**: If a user token is present, the platform supports OAuth 2.0 On-Behalf-Of (OBO) flows. In this case, the agent can call downstream services on behalf of the user using the user's delegated permissions, subject to Microsoft Entra ID tenant policies.\r\n- **Autonomous or background scenarios**: If no user token is available, the agent authenticates using its own Microsoft Entra ID (agent identity), typically via managed identity, to access downstream services.\r\n\r\nIn both cases, the agent retains its dedicated Microsoft Entra ID for authentication, authorization, and auditability. For more information, see [Agent applications](../how-to/agent-applications) and [Agent identity concepts](agent-identity).\r\n\r\n### Sessions, conversations, and the state store\r\n\r\nHosted agents use **sessions**, **conversations**, and the **state store** to manage state. How they work depends on the protocol.\r\n\r\n#### Sessions\r\n\r\nA session ID identifies a logical session with persisted state, including $HOME and files uploaded via the /files endpoint. The platform provisions compute on demand and restores persisted state onto it.\r\n\r\n- **State persistence**: $HOME and /files content are persisted across turns and across idle periods. When compute goes idle and is brought back (on new or existing infrastructure), the session's state is automatically restored.\r\n- **Isolation**: Each session is isolated from other sessions.\r\n- **Automatic lifecycle**: Sessions are created on first use. The platform provisions and deprovisions compute automatically.\r\n- **Session lifetime**: You can configure the idle timeout per agent version from 2 through 60 minutes, with a 15-minute default. If no request arrives within that window, the platform deprovisions the compute and persists the session state. The platform permanently deletes a session after 30 days of inactivity.\r\n- **Session management APIs**: List sessions, terminate sessions, and upload or download files per session.\r\n\r\n#### Conversations\r\n\r\nA conversation ID is a durable record of conversation history (messages, tool calls, and responses) stored in Foundry.\r\n\r\n- **Persistence**: Conversation history is stored in Foundry and persists independently of compute state.\r\n- **Cross-channel access**: Users can access the same conversation from the playground, API, Teams, or other published channels.\r\n\r\n#### State store\r\n\r\nThe state store is a durable, server-backed key-value store for application state that the platform doesn't manage for you. A store holds keyed JSON items and is addressed by a caller-chosen store name.\r\n\r\n- **Persistence**: Foundry stores items and persists them independently of compute state, so they survive container crashes, restarts, and idle eviction.\r\n- **Isolation**: Each store name is an independent partition. A store can also partition its items per end user, so one store name is safe to share across the users of a multitenant agent.\r\n- **Item lifetime**: A store-level idle window ages out items, with a default of 30 days. Writes renew the window, and you can configure a store to never expire its items.\r\n- **Any framework**: Because the store is a general-purpose key-value API, an agent can use it to hold framework checkpoints for a bring-your-own framework such as LangGraph or Microsoft Agent Framework, alongside its own application state.\r\n\r\nFor more information, see [Durable state store for hosted agents](agent-state-store).\r\n\r\n#### How sessions and conversations work with each protocol\r\n\r\n**Responses protocol**: conversation ID is the primary concept. The platform manages conversation history automatically and associates a session ID with each conversation. The platform returns the session ID to the client, which can use it to upload files via the /files endpoint, making those files available to the conversation's compute.\r\n\r\n**Invocations protocol**: session ID is the primary concept. The client manages the session ID directly to maintain state across interactions. The client can upload content via the /files endpoint using the session ID to make it available for the session. There's no platform-managed conversation history\u2014you manage state in your own code.\r\n\r\n#### Session compute lifecycle\r\n\r\n| State | What happens |\r\n| --- | --- |\r\n| **Active** | Compute is running. Requests are routed to it. $HOME and /files content are available. |\r\n| **Idle** | No requests for the configured idle timeout. The platform deprovisions compute and persists session state ($HOME, `/files`). |\r\n| **Resumed** | Same session ID is referenced again. Platform provisions new compute and restores persisted state. |\r\n\r\nCompute follows the session, not the individual request. The platform provisions a sandbox when a session starts and releases it when the configured idle timeout elapses after the most recent request. When the session resumes, the platform restores `$HOME` and `/files`, so your code finds the files it wrote earlier. The following diagram shows how a request moves through these states.\r\n\r\n[![Sequence diagram of a hosted agent request. The client sends a request with a conversation or session ID, Agent Service authenticates it with Microsoft Entra ID and provisions compute, and the sandbox restores $HOME and /files. Your code loops over model calls and Toolbox tool calls over MCP, then returns a response. After the configured idle timeout elapses without a request, the platform deprovisions compute and persists session state, and the next request restores it onto new compute.](../media/hosted-agents/hosted-agent-request-flow.svg)](../media/hosted-agents/hosted-agent-request-flow.svg#lightbox)\r\n\r\n## Security and data handling\r\n\r\nTreat a Hosted agent like production application code.\r\n\r\nImportant\r\n\r\nUse third-party systems at your own risk, and always implement appropriate responsible AI mitigations. You're responsible for managing all data that might flow outside of your organization's compliance and geographic boundaries. Learn more.\r\n\r\n- **Don't put secrets in container images or environment variables**. Use managed identities and connections, and store secrets in a managed secret store. For guidance, see [Set up a Key Vault connection](../../how-to/set-up-key-vault-connection).\r\n- **Be careful with non-Microsoft tools and servers**. If your agent calls tools backed by non-Microsoft services, some data might flow to those services. Review data sharing, retention, and location policies for any non-Microsoft service you connect.\r\n\r\n## Platform details\r\n\r\n### Versioning\r\n\r\nEach call to create a version produces an **immutable agent version**. The version is a snapshot of the container image, resource allocation, environment variables, and protocol configuration. To update your agent, create and deploy a new version.\r\n\r\nAn agent endpoint serves one version at a time and routes 100% of its traffic to that version. Traffic splitting between versions isn't supported.\r\n\r\nEnvironment variables are the primary mechanism for passing configuration to your container at runtime (for example, the project endpoint, model deployment name, and custom settings). They're set per version and are immutable once the version is created.\r\n\r\n### Observability\r\n\r\nHosted agents provide built-in observability. The platform automatically injects an Application Insights connection string into your agent container via environment variables. Agents that use the protocol libraries emit OpenTelemetry traces by default, which appear in the linked Application Insights resource under **Investigate** &gt; **Transaction search** or **Performance**.\r\n\r\nFor configuration and analysis guidance, see [Enable tracing in your project](../../observability/concepts/trace-agent-concept).\r\n\r\n### Toolbox in Foundry\r\n\r\nHosted agents have full access to Foundry-managed tools, including Code Interpreter, Web Search (with Grounding with Bing Custom Search), Azure AI Search, OpenAPI, MCP, A2A, Skills, and more. You connect these tools through a **Toolbox MCP endpoint** provisioned in your Foundry project rather than by adding them directly to the agent definition. The toolbox gives you consolidated authentication across OAuth identity passthrough, agent identity, key-based auth, and more. If you use Microsoft Agent Framework, connect through `FoundryToolbox` in Python or `AddFoundryToolboxes` in .NET instead of a generic MCP client. Other runtimes connect by using standard MCP client libraries. For details, see [Curate intent-based toolbox in Foundry](../how-to/tools/toolbox).\r\n\r\n### Language support\r\n\r\nHosted agents support **Python** and **C#**. You can use any agent framework\u2014the protocol libraries are framework-agnostic. For samples using Microsoft Agent Framework, LangGraph, and custom code, see the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents).\r\n\r\n### Sandbox sizes\r\n\r\nHosted agent sandboxes support the following CPU and memory combinations:\r\n\r\n| CPU | Memory |\r\n| --- | --- |\r\n| 0.5 vCPU | 1 GiB |\r\n| 1 vCPU | 2 GiB |\r\n| 2 vCPU | 4 GiB |\r\n\r\n### Session storage\r\n\r\nEach session has a persistent `$HOME`. The platform preserves its contents when it deprovisions compute after the configured idle timeout. The platform restores the contents when the session resumes, so files written under `$HOME` survive idle periods. The platform writes files uploaded via the `/files` endpoint into `$HOME`, where they share the same storage. Each session has a total disk budget of up to **20 GiB at 1 vCPU or larger**, which scales down proportionally for smaller CPU tiers. The platform reserves about **20% of that budget for system use**, and it isn't visible or available to your agent. The remainder is shared between your container image, `$HOME`, and any other writable locations in your container.\r\n\r\n### Scaling and right-sizing\r\n\r\nHosted agents scale per session, not per replica. The platform creates a new VM-isolated sandbox for each session on demand and keeps its compute active while requests continue. Each request resets the idle timer. When the configured idle timeout elapses after the most recent request, the platform deprovisions the sandbox compute and persists the session state.\r\n\r\nThe idle timeout can be 2 through 60 minutes and defaults to 15 minutes. The platform permanently deletes a session after 30 days of inactivity. There's no replica count to configure and no warm pool to size.\r\n\r\nBecause every session runs in its own sandbox, the cpu and memory values you set on an agent version describe a *single session*, not the aggregate footprint of the agent. Billing is based on cpu + memory consumed across all active sessions, so oversizing multiplies cost by your concurrency.\r\n\r\nTo right-size, run a representative workload and inspect resource usage in the linked Application Insights resource:\r\n\r\n1. Open the App Insights resource in the Azure portal and select **Investigate** &gt; **Performance**.\r\n2. Review CPU, available memory, request rate, and average request duration over the time range you tested.\r\n\r\nCompare the observed peaks against the cpu and memory you allocated. If sustained peaks exceed roughly 70% of allocation, raise the next agent version's allocation; if peaks stay well below, lower it to reduce cost. Always retest after a change, because each new version is immutable.\r\n\r\n### Private networking\r\n\r\nHosted agents support deployment within network-isolated Foundry resources and can use a customer-provided Azure Virtual Network for outbound traffic. This enables agents in network-isolated Foundry deployments to reach private resources such as databases or internal APIs. For more information, see [Configure virtual networks](../how-to/virtual-networks).\r\n\r\nNote\r\n\r\nFoundry projects created after June 25, 2026 support a private (network-secured) Azure Container Registry for your agent image. Projects created before that date require the registry to remain reachable over its public endpoint. Existing projects aren't affected. For more information, see [Limitations](../how-to/virtual-networks#limitations).\r\n\r\n## Limits, pricing, and availability\r\n\r\n### Pricing\r\n\r\nManaged hosting runtime billing is based on consumption of CPU and memory resources during active sessions. For current rates, see the Foundry [pricing page](https://azure.microsoft.com/pricing/details/foundry-agent-service/).\r\n\r\n### Region availability\r\n\r\nHosted agents are currently available in the following regions:\r\n\r\n- Australia East\r\n- Brazil South\r\n- Canada Central\r\n- Canada East\r\n- Central US\r\n- East US\r\n- East US 2\r\n- France Central\r\n- Germany West Central\r\n- Italy North\r\n- Japan East\r\n- Japan West\r\n- Korea Central\r\n- North Central US\r\n- Norway East\r\n- Poland Central\r\n- South Africa North\r\n- South Central US\r\n- South India\r\n- Southeast Asia\r\n- Spain Central\r\n- Sweden Central\r\n- Switzerland North\r\n- Switzerland West\r\n- UAE North\r\n- UK South\r\n- UK West\r\n- West Central US\r\n- West Europe\r\n- West US\r\n- West US 3\r\n\r\nNote\r\n\r\nThis list will be updated as additional regions become available."}
+{"type": "text_delta", "text": "Right"}
+{"type": "text_delta", "text": " now"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " S\u00e3o"}
+{"type": "text_delta", "text": " Paulo"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " Brazil"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " it"}
+{"type": "text_delta", "text": " is"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "12"}
+{"type": "text_delta", "text": ":"}
+{"type": "text_delta", "text": "18"}
+{"type": "text_delta", "text": " on"}
+{"type": "text_delta", "text": " Sunday"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " "}
+{"type": "text_delta", "text": "20"}
+{"type": "text_delta", "text": " September"}
+{"type": "text_delta", "text": " "}
+{"type": "text_delta", "text": "202"}
+{"type": "text_delta", "text": "6"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": ".\n\n"}
+{"type": "text_delta", "text": "According"}
+{"type": "text_delta", "text": " to"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " Microsoft"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": " docs"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "host"}
+{"type": "text_delta", "text": "ed"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": " Agent"}
+{"type": "text_delta", "text": " Service"}
+{"type": "text_delta", "text": " are"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "container"}
+{"type": "text_delta", "text": "ized"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": "ic"}
+{"type": "text_delta", "text": " AI"}
+{"type": "text_delta", "text": " applications"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " that"}
+{"type": "text_delta", "text": " run"}
+{"type": "text_delta", "text": " on"}
+{"type": "text_delta", "text": " Microsoft"}
+{"type": "text_delta", "text": "-managed"}
+{"type": "text_delta", "text": " infrastructure"}
+{"type": "text_delta", "text": "."}
+{"type": "text_delta", "text": " They"}
+{"type": "text_delta", "text": "\u2019re"}
+{"type": "text_delta", "text": " intended"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " cases"}
+{"type": "text_delta", "text": " where"}
+{"type": "text_delta", "text": " you"}
+{"type": "text_delta", "text": " want"}
+{"type": "text_delta", "text": " to"}
+{"type": "text_delta", "text": " bring"}
+{"type": "text_delta", "text": " your"}
+{"type": "text_delta", "text": " own"}
+{"type": "text_delta", "text": " code"}
+{"type": "text_delta", "text": " or"}
+{"type": "text_delta", "text": " framework"}
+{"type": "text_delta", "text": " while"}
+{"type": "text_delta", "text": " Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": " handles"}
+{"type": "text_delta", "text": " operational"}
+{"type": "text_delta", "text": " concerns"}
+{"type": "text_delta", "text": " such"}
+{"type": "text_delta", "text": " as"}
+{"type": "text_delta", "text": " scaling"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " identity"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " session"}
+{"type": "text_delta", "text": " persistence"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " observ"}
+{"type": "text_delta", "text": "ability"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " lifecycle"}
+{"type": "text_delta", "text": " management"}
+{"type": "text_delta", "text": ".\n\n"}
+{"type": "text_delta", "text": "Key"}
+{"type": "text_delta", "text": " points"}
+{"type": "text_delta", "text": " from"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " docs"}
+{"type": "text_delta", "text": ":\n\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Hosted"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": " call"}
+{"type": "text_delta", "text": " models"}
+{"type": "text_delta", "text": " from"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Found"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": " model"}
+{"type": "text_delta", "text": " catalog"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " reasoning"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " while"}
+{"type": "text_delta", "text": " your"}
+{"type": "text_delta", "text": " custom"}
+{"type": "text_delta", "text": " code"}
+{"type": "text_delta", "text": " handles"}
+{"type": "text_delta", "text": " orches"}
+{"type": "text_delta", "text": "tration"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " You"}
+{"type": "text_delta", "text": " package"}
+{"type": "text_delta", "text": " your"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " as"}
+{"type": "text_delta", "text": " a"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "container"}
+{"type": "text_delta", "text": " image"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " push"}
+{"type": "text_delta", "text": " it"}
+{"type": "text_delta", "text": " to"}
+{"type": "text_delta", "text": " Azure"}
+{"type": "text_delta", "text": " Container"}
+{"type": "text_delta", "text": " Registry"}
+{"type": "text_delta", "text": ";"}
+{"type": "text_delta", "text": " Agent"}
+{"type": "text_delta", "text": " Service"}
+{"type": "text_delta", "text": " pulls"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " image"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " deploy"}
+{"type": "text_delta", "text": "s"}
+{"type": "text_delta", "text": " it"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Each"}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " gets"}
+{"type": "text_delta", "text": " a"}
+{"type": "text_delta", "text": " dedicated"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Microsoft"}
+{"type": "text_delta", "text": " En"}
+{"type": "text_delta", "text": "tra"}
+{"type": "text_delta", "text": " ID"}
+{"type": "text_delta", "text": " agent"}
+{"type": "text_delta", "text": " identity"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " a"}
+{"type": "text_delta", "text": " dedicated"}
+{"type": "text_delta", "text": " endpoint"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Hosted"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": " run"}
+{"type": "text_delta", "text": " in"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "per"}
+{"type": "text_delta", "text": "-session"}
+{"type": "text_delta", "text": " VM"}
+{"type": "text_delta", "text": "-is"}
+{"type": "text_delta", "text": "olated"}
+{"type": "text_delta", "text": " sand"}
+{"type": "text_delta", "text": "boxes"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " with"}
+{"type": "text_delta", "text": " persistent"}
+{"type": "text_delta", "text": " `$"}
+{"type": "text_delta", "text": "HOME"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " `/"}
+{"type": "text_delta", "text": "files"}
+{"type": "text_delta", "text": "`"}
+{"type": "text_delta", "text": " storage"}
+{"type": "text_delta", "text": " across"}
+{"type": "text_delta", "text": " turns"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " idle"}
+{"type": "text_delta", "text": " periods"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Supported"}
+{"type": "text_delta", "text": " protocols"}
+{"type": "text_delta", "text": " include"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Responses"}
+{"type": "text_delta", "text": "**,"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Inv"}
+{"type": "text_delta", "text": "ocations"}
+{"type": "text_delta", "text": "**,"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Inv"}
+{"type": "text_delta", "text": "ocations"}
+{"type": "text_delta", "text": " over"}
+{"type": "text_delta", "text": " Web"}
+{"type": "text_delta", "text": "Socket"}
+{"type": "text_delta", "text": "**,"}
+{"type": "text_delta", "text": " plus"}
+{"type": "text_delta", "text": " additional"}
+{"type": "text_delta", "text": " support"}
+{"type": "text_delta", "text": " such"}
+{"type": "text_delta", "text": " as"}
+{"type": "text_delta", "text": " Activity"}
+{"type": "text_delta", "text": " for"}
+{"type": "text_delta", "text": " Microsoft"}
+{"type": "text_delta", "text": " "}
+{"type": "text_delta", "text": "365"}
+{"type": "text_delta", "text": "/"}
+{"type": "text_delta", "text": "Teams"}
+{"type": "text_delta", "text": " scenarios"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " A"}
+{"type": "text_delta", "text": "2"}
+{"type": "text_delta", "text": "A"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Use"}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": " over"}
+{"type": "text_delta", "text": " prompt"}
+{"type": "text_delta", "text": "-based"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": " when"}
+{"type": "text_delta", "text": " you"}
+{"type": "text_delta", "text": " need"}
+{"type": "text_delta", "text": " to"}
+{"type": "text_delta", "text": " bring"}
+{"type": "text_delta", "text": " your"}
+{"type": "text_delta", "text": " own"}
+{"type": "text_delta", "text": " code"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " use"}
+{"type": "text_delta", "text": " custom"}
+{"type": "text_delta", "text": " protocols"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " control"}
+{"type": "text_delta", "text": " CPU"}
+{"type": "text_delta", "text": "/m"}
+{"type": "text_delta", "text": "emory"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " run"}
+{"type": "text_delta", "text": " state"}
+{"type": "text_delta", "text": "ful"}
+{"type": "text_delta", "text": " workloads"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " or"}
+{"type": "text_delta", "text": " support"}
+{"type": "text_delta", "text": " resilient"}
+{"type": "text_delta", "text": " long"}
+{"type": "text_delta", "text": "-running"}
+{"type": "text_delta", "text": " work"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " The"}
+{"type": "text_delta", "text": " docs"}
+{"type": "text_delta", "text": " say"}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": " support"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "Python"}
+{"type": "text_delta", "text": "**"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " **"}
+{"type": "text_delta", "text": "C"}
+{"type": "text_delta", "text": "#"}
+{"type": "text_delta", "text": "**,"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " the"}
+{"type": "text_delta", "text": " protocol"}
+{"type": "text_delta", "text": " libraries"}
+{"type": "text_delta", "text": " are"}
+{"type": "text_delta", "text": " framework"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": "agn"}
+{"type": "text_delta", "text": "ostic"}
+{"type": "text_delta", "text": ".\n"}
+{"type": "text_delta", "text": "-"}
+{"type": "text_delta", "text": " Billing"}
+{"type": "text_delta", "text": " is"}
+{"type": "text_delta", "text": " based"}
+{"type": "text_delta", "text": " on"}
+{"type": "text_delta", "text": " CPU"}
+{"type": "text_delta", "text": " and"}
+{"type": "text_delta", "text": " memory"}
+{"type": "text_delta", "text": " consumption"}
+{"type": "text_delta", "text": " during"}
+{"type": "text_delta", "text": " active"}
+{"type": "text_delta", "text": " sessions"}
+{"type": "text_delta", "text": ".\n\n"}
+{"type": "text_delta", "text": "Source"}
+{"type": "text_delta", "text": ":"}
+{"type": "text_delta", "text": " Microsoft"}
+{"type": "text_delta", "text": " Learn"}
+{"type": "text_delta", "text": ","}
+{"type": "text_delta", "text": " \u201c"}
+{"type": "text_delta", "text": "What"}
+{"type": "text_delta", "text": " are"}
+{"type": "text_delta", "text": " hosted"}
+{"type": "text_delta", "text": " agents"}
+{"type": "text_delta", "text": "?\u201d"}
+{"type": "text_delta", "text": "  \n"}
+{"type": "text_delta", "text": "https"}
+{"type": "text_delta", "text": "://"}
+{"type": "text_delta", "text": "learn"}
+{"type": "text_delta", "text": ".microsoft"}
+{"type": "text_delta", "text": ".com"}
+{"type": "text_delta", "text": "/"}
+{"type": "text_delta", "text": "azure"}
+{"type": "text_delta", "text": "/f"}
+{"type": "text_delta", "text": "ound"}
+{"type": "text_delta", "text": "ry"}
+{"type": "text_delta", "text": "/"}
+{"type": "text_delta", "text": "agents"}
+{"type": "text_delta", "text": "/con"}
+{"type": "text_delta", "text": "cepts"}
+{"type": "text_delta", "text": "/"}
+{"type": "text_delta", "text": "host"}
+{"type": "text_delta", "text": "ed"}
+{"type": "text_delta", "text": "-ag"}
+{"type": "text_delta", "text": "ents"}
+{"type": "trace_ids", "response_id": "caresp_0003"}
+{"type": "done", "response_id": "caresp_0003"}
