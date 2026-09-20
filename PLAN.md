@@ -1,7 +1,9 @@
 # foundry-live-agent — PLAN
 
-> Status: **every spec 000–014 done.** Phase 2 closed 2026-09-16: the trace panel reads real spans. Chat and voice both run against a
-> live Foundry project. Voice findings observed 2026-09-15 — see §9 for what the docs got wrong.
+> Status (2026-09-20): **47 of 48 specs done**; 045 is blocked by design. Phases 0–3 closed and
+> Phase 4 delivered its hosted agent (spec 018) — see §6. Chat, voice, tracing and the whole UI run
+> against a live Foundry project. Voice findings observed 2026-09-15 — see §9 for what the docs got
+> wrong. **`specs/README.md` is the live index**; this file is the architecture record behind it.
 > Foundry API details verified against learn.microsoft.com on **2026-09-04** — every URL and API
 > version is recorded in [docs/REFERENCES.md](docs/REFERENCES.md).
 > Engineering practices inherited from
@@ -388,13 +390,19 @@ one that does not need approval of the architecture**, since it is the inherited
 | Spec | Phase | Deliverable | Demo |
 |---|---|---|---|
 | **000** ✅ | 0 | Scaffold `agentic-coding-template` into the repo: constitution, `specs/`, `CLAUDE.md`/`AGENTS.md`, `.claude`/`.codex`, CI (Bicep-adjusted), CHANGELOG/CONTRIBUTING/SECURITY, `README` + `README.pt-BR` | **Done** — gates green by clean skip on the empty repo |
-| **001** | 1 | `HarnessAdapter` + `AgentEvent` contract + fixture-driven contract tests | Tests pass against a stub adapter |
-| **002** | 1 | Prompt-agent harness: `agent.yaml`, `apply_agent.py`, the 3 tools | `just agent` leaves a working agent in Foundry |
-| **003** | 1 | BFF `/chat` streaming + SSE + function-call round trip + `/config` | Question forcing a Learn MCP lookup *and* a function call |
+| **001** ✅ | 1 | `HarnessAdapter` + `AgentEvent` contract + fixture-driven contract tests | Tests pass against a stub adapter |
+| **002** ✅ | 1 | Prompt-agent harness: `agent.yaml`, `apply_agent.py`, the 3 tools | `just agent` leaves a working agent in Foundry |
+| **003** ✅ | 1 | BFF `/chat` streaming + SSE + function-call round trip + `/config` | Question forcing a Learn MCP lookup *and* a function call |
 | **004** ✅ | 1 | Frontend: three panes, streaming markdown, activity panel, harness badge — built on the **Dataside design system** imported from Claude Design | **Done** — the shell runs against the BFF; the full Phase 1 demo waits on a model deployment (spec 002, pass 2) |
-| **005** | 2 | Trace drawer + gateway correlation + usage/cost display | Open the drawer, see the span tree with durations and tokens |
-| **006** | 3 | Voice mode via Voice Live on the same prompt agent | Speak, interrupt mid-sentence, watch a tool call fire during voice |
-| — | 4 | **Not implemented.** Clean extension points + docs stubs: LangGraph hosted agent, Foundry IQ replacing `lookup_knowledge`, more MCP tools (Databricks Genie, Azure DevOps), publish to M365 Copilot / Teams | — |
+| **005** ✅ | 2 | Trace drawer + gateway correlation + usage/cost display | Open the drawer, see the span tree with durations and tokens |
+| **006** ✅ | 3 | Voice mode via Voice Live on the same prompt agent | Speak, interrupt mid-sentence, watch a tool call fire during voice |
+| **018** ✅ | 4 | **Hosted agent harness** — the second harness behind the same contract, a LangGraph graph run by Foundry as a container | **Done** — `docs/harness-comparison.md`, measured |
+| **007–017, 019–048** ✅ | 3–4 | Everything the table above does not name: voice transcript and spoken answers, the trace panel, the agent picker, the whole UI backlog, the comparison screen | See [`specs/README.md`](specs/README.md) — the live index, one row per spec |
+| — | 4 | **Still not implemented.** Foundry IQ replacing `lookup_knowledge`, more MCP tools (Databricks Genie, Azure DevOps), publish to M365 Copilot / Teams | — |
+
+**This table is the original phase plan, kept as the record of it.** It stops naming specs
+individually at 006 because after that the work stopped being phase-shaped — the numbered index in
+[`specs/README.md`](specs/README.md) is where execution order and status actually live (§4).
 
 Per the template, each spec goes through **grilling (clarify)** before its plan — which is where the
 open questions below get resolved, one at a time.
@@ -403,19 +411,21 @@ open questions below get resolved, one at a time.
 
 ## 7. Open questions
 
-**O-1 and O-2 could change code**; the rest have safe defaults and will not block Phase 1.
+**Eight of the nine are answered.** Each was closed by a spike or a doc read and the *answer* lives
+in [`docs/REFERENCES.md`](docs/REFERENCES.md), with its date and its evidence — this table says
+which, and does not restate them (§4). Only **O-4** is still open.
 
-| # | Question | Default if you don't weigh in |
+| # | Question | Where it landed |
 |---|---|---|
-| **O-1** | Exact streaming event names for **reasoning summary** and **MCP call** deltas aren't in the docs I read. | Spike against a live agent in spec 001, record fixtures, write the normaliser against reality. The fixtures are needed anyway. |
-| **O-2** | Does Voice Live **agent mode** work over the **WebRTC** `/calls` endpoint, or is agent mode WebSocket-only? Docs cover each separately. | Spike in spec 006; fall back to a server-side WebSocket relay and document the added latency. |
-| **O-3** | `require_approval` for the Learn MCP tool — docs consistently show `"always"`, which adds an approval round trip. Is `"never"` accepted? | Try `"never"` for a public read-only docs server; if rejected, implement auto-approval in the BFF and document it as real Foundry behaviour worth seeing. |
-| **O-4** | **AI Gateway has no documented Bicep/azd path** — it is a portal flow that creates/associates an APIM v2 instance. | `azd up` provisions everything else; the gateway gets a scripted-or-portal step in the README with a `just gateway` helper. I'll attempt Bicep and fall back to documented manual steps rather than ship IaC I can't verify (constitution §5, honesty). |
-| **O-5** | Region. Voice Live, hosted agents, HD voices and gateway tiers have **different** region lists. | Default **East US 2** + a documented region-support table. `Brazil South` supports hosted agents but I have not verified Voice Live there — relevant for the target audience. |
-| **O-8** | The BYOM page says *"The Response API isn't supported at present."* I read that as constraining the **Foundry→gateway** hop (which must be `chat/completions`), not our **BFF→Foundry** hop — the page's own sample uses `responses.create()`. If that reading is wrong, the prompt agent cannot be driven by the Responses API while on a BYOM model, and the whole streaming design changes. | **Verify first thing in spec 002**, before any BFF code. It is a 20-line script: create the agent on `<connection>/<model>`, call `responses.create(stream=True)`, see what comes back. If it fails, fall back to a non-gateway model deployment for the agent and document the gateway as governing direct model calls only. |
-| **O-9** ◐ | **Do reasoning summaries survive the BYOM hop?** | **Partly moot.** The existing connection exposes only `gpt-4o`, which is not a reasoning model — so on today's setup there are no summaries to survive the hop. Recommended fix: expose a GPT-5.x model on the same connection, then the spike answers the real question. Until then the harness README must state that this path has no reasoning summaries, rather than showing an unexplained empty panel (§5). |
+| **O-1** | Exact streaming event names for **reasoning summary** and **MCP call** deltas aren't in the docs I read. | ✅ **Answered in full** — 21 distinct event types, mapped and tested. `REFERENCES.md`, spike 2026-09-15. |
+| **O-2** | Does Voice Live **agent mode** work over the **WebRTC** `/calls` endpoint, or is agent mode WebSocket-only? Docs cover each separately. | ✅ **Answered: yes**, agent mode works over WebRTC — the full handshake completed. `REFERENCES.md`, 2026-09-15. The endpoint exists only on `api-version=2026-01-01-preview`. |
+| **O-3** | `require_approval` for the Learn MCP tool — docs consistently show `"always"`, which adds an approval round trip. Is `"never"` accepted? | ✅ **Answered: `never` is accepted.** Zero approval events across 441 recorded ones. `ai/harness/_shared/agent_core.yaml` declares it. |
+| **O-4** | **AI Gateway has no documented Bicep/azd path** — it is a portal flow that creates/associates an APIM v2 instance. | ⛔ **Still open** — the only one. No Bicep/azd path is documented for the AI Gateway; it remains a portal flow, and §5 forbids shipping IaC nobody could verify. `REFERENCES.md`. |
+| **O-5** | Region. Voice Live, hosted agents, HD voices and gateway tiers have **different** region lists. | ✅ **Settled: `eastus2`**, which serves Voice Live for this resource. `REFERENCES.md`, 2026-09-15. |
+| **O-8** | The BYOM page says *"The Response API isn't supported at present."* I read that as constraining the **Foundry→gateway** hop (which must be `chat/completions`), not our **BFF→Foundry** hop — the page's own sample uses `responses.create()`. If that reading is wrong, the prompt agent cannot be driven by the Responses API while on a BYOM model, and the whole streaming design changes. | ✅ **Answered: yes.** `responses.create(stream=True)` with an `agent_reference` drives a prompt agent end to end. *Caveat:* it ran on a plain deployment; the `<connection>/<model>` BYOM hop is still unverified. `REFERENCES.md`. |
+| **O-9** | **Do reasoning summaries survive the BYOM hop?** | ✅ **Answered: yes, but only from the agent definition** — and `summary: auto` is not enough, so it says `detailed`. `REFERENCES.md`. |
 | **O-7** ✅ | **Frontend design source.** | **Settled.** Design read via `DesignSync` on 2026-09-04 and recorded in [`docs/design-system.md`](docs/design-system.md), together with nine points where the mock and the implementation disagree. Spec 004 unblocked. |
-| **O-6** | Voice Live **api-version is genuinely ambiguous**: `2026-04-10` (WS how-to), `2026-01-01-preview` (WebRTC + agent samples), `2026-06-01-preview` (a reference page), `2026-07-15` (gates Live-Reference AEC). Docs don't say which is current. | Pin explicitly in `.env.example`, default `2026-04-10`, re-verify in spec 006. |
+| **O-6** | Voice Live **api-version is genuinely ambiguous**: `2026-04-10` (WS how-to), `2026-01-01-preview` (WebRTC + agent samples), `2026-06-01-preview` (a reference page), `2026-07-15` (gates Live-Reference AEC). Docs don't say which is current. | ✅ **Settled by pinning both.** `2026-01-01-preview` for the WebRTC `/calls` endpoint — the only one that serves it — and `2026-04-10` for plain WebSocket. Both in `.env.example`. |
 
 ---
 
@@ -444,14 +454,19 @@ Each is a considered choice with a documented reason. Say the word and I'll reve
 
 ---
 
-## Please confirm before I generate feature code
+## What this document is now
 
-**Spec 000 is done** — the scaffold is in place and the gates are green. Before spec 001 starts:
+It asked, at the bottom, for three confirmations before any feature code was written: the six
+deviations in §8, anything to redirect in the open questions, and a `DesignSync` login for spec 004.
+All three were given, and forty-eight specs followed.
 
-1. The six **deviations in §8** — especially D-1 (`agent.yaml`), D-2 (WebRTC voice) and D-5 (`ai/harness/`).
-2. Anything to redirect in the **open questions (§7)**.
-3. **Run `/design-login`** so `DesignSync` can read the Claude Design project. Spec 004 stays blocked
-   until then (O-7).
+So this is **the architecture record**, not a live plan: §0, §4 and §5 are why the code looks the
+way it does, and §8 is the list of places it deliberately departs from the original brief. Two
+things it is *not* the source of truth for (§4):
 
-With 1 and 2 settled I'll start spec 001 — the `HarnessAdapter` contract and its fixture-driven
-tests, which is the first genuine red→green cycle in the repo.
+- **What is done, and in what order** — [`specs/README.md`](specs/README.md), one row per spec.
+- **Any Foundry API fact** — [`docs/REFERENCES.md`](docs/REFERENCES.md), with the doc URL and the
+  date it was read. §10 means this file must never become a second place to learn an `api-version`.
+
+Its §6 table and §7 questions are kept as the record of what was planned and what was unknown, each
+row now saying where it actually landed.
