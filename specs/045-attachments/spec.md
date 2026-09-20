@@ -50,8 +50,15 @@ file input.
 
 The draft's first open question says it plainly: *does the Responses API accept file input
 alongside a message, and how — until this is answered from a doc, nothing else in this spec can be
-planned.* It has not been answered. `az` on this machine is a broken build, no doc has been read
-for file input, and **§10 forbids writing the rest from memory.**
+planned.* It had not been answered: no doc had been read for file input, and **§10 forbids writing
+the rest from memory.**
+
+**Amended 2026-09-20 — the doc question is answered, and the spec stays blocked.** The Responses
+API does take file input beside a message, as `input_image` / `input_file` content parts carrying
+either a URL, a `data:` base64 URI, or a `file_id` from `POST /openai/v1/files`. All three designs
+this spec could not choose between are real, which is why it could not choose. Shapes, limits and
+the one caveat (a Q&A report of the *agent* path rejecting base64) are in `docs/REFERENCES.md`.
+What still blocks this spec is below, and neither item is a documentation question.
 
 That is not the only blocker, and the others are not the kind a developer should resolve alone:
 

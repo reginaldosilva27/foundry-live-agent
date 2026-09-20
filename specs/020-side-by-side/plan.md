@@ -139,8 +139,10 @@ them except to add the compare screen to `a11y.test.tsx`.
 
 **AC16 cannot be met in this change and is not pretended to be.** It asks for a live run of the same
 question against both agents, recorded as a dated fixture, with the observed differences written
-into `docs/harness-comparison.md`. That needs a credential; `az` on this machine is a broken build
-(`Bad CPU type in executable`) and §5 forbids hand-writing a recording to stand in for one. So
+into `docs/harness-comparison.md`. That needs a run against the live service and §5 forbids
+hand-writing a recording to stand in for one. (**Amended 2026-09-20:** the credential was there all
+along — a shadowed `az` binary, see `docs/REFERENCES.md`. AC16 is not blocked on tooling; it is
+blocked on two turns actually being run, which spends model tokens.) So
 `docs/harness-comparison.md` gains the section with an explicit note that it is **unmeasured**, and
 `docs/REFERENCES.md` gains the open item with what closes it: one comparison run. The spec ships at
 `done` with AC16 named as outstanding, the same way spec 033's "does the agent write a valid chart

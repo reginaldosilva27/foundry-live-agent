@@ -531,7 +531,8 @@ beside it is the part that decides the formula, and that is measured here rather
 | Hosting package | `langchain-azure-ai[hosting]>=1.2.9`, pip **≥ 26** | LangGraph hosted-agents guide + observed 2026-09-16 |
 | azd extensions | `azure.ai.agents` ≥ 1.0.0-beta.8, `azure.ai.projects` ≥ 1.0.0-beta.4, azd ≥ 1.27.1 | azure.yaml reference |
 | Hosted agent trace join | `microsoft.session.id` == `agent_session_id` (**not** `gen_ai.response.id`) | observed 2026-09-16 |
-| Promote a version | `update_details(agent_name, agent_endpoint=...version_selector...)`, one rule at 100% | **SDK 2.6.0 typespec, 2026-09-19 — NOT verified live** |
+| Promote a version | `update_details(agent_name, agent_endpoint=...version_selector...)`, one rule at 100% | **SDK 2.6.0 typespec, 2026-09-19 — the write is still NOT verified live** |
+| Unpinned `version_selector` rule | `{"type": "FixedRatio", "agent_version": "@latest", "traffic_percentage": 100}` | **observed 2026-09-20** — the sentinel, on every agent |
 
 ## Promoting a version — spec 031, read from the SDK 2026-09-19
 
@@ -575,42 +576,91 @@ doc says an agent endpoint serves **one** version at 100% and that traffic split
 unsupported. The type models a **list** of weighted rules. This repository sends exactly one rule
 at 100% — the documented shape — and records the disagreement rather than exploring it.
 
-### Open — NOT verified against the live service
+### The credential, and what it turned out to be — corrected 2026-09-20
 
-`az` on the author's machine was a broken build on 2026-09-19
-(`/usr/local/Cellar/azure-cli/2.69.0/libexec/bin/python: Bad CPU type in executable`), so
-`DefaultAzureCredential` had no source and none of the following could be probed. They are recorded
-as open questions rather than guessed silently (§10), and the write path ships **off by default**
-because of it.
+Spec 031 and everything after it recorded its open questions as blocked on a broken `az`:
+`/usr/local/Cellar/azure-cli/2.69.0/libexec/bin/python: Bad CPU type in executable`, observed
+2026-09-19.
 
-| Open question | Why it matters | How to close it |
+**That was a diagnosis of the wrong binary.** The machine is `arm64`; `/usr/local` is the *Intel*
+Homebrew prefix and its `az` cannot run, but an `arm64` build exists at `/opt/homebrew/bin/az`
+(2.44.1), was already signed in, and works. The Intel one simply came first on `PATH`. Anything
+shelling out to `az` — `DefaultAzureCredential`'s CLI source included — found the broken one and
+concluded there was no credential.
+
+So a read against the live project has been possible all along. The reads below were made on
+**2026-09-20**; what is still open is open for a different reason now, and each says which.
+
+### Read against the live service — 2026-09-20
+
+`GET {project_endpoint}/agents/{name}?api-version=v1`, `…/versions` and `…/deployments`, with a
+token for `https://ai.azure.com/.default`. Recorded, scrubbed of identity GUIDs, in
+`backend/tests/fixtures/agent-endpoint-20260920.json`.
+
+| Finding | Evidence |
+|---|---|
+| **`agents.get(name)` does return `agent_endpoint` populated — for every agent**, pinned or not. The listing still carries no such key, so spec 031's AC12 split (rail reports latest, detail resolves the pin) stands. | `GET /agents/foundry-live-agent` → `agent_endpoint.version_selector.version_selection_rules` present; `GET /agents` → the key is absent on all 10 |
+| **An unpinned endpoint names the sentinel `@latest`**, not a version, in one `FixedRatio` rule at 100%. This is the finding that mattered: spec 031 read the typespec's `agent_version` as always being a version, so *having a selector* was treated as *being pinned*. Unresolved it matches no version row, the status falls to `unknown`, and a healthy agent reports `version_not_active` on the detail screen. Fixed in `_pinned_version`; the recorded payload drives the regression test. | both of this repo's agents; `foundry-live-agent` has 8 versions, all `active`, and served version 8 |
+| **The endpoint carries more than the selector**: `protocols: ["responses"]`, `protocol_configuration`, `authorization_schemes: [{"type": "Entra"}]`, `publish_approval_status: "not_published"`. None of it is read by this app; recorded so the next reader knows the shape. | same response |
+| **The project serves 32 model deployments**, of which exactly one is neither chat nor embeddings: **`FLUX-1.1-pro`** (Black Forest Labs). Its `capabilities` map comes back **empty** — as does the Cohere embedding model's — so the listing does **not** declare it image-capable. Relevant to spec 044, and not sufficient for it; see below. | `GET …/deployments?api-version=v1`, 32 rows |
+
+### Open — still, and now for a stated reason (spec 031)
+
+| Open question | Why it matters | Why it is still open |
 |---|---|---|
-| Does `agents.get(name)` return `agent_endpoint` populated? | If not, `pinned` is always false and a promotion would appear to do nothing — which AC7's fresh read would show as "nothing changed" | `agents.get("foundry-live-agent")` and look |
-| Does `update_details` accept this selector as written? | It is the whole feature | promote to an older version on a throwaway agent |
-| Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | read the role definitions, then test with the lesser one |
-| Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | pin one, then list |
+| Does `update_details` accept this selector as written? | It is the whole feature | It is a **write** against a live agent. Read-only was the sanctioned scope of the 2026-09-20 session |
+| Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | same — and the lesser-role test only means something once the call itself is known to work |
+| Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | nothing in the project has ever been pinned, so this needs the write above first |
 
-### Open — can a question carry a file? (spec 045)
+The first question is no longer blocked by tooling, only by the decision to make the write. The
+path still ships **off by default**.
 
-Spec 045 is **clarified and blocked**, on its own first question: does the Responses API accept file
-input alongside a message, and how? No doc has been read for it and there is no credential to probe
-with, so everything downstream — whether content is inlined, uploaded to Foundry, or read from
-storage the agent can reach — is unanswerable. Three different designs wear the same name and §10
-forbids picking one from memory.
+### Can a question carry a file? — the doc question is answered (spec 045), 2026-09-20
 
-Two further blockers are not documentation questions at all:
+Spec 045 was **clarified and blocked** on its own first question: does the Responses API accept file
+input alongside a message, and how? That question now has a doc behind it.
+
+| Source | Read |
+|---|---|
+| [Use the Responses API](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/responses) | 2026-09-20 |
+
+**Yes, as content parts on the message item** — and all three of the designs that "wear the same
+name" are documented, which is why the spec could not pick one from memory:
+
+| Part | Fields | Carries |
+|---|---|---|
+| `input_image` | `image_url` (an `https://` URL **or** a `data:` base64 URI) + optional `detail` (`low`/`high`/`auto`) | an image |
+| `input_image` | `file_id` | an image already uploaded |
+| `input_file` | `filename` + `file_data` (a `data:` base64 URI) | a document |
+| `input_file` | `file_id` | a document already uploaded |
+
+Upload is `POST /openai/v1/files` with `purpose=assistants`, returning `{"id": "file-…"}`. Stated
+limits: **≤ 50 files per request, < 50 MB each and < 50 MB combined**. Images: PNG, JPEG, WebP,
+non-animated GIF; documents: PDF (text plus page images) and ~30 other formats.
+
+> **One caveat, and it is a forum post rather than a doc.** A [Microsoft Q&A
+> thread](https://learn.microsoft.com/en-ca/answers/questions/5859143/new-microsoft-foundry-agent-via-responses-api-reje)
+> reports a Foundry **agent** (Responses + an agent reference, which is this repo's path) rejecting
+> a base64 `image_url` with `invalid_payload — The provided data does not match the expected
+> schema`, where a public URL worked. The asker reports it fixed days later, so it reads as a
+> regression rather than a difference in the contract — but it is the agent path, it is not a doc,
+> and §10 does not let it stand as one. Whichever design a spec picks, **that leg is probed against
+> the live service before it ships.**
+
+**Spec 045 stays blocked, on the two blockers that were never documentation questions:**
 
 - It would add a fourth field to `POST /chat`, whose shape `App.routing.test.tsx` pins to
   `message · conversation_id · agent` — the test spec 021 uses to keep this browser's record out of
   Foundry's state. That is a §9/§4 change with its own spec.
 - **Retention is the operator's decision**: what is stored, for how long, and who can read it has to
-  be settled before an upload endpoint exists, not after.
+  be settled before an upload endpoint exists, not after. Note what the doc adds to this — `file_id`
+  means Foundry *keeps* the file, which is precisely the decision that has to be made first.
 
 | Open question | How to close it |
 |---|---|
-| Does the Responses API take file input beside a message? | read the file-input documentation for `api-version=v1` |
-| Inlined content, uploaded file, or storage the agent reads? | the same doc; the answer picks the spec |
-| Do the prompt and hosted harnesses agree? | once the above is known, the adapter-parameterised suite is where a difference shows |
+| Which of the four shapes should this repo offer? | a decision, not a doc read — it follows the retention answer |
+| Does the agent path accept a `data:` URI today? | one probe with a one-pixel PNG, once a design is chosen |
+| Do the prompt and hosted harnesses agree? | the adapter-parameterised suite, once there is something to parameterise |
 
 Measured in the meantime: the composer is already a multi-line `textarea` (spec 023), so a log, a
 Bicep file or a CSV pastes today and travels as the `message` it is. A screenshot is the case that
@@ -622,7 +672,8 @@ Spec 044 shipped its rendering half and **deferred its generation half**, delibe
 
 Building a generation tool would mean naming an image model deployment, an SDK call, an
 `api-version` and an output shape — a URL with a lifetime? base64? — none of which could be checked
-against the live service, because `az` on this machine is the broken build described above. §10
+against the live service — the 2026-09-20 session was read-only by decision, and generating an
+image is not a read. §10
 forbids writing any of that from memory, and a tool written against an API that changed through
 2026 is the exact failure this repository exists to demonstrate the avoidance of.
 
@@ -630,9 +681,15 @@ What the rendering half establishes and does not need verifying: an image travel
 `text_delta`**, so no tenth `AgentEvent` is needed for it (§9), and `react-markdown` sanitises a
 `data:` source away, so base64 cannot reach the stream or this browser's record.
 
+Half of the first question is now answered. The deployments listing was read on 2026-09-20 (above):
+the project serves **`FLUX-1.1-pro`**, the only one of its 32 deployments that is neither chat nor
+embeddings. That is a model *name*, and nothing more — its `capabilities` map is **empty**, so the
+listing does not even declare it image-capable, and the call, the `api-version` and the output shape
+are exactly as unknown as before. It narrows where to read; it is not a substitute for reading.
+
 | Open question | How to close it |
 |---|---|
-| Which image model does this Foundry project serve, and under which call? | read the image-generation doc, then list the project's model deployments |
+| Under which call is `FLUX-1.1-pro` invoked, and on which `api-version`? | read the image-generation doc — the deployment name is now known |
 | Does its output URL expire, and after how long? | generate one and watch it |
 | Is it an Azure service under `DefaultAzureCredential`, or a third-party key? | the same doc; a third key after Tavily would need its own justification |
 
@@ -667,8 +724,8 @@ column failing leaves the other running, and that stopping settles both.
 What is **not** verified is the comparison itself. AC16 asks for the same question put to both
 agents against the live service, recorded as a dated fixture, with the observed differences written
 into [`harness-comparison.md`](harness-comparison.md) as measurements with their date. That needs a
-credential; `az` here is the broken build described above, and §5 forbids hand-writing a recording to
-stand in for one. So `harness-comparison.md` gains the section and **no numbers** — a table of
+run that spends model tokens, which the read-only 2026-09-20 session deliberately did not make, and
+§5 forbids hand-writing a recording to stand in for one. So `harness-comparison.md` gains the section and **no numbers** — a table of
 plausible latencies nobody measured is worse than an empty one.
 
 | Open question | How to close it |
@@ -689,8 +746,8 @@ by `parseChart` (`frontend/src/state/chartContract.test.ts`). That is a real gua
 drifting apart, which is what `agent_core.yaml` exists to prevent.
 
 It is **not** evidence that the model follows them. No turn has been recorded in which the agent
-wrote a chart block unprompted, because that needs a credential and `az` is still the broken build
-described above, and §5 forbids hand-writing a recording to stand in for one.
+wrote a chart block unprompted, because that needs a turn to be run and the 2026-09-20 session was
+read-only, and §5 forbids hand-writing a recording to stand in for one.
 
 | Open question | How to close it |
 |---|---|

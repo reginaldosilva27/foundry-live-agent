@@ -29,11 +29,14 @@ own figures. It is the demonstration of what the table argues.
 
 **The measured run is outstanding.** AC16 asks for the same question put to both agents against the
 **live** service, recorded as a dated fixture, with the differences written here as measurements.
-That needs a credential this machine does not have — `az` is a broken build here
-(`Bad CPU type in executable`) — and constitution §5 forbids hand-writing a recording to stand in
+
+It is no longer blocked on tooling: the credential was there all along behind a shadowed `az`
+binary (see [REFERENCES.md](REFERENCES.md), *The credential, and what it turned out to be*), and
+reads against the project were made on 2026-09-20. What AC16 needs is not a read — it is **two
+turns actually run**, which spends model tokens on somebody's subscription, and that was outside
+the scope of the read-only session. Constitution §5 forbids hand-writing a recording to stand in
 for one. So this section states what the screen does and **no numbers**: a table of plausible
-latencies nobody measured would be worse than an empty one. The open item is in
-[REFERENCES.md](REFERENCES.md), and one comparison run closes it.
+latencies nobody measured would be worse than an empty one. One comparison run closes it.
 
 ## What you give up by choosing each
 
