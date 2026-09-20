@@ -156,6 +156,20 @@ describe('every control says what it does (AC8)', () => {
     expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
   })
 
+  it('with the navigation open over the conversation (spec 047)', async () => {
+    // The state a narrow screen is in. jsdom applies no stylesheet, so this cannot be a 320px
+    // viewport — the width itself is measured in a browser and recorded in the spec. What it can
+    // walk is the state the breakpoint switches on, which is where the new controls live.
+    fakeBff()
+    const { container } = render(<App />)
+    await screen.findByRole('textbox', { name: t('composer.placeholder', 'en') })
+
+    await userEvent.click(screen.getByRole('button', { name: t('nav.openMenu', 'en') }))
+
+    const missing = unnamed(container)
+    expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
+  })
+
   it('after a turn, with its answer actions', async () => {
     fakeBff()
     const { container } = render(<App />)

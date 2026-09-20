@@ -151,6 +151,17 @@ export const InfoIcon = (p: IconProps) =>
     p,
   )
 
+/** The navigation, on a screen too narrow to keep the rail open (spec 047). */
+export const MenuIcon = (p: IconProps) =>
+  svg(
+    <>
+      <line x1="3.5" y1="7" x2="20.5" y2="7" />
+      <line x1="3.5" y1="12" x2="20.5" y2="12" />
+      <line x1="3.5" y1="17" x2="20.5" y2="17" />
+    </>,
+    p,
+  )
+
 /** Side by side (spec 020). Two panes of equal weight — the screen is the comparison. */
 export const ColumnsIcon = (p: IconProps) =>
   svg(

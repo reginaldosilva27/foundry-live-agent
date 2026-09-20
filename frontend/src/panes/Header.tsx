@@ -5,7 +5,7 @@
  * endpoint says so through `GET /config`, and the button stays disabled with the reason on it —
  * rather than offering a feature that fails on click.
  */
-import { ActivityIcon, MicIcon } from '../components/Icon'
+import { ActivityIcon, MenuIcon, MicIcon } from '../components/Icon'
 import { HarnessBadge } from '../components/HarnessBadge'
 import { useT } from '../i18n/context'
 import type { BffConfig } from '../config'
@@ -23,6 +23,15 @@ interface Props {
   voiceLive: boolean
   onToggleTraces: () => void
   onVoice: () => void
+  /**
+   * Open the navigation (spec 047).
+   *
+   * Rendered at every width and hidden by the stylesheet above the breakpoint, rather than
+   * conditionally rendered: the rail is the navigation on a wide screen, so the control would be a
+   * duplicate there — but a control that exists only below a width is one `a11y.test.tsx` can never
+   * walk, and the whole point of this spec is that a hidden control is an absent one.
+   */
+  onOpenMenu: () => void
 }
 
 export function Header({
@@ -35,12 +44,22 @@ export function Header({
   voiceLive,
   onToggleTraces,
   onVoice,
+  onOpenMenu,
 }: Props) {
   const s = useT()
   const voiceEnabled = config?.voice?.enabled ?? false
 
   return (
     <header className="header">
+      <button
+        type="button"
+        className="header__menu"
+        aria-label={s('nav.openMenu')}
+        title={s('nav.openMenu')}
+        onClick={onOpenMenu}
+      >
+        <MenuIcon size={16} />
+      </button>
       <h2 className="header__agent">{selectedAgent ?? config?.agent_name ?? s('app.name')}</h2>
       <span className="header__pill">{s('header.foundryPill')}</span>
       <span className="header__status" data-streaming={streaming}>

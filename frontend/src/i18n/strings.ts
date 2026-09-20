@@ -459,6 +459,9 @@ export const strings = {
   'nav.agents': { en: 'Agents', pt: 'Agentes' },
   'nav.history': { en: 'History', pt: 'Histórico' },
   'nav.compare': { en: 'Compare', pt: 'Comparar' },
+  // Spec 047: below the narrow breakpoint the rail is an overlay, and this opens it.
+  'nav.openMenu': { en: 'Open the menu', pt: 'Abrir o menu' },
+  'nav.closeMenu': { en: 'Close the menu', pt: 'Fechar o menu' },
   'nav.collapse': { en: 'Collapse sidebar', pt: 'Recolher barra lateral' },
   'nav.expand': { en: 'Expand sidebar', pt: 'Expandir barra lateral' },
   'history.today': { en: 'Today', pt: 'Hoje' },

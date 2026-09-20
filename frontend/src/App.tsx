@@ -91,10 +91,32 @@ export default function App() {
   const promotion = usePromote()
   // What this browser keeps (spec 036). Applied to the document by the hook itself.
   const prefs = usePreferences()
+  /**
+   * The rail, open over the conversation (spec 047).
+   *
+   * Below the narrow breakpoint the rail is not a column, and hiding it — which is what the
+   * stylesheet used to do — took the only route to five of the seven screens out of the page, and
+   * out of the accessibility tree with it. This is the boolean that opens the same rail as an
+   * overlay instead. Above the breakpoint the stylesheet ignores it entirely.
+   */
+  const [menuOpen, setMenuOpen] = useState(false)
+
   const setView = useCallback(
-    (next: NavView) => navigate({ name: next === 'chat' ? 'chat' : next }),
+    (next: NavView) => {
+      // Behind itself, always: an overlay left sitting over the screen it just opened is worse
+      // than no overlay. Every way in goes through here, so there is one place that closes it.
+      setMenuOpen(false)
+      navigate({ name: next === 'chat' ? 'chat' : next })
+    },
     [navigate],
   )
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setMenuOpen(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [menuOpen])
   const [tracesOpen, setTracesOpen] = useState(route.name === 'trace')
   // Closed by default (spec 038, AC9): a developer surface, not part of talking to an agent.
   const [eventsOpen, setEventsOpen] = useState(false)
@@ -199,6 +221,14 @@ export default function App() {
       setView('chat')
     },
     [agents, setView],
+  )
+
+  const openConversationFromRail = useCallback(
+    (id: string) => {
+      setMenuOpen(false)
+      navigate({ name: 'conversation', id })
+    },
+    [navigate],
   )
 
   const startVoiceSession = useCallback(
@@ -511,7 +541,18 @@ export default function App() {
         >
           {announcement}
         </p>
+        {menuOpen && (
+          <button
+            type="button"
+            className="rail-backdrop"
+            data-testid="rail-backdrop"
+            aria-label={translate('nav.closeMenu', lang)}
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
         <Sidebar
+          overlay={menuOpen}
+          onCloseOverlay={() => setMenuOpen(false)}
           config={config}
           configFailed={failed}
           agents={agents}
@@ -523,11 +564,17 @@ export default function App() {
           activeId={activeId}
           onLang={setLang}
           onView={setView}
-          onOpenConversation={openConversation}
-          onNewSession={() => run('newConversation')}
+          onOpenConversation={openConversationFromRail}
+          onNewSession={() => {
+            setMenuOpen(false)
+            run('newConversation')
+          }}
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
-          onOpenPalette={() => setPaletteOpen(true)}
+          onOpenPalette={() => {
+            setMenuOpen(false)
+            setPaletteOpen(true)
+          }}
         />
 
         <main className="main" id="conversation" tabIndex={-1}>
@@ -541,6 +588,7 @@ export default function App() {
             voiceLive={voice.status === 'live'}
             onToggleTraces={toggleTraces}
             onVoice={startVoiceSession}
+            onOpenMenu={() => setMenuOpen(true)}
           />
           {view === 'agent' ? (
             <AgentDetailScreen

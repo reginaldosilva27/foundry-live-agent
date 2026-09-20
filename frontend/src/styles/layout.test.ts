@@ -118,6 +118,118 @@ describe('app.css', () => {
     expect(button).toContain('flex-shrink: 0')
   })
 
+  /**
+   * Spec 047 — below 760px the rail becomes an overlay instead of disappearing.
+   *
+   * What it used to do was `display: none`, which is why this test is about **absence of
+   * absence**: hiding a control removes it from the accessibility tree too, so a screen-reader
+   * user at a narrow width lost the navigation rather than finding it collapsed. Five of the seven
+   * screens had no other route.
+   */
+  describe('the narrow breakpoint (spec 047)', () => {
+    /**
+     * The media block itself, brace-matched.
+     *
+     * `css.split(marker)[1]` runs to the end of the file, not to the closing brace — so a rule
+     * declared later, outside the query, reads as if it were inside it. That is how the first
+     * version of the assertion below reported `.header__menu` as hidden at this breakpoint when
+     * the rule it found was the base one that hides it *above* the breakpoint.
+     */
+    function mediaBlock(query: string): string {
+      const at = css.indexOf(query)
+      if (at === -1) return ''
+      const open = css.indexOf('{', at)
+      let depth = 0
+      for (let i = open; i < css.length; i++) {
+        if (css[i] === '{') depth++
+        else if (css[i] === '}' && --depth === 0) return css.slice(open + 1, i)
+      }
+      return ''
+    }
+
+    const narrow = mediaBlock('@media (max-width: 760px)')
+
+    it('exists, so the assertions below are not vacuous', () => {
+      expect(narrow).toBeDefined()
+    })
+
+    it('never hides the rail — it lifts it over the conversation instead', () => {
+      expect(narrow).not.toMatch(/\.sidebar\s*\{[^}]*display:\s*none/)
+      expect(narrow).toMatch(/\.sidebar\[data-overlay='true'\]\s*\{[^}]*position:\s*fixed/)
+    })
+
+    it('hides no interactive control at all', () => {
+      // A control that does not fit is relocated or re-rendered, never deleted (AC4). `display:
+      // none` on anything a person can press is the defect this spec exists to remove.
+      // Comments stripped first: the first version of this matched the prose in a comment that
+      // happened to mention a button, which is a guard failing on its own documentation.
+      const rules = narrow.replace(/\/\*[\s\S]*?\*\//g, '')
+      const hidden = [...rules.matchAll(/([^{}]+)\{[^}]*display:\s*none[^}]*\}/g)].map((m) =>
+        m[1].trim(),
+      )
+      const interactive = hidden.filter((selector) =>
+        /(button|a\[href\]|input|select|textarea|__menu|__collapse|pill-button)/.test(selector),
+      )
+      expect(interactive, `these are pressable and hidden: ${interactive.join(', ')}`).toEqual([])
+    })
+
+    it('gives the header a budget it can meet', () => {
+      // At 320px the header has 280px of usable width and wanted 614. The two controls drop their
+      // labels — keeping their accessible names, which is the point — and the badge leaves.
+      expect(narrow).toMatch(/\.pill-button\s*\{[^}]*font-size:\s*0/)
+      expect(narrow).toMatch(/\.header\s+\.harness-badge/)
+    })
+  })
+
+  /**
+   * A media query adds no specificity, so a base rule declared *after* its own override wins.
+   *
+   * This trap bit three separate times while specs 020, 046 and 047 were written, in three
+   * different places, and each time the symptom was a layout that simply ignored its breakpoint:
+   * comparison columns that refused to stack, and a menu control that was invisible at every
+   * width. Reading either rule on its own showed nothing wrong.
+   *
+   * So the rule is now checked rather than remembered: every selector a breakpoint overrides must
+   * already have been declared above it.
+   */
+  it('declares every base rule before the breakpoint that overrides it', () => {
+    const offenders: string[] = []
+
+    for (const query of ['@media (max-width: 1100px)', '@media (max-width: 760px)']) {
+      let from = 0
+      for (;;) {
+        const at = css.indexOf(query, from)
+        if (at === -1) break
+        from = at + query.length
+
+        const open = css.indexOf('{', at)
+        let depth = 0
+        let close = css.length
+        for (let i = open; i < css.length; i++) {
+          if (css[i] === '{') depth++
+          else if (css[i] === '}' && --depth === 0) {
+            close = i
+            break
+          }
+        }
+        const block = css.slice(open + 1, close).replace(/\/\*[\s\S]*?\*\//g, '')
+
+        for (const [, selectors] of block.matchAll(/([^{}]+)\{[^}]*\}/g)) {
+          for (const selector of selectors.split(',').map((x) => x.trim())) {
+            if (!selector.startsWith('.')) continue
+            // Where is this selector's own rule declared, at the top level?
+            const base = css.indexOf(`\n${selector} {`)
+            if (base !== -1 && base > at) {
+              offenders.push(`${selector} is declared at ${base}, after ${query} at ${at}`)
+            }
+          }
+        }
+      }
+    }
+
+    expect(offenders, offenders.join('\n')).toEqual([])
+  })
+
   it('turns the trace panel into an overlay below the breakpoint', () => {
     const breakpoint = css.split('@media (max-width: 1100px)')[1]
     expect(breakpoint).toBeDefined()

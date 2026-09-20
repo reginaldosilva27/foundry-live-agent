@@ -34,6 +34,7 @@ import {
   SearchIcon,
 } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
+import { HarnessBadge } from '../components/HarnessBadge'
 import { modelName } from '../components/format'
 import { useT } from '../i18n/context'
 import { LANGS, type Lang } from '../i18n/strings'
@@ -89,6 +90,15 @@ interface Props {
   onView: (view: NavView) => void
   onOpenConversation: (id: string) => void
   onSelectAgent: (name: string) => void
+  /**
+   * The rail is open **over** the conversation (spec 047).
+   *
+   * Below the narrow breakpoint it stops being a column and becomes an overlay. The flag is what
+   * the stylesheet keys off; the component is otherwise identical, which is the point — a second
+   * navigation would be a second set of handlers to keep in step (§4).
+   */
+  overlay?: boolean
+  onCloseOverlay?: () => void
 }
 
 export function Sidebar({
@@ -108,6 +118,8 @@ export function Sidebar({
   onView,
   onOpenConversation,
   onSelectAgent,
+  overlay,
+  onCloseOverlay,
 }: Props) {
   const s = useT()
   /**
@@ -123,17 +135,20 @@ export function Sidebar({
   const answering = agents.selected ?? config?.agent_name
 
   return (
-    <aside className="sidebar" data-collapsed={collapsed}>
+    <aside className="sidebar" data-collapsed={collapsed} data-overlay={Boolean(overlay)}>
       <div className="sidebar__head">
         <div className="sidebar__brand">
           <img src="/icon-foundry-live-agent-branco.svg" alt="" width="20" height="20" />
           <span className="sidebar__product">{s('app.name')}</span>
+          {/* One control, two jobs, because they are the same job: put the rail away. As a column
+              it collapses; as an overlay (spec 047) it closes, and says so — a backdrop dismisses
+              well and advertises nothing. */}
           <button
             type="button"
             className="sidebar__collapse"
-            title={s(collapsed ? 'nav.expand' : 'nav.collapse')}
-            aria-label={s(collapsed ? 'nav.expand' : 'nav.collapse')}
-            onClick={onToggleCollapse}
+            title={s(overlay ? 'nav.closeMenu' : collapsed ? 'nav.expand' : 'nav.collapse')}
+            aria-label={s(overlay ? 'nav.closeMenu' : collapsed ? 'nav.expand' : 'nav.collapse')}
+            onClick={overlay ? onCloseOverlay : onToggleCollapse}
           >
             <PanelIcon size={16} />
           </button>
@@ -266,6 +281,21 @@ export function Sidebar({
           >
             {s('sidebar.preferences')}
           </button>
+          {/* Spec 047: at 320px the header has no room for this, so it lives here instead —
+              beside the model and the gateway line, which is the same fact about what this build is
+              made of. Same component, fed from the same source, so there is no second reading of
+              which harness is driving (§4).
+
+              Only while the rail IS the overlay. Rendering it at every width would put the badge on
+              screen twice on a laptop, where the header already has it — two copies of one fact,
+              which is the thing §4 is about, and it made three existing tests ambiguous the moment
+              it shipped. */}
+          {overlay && (
+            <HarnessBadge
+              harness={agents.selectedRow?.harness ?? config?.harness}
+              failed={configFailed}
+            />
+          )}
           <p data-testid="sidebar-model">
             <span className="sidebar__key">{s('sidebar.modelLabel')}</span>
             {config ? modelName(config.model) : s(configFailed ? 'config.unavailable' : 'config.loading')}

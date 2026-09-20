@@ -687,6 +687,30 @@ button:disabled {
    The name truncates but keeps a readable stub: pinning everything else and letting this be the
    only flexible item collapsed it to zero width, which loses the most important thing in the
    header to save the least. */
+/* The control that opens the rail on a narrow screen (spec 047).
+
+   Rendered at every width and hidden above the breakpoint rather than conditionally rendered: a
+   control that only exists below a width is one the accessibility walk can never see, and this
+   spec is about exactly that failure. Above the breakpoint the rail is already open, so the
+   control would be a second way to do nothing. */
+.header__menu {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.rail-backdrop {
+  display: none;
+}
+
 .header__agent {
   margin: 0;
   font-size: var(--fs-h5);
@@ -2362,8 +2386,65 @@ button:disabled {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* The rail stops being a column. It is NOT hidden: `display: none` takes it out of the
+     accessibility tree as well as the layout, and it is the only route to five of the seven
+     screens — so below this width it waits off-canvas and the header's menu control brings it
+     over the conversation (spec 047). */
   .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: min(300px, 86vw);
+    transform: translateX(-100%);
+    transition: transform var(--dur-base) var(--ease-out);
+    box-shadow: var(--shadow-4);
+  }
+
+  .sidebar[data-overlay='true'] {
+    position: fixed;
+    transform: translateX(0);
+  }
+
+  .rail-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    border: 0;
+    padding: 0;
+    background: var(--bg-inverse);
+    opacity: 0.5;
+    cursor: pointer;
+  }
+
+  /* The header's budget. At 320px it has 280px of usable width and wanted 614.
+
+     The two controls keep their icons and drop their labels — `font-size: 0` collapses the text
+     box without touching the accessible name, which `aria-label` carries and AC4 requires. The
+     badge moves to the rail's footer, where the model and the gateway line already live, so spec
+     004's "a harness swap is visible on screen" still holds one tap away. The branding pill had
+     already truncated to a single meaningless letter. */
+  .header {
+    padding: 0 var(--sp-3);
+    gap: var(--sp-2);
+  }
+
+  .header__menu {
+    display: inline-flex;
+  }
+
+  .header__pill,
+  .header .harness-badge {
     display: none;
+  }
+
+  .header__status {
+    font-size: 0;
+  }
+
+  .pill-button {
+    font-size: 0;
+    padding: var(--sp-2);
+    gap: 0;
   }
 }
 
@@ -4011,6 +4092,10 @@ button:disabled {
 
 /* The way in, in the footer that stays two lines (AC7). */
 .sidebar__about {
+  /* Block, so the two of them stack. Inline they fit on one line once the rail is wide enough —
+     which it is as an overlay (spec 047) — and read as one run-on string: "What this build
+     isPreferences". */
+  display: block;
   padding: 0;
   border: 0;
   background: none;
@@ -5234,3 +5319,4 @@ code,
 .ds-code {
   background: var(--bg-3);
 }
+

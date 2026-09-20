@@ -137,3 +137,25 @@ light, so a raised `--fg-4` would simply have been `--fg-3` under a second name.
 `contrast.test.ts` enforces all of it, including an **allowlist**: a selector reaching for `--fg-4`
 that does not name a disabled or placeholder state fails CI. The drift that produced this took one
 spec at a time and no test could see it, because the exemption lived in a comment.
+
+## The breakpoints, and what each one does (spec 047)
+
+Written down here because they were declared in the stylesheet and described nowhere.
+
+| width | what changes |
+|---|---|
+| above 1100px | the three-column shell: rail, conversation, trace panel |
+| **1100px** | the trace panel becomes an overlay, so the page never scrolls sideways |
+| **760px** | the rail stops being a column and waits off-canvas; the header's menu control brings it over the conversation, and the header drops its labels to fit |
+| **320px** | the floor this app claims. Below it the app renders as best it can and promises nothing |
+
+**The rail is never hidden.** `display: none` was what the 760px block used to do, and it takes a
+thing out of the accessibility tree as well as the layout — which, since the rail is the only route
+to five of the seven screens, meant a screen-reader user at a narrow width lost the navigation
+rather than finding it collapsed. It is now translated off-canvas and brought back.
+
+**A base rule must be declared before the breakpoint that overrides it.** A media query adds no
+specificity, so the same selector declared later in the file wins regardless of the query. This trap
+bit three times across specs 020, 046 and 047 — stacked columns that refused to stack, a menu
+control invisible at every width — and it is now enforced by `layout.test.ts` rather than
+remembered.

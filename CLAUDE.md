@@ -302,6 +302,20 @@ violation.
   `referrerpolicy="no-referrer"`. Base64 cannot arrive: `react-markdown` sanitises `data:` away,
   measured rather than implemented. An undescribed image says it has no description; it never gets
   an invented one (§5).
+- **The rail is never hidden; on a narrow screen it comes over the conversation (spec 047).**
+  Below 760px the stylesheet used to say `.sidebar { display: none }`, and that was the entire
+  narrow-screen story — which removed the **only** route to five of the seven screens, and removed
+  it from the accessibility tree too, so a screen-reader user lost the navigation rather than
+  finding it collapsed. Measured at 390px before: `scrollWidth` **594** against a 390px viewport,
+  six controls visible with **two off the right edge**, one screen reachable. The fix is not a
+  second navigation — it is the **same `Sidebar`**, translated off-canvas and brought back by a
+  header control, so choosing an agent from a phone runs the handler the rail runs (§4). The header
+  drops labels, never controls: the two pill buttons keep their icons and their `aria-label`, and
+  the harness badge moves into the rail's footer **only while it is the overlay**, so spec 004's
+  AC9 holds at every width without the badge appearing twice on a laptop. The floor is **320px**.
+  And one rule worth carrying: **a base rule must be declared before the breakpoint that overrides
+  it** — a media query adds no specificity, this trap bit three times across specs 020, 046 and
+  047, and `layout.test.ts` now enforces it.
 - **A token is held to the bar its content deserves, not the bar its name suggests (spec 046).**
   `--fg-4` was exempted at 3:1 as "captions, placeholders and disabled text" — but WCAG exempts
   *disabled controls*, and that sentence let **sixty-four** selectors accumulate on it, fifty-nine
