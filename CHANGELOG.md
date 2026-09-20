@@ -21,6 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   if that ever stops being true.
 
 ### Fixed
+- **The concurrency tests proved the right thing by the wrong means, and were flaky.** They issued
+  several slow requests at once and asserted on the wall clock with a wide margin; a loaded machine
+  tripped one anyway. They now block each request on a `threading.Barrier` sized to their number,
+  which releases only when all of them are waiting at it *simultaneously* — the property under test
+  stated exactly, with no clock in it. On the passing path there is no sleep at all, so the file
+  runs in a quarter of a second instead of one and a half. Verified the hard way: reverting one
+  route to `async def` turns it red again.
+- **The history could stop saving and the screen kept saying it was saved.** `storing` was probed
+  once at mount, and `available()` probes by writing **one byte** — which a browser at its quota
+  still accepts. So the notice above the list went on promising the conversations would survive a
+  reload while every real write, twenty-five transcripts' worth, was being refused. The write
+  already reported failure; nothing read the answer. A refused write now latches, `storing` is the
+  probe *and* that latch, and clearing the record resets it because the browser is no longer
+  refusing. The list this session built stays on screen either way — a failed write is not a failed
+  render — and the state it flips into is `history.unavailable`, which the drawer already renders in
+  both languages (§7).
 - **Every blocking Azure call was made on the event loop, and this app streams.** The BFF is
   asynchronous and every client it uses — the Azure SDKs, `httpx.get`, the Speech POST, Tavily — is
   synchronous. Run inside an `async def` handler, one of those owns the whole worker while it waits:

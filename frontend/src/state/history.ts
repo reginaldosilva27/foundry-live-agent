@@ -13,7 +13,7 @@
  * The title is taken from the first thing the person typed. Asking a model to name the thread would
  * be this app running inference of its own, which is exactly what §8 exists to stop.
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { Message } from '../hooks/useAgentStream'
 import { fold } from './fold'
 import { KEYS, available, readJson, remove as removeKey, writeJson } from './storage'
@@ -282,23 +282,41 @@ export interface HistoryState {
 }
 
 export function useHistory(): HistoryState {
-  const [storing] = useState(available)
+  const [probed] = useState(available)
   const [conversations, setConversations] = useState<StoredConversation[]>(load)
+  /**
+   * Latched the first time a write is refused (AC20).
+   *
+   * `available()` is a one-byte probe, and a browser at its quota still takes one byte — so the
+   * probe alone kept answering yes while the real write, twenty-five conversations of transcript,
+   * was being turned away. The reader was told their history was kept when it was not.
+   *
+   * A ref rather than state because it is set inside the updaters below, which React runs while it
+   * renders: calling a setter there is not allowed, and this is the one case a ref written during
+   * render is safe: it only ever turns from false to true, so running twice under StrictMode says
+   * the same thing. The `setConversations` that carries it is the render that reads it.
+   */
+  const refused = useRef(false)
+
+  const persisted = useCallback((next: StoredConversation[]): StoredConversation[] => {
+    if (!writeJson(HISTORY_KEY, next)) refused.current = true
+    return next
+  }, [])
 
   const save = useCallback(
     (record: StoredConversation) => setConversations((prev) => persisted(upsert(prev, record))),
-    [],
+    [persisted],
   )
 
   const rename = useCallback(
     (id: string, title: string) =>
       setConversations((prev) => persisted(prev.map((c) => (c.id === id ? { ...c, title } : c)))),
-    [],
+    [persisted],
   )
 
   const drop = useCallback(
     (id: string) => setConversations((prev) => persisted(prev.filter((c) => c.id !== id))),
-    [],
+    [persisted],
   )
 
   /**
@@ -307,6 +325,9 @@ export function useHistory(): HistoryState {
    */
   const clear = useCallback(() => {
     removeKey(HISTORY_KEY)
+    // Whatever would not fit is gone, so the browser is not refusing any more. Leaving the latch
+    // set would keep telling the reader nothing is kept while the next write goes through fine.
+    refused.current = false
     setConversations([])
   }, [])
 
@@ -328,19 +349,22 @@ export function useHistory(): HistoryState {
       setConversations(persisted(merged.conversations))
       return { kept: merged.kept, dropped: merged.dropped }
     },
-    [conversations],
+    [conversations, persisted],
   )
 
-  return { conversations, storing, save, rename, remove: drop, clear, importFile }
+  return {
+    conversations,
+    // Two different facts, and both have to be false for the notice to be true: a browser that
+    // never stored at all, and one that has stopped accepting what we have to store.
+    storing: probed && !refused.current,
+    save,
+    rename,
+    remove: drop,
+    clear,
+    importFile,
+  }
 }
 
-/**
- * Write, then hand the same list back to React.
- *
- * A failed write is not a failed render: a browser that refuses storage still gets the list it
- * built this session, and the line above the list says it will not survive the reload (AC20).
- */
-function persisted(next: StoredConversation[]): StoredConversation[] {
-  writeJson(HISTORY_KEY, next)
-  return next
-}
+// `persisted` used to live here, as a module function. It moved into the hook when it had to report
+// a refused write: a failed write is still not a failed render — the browser keeps the list it built
+// this session — but the line above that list has to stop saying it will survive the reload (AC20).

@@ -6,7 +6,7 @@
  * binds them to storage is thin on purpose — there is nothing in it these tests do not cover.
  */
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   CAP,
   HISTORY_KEY,
@@ -354,6 +354,58 @@ describe('useHistory().clear', () => {
 
     expect(result.current.conversations).toEqual([])
     expect(localStorage.getItem(HISTORY_KEY)).toBeNull()
+  })
+})
+
+/**
+ * Spec 027 AC20 — the notice above the list must stay true for the whole session.
+ *
+ * `storing` was probed once, at mount, and the probe writes one byte. A browser at its quota still
+ * takes one byte, so the probe kept saying yes while the real write — twenty-five conversations of
+ * transcript — was being refused: the reader was told their history was kept, and it was not. The
+ * write already reported failure; nobody read the answer.
+ */
+describe('useHistory() when the browser stops accepting writes', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    localStorage.clear()
+  })
+
+  it('stops claiming the history is kept once a write is refused', () => {
+    const { result } = renderHook(() => useHistory())
+    expect(result.current.storing).toBe(true)
+
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+
+    act(() => result.current.save(conversation({ id: 'c1' })))
+
+    expect(result.current.storing).toBe(false)
+    // The drawing this session made is still on screen: a failed write is not a failed render.
+    expect(result.current.conversations).toHaveLength(1)
+  })
+
+  it('says the same thing when a rename or a delete is the write that fails', () => {
+    writeJson(HISTORY_KEY, [conversation({ id: 'c1' })])
+    const { result } = renderHook(() => useHistory())
+
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+
+    act(() => result.current.rename('c1', 'a new title'))
+
+    expect(result.current.storing).toBe(false)
+  })
+
+  it('keeps saying yes while the writes are going through', () => {
+    const { result } = renderHook(() => useHistory())
+
+    act(() => result.current.save(conversation({ id: 'c1' })))
+    act(() => result.current.save(conversation({ id: 'c2' })))
+
+    expect(result.current.storing).toBe(true)
   })
 })
 

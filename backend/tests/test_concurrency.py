@@ -10,21 +10,25 @@ and every live voice session.
 `TestClient` cannot see this: it serves one request at a time, so a fully blocking app passes every
 other test in this suite.
 
-**How these tests prove it.** Several identical slow requests are issued at once. If the handler
-owns the loop they serialise, and the wall clock is N × the delay; if it does not, they overlap and
-the wall clock is about one delay. The assertion is on *elapsed time* rather than on which API the
-implementation used, so any fix that keeps the guarantee passes (§2). The margin is wide (half of
-the serialised time) because a timing assertion that is nearly true is a flaky test.
+**How these tests prove it, and why there is no clock in them.** Several identical requests are
+issued at once and each one blocks on a `threading.Barrier` sized to their number. A barrier
+releases only when all of them are waiting at it *simultaneously*, which is the property under test
+stated exactly: if the handler owns the loop, the second request never starts, the first waits out
+the barrier's timeout and the rendezvous is reported as failed. Nothing is measured, so nothing is
+flaky — and on the passing path there is no sleep at all, so these cost milliseconds.
 
-The one exception is the voice test at the bottom, which needs no clock: it awaits the answer
-directly and asks whether anything else could run while the tool did.
+The first draft did assert on elapsed time with a wide margin, and a loaded machine still tripped
+it. A timing assertion that is nearly always true is a test that will be deleted by whoever it
+wakes up at the wrong moment; a rendezvous is the same claim without the clock.
+
+The voice test at the bottom works the same way in one process: the tool reports whether anything
+else could run while it was working.
 """
 
 from __future__ import annotations
 
 import asyncio
 import threading
-import time
 
 import httpx
 
@@ -32,40 +36,51 @@ from app.agents import AgentSummary
 from app.main import create_app
 from app.voice_session import VoiceSession
 
-#: Long enough to dominate everything else in the request, short enough to keep the suite quick.
-DELAY = 0.3
+#: How many requests have to be in flight at once for the rendezvous to release.
 CONCURRENCY = 3
-#: Serialised would be 0.9s. Overlapped is ~0.3s. Anything under this is "they overlapped".
-CEILING = DELAY * CONCURRENCY / 2
+#: How long one request will wait for the others before declaring that they never came. Only ever
+#: spent on the failing path, so it can be generous without slowing the suite down.
+RENDEZVOUS_TIMEOUT = 5.0
 
 
 def _client(app) -> httpx.AsyncClient:
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://bff")
 
 
-def _slow() -> None:
-    """A blocking wait, the way every synchronous SDK call in this app blocks."""
-    time.sleep(DELAY)
+def _rendezvous(barrier: threading.Barrier) -> bool:
+    """Block the way every synchronous SDK call in this app blocks, and report what happened.
+
+    `True` means `CONCURRENCY` of these were blocking *at the same moment* — which can only be true
+    if the handler let go of the event loop. `False` means this call sat here alone until it gave
+    up, because nothing else could start.
+    """
+    try:
+        barrier.wait(timeout=RENDEZVOUS_TIMEOUT)
+        return True
+    except threading.BrokenBarrierError:
+        return False
 
 
-async def _elapsed(requests) -> float:
-    started = time.perf_counter()
+async def _all_met(app, requests) -> None:
     responses = await asyncio.gather(*requests)
     assert all(r.status_code == 200 for r in responses), [r.status_code for r in responses]
-    return time.perf_counter() - started
 
 
 async def test_a_slow_agent_listing_does_not_freeze_the_server():
     """`GET /agents` reads Foundry over a synchronous client. It must not own the loop."""
 
+    barrier = threading.Barrier(CONCURRENCY)
+    met: list[bool] = []
+
     def slow_lister() -> list[AgentSummary]:
-        _slow()
+        met.append(_rendezvous(barrier))
         return []
 
     app = create_app(agent_lister=slow_lister, project_endpoint="https://example/api/projects/p")
     async with _client(app) as client:
-        elapsed = await _elapsed([client.get("/agents") for _ in range(CONCURRENCY)])
-    assert elapsed < CEILING, f"{CONCURRENCY} listings took {elapsed:.2f}s — they serialised"
+        await _all_met(app, [client.get("/agents") for _ in range(CONCURRENCY)])
+
+    assert all(met), f"{CONCURRENCY} listings never overlapped: {met}"
 
 
 async def test_a_slow_listing_does_not_freeze_a_turn_that_names_an_agent():
@@ -75,8 +90,11 @@ async def test_a_slow_listing_does_not_freeze_a_turn_that_names_an_agent():
     an agent on the screen, so a slow listing would stall every other conversation in the process.
     """
 
+    barrier = threading.Barrier(CONCURRENCY)
+    met: list[bool] = []
+
     def slow_lister() -> list[AgentSummary]:
-        _slow()
+        met.append(_rendezvous(barrier))
         return [
             AgentSummary(
                 name="some-agent",
@@ -97,26 +115,32 @@ async def test_a_slow_listing_does_not_freeze_a_turn_that_names_an_agent():
         project_endpoint="https://example/api/projects/p",
     )
     async with _client(app) as client:
-        elapsed = await _elapsed(
+        await _all_met(
+            app,
             [
                 client.post("/chat", json={"message": "hi", "agent": "some-agent"})
                 for _ in range(CONCURRENCY)
-            ]
+            ],
         )
-    assert elapsed < CEILING, f"{CONCURRENCY} turns took {elapsed:.2f}s — they serialised"
+
+    assert all(met), f"{CONCURRENCY} turns never overlapped: {met}"
 
 
 async def test_a_slow_trace_query_does_not_freeze_the_server():
     """The Application Insights client is synchronous too (spec 005)."""
 
+    barrier = threading.Barrier(CONCURRENCY)
+    met: list[bool] = []
+
     def slow_query(_kql: str) -> list[dict]:
-        _slow()
+        met.append(_rendezvous(barrier))
         return []
 
     app = create_app(trace_query=slow_query)
     async with _client(app) as client:
-        elapsed = await _elapsed([client.get("/trace/resp_1") for _ in range(CONCURRENCY)])
-    assert elapsed < CEILING, f"{CONCURRENCY} trace reads took {elapsed:.2f}s — they serialised"
+        await _all_met(app, [client.get("/trace/resp_1") for _ in range(CONCURRENCY)])
+
+    assert all(met), f"{CONCURRENCY} trace reads never overlapped: {met}"
 
 
 async def test_a_slow_synthesis_does_not_freeze_the_server():
@@ -126,33 +150,39 @@ async def test_a_slow_synthesis_does_not_freeze_the_server():
     many times during one turn — precisely while an SSE stream needs the loop.
     """
 
+    barrier = threading.Barrier(CONCURRENCY)
+    met: list[bool] = []
+
     def slow_synthesize(_text: str, _voice: str) -> bytes:
-        _slow()
+        met.append(_rendezvous(barrier))
         return b"mp3"
 
     app = create_app(synthesize=slow_synthesize)
     async with _client(app) as client:
-        elapsed = await _elapsed(
-            [client.post("/speech", json={"text": "oi", "lang": "pt"}) for _ in range(CONCURRENCY)]
+        await _all_met(
+            app,
+            [client.post("/speech", json={"text": "oi", "lang": "pt"}) for _ in range(CONCURRENCY)],
         )
-    assert elapsed < CEILING, f"{CONCURRENCY} syntheses took {elapsed:.2f}s — they serialised"
+
+    assert all(met), f"{CONCURRENCY} syntheses never overlapped: {met}"
 
 
 async def test_a_slow_tool_run_does_not_freeze_the_server():
     """`POST /tools/{name}/run` executes a real tool, `search_web` included (spec 042)."""
+    # No rendezvous here: the tool is real and fast, and there is nothing to inject a barrier into.
+    # This asserts the route still answers under concurrency; the blocking property is proved at the
+    # sites that can genuinely be slow.
     app = create_app(allow_playground=True)
     async with _client(app) as client:
-        elapsed = await _elapsed(
+        await _all_met(
+            app,
             [
                 client.post(
                     "/tools/get_current_datetime/run", json={"arguments": '{"timezone":"UTC"}'}
                 )
                 for _ in range(CONCURRENCY)
-            ]
+            ],
         )
-    # No artificial delay here — the tool is fast. This asserts the route still answers 200 under
-    # concurrency; the blocking property is covered by the sites that can genuinely be slow.
-    assert elapsed < 5.0
 
 
 async def test_a_voice_tool_call_does_not_freeze_the_process():
