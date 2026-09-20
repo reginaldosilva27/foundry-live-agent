@@ -395,6 +395,38 @@ violation.
   state; and **retention is the operator's decision**, which must precede an upload endpoint. In the
   meantime the composer is already a multi-line `textarea` (spec 023), so a log, a Bicep file or a
   CSV pastes today — a screenshot is the case that genuinely needs the answer.
+- **A child of `.app` with no grid placement lands in an implicit row, and this has now cost two
+  panels.** `.events` shipped as a 380px panel with no `grid-column`, so auto-placement put it under
+  the rail inside a 248px track and the conversation collapsed — at 1440×900, with 1018 green tests,
+  because jsdom lays nothing out. It is a column now (`--events`, the way `--rail` already worked),
+  a drawer below **1542px** = 248 + **594** (the header's measured floor) + 320 + 380, and spec
+  050's banner is `grid-column: 1 / -1; grid-row: 1` with `grid-template-rows: auto minmax(0, 1fr)`
+  on the shell. `layout.test.ts` asserts every one of those. **Anything added as a direct child of
+  `.app` is either placed or `position: fixed`** — the overlays (`.log-scrim`, `.voice-scrim`,
+  `.palette`) take the second route.
+- **Two sources can share a label and still be two sources (spec 034).** The Learn MCP answers one
+  search with the same page under several `#anchors`; `labelFor` is host + path, so four distinct
+  URLs collapse to one label. Deduping on the URL therefore kept all four and the row key
+  `callKey:label` collided — React's *"children may be duplicated and/or omitted"*, against the
+  recorded turn. `identify()` in `state/sources.ts` is the one place sameness is decided (a page,
+  fragment dropped) and `Source.id` is what the row keys on, so the list and the view cannot
+  disagree about what two sources are (§4).
+- **A screen with no door is an absent screen, and a listed action needs one id.** Spec 042's
+  `/tools` parsed, rendered, and was reachable only by typing the URL — its own plan named
+  `Sidebar.tsx` and only the `View` type arrived. Spec 038's `toggleEvents` sat in `BINDINGS` *and*
+  in `EXTRA_ACTIONS` ("actions that no key names"), so the palette listed it twice under one id.
+  Both are the same habit: when a spec adds a surface, the route into it is part of the surface.
+- **The demo replays; it never pretends (spec 050).** `just demo` runs the whole app with no Azure
+  credential by composing `create_app` against `ai/tests/fixtures/recorded/` — the same recordings
+  the contract tests replay, through the same normaliser, so a replayed turn earns §9 rather than
+  being excused from it. Three rules hold it honest. It is a **separate entrypoint**
+  (`app.demo:create_demo_app`): `create_app` does not import `app.demo` and a test walks the import
+  graph, because a flag would let a mistyped variable make a real deployment serve a recording as a
+  live answer. `GET /config` carries `demo` **absent, never false**, and the banner it drives has no
+  dismiss control. And the demo says out loud that the answer does not depend on the question —
+  a recording has one answer. The hosted recording is deferred with its reason: the two harnesses
+  normalise different raw streams and one `stream_factory` seam cannot tell which adapter is
+  calling, so the listing carries `demo_not_recorded`, which is not `no_harness`.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

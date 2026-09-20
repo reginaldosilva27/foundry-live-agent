@@ -48,6 +48,8 @@ import { useVoiceSession } from './hooks/useVoiceSession'
 import type { VoiceErrorCode } from './voice/session'
 import { voiceMessages } from './state/voiceLog'
 import { ErrorCard } from './components/ErrorCard'
+import { DemoBanner } from './components/DemoBanner'
+import { useDemo } from './state/demo'
 import { EventInspector } from './components/EventInspector'
 import { LogViewer } from './components/LogViewer'
 import { useT } from './i18n/context'
@@ -135,6 +137,14 @@ export default function App() {
   // the newest turn, which is what the header's Traces button opens (spec 009).
   const [trace, setTrace] = useState<{ turnId?: string; callId?: string }>({})
   const { config, failed } = useConfig()
+  /**
+   * Whether this build is replaying a recording (spec 050).
+   *
+   * Keyed on the config's own field, so a production build issues no request at all — the hook
+   * asserts that, because a deployment quietly polling a route that does not exist is a 404 on
+   * every load and a puzzle in somebody's logs.
+   */
+  const demo = useDemo(Boolean(config?.demo))
   /**
    * The function tools this build can run (spec 042).
    *
@@ -541,6 +551,11 @@ export default function App() {
         >
           {announcement}
         </p>
+        {/* Above everything, on every screen, and never dismissible (spec 050, AC5). Placed in the
+            shell grid by `app.css` rather than auto-flowed: a direct child of `.app` with no
+            placement lands in an implicit row, which is exactly how the event inspector broke the
+            layout. `layout.test.ts` asserts the placement. */}
+        {demo && <DemoBanner demo={demo} />}
         {menuOpen && (
           <button
             type="button"

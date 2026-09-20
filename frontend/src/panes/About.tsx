@@ -80,6 +80,20 @@ export function AboutScreen({ config, failed }: Props) {
         <Flag label={s('about.field.speech')} value={config.speech?.enabled} field="speech" />
       </Group>
 
+      {/* Spec 050. Rendered only when the BFF said so, because the field is absent on every build
+          that is not a replay — and on the build that is, this is the second place (after the
+          banner) a reader can confirm what they are looking at. */}
+      {config.demo && (
+        <Group title={s('about.field.demo')} testId="about-demo">
+          <Text
+            label={s('about.field.demoRecorded')}
+            value={config.demo.recorded_at}
+            field="demoRecorded"
+          />
+          <Text label={s('demo.pick')} value={config.demo.current} field="demoCurrent" />
+        </Group>
+      )}
+
       <Group title={s('about.mayChange')} testId="about-may-change">
         {/* The app's only write, and off by default (spec 031). Stated here so a reader who never
             sees the control learns it is configuration rather than a missing feature. */}

@@ -179,6 +179,29 @@ describe('the rail', () => {
     expect(screen.getByRole('button', { name: t('sidebar.about', 'en') })).toBeInTheDocument()
   })
 
+  /**
+   * Spec 042's screen had no door.
+   *
+   * `/tools` parses, `App` renders it, and nothing anywhere led to it — not the rail, not the
+   * palette, not the footer. Spec 042's own plan lists `Sidebar.tsx` as an affected file; only the
+   * `View` type arrived. A screen reachable solely by typing a URL is the same defect spec 047
+   * named from the other side: a hidden control is an absent one.
+   *
+   * It belongs in the footer beside `/about` and `/preferences` — the developer shelf — and it
+   * appears only when the deployment enabled it, because a door onto a 403 is worse than no door.
+   */
+  it('offers the playground only where the deployment enabled it (spec 042)', async () => {
+    const onView = vi.fn()
+    show()
+    expect(screen.queryByRole('button', { name: t('tools.title', 'en') })).toBeNull()
+
+    show({ config: { ...CONFIG, playground: { enabled: true } }, onView })
+    const door = screen.getByRole('button', { name: t('tools.title', 'en') })
+
+    await userEvent.click(door)
+    expect(onView).toHaveBeenCalledWith('tools')
+  })
+
   // --- AC8 ---------------------------------------------------------------
 
   it('names the agent that is answering and does not list the rest', () => {

@@ -63,6 +63,9 @@ const REASON_KEYS: Record<string, StringKey> = {
   no_harness: 'agents.reason.no_harness',
   disabled: 'agents.reason.disabled',
   version_not_active: 'agents.reason.version_not_active',
+  // Spec 050: this build HAS the harness and the demo has no recording for it — a different fact
+  // from `no_harness`, which is why it is a code of its own rather than a reuse.
+  demo_not_recorded: 'agents.reason.demo_not_recorded',
 }
 
 const ERROR_KEYS: Record<string, StringKey> = {

@@ -25,6 +25,7 @@ const activity = {
 
 const LINK: Source = {
   kind: 'link',
+  id: 'https://learn.microsoft.com/en-us/azure/foundry',
   label: 'learn.microsoft.com/en-us/azure/foundry',
   url: 'https://learn.microsoft.com/en-us/azure/foundry',
   from: 'microsoft_learn',
@@ -34,6 +35,7 @@ const LINK: Source = {
 
 const PASSAGE: Source = {
   kind: 'passage',
+  id: 'lookup_knowledge:docs/architecture.md',
   label: 'docs/architecture.md',
   from: 'lookup_knowledge',
   activity,
@@ -84,6 +86,22 @@ describe('the strip', () => {
   it('says a lookup failed rather than listing nothing (AC5)', () => {
     show([{ ...LINK, failed: true, label: 'search_web', url: undefined }])
     expect(screen.getByText(t('sources.failed', 'en'))).toBeInTheDocument()
+  })
+
+  /**
+   * A duplicate React key does not throw — it warns, and "children may be duplicated and/or
+   * omitted". This strip keyed its rows on `callKey:label`, and two sources can legitimately share
+   * a label while being different sources, so a row could vanish with nothing but a console
+   * message to say so. `id` is what `sourcesOf` already uses to decide that two sources are the
+   * same one, so it is what addresses a row (§4).
+   */
+  it('renders every source it is given, even two that share a label', () => {
+    show([
+      LINK,
+      { ...LINK, id: `${LINK.url}#later`, url: `${LINK.url}#later`, callKey: 'mcp_1' },
+    ])
+
+    expect(screen.getAllByRole('button', { name: LINK.label })).toHaveLength(2)
   })
 
   it('issues no request of its own (AC7)', () => {

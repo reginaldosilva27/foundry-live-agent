@@ -34,6 +34,14 @@ export interface BffConfig {
   agents?: { can_promote: boolean; can_propose?: boolean }
   /** Whether this deployment exposes the tool playground (spec 042). Absent reads as no. */
   playground?: { enabled: boolean }
+  /**
+   * Present only when this build is replaying a recording (spec 050).
+   *
+   * **Absent, never `false`.** A live BFF has never heard of demo mode and says nothing about it;
+   * a browser reading `demo: false` would be reading a claim nobody made. Same rule as `tracing`
+   * and `pricing`, and here it decides whether a banner appears, so getting it wrong is visible.
+   */
+  demo?: { recorded_at: string; current: string }
   project_name: string
   speech: {
     enabled: boolean

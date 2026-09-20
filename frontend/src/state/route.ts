@@ -26,7 +26,7 @@ export type Route =
   | { name: 'history' }
   /** One agent's definition, as the service reports it (spec 030). The name is Foundry's. */
   | { name: 'agent'; agentName: string }
-  /** Reserved for spec 020. It parses; the app renders the chat until that spec builds it. */
+  /** One question, two agents, two streams (spec 020). Reserved here first, then built. */
   | { name: 'compare' }
   /** What this deployment is, as `GET /config` reports it (spec 032). Read-only, and linkable. */
   | { name: 'about' }

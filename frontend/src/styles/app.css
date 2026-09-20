@@ -141,6 +141,9 @@ button:disabled {
      (`data-collapsed`) and the grid follows, rather than the boolean being threaded through the
      component tree to a place that only needs it for a column width. */
   --rail: 248px;
+  /* The event inspector's, for the same reason: the track below and the panel itself must read
+     one number, or a panel wider than its column paints over the next one (spec 038). */
+  --events: 380px;
 
   display: grid;
   grid-template-columns: var(--rail) minmax(0, 1fr) 320px;
@@ -154,6 +157,91 @@ button:disabled {
 
 .app[data-traces-open='false'] {
   grid-template-columns: var(--rail) minmax(0, 1fr);
+}
+
+/* The inspector is a COLUMN, not an overlay: spec 038 puts it "beside the chat like the trace
+   panel does", and seeing an event and the span it produced at the same time is the whole reason
+   to have both open. It is a direct child of this grid, and nothing used to place it — so with the
+   declared columns already taken it auto-placed into an implicit SECOND ROW, 380px of panel inside
+   the 248px rail track, and the conversation collapsed to whatever was left. It looked like the app
+   had crashed. jsdom lays nothing out, which is why the test for this reads the declaration.
+
+   Both trace states are named rather than one `.app:has(.events)`, which would tie with
+   `.app[data-traces-open='false']` on specificity and let source order decide how many columns a
+   reader with the trace panel closed gets. */
+.app[data-traces-open='true']:has(.events) {
+  grid-template-columns: var(--rail) minmax(0, 1fr) 320px var(--events);
+}
+
+.app[data-traces-open='false']:has(.events) {
+  grid-template-columns: var(--rail) minmax(0, 1fr) var(--events);
+}
+
+/* The replay banner is a ROW of the shell, spanning every column (spec 050).
+
+   Placed, not auto-flowed. A direct child of this grid with no placement takes an implicit track,
+   which is precisely how the event inspector ended up 380px wide inside the 248px rail column — the
+   same mistake twice in one grid would be careless. The row is declared here so the conversation
+   still gets `minmax(0, 1fr)` and stays the thing that scrolls. */
+.app:has(.demo-banner) {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.demo-banner {
+  grid-column: 1 / -1;
+  grid-row: 1;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--border-accent);
+  background: var(--bg-accent-soft);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+}
+
+.demo-banner__tag {
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-accent-strong);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-on-accent);
+}
+
+/* The sentence takes the room that is left and wraps; the tag and the picker never shrink, because
+   the first is the label a reader scans for and the second is a control. */
+.demo-banner__body {
+  flex: 1 1 20rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.demo-banner__pick {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.demo-banner__pick-label {
+  color: var(--fg-3);
+}
+
+.demo-banner__select {
+  max-width: 22rem;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--fg-2);
 }
 
 .app:has(.sidebar[data-collapsed='true']) {
@@ -2334,10 +2422,220 @@ button:disabled {
   color: var(--ds-white);
 }
 
+/* --- The event inspector (spec 038) ------------------------------------------------------
+   A developer surface, and it reads as one: monospaced, dense, and out of the way of anyone
+   using the app to talk to an agent.
+
+   It lives HERE, above the breakpoints, and not with the specs either side of it: since it
+   became a column of the shell it is overridden by both media queries, and a base rule
+   declared after its own override silently wins — a media query adds no specificity. That
+   trap has bitten specs 020, 046 and 047, `.trace` is declared up here for the same reason,
+   and `layout.test.ts` fails the build over it. */
+
+.events {
+  display: flex;
+  flex-direction: column;
+  /* No width of its own above the breakpoint: the `--events` track sizes it, and a second copy of
+     the number is how the panel and its column come to disagree. */
+  min-width: 0;
+  padding: var(--sp-3);
+  border-left: 1px solid var(--border-1);
+  background: var(--bg-1);
+  gap: var(--sp-2);
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+}
+
+.events__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.events__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+}
+
+.events__close {
+  border: 0;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+.events__contract {
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--fg-3);
+}
+
+.events__count {
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+.events__unverified {
+  margin: var(--sp-1) 0 0;
+  padding-left: var(--sp-4);
+  color: var(--fg-3);
+}
+
+.events__filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.events__filter button {
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+.events__filter button[aria-pressed='true'] {
+  border-color: var(--border-accent);
+  color: var(--fg-1);
+}
+
+.events__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  gap: 1px;
+  list-style: none;
+}
+
+.events__row {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  padding: 2px var(--sp-1);
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  text-align: left;
+  cursor: pointer;
+}
+
+.events__row:hover,
+.events__row[aria-expanded='true'] {
+  background: var(--bg-3);
+}
+
+.events__at {
+  min-width: 2ch;
+  color: var(--fg-3);
+  text-align: right;
+}
+
+.events__type {
+  color: var(--fg-2);
+}
+
+.events__run {
+  color: var(--fg-3);
+}
+
+.events__summary {
+  color: var(--fg-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.events__empty,
+.events__truncated {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--fg-3);
+}
+
+.events__payload {
+  position: relative;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+}
+
+.events__payload pre {
+  margin: 0;
+  overflow-x: auto;
+  color: var(--fg-2);
+}
+
+.events__copy {
+  position: absolute;
+  top: var(--sp-1);
+  right: var(--sp-1);
+  padding: var(--sp-1);
+  border: 0;
+  background: none;
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+
 /* ---------- Responsive (AC12) ---------- */
+
+/* The inspector's column has a price, and 1542px is it.
+
+   Added as a column, it took its 380px out of the conversation, and at 1440 with the trace panel
+   also open the main column fell to 492px. The header cannot go below **594px** — measured, and
+   the same floor spec 047 measured from the other end: the name has a `min-width`, the pill
+   truncates only so far, and the controls are pinned because a control that shrinks is a target
+   that moves. So it clipped the Traces button against the edge of the trace panel.
+
+   248 (rail) + 594 (header floor) + 320 (trace) + 380 (inspector) = 1542. Below that the inspector
+   is a drawer instead, over whatever is already there — it is the panel just asked for, so it is
+   the one on top (`z-index: 11`, above the trace panel's 10). One breakpoint covers both trace
+   states: three columns need 1222 and four need 1542, and the wider number is the binding one.
+
+   Declared before the narrower queries so the cascade runs widest to narrowest, and after the base
+   rules it overrides — a media query adds no specificity, which is the trap `layout.test.ts`
+   guards. */
+@media (max-width: 1542px) {
+  .app[data-traces-open='true']:has(.events) {
+    grid-template-columns: var(--rail) minmax(0, 1fr) 320px;
+  }
+
+  .app[data-traces-open='false']:has(.events) {
+    grid-template-columns: var(--rail) minmax(0, 1fr);
+  }
+
+  .events {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 11;
+    width: min(var(--events), 100vw);
+    box-shadow: var(--shadow-4);
+  }
+}
+
 @media (max-width: 1100px) {
+  /* The `:has()` pairs are named here too, and they have to be: a media query adds no specificity
+     while `:has()` adds plenty, so without them the four-column rule above would still be in force
+     at 800px and the shell would scroll sideways with a column nobody can see. */
   .app,
-  .app[data-traces-open='false'] {
+  .app[data-traces-open='false'],
+  .app[data-traces-open='true']:has(.events),
+  .app[data-traces-open='false']:has(.events) {
     grid-template-columns: 248px minmax(0, 1fr);
   }
 
@@ -2349,11 +2647,14 @@ button:disabled {
     width: min(360px, 100vw);
     box-shadow: var(--shadow-4);
   }
+
 }
 
 @media (max-width: 760px) {
   .app,
-  .app[data-traces-open='false'] {
+  .app[data-traces-open='false'],
+  .app[data-traces-open='true']:has(.events),
+  .app[data-traces-open='false']:has(.events) {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -4543,168 +4844,6 @@ button:disabled {
   gap: var(--sp-2);
   font-size: var(--fs-body-s);
   color: var(--fg-2);
-  cursor: pointer;
-}
-
-/* --- The event inspector (spec 038) ------------------------------------------------------
-   A developer surface, and it reads as one: monospaced, dense, and out of the way of anyone
-   using the app to talk to an agent. */
-
-.events {
-  display: flex;
-  flex-direction: column;
-  width: 380px;
-  max-width: 100%;
-  padding: var(--sp-3);
-  border-left: 1px solid var(--border-1);
-  background: var(--bg-1);
-  gap: var(--sp-2);
-  overflow-y: auto;
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-}
-
-.events__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.events__title {
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: var(--fs-body-s);
-  color: var(--fg-1);
-}
-
-.events__close {
-  border: 0;
-  background: none;
-  font-family: var(--font-sans);
-  font-size: var(--fs-caption);
-  color: var(--fg-3);
-  cursor: pointer;
-}
-
-.events__contract {
-  padding: var(--sp-2);
-  border-radius: var(--r-sm);
-  background: var(--bg-2);
-  color: var(--fg-3);
-}
-
-.events__count {
-  margin: 0;
-  font-family: var(--font-sans);
-}
-
-.events__unverified {
-  margin: var(--sp-1) 0 0;
-  padding-left: var(--sp-4);
-  color: var(--fg-3);
-}
-
-.events__filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-1);
-}
-
-.events__filter button {
-  padding: 1px var(--sp-2);
-  border: 1px solid var(--border-1);
-  border-radius: var(--r-pill);
-  background: none;
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  color: var(--fg-3);
-  cursor: pointer;
-}
-
-.events__filter button[aria-pressed='true'] {
-  border-color: var(--border-accent);
-  color: var(--fg-1);
-}
-
-.events__list {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  gap: 1px;
-  list-style: none;
-}
-
-.events__row {
-  display: flex;
-  width: 100%;
-  align-items: baseline;
-  padding: 2px var(--sp-1);
-  border: 0;
-  border-radius: var(--r-xs);
-  background: none;
-  gap: var(--sp-2);
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  color: var(--fg-3);
-  text-align: left;
-  cursor: pointer;
-}
-
-.events__row:hover,
-.events__row[aria-expanded='true'] {
-  background: var(--bg-3);
-}
-
-.events__at {
-  min-width: 2ch;
-  color: var(--fg-3);
-  text-align: right;
-}
-
-.events__type {
-  color: var(--fg-2);
-}
-
-.events__run {
-  color: var(--fg-3);
-}
-
-.events__summary {
-  color: var(--fg-3);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.events__empty,
-.events__truncated {
-  margin: 0;
-  font-family: var(--font-sans);
-  color: var(--fg-3);
-}
-
-.events__payload {
-  position: relative;
-  padding: var(--sp-2);
-  border-radius: var(--r-sm);
-  background: var(--bg-2);
-}
-
-.events__payload pre {
-  margin: 0;
-  overflow-x: auto;
-  color: var(--fg-2);
-}
-
-.events__copy {
-  position: absolute;
-  top: var(--sp-1);
-  right: var(--sp-1);
-  padding: var(--sp-1);
-  border: 0;
-  background: none;
-  color: var(--fg-3);
   cursor: pointer;
 }
 

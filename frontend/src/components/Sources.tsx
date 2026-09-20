@@ -29,8 +29,11 @@ export function Sources({ sources, onOpenCall }: Props) {
     <section className="sources" data-testid="sources">
       <h4 className="sources__title">{s('sources.title')}</h4>
       <ul className="sources__list">
+        {/* Keyed on `id`, not `callKey:label`: two sources can share a label and still be two
+            sources, and a duplicate key lets React drop one of them with nothing but a console
+            warning to say so. `sourcesOf` already decides what makes two sources the same one. */}
         {sources.map((source) => (
-          <li key={`${source.callKey}:${source.label}`} className="sources__item">
+          <li key={source.id} className="sources__item">
             <button
               type="button"
               className="sources__open"

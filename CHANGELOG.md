@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Demo mode — the whole app, with no Azure credential** (spec 050). `just demo` replays turns
+  recorded from real Foundry runs: the streaming, the function-call round trip, the MCP calls, the
+  usage, the span tree and the event inspector, all arriving through the *same* normaliser the live
+  path uses, so a replayed turn earns the §9 contract rather than being excused from it. The reader
+  picks which recorded turn to watch. It closes the gap this repository had as teaching material:
+  before it, seeing one streamed token cost a subscription, a Foundry resource, a project, a model
+  deployment, App Insights, RBAC — and `infra/` ships no IaC, so the ten-minute Quickstart was ten
+  minutes for somebody who already had a project.
+  - **A separate entrypoint, not a flag**, and that was the clarify step's one real decision. A
+    `FOUNDRY_DEMO=1` inside `create_app` would put replay code on the production path, where a
+    mistyped variable makes a real deployment serve a recording as a live answer with nothing
+    downstream able to tell. `create_app` does not import `app.demo`; a test walks the import graph.
+  - **It cannot answer a question, and says so** rather than letting a reader find out by typing
+    twice. The banner names the replay, dates it, and has no dismiss control — a banner that can be
+    closed is one that is missing from the screenshot somebody posts.
+  - Three screens beyond the chat come with it: the agents listing (the **real** recorded listing,
+    through the real `summarise` — ten agents from a real project, two of them ours), the trace
+    panel's span tree, and the playground. Voice and speech report *not configured*, because they
+    are: a replayed WebRTC session would be a drawing of a feature (§5).
+  - The hosted recording is **deferred with its reason**: the two harnesses normalise different raw
+    streams and the single `stream_factory` seam cannot tell which adapter is calling it, so the
+    listing says `demo_not_recorded` — a different fact from `no_harness`, which would be a lie
+    about a build that has the harness.
+
+### Fixed
+- **The event inspector destroyed the layout, and 1018 green tests could not see it** (spec 038).
+  `.events` is a direct child of `.app`, which is a grid, and nothing placed it: with the three
+  declared columns taken, auto-placement put a 380px panel into an **implicit second row, column
+  one** — inside the 248px rail. Measured at 1440×900: the conversation collapsed to a single tool
+  row, the composer floated mid-page and the rest went blank, with the trace panel open or closed
+  alike. It is a column now, sized by `--events` so the track and the panel read one number, and
+  below **1542px** — 248 rail + 594 header floor (measured) + 320 trace + 380 inspector — it is a
+  drawer over the trace panel instead. jsdom lays nothing out, which is exactly why this shipped;
+  `layout.test.ts` now asserts the placement and the gate.
+- **The sources strip listed the same page four times, and dropped React keys doing it** (spec 034).
+  The Learn MCP answers one search with the same document under several `#anchors`; the dedupe keyed
+  on the whole URL and let all four through, while `labelFor` strips the fragment, so four rows
+  carried one label — and React logged eight *"children may be duplicated and/or omitted"* errors
+  against the recorded turn. AC9 already said a page is not four pieces of evidence about itself.
+  `identify()` is now the one place sameness is decided, `Source.id` is what both the dedupe and the
+  row key read (§4), and the recorded payload drives the test.
+- **The command palette listed "Events" twice.** `toggleEvents` was in `BINDINGS` *and* in
+  `EXTRA_ACTIONS`, whose own comment says it holds actions "that no key names" — two rows under one
+  id. The guard is now the invariant (every action appears once, under an id of its own) rather than
+  the one command.
+- **The tool playground had no door** (spec 042). `/tools` parses and renders, and nothing led to
+  it — not the rail, not the palette, not the footer; spec 042's plan lists `Sidebar.tsx` and only
+  the `View` type arrived. It sits on the footer's developer shelf now, beside `/about` and
+  `/preferences`, and only where the deployment enabled it: a door onto a 403 is worse than no door.
+
+### Changed
+- **The README's status block was two months stale, in both languages.** It claimed specs 000–019,
+  021 and 022 were done and that spec 020 was "clarified and not built yet" — against 48 of 50 done
+  and `/compare` shipped. `specs/README.md` already carries the per-spec table and already records
+  that it drifted once; the READMEs now state the two durable facts and point there, because two
+  tables of fifty rows drift (§4).
+- **Two code comments outlived what they described.** `_endpoint_and_versions` still recorded its
+  two halves as unverifiable "because `az` was a broken build", which the CHANGELOG entry below
+  withdrew on 2026-09-20; and `route.ts` still called `/compare` "reserved for spec 020".
+
 ### Security
 - **A response id from the URL was pasted into KQL.** `GET /trace/{response_id}` built its query
   with `str.format`, putting the path parameter inside a single-quoted literal: one quote closed the

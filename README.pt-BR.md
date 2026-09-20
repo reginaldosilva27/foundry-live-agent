@@ -30,17 +30,22 @@ o caminho para os spans dela._
 
 ---
 
-> **Status: chat, voz, traces e escolha de agente funcionando.** As specs 000–019, 021 e 022 estão
-> concluídas — o contrato do harness, **os dois harnesses**, o BFF, a interface, a voz no mesmo
-> agente, o painel de traces e a tela de agentes. Falta a 020 (*lado a lado* — uma pergunta, dois
-> agentes, dois streams), que está clarificada e ainda não construída. Veja
-> [`specs/README.md`](specs/README.md); o registro de arquitetura é o [`PLAN.md`](PLAN.md).
+> **Status: 48 das 50 specs estão concluídas.** O contrato do harness, **os dois harnesses**, o BFF,
+> a interface, a voz no mesmo agente, o painel de traces, a tela de agentes e tudo que veio em cima
+> disso — escolha e inspeção de agente, lado a lado, traces, o inspetor de eventos, gráficos, temas
+> e a passada de acessibilidade. Duas não: a **045** (*anexos*) está clarificada e **bloqueada** em
+> uma decisão de retenção que é do operador, não de um documento; a **049** (*Foundry IQ como fonte
+> de conhecimento*) está planejada.
+>
+> **Qual spec está onde mora num lugar só — [`specs/README.md`](specs/README.md)** — porque duas
+> tabelas de cinquenta linhas divergem, e esta divergiu. O registro de arquitetura é o
+> [`PLAN.md`](PLAN.md).
 
 ## 📑 Conteúdo
 
-1. [O que é isto](#-o-que-é-isto) · 2. [Arquitetura](#️-arquitetura) · 3. [Início rápido](#-início-rápido-10-minutos)
-4. [Telas](#-telas) · 5. [Harnesses](#-harnesses) · 6. [Como construímos aqui](#-como-construímos-aqui)
-7. [Custo](#-custo) · 8. [Limpeza](#-limpeza)
+1. [O que é isto](#-o-que-é-isto) · 2. [Arquitetura](#️-arquitetura) · 3. [Veja funcionando primeiro](#️-veja-funcionando-primeiro--sem-azure-nenhum)
+4. [Início rápido](#-início-rápido-10-minutos) · 5. [Telas](#-telas) · 6. [Harnesses](#-harnesses)
+7. [Como construímos aqui](#-como-construímos-aqui) · 8. [Custo](#-custo) · 9. [Limpeza](#-limpeza)
 
 ---
 
@@ -275,6 +280,27 @@ Cada um destes tem uma página própria, com os frames gravados por trás:
 [o ida-e-volta de function call](docs/how-it-works/function-call-round-trip.md) ·
 [eventos de streaming](docs/how-it-works/streaming-events.md) ·
 [o ciclo de vida da sessão Voice Live](docs/how-it-works/voice-live-lifecycle.md).
+
+## ▶️ Veja funcionando primeiro — sem Azure nenhum
+
+Tudo que vem abaixo precisa de uma assinatura. Isto não:
+
+```bash
+git clone https://github.com/reginaldosilva27/foundry-live-agent
+cd foundry-live-agent
+just demo           # o BFF na :8000, a interface na :5173
+```
+
+Ele reproduz turnos inteiros **gravados de execuções reais no Foundry** — as mesmas fixtures que os
+testes de contrato usam — então o streaming, a ida e volta do function call, as chamadas MCP, a
+contagem de tokens, a árvore de spans e o inspetor de eventos são todos de verdade, chegando pelo
+normalizador de verdade. Escolha qual turno gravado assistir no banner do topo.
+
+**Ele não consegue responder a uma pergunta**, e diz isso em todas as telas em vez de deixar você
+descobrir digitando duas vezes. Voz e fala reportam *não configurado*, porque é o que são. A
+demonstração é um **entrypoint separado**: o `create_app` nunca ouviu falar dela, então nenhuma
+variável de ambiente faz um deploy real servir uma gravação como se fosse ao vivo. Veja
+[`specs/050-demo-mode/`](specs/050-demo-mode/).
 
 ## 🚀 Início rápido (10 minutos)
 

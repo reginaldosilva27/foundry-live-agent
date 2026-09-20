@@ -80,18 +80,54 @@ describe('the Learn MCP payload, as it really arrives (AC12)', () => {
   it('takes only the documented URLs, never links scraped out of the prose', () => {
     // `content` is Markdown full of incidental links. Listing those would claim the agent read
     // pages it never opened — the §5 failure this whole spec is about.
-    const decoded = decodeAll(output)
-    const declared = new Set<string>(
-      decoded.flatMap((d) =>
-        (d.results ?? []).map((r) => r.contentUrl).filter((u): u is string => Boolean(u)),
-      ),
-    )
+    const declared = declaredUrls(output)
     const got = new Set(sourcesOf(turnWith(mcp(output))).map((s) => s.url))
 
     expect([...got].every((url) => declared.has(url!))).toBe(true)
-    expect(got.size).toBe(declared.size)
+    // Every declared PAGE is still represented — nothing is dropped, only the fragments of a page
+    // already listed are folded into it (see the AC9 test below).
+    expect(new Set([...got].map((url) => page(url!)))).toEqual(
+      new Set([...declared].map(page)),
+    )
+  })
+
+  /**
+   * AC9, against the payload that broke it.
+   *
+   * The Learn MCP answers a search with the **same page under several anchors** — this recording
+   * carries `manage-hosted-agent` four times, once bare and three times with a `#section`. Four
+   * distinct URLs, so the dedupe let all four through; one label, because `labelFor` is host plus
+   * pathname. The reader saw the same page listed four times with nothing to tell the rows apart,
+   * which is the exact thing AC9 describes ("offering two destinations would ask the reader to
+   * choose without saying what differs"), and React logged eight duplicate-key errors for it.
+   */
+  it('lists a page once even when the search matched several of its sections (AC9)', () => {
+    const declared = [...declaredUrls(output)]
+    // The premise, asserted rather than assumed: if the recording ever stops carrying anchors this
+    // test must fail loudly instead of passing vacuously.
+    expect(declared.filter((url) => url.includes('#')).length).toBeGreaterThan(0)
+
+    const sources = sourcesOf(turnWith(mcp(output)))
+    const labels = sources.map((s) => s.label)
+
+    expect(labels).toEqual([...new Set(labels)])
+    expect(sources.map((s) => s.id)).toEqual([...new Set(sources.map((s) => s.id))])
   })
 })
+
+/** Every `contentUrl` the payload declares, read the way the reader reads them. */
+function declaredUrls(output: string): Set<string> {
+  return new Set(
+    decodeAll(output).flatMap((d) =>
+      (d.results ?? []).map((r) => r.contentUrl).filter((u): u is string => Boolean(u)),
+    ),
+  )
+}
+
+/** A URL with its fragment removed — what "the same page" means here. */
+function page(url: string): string {
+  return url.split('#')[0]
+}
 
 /** The same successive decode the reader does, written out here so the test proves the premise. */
 function decodeAll(raw: string): { results?: { contentUrl?: string }[] }[] {

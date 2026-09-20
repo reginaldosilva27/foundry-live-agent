@@ -248,3 +248,64 @@ describe('favourites (AC5)', () => {
     expect(screen.queryByTestId('answer')).toBeNull()
   })
 })
+
+/**
+ * Spec 050 AC5 — the replay banner, and the request a live build must not make.
+ *
+ * The second test is the one worth having. `GET /demo` exists only on the demo entrypoint, so a
+ * production build that asked for it would take a 404 on every load and leave a puzzle in
+ * somebody's logs. The banner is keyed on the config's own field, and this asserts the silence.
+ */
+describe('demo mode (spec 050)', () => {
+  const DEMO = { recorded_at: '2026-09-15', current: 'round-trip' }
+  const RECORDINGS = [
+    { id: 'round-trip', recorded_at: '2026-09-15' },
+    { id: 'no-reasoning', recorded_at: '2026-09-15' },
+  ]
+
+  function replayingBff() {
+    fakeBff()
+    const live = vi.mocked(fetch)
+    const inner = live.getMockImplementation()!
+    live.mockImplementation(async (url: string | URL | Request, init?: RequestInit) => {
+      const path = String(url)
+      if (path.endsWith('/config')) {
+        return new Response(JSON.stringify({ ...CONFIG, demo: DEMO }), { status: 200 })
+      }
+      if (path.endsWith('/demo')) {
+        return new Response(
+          JSON.stringify({ ...DEMO, recordings: RECORDINGS }),
+          { status: 200 },
+        )
+      }
+      return inner(url, init)
+    })
+  }
+
+  it('shows the banner on every screen, and never a way to close it', async () => {
+    replayingBff()
+    render(<App />)
+    const user = userEvent.setup()
+
+    const banner = await screen.findByTestId('demo-banner')
+    expect(banner.textContent).toContain('2026-09-15')
+
+    for (const view of ['nav.agents', 'nav.history', 'nav.compare', 'nav.chat'] as const) {
+      await user.click(screen.getByRole('button', { name: t(view, 'en') }))
+      expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
+    }
+
+    expect(within(screen.getByTestId('demo-banner')).queryAllByRole('button')).toEqual([])
+  })
+
+  it('asks a live build nothing about recordings', async () => {
+    fakeBff()
+    render(<App />)
+
+    await screen.findByRole('textbox', { name: t('composer.placeholder', 'en') })
+
+    expect(screen.queryByTestId('demo-banner')).toBeNull()
+    const asked = vi.mocked(fetch).mock.calls.map(([url]) => String(url))
+    expect(asked.filter((url) => url.includes('/demo'))).toEqual([])
+  })
+})

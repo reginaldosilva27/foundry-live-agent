@@ -104,6 +104,27 @@ nothing, and bundling the two would let somebody turn on a meter while meaning t
 The endpoint **refuses when the flag is off**, rather than the screen merely being hidden — hiding
 a control is not a control.
 
+**The demo entrypoint turns it on** (spec 050). `just demo` is a local tool for reading the code,
+and a checkout that has no Azure credential normally has no `TAVILY_API_KEY` either — `search_web`
+answering `search_unavailable` is the expected output there, and the most instructive one. If you
+do have a key in your environment, `just demo` will spend it. It binds to localhost like `just
+backend` does; neither is a thing to expose.
+
+## Demo mode
+
+`uvicorn app.demo:create_demo_app` (spec 050) serves turns recorded from real Foundry runs. Two
+properties are deliberate and both are tested:
+
+- **It is a separate entrypoint, not a flag.** `create_app` does not import `app.demo`, no
+  environment variable reaches it, and a test walks the import graph to keep it that way. A flag
+  would mean a mistyped variable could make a real deployment answer from a recording, and nothing
+  downstream could tell the difference.
+- **It is unmistakable from the browser.** `GET /config` reports the replay, and the banner that
+  reports it has no dismiss control.
+
+The recordings are redacted (`ai/scripts/redact_fixture.py`) and already in the repository; demo
+mode reads them and writes nothing.
+
 ## Supported versions
 
 The project is pre-1.0. Fixes land on `main`; there are no backports.

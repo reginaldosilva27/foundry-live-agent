@@ -76,6 +76,19 @@ backend:
 frontend:
     cd frontend && npm run dev
 
+# ── Look at it first, with no Azure at all (spec 050) ─────────────────────
+# Replays turns recorded from real Foundry runs. No subscription, no `az login`, no provisioning.
+# A different entrypoint from `just backend`, on purpose: `create_app` never learns this exists, so
+# no variable can make a real deployment serve a recording as a live answer. A banner says so on
+# every screen, and it cannot be dismissed.
+demo:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'kill 0' EXIT
+    (cd backend && uvicorn app.demo:create_demo_app --factory --port ${BACKEND_PORT:-8000}) &
+    cd frontend && npm run dev
+    wait
+
 # ── Quality gates (mirrors of CI — see constitution §3) ───────────────────
 gate-backend:
     cd backend && ruff check . && ruff format --check . && pytest -q

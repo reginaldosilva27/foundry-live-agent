@@ -41,6 +41,21 @@ describe('buildEntries', () => {
     expect(groups).toEqual(new Set(['agents', 'conversations', 'actions']))
   })
 
+  /**
+   * One row per thing, addressed once.
+   *
+   * `EXTRA_ACTIONS` is documented as "actions the palette offers that no key names", and
+   * `toggleEvents` was in it *and* in the binding table — so the palette listed it twice under one
+   * id, which is a duplicate React key as well as a duplicate row. The guard is the invariant
+   * rather than the one command, because the next action added to both lists would repeat it.
+   */
+  it('lists every action exactly once, under an id of its own', () => {
+    const ids = buildEntries(input).map((entry) => entry.id)
+    const duplicated = ids.filter((id, at) => ids.indexOf(id) !== at)
+
+    expect(duplicated, `these appear more than once: ${duplicated.join(', ')}`).toEqual([])
+  })
+
   it('keeps an agent the build cannot drive, carrying its reason (AC8)', () => {
     const blocked = buildEntries(input).find((entry) => entry.id === 'agent:workflow-one')
 

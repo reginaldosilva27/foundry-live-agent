@@ -746,10 +746,15 @@ def _endpoint_and_versions(
 ) -> tuple[dict[str, Any] | None, list[dict[str, Any]] | None]:
     """The agent's routing and its versions, or ``(None, None)`` when they cannot be read.
 
-    Deliberately swallowing: see :func:`build_agent_detail_reader`. Both halves are **unverified
-    against the live service** (§10) — `az` was a broken build when this was written — so a
-    deployment where they behave differently degrades to the inspector spec 030 shipped rather
-    than to an error page.
+    Deliberately swallowing: see :func:`build_agent_detail_reader`. A deployment where either half
+    behaves differently degrades to the inspector spec 030 shipped rather than to an error page.
+
+    Both halves were **verified against the live service on 2026-09-20** (§10), and the read
+    corrected the assumption underneath this one: *every* agent carries an ``agent_endpoint``, and
+    an untouched one names the sentinel ``@latest`` rather than a version — see ``_pinned_version``.
+    Until that date this docstring recorded them as unverifiable because `az` was a broken build;
+    the binary was the wrong one on `PATH`, not missing, and the excuse is withdrawn (CHANGELOG,
+    *Three open questions closed*).
     """
     if clients is None or not settings.project_endpoint:
         return None, None

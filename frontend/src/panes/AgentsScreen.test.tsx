@@ -117,6 +117,9 @@ describe('the agents screen', () => {
     ['workflow', 'no_harness', 'agents.reason.no_harness'],
     ['prompt', 'disabled', 'agents.reason.disabled'],
     ['prompt', 'version_not_active', 'agents.reason.version_not_active'],
+    // Spec 050. Its own code, because it is its own fact: the build HAS a harness for this agent
+    // and the demo has no recording to send through it. `no_harness` would be a lie about the build.
+    ['hosted', 'demo_not_recorded', 'agents.reason.demo_not_recorded'],
   ] as const)('lists a %s agent it cannot run and says why: %s', async (kind, reason, key) => {
     const onSelect = vi.fn()
     show({

@@ -12,6 +12,28 @@ import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(join(import.meta.dirname, 'app.css'), 'utf8')
 
+/**
+ * One media block, brace-matched.
+ *
+ * `css.split(marker)[1]` runs to the end of the file, not to the closing brace — so a rule
+ * declared later, outside the query, reads as if it were inside it. That is how the first version
+ * of the narrow-breakpoint assertion reported `.header__menu` as hidden at that breakpoint when the
+ * rule it found was the base one that hides it *above* the breakpoint.
+ *
+ * At module scope because two describes need it, and a second copy is the drift §4 is about.
+ */
+function mediaBlock(query: string): string {
+  const at = css.indexOf(query)
+  if (at === -1) return ''
+  const open = css.indexOf('{', at)
+  let depth = 0
+  for (let i = open; i < css.length; i++) {
+    if (css[i] === '{') depth++
+    else if (css[i] === '}' && --depth === 0) return css.slice(open + 1, i)
+  }
+  return ''
+}
+
 describe('app.css', () => {
   it('lays the shell out as sidebar, main column and trace panel', () => {
     // The rail's width is a custom property so spec 021's collapse is one declaration rather than a
@@ -127,26 +149,6 @@ describe('app.css', () => {
    * screens had no other route.
    */
   describe('the narrow breakpoint (spec 047)', () => {
-    /**
-     * The media block itself, brace-matched.
-     *
-     * `css.split(marker)[1]` runs to the end of the file, not to the closing brace — so a rule
-     * declared later, outside the query, reads as if it were inside it. That is how the first
-     * version of the assertion below reported `.header__menu` as hidden at this breakpoint when
-     * the rule it found was the base one that hides it *above* the breakpoint.
-     */
-    function mediaBlock(query: string): string {
-      const at = css.indexOf(query)
-      if (at === -1) return ''
-      const open = css.indexOf('{', at)
-      let depth = 0
-      for (let i = open; i < css.length; i++) {
-        if (css[i] === '{') depth++
-        else if (css[i] === '}' && --depth === 0) return css.slice(open + 1, i)
-      }
-      return ''
-    }
-
     const narrow = mediaBlock('@media (max-width: 760px)')
 
     it('exists, so the assertions below are not vacuous', () => {
@@ -178,6 +180,118 @@ describe('app.css', () => {
       // labels — keeping their accessible names, which is the point — and the badge leaves.
       expect(narrow).toMatch(/\.pill-button\s*\{[^}]*font-size:\s*0/)
       expect(narrow).toMatch(/\.header\s+\.harness-badge/)
+    })
+  })
+
+  /**
+   * Spec 050 — the replay banner is a row of the shell, and it is **placed**.
+   *
+   * The same trap as the inspector below, one spec later: a direct child of `.app` with no
+   * placement takes an implicit track and lands wherever auto-flow puts it. Declaring the row is
+   * also what keeps the conversation on `minmax(0, 1fr)` and therefore the thing that scrolls —
+   * without it the shell's single explicit row would be shared and the column would grow past the
+   * viewport, which is the failure the second test in this file exists for.
+   */
+  it('places the replay banner as a row of the shell, spanning every column', () => {
+    expect(css).toMatch(
+      /\.app:has\(\.demo-banner\)\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\)/,
+    )
+
+    const banner = css.split('\n.demo-banner {')[1].split('}')[0]
+    expect(banner).toMatch(/grid-column:\s*1 \/ -1/)
+    expect(banner).toMatch(/grid-row:\s*1/)
+  })
+
+  /**
+   * Spec 038 — the inspector "lives beside the chat like the trace panel does", and it did not.
+   *
+   * `.events` is a direct child of `.app`, which is a grid, and nothing placed it. With the three
+   * declared columns already taken by the rail, the main column and the trace panel, auto-placement
+   * put a 380px panel into an **implicit second row, column one** — 380px inside a 248px track,
+   * under the rail. Measured in a browser at 1440×900: the conversation collapsed to one tool row,
+   * the composer floated in the middle of the page and the rest went blank. It happened with the
+   * trace panel open and closed alike, because two columns leaves the same gap.
+   *
+   * jsdom lays nothing out, which is exactly why 1018 green tests never saw it. So the assertion is
+   * about the declaration: a panel that takes part in the shell's grid needs a track, and the track
+   * and the panel must read the same width from one place — `--events`, the way `--rail` already
+   * works for the sidebar (§4).
+   */
+  describe('the event inspector (spec 038)', () => {
+    const app = css.split('\n.app {')[1].split('}')[0]
+
+    it('owns its width as a property, so the track and the panel cannot disagree', () => {
+      expect(app).toMatch(/--events:\s*380px/)
+
+      const events = css.split('\n.events {')[1].split('}')[0]
+      // NOT `width: 380px`. A fixed width inside a sized track is the same number written twice,
+      // and below the breakpoint the panel is a drawer whose width the breakpoint decides.
+      expect(events).not.toMatch(/\bwidth:\s*380px/)
+    })
+
+    it('gets a column of its own, whether or not the trace panel has one', () => {
+      // Both states spelled out rather than one `:has()` rule. `.app:has(.events)` and
+      // `.app[data-traces-open='false']` have the SAME specificity, so with only the first
+      // declared, a comparison of source order decides whether a reader with the trace panel
+      // closed gets three columns or four — which is the kind of coin-flip this file exists to
+      // stop. Naming `data-traces-open` in both wins on specificity, from either order.
+      expect(css).toMatch(
+        /\.app\[data-traces-open='true'\]:has\(\.events\)\s*\{[^}]*grid-template-columns:\s*var\(--rail\) minmax\(0, 1fr\) 320px var\(--events\)/,
+      )
+      expect(css).toMatch(
+        /\.app\[data-traces-open='false'\]:has\(\.events\)\s*\{[^}]*grid-template-columns:\s*var\(--rail\) minmax\(0, 1fr\) var\(--events\)/,
+      )
+    })
+
+    /**
+     * A column costs the conversation its width, and the header is what runs out first.
+     *
+     * Measured in a browser at 1440 with both panels open: `.app` resolved to
+     * `248px 492px 320px 380px` and `.header.scrollWidth` was **594** against a 492px column —
+     * the Traces button clipped against the edge of the trace panel. 594 is the header's floor by
+     * construction (`.header__agent` has a `min-width`, the pill truncates only so far, and
+     * `.pill-button` is pinned because a control that shrinks is a target that moves), and it is
+     * the same number spec 047 measured from the narrow end.
+     *
+     * So the fourth column is affordable at 248 + 594 + 320 + 380 = 1542 and not before.
+     */
+    it('gives up its column below the width four columns need', () => {
+      const gate = mediaBlock('@media (max-width: 1542px)')
+
+      expect(gate).toMatch(
+        /\.app\[data-traces-open='true'\]:has\(\.events\)\s*\{[^}]*grid-template-columns:\s*var\(--rail\) minmax\(0, 1fr\) 320px\s*;/,
+      )
+      expect(gate).toMatch(
+        /\.app\[data-traces-open='false'\]:has\(\.events\)\s*\{[^}]*grid-template-columns:\s*var\(--rail\) minmax\(0, 1fr\)\s*;/,
+      )
+      // A drawer instead, and above the trace panel's 10: two can be open, and the one on top is
+      // the one just asked for.
+      expect(gate).toMatch(/\.events\s*\{[^}]*position:\s*fixed/)
+      expect(gate).toMatch(/\.events\s*\{[^}]*z-index:\s*11/)
+    })
+
+    it('drops its column at every breakpoint that drops the others', () => {
+      // A media query adds no specificity and `:has()` raises it, so the base four-column rule
+      // outranks anything a breakpoint says unless the breakpoint names `:has(.events)` too. This
+      // is the trap the test below guards in general, and the one place it would have bitten next.
+      for (const query of [
+        '@media (max-width: 1542px)',
+        '@media (max-width: 1100px)',
+        '@media (max-width: 760px)',
+      ]) {
+        const block = mediaBlock(query)
+        expect(block, query).toMatch(/\.app\[data-traces-open='true'\]:has\(\.events\)/)
+        expect(block, query).toMatch(/\.app\[data-traces-open='false'\]:has\(\.events\)/)
+      }
+    })
+
+    it('is gated widest first, so the narrower queries still win', () => {
+      // Three queries now touch the same selectors and none of them adds specificity, so the last
+      // one declared is the one in force at the widths where they overlap.
+      const order = ['1542px', '1100px', '760px'].map((width) =>
+        css.indexOf(`@media (max-width: ${width})`),
+      )
+      expect(order).toEqual([...order].sort((a, b) => a - b))
     })
   })
 

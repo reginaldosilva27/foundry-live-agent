@@ -82,6 +82,19 @@ async def config(request: Request) -> dict:
         "event_mapping": _mapping_report(settings.harness),
     }
 
+    # Absent unless this build IS a replay (spec 050). There is no `false` to report: a live BFF
+    # never mentions the key, which is the same "absent is not false" the panel already renders for
+    # tracing and pricing (§5) — and here the distinction is load-bearing, because a browser that
+    # read `demo: false` from a build that had never heard of demo mode would be reading a claim
+    # nobody made.
+    #
+    # Read off `app.state`, never imported: `config.py` is reachable from `app.main`, and importing
+    # `app.demo` here would put the replay module on the production path — the one thing spec 050
+    # is arranged to prevent, and a test walks the import graph for it.
+    demo = getattr(request.app.state, "demo", None)
+    if demo is not None:
+        body["demo"] = {"recorded_at": demo["recorded_at"], "current": demo["current"]}
+
     # Absent, not empty (spec 028 AC3). `{"rates": {}}` would be this BFF claiming to have a rate
     # table with nothing in it; the truth is that nobody declared one, and the browser must render
     # no money at all rather than a zero. The rates are per MILLION tokens, which is how every

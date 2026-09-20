@@ -25,6 +25,8 @@ export const COVERED_CONFIG_KEYS = [
   'voice',
   'agents',
   'playground',
+  // Spec 050. Absent on every build but the replay — and `Flag` keeps absent apart from false.
+  'demo',
   'pricing',
   'event_types',
   'event_mapping',

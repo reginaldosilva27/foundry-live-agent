@@ -281,6 +281,24 @@ export function Sidebar({
           >
             {s('sidebar.preferences')}
           </button>
+          {/* Spec 042's screen had no way in — not here, not in the palette, not anywhere. It
+              belongs on this shelf, beside the other two surfaces that describe the build rather
+              than talk to the agent.
+
+              Only where the deployment enabled it, and read from `GET /config` rather than from a
+              flag of the frontend's own: the BFF refuses the endpoint when it is off, so a door
+              rendered anyway would open onto a 403. Absent reads as no, like every other
+              capability here. */}
+          {config?.playground?.enabled && (
+            <button
+              type="button"
+              className="sidebar__about"
+              aria-current={view === 'tools' ? 'page' : undefined}
+              onClick={() => onView('tools')}
+            >
+              {s('tools.title')}
+            </button>
+          )}
           {/* Spec 047: at 320px the header has no room for this, so it lives here instead —
               beside the model and the gateway line, which is the same fact about what this build is
               made of. Same component, fed from the same source, so there is no second reading of

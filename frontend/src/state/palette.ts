@@ -28,13 +28,18 @@ export interface Entry {
   target: { kind: 'agent'; name: string } | { kind: 'conversation'; id: string } | { kind: 'command'; command: Command }
 }
 
-/** Actions the palette offers that no key names, so they are listed here and nowhere else. */
+/**
+ * Actions the palette offers that no key names, so they are listed here and nowhere else.
+ *
+ * "No key names" is the whole membership rule, and `toggleEvents` broke it: it is bound to `e` in
+ * `BINDINGS` *and* was listed here, so the palette carried two rows under one id — a duplicate
+ * React key, and a reader choosing between two identical lines. A bound command is already offered
+ * by the loop below; being a developer surface is not a second reason to list it.
+ */
 const EXTRA_ACTIONS: { command: Command; label: string }[] = [
   { command: 'startVoice', label: 'keys.startVoice' },
   { command: 'switchLanguage', label: 'keys.language' },
   { command: 'openHistory', label: 'keys.openHistory' },
-  // A developer surface (spec 038): reachable, but not on the main screen.
-  { command: 'toggleEvents', label: 'keys.toggleEvents' },
 ]
 
 export interface PaletteInput {

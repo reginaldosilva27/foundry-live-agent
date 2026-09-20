@@ -30,17 +30,21 @@ spans._
 
 ---
 
-> **Status: chat, voice, traces and agent selection all run.** Specs 000–019, 021 and 022 are done —
-> the harness contract, **both harnesses**, the BFF, the shell, voice on the same agent, the trace
-> panel and the agents screen. Spec 020 (*side by side* — one question, two agents, two streams) is
-> clarified and not built yet. See [`specs/README.md`](specs/README.md); the architecture record is
-> [`PLAN.md`](PLAN.md).
+> **Status: 48 of 50 specs are done.** The harness contract, **both harnesses**, the BFF, the shell,
+> voice on the same agent, the trace panel, the agents screen and everything built on them — agent
+> selection and inspection, side by side, traces, the event inspector, charts, themes and the
+> accessibility pass. Two are not: **045** (*attachments*) is clarified and **blocked** on a
+> retention decision that is the operator's, not a document's; **049** (*Foundry IQ as a knowledge
+> source*) is planned.
+>
+> **Which spec is where lives in one place — [`specs/README.md`](specs/README.md)** — because two
+> tables of fifty rows drift, and this one did. The architecture record is [`PLAN.md`](PLAN.md).
 
 ## 📑 Contents
 
-1. [What this is](#-what-this-is) · 2. [Architecture](#-architecture) · 3. [Quickstart](#-quickstart-10-minutes)
-4. [Screenshots](#-screenshots) · 5. [Harnesses](#-harnesses) · 6. [How we build here](#-how-we-build-here)
-7. [Cost](#-cost) · 8. [Cleanup](#-cleanup)
+1. [What this is](#-what-this-is) · 2. [Architecture](#-architecture) · 3. [Look at it first](#️-look-at-it-first--no-azure-at-all)
+4. [Quickstart](#-quickstart-10-minutes) · 5. [Screenshots](#-screenshots) · 6. [Harnesses](#-harnesses)
+7. [How we build here](#-how-we-build-here) · 8. [Cost](#-cost) · 9. [Cleanup](#-cleanup)
 
 ---
 
@@ -273,6 +277,26 @@ Each of these has a page of its own, with the recorded frames behind it:
 [the function-call round trip](docs/how-it-works/function-call-round-trip.md) ·
 [streaming events](docs/how-it-works/streaming-events.md) ·
 [the Voice Live session lifecycle](docs/how-it-works/voice-live-lifecycle.md).
+
+## ▶️ Look at it first — no Azure at all
+
+Everything below needs a subscription. This does not:
+
+```bash
+git clone https://github.com/reginaldosilva27/foundry-live-agent
+cd foundry-live-agent
+just demo           # the BFF on :8000, the UI on :5173
+```
+
+It replays whole turns **recorded from real Foundry runs** — the same fixtures the contract tests
+use — so the streaming, the function-call round trip, the MCP calls, the token counts, the span
+tree and the event inspector are all the real thing, arriving through the real normaliser. Pick
+which recorded turn to watch from the banner at the top.
+
+**It cannot answer a question**, and it says so on every screen rather than letting you find out by
+typing twice. Voice and speech report *not configured*, because they are. The demo is a **separate
+entrypoint**: `create_app` has never heard of it, so no environment variable can make a real
+deployment serve a recording as though it were live. See [`specs/050-demo-mode/`](specs/050-demo-mode/).
 
 ## 🚀 Quickstart (10 minutes)
 

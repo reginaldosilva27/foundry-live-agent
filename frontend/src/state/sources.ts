@@ -27,6 +27,16 @@ import { callKey, type Activity, type Turn } from './turn'
 export interface Source {
   /** A URL, or a path inside this repository. The view never has to ask of a string. */
   kind: 'link' | 'passage'
+  /**
+   * Which source this *is* — the identity the dedupe below decides by, and the one the view keys a
+   * row on.
+   *
+   * It exists because those were two different answers. The list deduped on the URL and the strip
+   * keyed on `callKey:label`, so two anchors of one page were two sources with one key: React
+   * warned that children "may be duplicated and/or omitted", and the reader saw the same page four
+   * times. One definition of sameness, read by both (§4).
+   */
+  id: string
   /** What the reader sees — host + path, or the repository path. */
   label: string
   /** Absent for a passage. Never invented, never an empty string standing in for one. */
@@ -43,6 +53,20 @@ export interface Source {
 
 /** What a reader returns: the source itself, before it is attributed to a call. */
 type Found = Pick<Source, 'kind' | 'label' | 'url'>
+
+/**
+ * Which source two results are, for the purpose of listing them once.
+ *
+ * **A fragment is not a source.** The Learn MCP answers one search with the same page under
+ * several anchors — the recorded turn carries `manage-hosted-agent` four times, once bare and
+ * three times with a `#section` — and deduping on the whole URL let all four through under one
+ * label. Four rows, identical text, no way to tell them apart: exactly what AC9 refuses. The
+ * fragment is dropped here and only here, so the LINK a reader follows keeps whichever anchor
+ * arrived first.
+ */
+function identify(from: string, source: Found): string {
+  return source.url ? source.url.split('#')[0] : `${from}:${source.label}`
+}
 
 /** Tools whose output carries sources. Anything else contributes none. */
 const READERS: Record<string, (output: string) => Found[]> = {
@@ -64,15 +88,17 @@ export function sourcesOf(turn: Turn): Source[] {
     // A call the executor marked failed, or one whose payload says so, is a *failed lookup* — a
     // different fact from having consulted nothing, and the reader has to be able to tell them
     // apart (AC5).
+    // A failed lookup is addressed by the call it was, not by what it found — two of them are two
+    // failures, and folding them together would report one.
     if (activity.status === 'failed') {
-      out.push({ kind: 'link', label: from, from, failed: true, activity, callKey: key })
+      out.push({ kind: 'link', id: key, label: from, from, failed: true, activity, callKey: key })
       return
     }
 
     const output = activity.output ?? ''
     const found = read(output)
     if (found === FAILED) {
-      out.push({ kind: 'link', label: from, from, failed: true, activity, callKey: key })
+      out.push({ kind: 'link', id: key, label: from, from, failed: true, activity, callKey: key })
       return
     }
 
@@ -80,10 +106,10 @@ export function sourcesOf(turn: Turn): Source[] {
       // First call wins. A second call returning the same page is not a second piece of evidence
       // about it, and offering two destinations would ask the reader to choose without saying
       // what differs (AC9).
-      const id = source.url ?? `${from}:${source.label}`
+      const id = identify(from, source)
       if (seen.has(id)) continue
       seen.add(id)
-      out.push({ ...source, from, activity, callKey: key })
+      out.push({ ...source, id, from, activity, callKey: key })
     }
   })
 

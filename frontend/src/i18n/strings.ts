@@ -305,6 +305,30 @@ export const strings = {
     en: 'Tool playground enabled',
     pt: 'Playground de ferramentas habilitado',
   },
+  // --- Demo mode (spec 050) -------------------------------------------------
+  // The banner is the one thing standing between a recorded answer and a reader who takes it for a
+  // live one, so its wording is load-bearing: it names the replay, dates it, and says the answer
+  // does not depend on the question — the fact a reader would otherwise discover by typing twice.
+  'about.field.demo': { en: 'Replaying a recording', pt: 'Reproduzindo uma gravação' },
+  'about.field.demoRecorded': { en: 'Recorded on', pt: 'Gravado em' },
+  'demo.title': { en: 'Replay', pt: 'Reprodução' },
+  'demo.body': {
+    en: 'This build is replaying a conversation recorded against a real Foundry project on {date}. Nothing is being sent anywhere, and the answer does not depend on what you type.',
+    pt: 'Esta build está reproduzindo uma conversa gravada em um projeto Foundry real em {date}. Nada está sendo enviado a lugar nenhum, e a resposta não depende do que você digitar.',
+  },
+  'demo.pick': { en: 'Recorded turn', pt: 'Turno gravado' },
+  'demo.recording.round-trip': {
+    en: 'Function-call round trip, with Microsoft Learn',
+    pt: 'Ida e volta de function call, com o Microsoft Learn',
+  },
+  'demo.recording.no-reasoning': {
+    en: 'The same turn, with no reasoning summaries',
+    pt: 'O mesmo turno, sem resumos de raciocínio',
+  },
+  'demo.recording.preamble': {
+    en: 'The agent says what it is about to look up',
+    pt: 'O agente diz o que vai consultar',
+  },
   'about.field.canPromote': {
     en: 'Can roll an agent back to an earlier version',
     pt: 'Pode reverter um agente para uma vers\u00e3o anterior',
@@ -401,6 +425,12 @@ export const strings = {
   'agents.reason.version_not_active': {
     en: 'Its served version is not active yet',
     pt: 'A vers\u00e3o publicada ainda n\u00e3o est\u00e1 ativa',
+  },
+  // Spec 050. A different fact from `no_harness`: this build HAS the harness, and the demo has no
+  // recording to replay through it. Saying the first would be a lie about the build (\u00a75).
+  'agents.reason.demo_not_recorded': {
+    en: 'This demo has no recording for this agent',
+    pt: 'Esta demonstra\u00e7\u00e3o n\u00e3o tem grava\u00e7\u00e3o para este agente',
   },
   // Not in the plan's table, and added for a reason AC5 forces: a dimmed row with no explanation
   // is exactly what AC5 forbids, and the BFF's reason codes can grow. `types/agents.test.ts` fails
