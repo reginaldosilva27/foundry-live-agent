@@ -102,6 +102,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 046 | [The contrast nobody guarded — the muted ink and the accent fill](046-muted-ink-and-accent-fill/spec.md) | 4 | ✅ done |
 | 047 | [The app on a narrow screen](047-narrow-screen/spec.md) | 4 | ✅ done |
 | 048 | [A focus ring by default, not by remembering](048-focus-by-default/spec.md) | 4 | ✅ done |
+| 049 | [Foundry IQ as a knowledge source](049-foundry-iq-knowledge/spec.md) | 4 | 📝 draft |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is
@@ -148,7 +149,7 @@ changeable decision. Current order, chosen because **seeing Voice Live work is t
 
 ```
 000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ✅ → 015…017 ✅
-  → 018 ✅ → 019 ✅ → 021 ✅ → 022 ✅ → 023…044 ✅ → 045 ⛔ → 020 ✅ → 046…048 ✅
+  → 018 ✅ → 019 ✅ → 021 ✅ → 022 ✅ → 023…044 ✅ → 045 ⛔ → 020 ✅ → 046…048 ✅ → 049 📝
 ```
 
 **020 came last, and was the better order.** Built after the UI backlog rather than before it, it

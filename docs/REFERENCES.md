@@ -508,6 +508,29 @@ beside it is the part that decides the formula, and that is measured here rather
 | **The stream reports the prompt cache** — it is not spans-only, as spec 028's draft assumed. `input_tokens_details.cached_tokens` arrives in the same `response.completed` payload the normaliser already reads `output_tokens_details` from. This is why spec 028 extends the `usage` event (§9) instead of waiting on Application Insights, which most deployments of this repo do not configure. | same fixtures: cached values of 1024, 3584 and 4096 across recorded turns |
 | **The two APIs spell the field differently.** The Responses API sends `input_tokens_details` (plural); Voice Live sends `input_token_details` (singular). Each normaliser reads its own spelling, and each has its own recorded test, because a shared reader would find `None` forever and price every cached token at the full rate without failing. | `prompt-agent-turn-20260915.jsonl` vs `voice-live-preamble-20260916.jsonl` |
 
+## Foundry IQ — spec 049, read 2026-09-20 (nothing built yet)
+
+| Doc | Read |
+|---|---|
+| [Connect agents to Foundry IQ knowledge bases](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/foundry-iq-connect) | 2026-09-20 |
+| [What is Foundry IQ?](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/what-is-foundry-iq) | 2026-09-20 |
+
+**Read before the spec was written, which is the point of §10.** Nothing here is implemented; this
+is recorded so the spec's clarify step argues from the documentation rather than from an idea of it.
+
+| Fact | Consequence for this repository |
+|---|---|
+| **Foundry IQ attaches as an MCP tool, not a function tool.** `type: "mcp"`, `server_label`, `require_approval: "never"`, `allowed_tools: ["knowledge_base_retrieve"]`, `project_connection_id`. | Retrieval is **Foundry-executed** (`executor: "foundry"`, an `mcp_call`), where `lookup_knowledge` is **app-executed**. "Replacing `lookup_knowledge`" therefore removes one of only two demonstrations of the function-call round trip. This is spec 049's first open question. |
+| **`knowledge_base_retrieve` is the only supported tool.** Stated explicitly in the doc. | `allowed_tools` is a one-item list, and a spec that assumes more is wrong. |
+| **The MCP endpoint is `{search_service_endpoint}/knowledgebases/{kb}/mcp?api-version=2026-08-01-preview`** — a **preview** api-version, and the doc's troubleshooting section calls out using the wrong one as a cause of 400/404. | Preview, like Voice Live's WebRTC endpoint. Pinned in `.env.example` and said out loud, per this file's existing practice. |
+| **It needs a project connection created through ARM**, not through the Foundry data plane: `PUT https://management.azure.com/{project_resource_id}/connections/{name}?api-version=2025-10-01-preview`, with `category: "RemoteTool"`, `authType: "ProjectManagedIdentity"`, `audience: "https://search.azure.com/"`. | A second control-plane write, and a second `api-version` on a different plane. The connection — not a key — is how the agent authenticates, so §"zero secrets" holds. |
+| **Four role assignments across two resources**: `Foundry Project Manager` on the account to create the connection (`Foundry User` or PM to *use* the tool), `Search Index Data Reader` for the **project's** managed identity on the search service, and — only if the knowledge base names an LLM — `Cognitive Services User` for the **search service's** identity on the account. | AC8: provisioned in `infra/` or written down as a manual step. `infra/` has no Bicep today. |
+| **Prerequisite: an Azure AI Search service with a knowledge base and at least one knowledge source.** Hub-based projects are not supported. | Infrastructure this repository does not have. Spec 049's second open question. |
+| **SDK `azure-ai-projects>=2.0.0`**; the tool model is `MCPTool`. | The repo pins `>=2.3.0`, so this is satisfied. |
+| **The doc's suggested instructions ask for citations rendered as `【message_idx:search_idx†source_name】`.** | Not Markdown. `Markdown.tsx` would render it literally, and spec 034 builds the Sources strip from **events**, never from prose. Adopting that instruction is an open question, not a default. |
+| **Citation URLs vary by knowledge source** — a blob source returns the document URL; a search-index source falls back to the knowledge base's MCP endpoint. | Spec 034's "one reader per tool, because the shapes really differ" applies again. A URL that is really an MCP endpoint must not render as a source the reader can open. |
+| **Per-user filtering exists** via the `x-ms-query-source-authorization` header, supplied per request through `structured_inputs`. | Out of scope for 049: this app has no notion of a user. Recorded because it is the documented answer if that ever changes. |
+
 ## Versions this repo pins
 
 | Thing | Value | Source |
