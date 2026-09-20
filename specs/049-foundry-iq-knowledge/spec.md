@@ -3,147 +3,174 @@
 | | |
 |---|---|
 | **ID** | 049-foundry-iq-knowledge |
-| **Status** | draft |
+| **Status** | clarified |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-20 |
+| **Clarified** | 2026-09-20 |
 
 ## Problem / motivation
 
-`PLAN.md`'s Phase 4 has said since the beginning: *"Foundry IQ replacing `lookup_knowledge`"*.
-`ai/harness/_shared/tools/knowledge_tool.py` was written to be swapped, and the repository layout
-comment says so (`PLAN.md:110`). This spec is where that swap stops being a note and becomes a
-decision — because reading the documentation changes what the note means.
+`PLAN.md`'s Phase 4 has said since the beginning: *"Foundry IQ replacing `lookup_knowledge`"*, and
+`ai/harness/_shared/tools/registry.py:43` carries the line it was written around:
 
-**`lookup_knowledge` today is a function tool, and Foundry IQ is an MCP tool.** That is not a detail
-of implementation; it moves the work to the other side of the boundary this whole repository exists
-to teach:
+> *"The knowledge backing store. Swap this line for Foundry IQ; nothing else changes."*
 
-| | `lookup_knowledge` today | Foundry IQ |
+Today that store is `LocalMarkdownKnowledge`, a **scored keyword match** over three markdown files,
+and its own docstring refuses to call itself semantic search because it is not (§5). It is the
+weakest part of the reference agent, and the one a reader is most likely to ask about.
+
+**Reading the documentation changed what "replacing" should mean, and that is the whole value of
+reading it first.** Foundry IQ is reachable two ways:
+
+| | As an MCP tool | As a REST call |
 |---|---|---|
-| Who executes it | **our BFF** (`executor: "app"`) | **Foundry** (`executor: "foundry"`) |
-| What the app must do | answer the call, or the run hangs and expires in 10 minutes | nothing |
-| What the stream carries | `tool_call` + `tool_result` | `mcp_call` |
+| Endpoint | `…/knowledgebases/{kb}/mcp` | `POST …/knowledgebases/{kb}/retrieve` |
+| `api-version` | `2026-08-01-preview` | **`2026-04-01` — GA** |
+| Who executes it | **Foundry** | **our BFF** |
+| The stream carries | `mcp_call` | `tool_call` + `tool_result`, `executor: "app"` |
+| Setup | an ARM project connection + 4 role assignments | one role assignment |
 
-So "replacing `lookup_knowledge`" as written would **delete one of the only two app-executed
-function tools**, leaving `get_current_datetime` and `search_web`, and would make the reference
-project demonstrate *less* of the round trip that `docs/how-it-works/function-call-round-trip.md`
-is entirely about. That may still be the right trade — grounded retrieval with citations is the
-thing a real deployment wants — but it is a trade, and the note in `PLAN.md` does not read like one.
+The first reading is what `PLAN.md` implied, and it would have **deleted one of only two
+demonstrations of the function-call round trip** — the thing
+`docs/how-it-works/function-call-round-trip.md` is entirely about, and the reason this repository
+exists. The second changes one class behind a Protocol that was designed for exactly this, keeps
+the round trip, needs no preview API and no control-plane write.
 
-Second, Foundry IQ is not a library call. It needs **infrastructure this repository does not have**:
-an Azure AI Search service, a knowledge base, at least one knowledge source, a project connection
-created through ARM, and four role assignments across two resources. `infra/` currently holds a
-README and no Bicep at all.
+**This spec takes the second.** Foundry IQ becomes a better implementation of a tool the app still
+executes, rather than a tool the app stops executing.
 
 ## Goals
 
-- The reference agent can answer from a **grounded knowledge base with citations**, and the app
-  renders where the answer came from through the machinery spec 034 already built.
-- A reader can see **both** kinds of tool in one turn and tell them apart — the app-executed round
-  trip and the Foundry-executed retrieval — because that contrast is the teaching material.
-- The setup is **reproducible by a reader**: whatever is required is either provisioned by code in
-  `infra/` or written down as a manual step, never assumed (§5).
-- A deployment **without** Foundry IQ keeps working exactly as it does today, with no degraded
-  screen and no error.
+- `lookup_knowledge` answers from a **real retrieval pipeline with semantic reranking and source
+  references**, instead of a keyword score.
+- The change is **one class behind `KnowledgeSource`** — the tool, its schema, its registration and
+  both `agent.yaml` files are untouched (§4).
+- **Both harnesses keep running the same tool.** Spec 018's AC6 stays true, so spec 020's
+  measurements keep comparing two harnesses rather than two different agents.
+- A deployment **without** Foundry IQ keeps working exactly as today.
+- Whatever setup is required is **written down and reproducible**, never assumed (§5).
 
 ## Non-goals
 
-- **No knowledge-base authoring in this app.** Creating, indexing or editing knowledge sources is
-  Azure AI Search's job. This repository consumes a knowledge base; it does not manage one.
-- **No new `AgentEvent`.** Foundry IQ retrieval arrives as `mcp_call`, which the contract has
-  carried since spec 001 — this is the same shape `microsoft_learn` already produces (§9).
-- **No per-user document filtering** in the first pass. The documented `x-ms-query-source-authorization`
-  header with `structured_inputs` requires an identity for the person asking, and **this app has no
-  notion of a user** — the same absence that keeps `FOUNDRY_ALLOW_VERSION_PROMOTE` off. Shipping a
-  per-user filter with no user would be theatre.
-- **No replacement of `search_web`.** Tavily answers a different question (the open web) and is the
-  repository's one documented third-party key.
+- **No MCP tool on the agent definition.** That is the other design, and taking it would move
+  retrieval to Foundry's side of the boundary. Recorded in `docs/REFERENCES.md` as the road not
+  taken, with what it would cost.
+- **No knowledge-base authoring in this app.** Creating and indexing is Azure AI Search's job.
+- **No new `AgentEvent`.** The tool's events are the ones it already emits (§9).
+- **No query planning and no answer synthesis.** They are preview-only; see *What this does not do*.
+- **No per-user document filtering.** The `x-ms-query-source-authorization` header needs an identity
+  for the person asking, and **this app has no notion of a user** — the same absence that keeps
+  `FOUNDRY_ALLOW_VERSION_PROMOTE` off. A per-user filter with no user would be theatre.
+- **No replacement of `search_web`.** Tavily answers a different question.
+- **No Bicep.** See *Setup*.
+
+## What this does not do, and says so
+
+The GA `2026-04-01` retrieve API is **minimal and extractive**: it runs the query against the
+knowledge sources with semantic reranking and returns references. It does **not** decompose the
+question into subqueries (query planning) and does **not** synthesise an answer — both are
+`2026-08-01-preview` only.
+
+So this is a real improvement over a keyword match, and it is **not** the full "agentic" pipeline
+the marketing name suggests. The spec says that in the same voice `knowledge_tool.py` already uses
+about itself, and `docs/REFERENCES.md` records what the preview would add. Preview was declined
+here deliberately: with a three-document corpus there is little for query planning to decompose,
+and the repository already carries one preview dependency (Voice Live WebRTC) that it names out
+loud — a second needs a better reason than a nicer adjective.
+
+## Setup
+
+Free tier, and provisioning is a **documented manual step**, not Bicep. `infra/` holds no Bicep
+today, and O-4 already records that unverifiable IaC does not ship here (§5). The knowledge base
+and knowledge source have no documented Bicep path either, so a Bicep file would cover a third of
+the work and read as if it covered all of it.
+
+| Thing | Value |
+|---|---|
+| Search service | **Free** tier — one per subscription, 50 MB, shared infrastructure, no SLA |
+| Knowledge bases / sources | 3 per service on Free; this needs 1 of each |
+| Corpus | the same three files `lookup_knowledge` reads today |
+| Role | **`Search Index Data Reader`** on the search service, for **two** identities |
+
+Free is enough and its limits are stated rather than discovered: a free service is on shared
+hardware and *"might be deleted after extended periods of inactivity"*. The reference deployment is
+a demonstration, so that is acceptable — and it is written in `.env.example` so nobody is surprised.
 
 ## User-facing behavior
 
-A turn that consults the knowledge base shows a retrieval row in the activity panel tagged as
-Foundry-executed, and the Sources strip under the settled answer lists what it consulted (spec 034).
-Any new prose ships `en` + `pt` (§7).
+A turn that consults the knowledge base looks like it does today — an app-executed tool row in the
+activity panel — and the Sources strip under the settled answer lists what came back (spec 034).
+The difference a reader sees is that the answer is *better grounded*, and that the sources are real
+references rather than a repository path.
 
-Where a deployment has no Foundry IQ configured, nothing about the screen changes and nothing
-announces an absence — the same rule spec 032 applies to every other unconfigured capability.
+Any new prose ships `en` + `pt` (§7). Where a deployment has no Foundry IQ configured, nothing about
+the screen changes and nothing announces the absence (spec 032's rule).
 
 ## Acceptance criteria
 
-1. **AC1** — Given a deployment with Foundry IQ configured, when the agent answers a question its
-   knowledge base covers, then the turn carries an `mcp_call` naming the knowledge base, and the
-   answer is grounded in what came back.
-2. **AC2** — Given that same turn, when it settles, then the Sources strip lists the retrieved
-   sources, built from events and never from the answer's prose (spec 034's rule, unchanged).
-3. **AC3** — Given a deployment with **no** Foundry IQ configured, when a turn runs, then it behaves
-   exactly as today: no error, no empty panel, no string announcing the absence.
-4. **AC4** — Given the agent definition, when it is applied, then the knowledge tool is declared in
-   `agent.yaml` in this repository's own schema, and the two harnesses agree on what they declare.
-5. **AC5** — Given a turn that uses both kinds of tool, when the activity panel renders it, then the
-   app-executed call and the Foundry-executed retrieval are distinguishable by their executor tag —
-   the contrast this spec exists to preserve.
-6. **AC6** — Given the contract, when this ships, then **no new `AgentEvent` type exists**: the nine
-   are unchanged and the adapter-parameterised suite passes unedited (§9).
-7. **AC7** — Given a knowledge base that has no answer, when the agent is asked, then it says so
-   rather than answering from the model's own knowledge — and a test drives that from a recording,
-   not from a hand-written fixture (§5).
-8. **AC8** — Given the setup this feature needs, when a reader follows the repository, then every
-   resource, connection and role assignment is either provisioned by `infra/` or documented as a
-   manual step with the doc it came from (§5, §10).
+1. **AC1** — Given a deployment with Foundry IQ configured, when the agent calls `lookup_knowledge`,
+   then the BFF retrieves from the knowledge base and the turn carries `tool_call` + `tool_result`
+   with `executor: "app"` — the same round trip as today.
+2. **AC2** — Given that turn, when it settles, then the Sources strip lists the returned references,
+   built from events and never from the answer's prose (spec 034's rule, unchanged).
+3. **AC3** — Given a deployment with **no** Foundry IQ configured, when a turn runs, then
+   `lookup_knowledge` uses the local markdown exactly as today: no error, no empty panel, no string
+   announcing an absence.
+4. **AC4** — Given the agent definitions, when this ships, then **neither `agent.yaml` changed**,
+   and neither did `SCHEMA`, the tool's name, or its registration (§4 — the seam is the whole point).
+5. **AC5** — Given Foundry IQ **is** configured but the caller lacks `Search Index Data Reader`,
+   when the tool runs, then it fails **visibly** — the failure reaches `tool_result` and the activity
+   panel — and **never** falls back to the local markdown. A silent fallback would make the app lie
+   about where an answer came from (§5) and would break spec 020's comparison.
+6. **AC6** — Given the contract, when this ships, then **no new `AgentEvent` type exists** and the
+   adapter-parameterised suite passes unedited (§9).
+7. **AC7** — Given both harnesses, when each calls `lookup_knowledge`, then both use the **same**
+   `KnowledgeSource` implementation — spec 018's AC6 still holds, and no line in `registry.py`
+   decides by harness.
+8. **AC8** — Given a question the corpus does not cover, when the agent is asked, then the tool
+   returns no passages and the agent says it does not know, driven by a **recorded** run rather than
+   a hand-written fixture (§5).
 9. **AC9** — Given `GET /config`, when Foundry IQ is configured, then the deployment reports that
-   fact, and `/about` renders it — because `About.coverage.test.ts` fails otherwise (spec 032).
-10. **AC10** — Every new user-facing string ships `en` + `pt` (§7).
-11. **AC11** — Given `docs/REFERENCES.md`, when this ships, then every endpoint, `api-version`, tool
-    name and role it relies on is recorded with the doc URL and the date it was read (§10).
+   fact and `/about` renders it — `About.coverage.test.ts` fails otherwise (spec 032).
+10. **AC10** — Given the setup, when a reader follows the repository, then the search service, the
+    knowledge base, the knowledge source and **both** role assignments are documented as manual
+    steps with the doc each came from (§5, §10).
+11. **AC11** — Every new user-facing string ships `en` + `pt` (§7).
+12. **AC12** — Given `docs/REFERENCES.md`, when this ships, then the retrieve endpoint, its
+    `api-version`, the token scope, the role and the tier limits are recorded with their doc URL and
+    the date read (§10) — including what the preview API would add and why it was declined.
 
 ## Contract / data impact
 
-- **`AgentEvent` (§9): unchanged.** Retrieval is an `mcp_call`. If planning shows it cannot be, that
-  is a contract change and needs its own spec before this one continues.
-- **`ai/harness/*/agent.yaml`** gains a tool declaration. `agent_spec.py` validates it, and it is the
-  single source of truth for what the agent is (§4) — the BFF must not learn the knowledge base's
-  address a second way.
-- **`GET /config`** gains one field, which means `aboutFields.ts` moves in the **same** change or CI
-  fails (spec 032, §4).
-- **`.env.example`** gains the settings, with placeholders only.
-- **A new Azure dependency**: Azure AI Search. Authentication is the project's **managed identity**
-  through a `RemoteTool` project connection, so §"zero secrets" holds and no key is introduced.
+- **`AgentEvent` (§9): unchanged.** The tool already emits `tool_call` / `tool_result`.
+- **`ai/harness/*/agent.yaml`: unchanged**, and AC4 asserts it.
+- **`KnowledgeSource` (`knowledge_tool.py`) is the source of truth for the seam** (§4). A second
+  implementation appears beside `LocalMarkdownKnowledge`; `registry.py:43` is the one line that
+  chooses, driven by configuration.
+- **`Passage` may need to carry a reference** that is not a repository path. `frontend/src/state/sources.ts`
+  reads `lookup_knowledge`'s output today as *"a repository path, which renders as a path and never
+  as a link"* (spec 034). If the shape changes, `sources.ts` moves in the **same** change (§4), and
+  spec 034's rule holds: **one reader per tool, because the shapes really differ**.
+- **`GET /config`** gains one field → `aboutFields.ts` moves with it or CI fails (spec 032).
+- **`.env.example`** gains the search endpoint and knowledge base name. Placeholders only.
+- **A new Azure dependency**: Azure AI Search, authenticated with `DefaultAzureCredential` at scope
+  `https://search.azure.com/.default`. **No key**, so §"zero secrets" holds and `TAVILY_API_KEY`
+  remains the single documented exception.
 
-## Open questions (clarify before planning)
+## Clarify outcome — 2026-09-20
 
-- [ ] **Does `lookup_knowledge` go, stay, or move?** Three futures: Foundry IQ *replaces* it (what
-      `PLAN.md` says, and the app loses an executed round trip); Foundry IQ is *added beside* it
-      (both kinds visible in one turn, which is the better demonstration but two knowledge tools
-      answering the same sort of question is a confusing agent); or `lookup_knowledge` *stays and is
-      re-pointed* at something clearly different. **This is the spec's first question and everything
-      else follows from it.**
-- [ ] **Who pays for the Azure AI Search service, and does it exist?** A knowledge base needs a
-      search service, an index and content. Is there one in `rg-belake-core-lab`, or is provisioning
-      it part of this spec? Its tier decides whether semantic reranking and query planning are even
-      available.
-- [ ] **What is the knowledge base's content?** `lookup_knowledge` answers from this repository's
-      own material. Indexing this repository's docs would keep the demonstration self-contained and
-      honest; anything else needs a source we may not be able to ship.
-- [ ] **Does `infra/` start here?** This feature needs a search service, a knowledge base, a project
-      connection and four role assignments. `infra/` has no Bicep today and O-4 is already open
-      about IaC that could not be verified. Provisioning this by code would be the first Bicep in
-      the repository — a large thing to attach to a knowledge feature.
-- [ ] **Does the hosted harness get the same tool, and does it look the same?** Measured on
-      2026-09-20: the hosted agent emits **no `mcp_call` at all** — Learn arrives as plain tool calls
-      with `executor: "foundry"`. So AC5's contrast may render differently per harness, and AC4's
-      "the two harnesses agree on what they declare" may not imply they agree on what they emit.
-- [ ] **Preview.** The MCP endpoint is `api-version=2026-08-01-preview` and answer synthesis and
-      query planning are individually marked preview. This repository has shipped against preview
-      before (Voice Live WebRTC) and said so. Is that acceptable here, and where is it said?
-- [ ] **Does the citation format survive?** The documented instructions ask the model to render
-      annotations as `【message_idx:search_idx†source_name】`. That is not Markdown, `Markdown.tsx`
-      will render it literally, and spec 034 builds sources from **events** rather than prose. Do we
-      adopt that instruction at all?
+| Question | Decision |
+|---|---|
+| Does `lookup_knowledge` go, stay, or change inside? | **Change inside.** Swap the `KnowledgeSource`; it stays an app-executed function tool. The MCP design is recorded as the road not taken. |
+| Provision a search service, and at what tier? | **Free**, created as a documented manual step. `infra/` does not start here. |
+| What goes in the knowledge base? | **The same three markdown files**, so the two implementations answer the same question and the difference is the teaching material. |
+| GA or preview? | **GA `2026-04-01`**, and the spec names what GA does not do rather than implying it does. |
+| Which identity gets the role? | **Both** — the BFF's and the container's. Missing role fails loudly; never a silent fallback. |
 
 ## Out of scope / deferred
 
-- **Per-user document-level permissions** (`x-ms-query-source-authorization`, `structured_inputs`)
-  — see non-goals; it needs a signed-in user this app does not have.
-- **Writing to search indexes** (`Search Index Data Contributor`). Read-only is the whole need.
-- **Knowledge sources beyond the first.** The documentation lists Azure AI Search, Blob Storage,
-  SharePoint and OneLake; one is enough to demonstrate the mechanism.
+- **Query planning, answer synthesis, multi-turn `messages`, configurable reasoning effort** — the
+  `2026-08-01-preview` feature set. Worth its own spec when a corpus justifies it.
+- **Per-user document-level permissions** — needs a signed-in user this app does not have.
+- **Writing to search indexes.** Read-only is the whole need.
+- **Knowledge sources beyond the first**, and kinds beyond the one chosen (Blob, SharePoint, OneLake).

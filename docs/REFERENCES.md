@@ -513,22 +513,59 @@ beside it is the part that decides the formula, and that is measured here rather
 | Doc | Read |
 |---|---|
 | [Connect agents to Foundry IQ knowledge bases](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/foundry-iq-connect) | 2026-09-20 |
-| [What is Foundry IQ?](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/what-is-foundry-iq) | 2026-09-20 |
+| [Agentic retrieval overview](https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-overview) | 2026-09-20 |
+| [Query a knowledge base (retrieve action or MCP)](https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-how-to-retrieve) | 2026-09-20 |
+| [Service limits for tiers and SKUs](https://learn.microsoft.com/en-us/azure/search/search-limits-quotas-capacity) | 2026-09-20 |
 
-**Read before the spec was written, which is the point of §10.** Nothing here is implemented; this
-is recorded so the spec's clarify step argues from the documentation rather than from an idea of it.
+**Read before the spec was written, which is the point of §10** — and it changed the design. Nothing
+here is implemented yet.
 
-| Fact | Consequence for this repository |
+### The decision the reading produced
+
+Foundry IQ is reachable **two ways**, and `PLAN.md`'s note implied the wrong one for this repository.
+
+| | As an MCP tool on the agent | As a REST call from the BFF |
+|---|---|---|
+| Endpoint | `{search}/knowledgebases/{kb}/mcp` | `POST {search}/knowledgebases/{kb}/retrieve` |
+| `api-version` | `2026-08-01-preview` | **`2026-04-01` — GA** |
+| Executes it | **Foundry** (`mcp_call`) | **our BFF** (`tool_call`/`tool_result`, `executor: "app"`) |
+| Auth | a `RemoteTool` project connection created through ARM | `DefaultAzureCredential`, scope `https://search.azure.com/.default` |
+| RBAC | 4 assignments across 2 resources | **1 role**, `Search Index Data Reader` |
+| Agent definition | gains an MCP tool | **unchanged** |
+
+**Spec 049 takes the REST call.** The MCP route would move retrieval to Foundry's side and delete
+one of only two demonstrations of the function-call round trip — which is what
+`docs/how-it-works/function-call-round-trip.md` is about. The REST route changes one class behind
+the `KnowledgeSource` Protocol that `registry.py:43` was written around, and needs no preview API
+and no control-plane write. The MCP shape stays recorded below as the road not taken.
+
+### The route taken — `POST /knowledgebases/{kb}/retrieve`
+
+| Fact | Consequence |
 |---|---|
-| **Foundry IQ attaches as an MCP tool, not a function tool.** `type: "mcp"`, `server_label`, `require_approval: "never"`, `allowed_tools: ["knowledge_base_retrieve"]`, `project_connection_id`. | Retrieval is **Foundry-executed** (`executor: "foundry"`, an `mcp_call`), where `lookup_knowledge` is **app-executed**. "Replacing `lookup_knowledge`" therefore removes one of only two demonstrations of the function-call round trip. This is spec 049's first open question. |
+| **`POST {search_endpoint}/knowledgebases/{kb}/retrieve?api-version=2026-04-01` is generally available.** Bearer token, scope `https://search.azure.com/.default`, role **`Search Index Data Reader`**. | The whole of spec 049 needs one endpoint, one scope and one role. No project connection, no ARM write, no preview. |
+| **GA is `minimal` and extractive**: semantic reranking and references, but **no LLM query planning and no answer synthesis**. Those need `2026-08-01-preview`. | Spec 049 ships GA and **names what it does not do**, the way `knowledge_tool.py` already refuses to call a keyword matcher semantic search (§5). With a three-document corpus there is little to decompose. |
+| Response carries `response` (merged content), `activity` (what was queried) and `references` (for citation). | `references` is what the Sources strip (spec 034) reads. `activity` is a cost-control tool the doc recommends reading; not used yet. |
+| `maxRuntimeInSeconds`: min 10, **default 90**, max 600. | A retrieval can take a minute and a half by default. The function-call round trip expires at **10 minutes**, so the default leaves room — but the two numbers should be read together. |
+| **Free tier supports agentic retrieval**: 3 knowledge bases, 3 knowledge sources per service, 3 sources per knowledge base, 50 MB storage, one free service per subscription. Free is **absent from the semantic-ranker throttling table**, which starts at Basic. | Spec 049 uses Free. Its limits are stated in the spec rather than discovered later, including that a free service *"might be deleted after extended periods of inactivity"*. |
+| **Agentic retrieval has its own billing**: Azure AI Search bills retrieval tokens with a monthly free allowance by default; Azure OpenAI bills separately, but only for query planning and answer synthesis. | On the GA path there is **no Azure OpenAI charge at all**, because neither of those runs. |
+| No Bicep path is documented for a knowledge base or a knowledge source. | Same shape as O-4. Provisioning is a documented manual step, not IaC nobody verified (§5). |
+
+### The road not taken — the MCP tool
+
+Recorded because it is the design `PLAN.md` implied, and because a future spec may want it.
+
+| Fact | Consequence |
+|---|---|
+| **Foundry IQ attaches as an MCP tool**: `type: "mcp"`, `server_label`, `require_approval: "never"`, `allowed_tools: ["knowledge_base_retrieve"]`, `project_connection_id`. | Retrieval becomes **Foundry-executed** (`mcp_call`), and `lookup_knowledge` would go. That is what spec 049 declined. |
 | **`knowledge_base_retrieve` is the only supported tool.** Stated explicitly in the doc. | `allowed_tools` is a one-item list, and a spec that assumes more is wrong. |
 | **The MCP endpoint is `{search_service_endpoint}/knowledgebases/{kb}/mcp?api-version=2026-08-01-preview`** — a **preview** api-version, and the doc's troubleshooting section calls out using the wrong one as a cause of 400/404. | Preview, like Voice Live's WebRTC endpoint. Pinned in `.env.example` and said out loud, per this file's existing practice. |
 | **It needs a project connection created through ARM**, not through the Foundry data plane: `PUT https://management.azure.com/{project_resource_id}/connections/{name}?api-version=2025-10-01-preview`, with `category: "RemoteTool"`, `authType: "ProjectManagedIdentity"`, `audience: "https://search.azure.com/"`. | A second control-plane write, and a second `api-version` on a different plane. The connection — not a key — is how the agent authenticates, so §"zero secrets" holds. |
-| **Four role assignments across two resources**: `Foundry Project Manager` on the account to create the connection (`Foundry User` or PM to *use* the tool), `Search Index Data Reader` for the **project's** managed identity on the search service, and — only if the knowledge base names an LLM — `Cognitive Services User` for the **search service's** identity on the account. | AC8: provisioned in `infra/` or written down as a manual step. `infra/` has no Bicep today. |
-| **Prerequisite: an Azure AI Search service with a knowledge base and at least one knowledge source.** Hub-based projects are not supported. | Infrastructure this repository does not have. Spec 049's second open question. |
+| **Four role assignments across two resources**: `Foundry Project Manager` on the account to create the connection (`Foundry User` or PM to *use* the tool), `Search Index Data Reader` for the **project's** managed identity on the search service, and — only if the knowledge base names an LLM — `Cognitive Services User` for the **search service's** identity on the account. | Four, against the one the REST route needs. A large part of why spec 049 declined this design. |
+| **Prerequisite: an Azure AI Search service with a knowledge base and at least one knowledge source.** Hub-based projects are not supported. | True of both routes. Spec 049 provisions it on the **Free** tier as a documented manual step. |
 | **SDK `azure-ai-projects>=2.0.0`**; the tool model is `MCPTool`. | The repo pins `>=2.3.0`, so this is satisfied. |
-| **The doc's suggested instructions ask for citations rendered as `【message_idx:search_idx†source_name】`.** | Not Markdown. `Markdown.tsx` would render it literally, and spec 034 builds the Sources strip from **events**, never from prose. Adopting that instruction is an open question, not a default. |
-| **Citation URLs vary by knowledge source** — a blob source returns the document URL; a search-index source falls back to the knowledge base's MCP endpoint. | Spec 034's "one reader per tool, because the shapes really differ" applies again. A URL that is really an MCP endpoint must not render as a source the reader can open. |
+| **The doc's suggested instructions ask for citations rendered as `【message_idx:search_idx†source_name】`.** | Not Markdown — `Markdown.tsx` would render it literally, and spec 034 builds the Sources strip from **events**, never from prose. **Moot on the route taken**: no instruction goes near the agent, because retrieval happens inside our own function tool. |
+| **Citation URLs vary by knowledge source** — a blob source returns the document URL; a search-index source falls back to the knowledge base's MCP endpoint. | Applies to **both** routes, and spec 049's AC2 inherits it: spec 034's "one reader per tool, because the shapes really differ". A URL that is really an endpoint must never render as a source the reader can open. |
 | **Per-user filtering exists** via the `x-ms-query-source-authorization` header, supplied per request through `structured_inputs`. | Out of scope for 049: this app has no notion of a user. Recorded because it is the documented answer if that ever changes. |
 
 ## Versions this repo pins

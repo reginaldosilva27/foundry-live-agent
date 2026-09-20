@@ -2,7 +2,7 @@
 
 > Status (2026-09-20): **48 of 49 specs done** (000–048), every acceptance criterion met; 045 is
 > blocked by design, on a retention decision rather than on a document. **050 specs in total**: 049
-> (Foundry IQ) is `draft` and awaiting its clarify step. Phases 0–3 closed and
+> (Foundry IQ) is `clarified` and awaiting its plan. Phases 0–3 closed and
 > Phase 4 delivered its hosted agent (spec 018) — see §6. Chat, voice, tracing and the whole UI run
 > against a live Foundry project. Voice findings observed 2026-09-15 — see §9 for what the docs got
 > wrong. **`specs/README.md` is the live index**; this file is the architecture record behind it.
@@ -400,7 +400,7 @@ one that does not need approval of the architecture**, since it is the inherited
 | **006** ✅ | 3 | Voice mode via Voice Live on the same prompt agent | Speak, interrupt mid-sentence, watch a tool call fire during voice |
 | **018** ✅ | 4 | **Hosted agent harness** — the second harness behind the same contract, a LangGraph graph run by Foundry as a container | **Done** — `docs/harness-comparison.md`, measured |
 | **007–017, 019–048** ✅ | 3–4 | Everything the table above does not name: voice transcript and spoken answers, the trace panel, the agent picker, the whole UI backlog, the comparison screen | See [`specs/README.md`](specs/README.md) — the live index, one row per spec |
-| **049** 📝 | 4 | **Foundry IQ as a knowledge source** — specced 2026-09-20, `draft`. The doc read moved the goalposts: Foundry IQ attaches as an **MCP** tool, so "replacing `lookup_knowledge`" would delete one of only two app-executed round trips | — |
+| **049** 🔍 | 4 | **Foundry IQ as a knowledge source** — `clarified` 2026-09-20. Reading the docs found a **second** route: the GA `/retrieve` REST call, which swaps the `KnowledgeSource` behind `lookup_knowledge` and keeps the round trip, instead of the MCP tool that would have deleted it | — |
 | — | 4 | **Still not implemented.** More MCP tools (Databricks Genie, Azure DevOps), publish to M365 Copilot / Teams | — |
 
 **This table is the original phase plan, kept as the record of it.** It stops naming specs
