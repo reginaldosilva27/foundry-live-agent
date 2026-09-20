@@ -111,3 +111,29 @@ honest than exempting it silently.
 
 **This is not a conformance claim.** It is these pairs, at this ratio, asserted.
 
+## What this repository adds on top of what it imported (spec 046)
+
+The vendored `colors_and_type.css` is the design system as it arrived, and this repository does not
+author it — that is the rule the whole file rests on. Three tokens are nevertheless declared in
+`app.css`'s own `:root`, because the imported mapping put text below the bar its content deserves
+and the alternative was editing somebody else's brand:
+
+| token | resolves to | why |
+|---|---|---|
+| `--fg-harness` | `--ds-blue-700` | the harness name named a ramp step directly, fine on white at 5.90:1 and **2.70:1** on the dark surface |
+| `--bg-accent-strong` | `--ds-blue-700` | the accent fill **that carries text**; white on the plain fill measured 4.25:1 in light and 3.22:1 in dark, and `--ds-blue-700` is the only step in the blue ramp white clears 4.5 on |
+| `--fg-link` | `--ds-blue-700` | a link is content; the imported mapping gives 4.25:1 on white and 3.86:1 on the deepest light surface. Light only — dark redeclares it and already passes at 4.65–5.50 |
+
+**The brand's blue is unchanged.** `--ds-blue` remains the fill for everything that carries no text
+— carets, the pulsing dots, the timeline bars, the swatches — because non-text contrast is a
+different rule (WCAG 1.4.11) and this repository has not measured it.
+
+**And one token was narrowed rather than moved.** `--fg-4` had accumulated sixty-four selectors on
+an exemption written for five of them. It now carries disabled controls and placeholders only, at
+the 3:1 those are genuinely exempt at; the other fifty-nine pieces of content moved to `--fg-3`.
+The ramp is why nothing was invented: there is no step between `--ds-n-500` and `--ds-n-600` in
+light, so a raised `--fg-4` would simply have been `--fg-3` under a second name.
+
+`contrast.test.ts` enforces all of it, including an **allowlist**: a selector reaching for `--fg-4`
+that does not name a disabled or placeholder state fails CI. The drift that produced this took one
+spec at a time and no test could see it, because the exemption lived in a comment.

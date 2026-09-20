@@ -302,6 +302,19 @@ violation.
   `referrerpolicy="no-referrer"`. Base64 cannot arrive: `react-markdown` sanitises `data:` away,
   measured rather than implemented. An undescribed image says it has no description; it never gets
   an invented one (§5).
+- **A token is held to the bar its content deserves, not the bar its name suggests (spec 046).**
+  `--fg-4` was exempted at 3:1 as "captions, placeholders and disabled text" — but WCAG exempts
+  *disabled controls*, and that sentence let **sixty-four** selectors accumulate on it, fifty-nine
+  of them carrying content: a turn's cost, where an answer came from, a chart's axis labels. They
+  moved to `--fg-3`; `--fg-4` keeps its 3:1 and its five genuinely disabled wearers, and an
+  **allowlist in `contrast.test.ts` fails CI** when a sixtieth reaches for it — because the ratios
+  were always computable and it was the *drift* no test could see. Text on the accent fill was
+  guarded by nothing at all: `--bg-accent-strong` now carries the ~9 fills that have text on them,
+  while `--ds-blue` stays the decorative fill for the ~10 that do not (non-text contrast is a
+  different rule, and unmeasured here). Nothing was invented and the **vendored file is untouched**:
+  the ramp has no step between `--ds-n-500` and `--ds-n-600`, so a raised `--fg-4` would have been
+  `--fg-3` under a second name. Both questions were settled the same way — *split the token by the
+  job it does*, never move a colour.
 - **Two agents, one question, and no backend at all (spec 020).** `/compare` sends the same text to
   two agents at once and draws two columns. The tempting design was a transport — a multiplexed
   stream, or an agent id on every event (§9). It needed neither: `POST /chat` already takes `agent`

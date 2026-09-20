@@ -369,7 +369,7 @@ button:disabled {
   padding: var(--sp-2) var(--sp-3);
   border: 0;
   border-radius: var(--r-pill);
-  background: var(--ds-blue);
+  background: var(--bg-accent-strong);
   color: var(--fg-on-accent);
   font-size: var(--fs-body-s);
   font-weight: var(--fw-semibold);
@@ -458,7 +458,7 @@ button:disabled {
   flex: none;
   place-items: center;
   border-radius: var(--r-sm);
-  background: var(--ds-blue);
+  background: var(--bg-accent-strong);
   color: var(--ds-white);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--ls-tight);
@@ -636,7 +636,7 @@ button:disabled {
 
 .sidebar__lang-option[aria-pressed='true'] {
   border-color: var(--ds-blue);
-  background: var(--ds-blue);
+  background: var(--bg-accent-strong);
   color: var(--fg-on-accent);
 }
 
@@ -752,7 +752,7 @@ button:disabled {
 
 .pill-button[aria-pressed='true'] {
   border-color: var(--ds-blue);
-  background: var(--ds-blue);
+  background: var(--bg-accent-strong);
   color: var(--fg-on-accent);
 }
 
@@ -772,7 +772,7 @@ button:disabled {
 }
 
 .harness-badge__label {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .harness-badge__value {
@@ -780,7 +780,7 @@ button:disabled {
 }
 
 .harness-badge[data-known='false'] .harness-badge__value {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* ---------- Conversation ---------- */
@@ -812,7 +812,7 @@ button:disabled {
   margin: 0;
   padding: var(--sp-3) var(--sp-4);
   border-radius: 14px 14px 4px 14px;
-  background: var(--ds-blue);
+  background: var(--bg-accent-strong);
   color: var(--fg-on-accent);
   font-size: var(--fs-body-s);
   line-height: var(--lh-base);
@@ -866,7 +866,7 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   font-variant-numeric: tabular-nums;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* The only number on a turn that a clock produced rather than an event (spec 015). Set quietly:
@@ -875,7 +875,7 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   font-variant-numeric: tabular-nums;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .turn__pending-dots {
@@ -1011,7 +1011,7 @@ button:disabled {
 }
 
 .reasoning-card__chevron {
-  color: var(--fg-4);
+  color: var(--fg-3);
   transition: transform var(--dur-base) var(--ease-out);
 }
 
@@ -1048,7 +1048,7 @@ button:disabled {
 .reasoning-absent {
   margin: 0;
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* ---------- Tool cards (AC4 — the distinction that matters) ---------- */
@@ -1077,7 +1077,7 @@ button:disabled {
 
 .tool-card__status {
   display: flex;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .tool-card[data-status='ok'] .tool-card__status {
@@ -1131,7 +1131,7 @@ button:disabled {
 
 .tool-card__label {
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .tool-card__value {
@@ -1161,7 +1161,7 @@ button:disabled {
   border-top: 1px solid var(--bg-3);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* The chat's one-line rendering of a call (spec 009). The payload it used to carry lives in the
@@ -1256,7 +1256,7 @@ button:disabled {
 
 .tool-row__status {
   display: flex;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .tool-row[data-status='ok'] .tool-row__status {
@@ -1278,7 +1278,7 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   font-variant-numeric: tabular-nums;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .tool-row__name {
@@ -1349,7 +1349,7 @@ button:disabled {
   justify-self: end;
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
   white-space: nowrap;
 }
 
@@ -1407,7 +1407,7 @@ button:disabled {
   margin: 0;
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .meta-line__link {
@@ -1478,7 +1478,7 @@ button:disabled {
 
 .composer__send {
   border-color: var(--ds-blue);
-  background: var(--ds-blue);
+  background: var(--bg-accent-strong);
   color: var(--fg-on-accent);
 }
 
@@ -2335,7 +2335,7 @@ button:disabled {
 
 .pill-button--end {
   border-color: var(--ds-blue);
-  background: var(--ds-blue);
+  background: var(--bg-accent-strong);
   color: var(--ds-white);
 }
 
@@ -2402,7 +2402,7 @@ button:disabled {
   margin: var(--sp-1) 0 0;
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agents-screen__search {
@@ -2414,7 +2414,7 @@ button:disabled {
   border: 1px solid var(--border-1);
   border-radius: var(--r-pill);
   background: var(--bg-1);
-  color: var(--fg-4);
+  color: var(--fg-3);
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 
@@ -2522,7 +2522,7 @@ button:disabled {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--fg-4);
+  color: var(--fg-3);
   transition: color var(--dur-fast) var(--ease-out);
 }
 
@@ -2562,7 +2562,7 @@ button:disabled {
   gap: var(--sp-2);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-card__answering {
@@ -2601,7 +2601,7 @@ button:disabled {
 }
 
 .agent-card__key {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-card__reason {
@@ -2626,7 +2626,7 @@ button:disabled {
   border: 1px solid transparent;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--fg-4);
+  color: var(--fg-3);
   transition:
     background var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
@@ -2952,7 +2952,7 @@ button:disabled {
   font-size: var(--fs-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .palette__entry {
@@ -2978,7 +2978,7 @@ button:disabled {
 
 .palette__reason {
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .palette__empty {
@@ -2998,7 +2998,7 @@ button:disabled {
   margin: 0 0 var(--sp-2);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* The edit control sits beside its question, revealed on hover and always there for the keyboard. */
@@ -3011,7 +3011,7 @@ button:disabled {
   border: 0;
   border-radius: var(--r-pill);
   background: transparent;
-  color: var(--fg-4);
+  color: var(--fg-3);
   opacity: 0;
   transition: opacity var(--dur-fast) var(--ease-out);
 }
@@ -3063,7 +3063,7 @@ button:disabled {
 .history-screen__count {
   margin: 0;
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .history-screen__actions {
@@ -3147,7 +3147,7 @@ button:disabled {
   border: 1px solid var(--border-1);
   border-radius: var(--r-pill);
   background: var(--bg-1);
-  color: var(--fg-4);
+  color: var(--fg-3);
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 
@@ -3218,7 +3218,7 @@ button:disabled {
 .history-screen__fragment {
   overflow: hidden;
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3229,7 +3229,7 @@ button:disabled {
   gap: var(--sp-3);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .history-screen__agent {
@@ -3314,7 +3314,7 @@ button:disabled {
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .trace-numbers__cell--wide {
@@ -3547,14 +3547,14 @@ button:disabled {
   align-items: center;
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-detail__choose {
   padding: var(--sp-2) var(--sp-4);
   border: 1px solid var(--border-1);
   border-radius: var(--r-md);
-  background: var(--bg-accent);
+  background: var(--bg-accent-strong);
   color: var(--fg-on-accent);
   font-family: var(--font-sans);
   font-size: var(--fs-body-s);
@@ -3578,7 +3578,7 @@ button:disabled {
   font-size: var(--fs-caption);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* "The service did not say" — italic, so it never reads as the value itself (§5). */
@@ -3586,7 +3586,7 @@ button:disabled {
   margin: 0;
   font-size: var(--fs-body-s);
   font-style: italic;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-detail__error {
@@ -3626,7 +3626,7 @@ button:disabled {
   align-items: center;
   gap: var(--sp-2);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-detail__copy-button {
@@ -3684,7 +3684,7 @@ button:disabled {
 /* The project's central lesson, on the row where a reader is looking at it. */
 .agent-detail__tool-executor {
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-detail__tool-note {
@@ -3708,7 +3708,7 @@ button:disabled {
 .agent-detail__pairs dt {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-detail__pairs dd {
@@ -3731,7 +3731,7 @@ button:disabled {
   border: 0;
   border-radius: var(--r-sm);
   background: none;
-  color: var(--fg-4);
+  color: var(--fg-3);
   cursor: pointer;
 }
 
@@ -3813,14 +3813,14 @@ button:disabled {
   margin: 0;
   gap: var(--sp-3);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-detail__version-why,
 .agent-detail__version-busy {
   margin: 0 0 0 auto;
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .agent-detail__promote {
@@ -3943,7 +3943,7 @@ button:disabled {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .about__pairs {
@@ -3962,7 +3962,7 @@ button:disabled {
 }
 
 .about__row dt {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .about__row dd {
@@ -3974,7 +3974,7 @@ button:disabled {
 /* Absent is not false — the value that says the service reported nothing reads as quieter. */
 .about__absent {
   font-style: italic;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .about__events {
@@ -4006,7 +4006,7 @@ button:disabled {
 .about__note {
   margin: var(--sp-2) 0 0;
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* The way in, in the footer that stays two lines (AC7). */
@@ -4068,7 +4068,7 @@ button:disabled {
 .chart__tick,
 .chart__category,
 .chart__axis-label {
-  fill: var(--fg-4);
+  fill: var(--fg-3);
   font-family: var(--font-sans);
   font-size: 8px;
 }
@@ -4128,7 +4128,7 @@ button:disabled {
   font-weight: var(--fw-semibold);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .sources__list {
@@ -4165,7 +4165,7 @@ button:disabled {
 }
 
 .sources__from {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 /* --- Tables and code you can take (spec 035) ---------------------------------------------
@@ -4186,7 +4186,7 @@ button:disabled {
   min-height: 20px;
   gap: var(--sp-2);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .table-block__head {
@@ -4210,7 +4210,7 @@ button:disabled {
   border: 0;
   border-radius: var(--r-xs);
   background: none;
-  color: var(--fg-4);
+  color: var(--fg-3);
   cursor: pointer;
   opacity: 0;
 }
@@ -4457,7 +4457,7 @@ button:disabled {
   font-weight: var(--fw-semibold);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .prefs__choices {
@@ -4526,7 +4526,7 @@ button:disabled {
   background: none;
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
   cursor: pointer;
 }
 
@@ -4545,7 +4545,7 @@ button:disabled {
 .events__unverified {
   margin: var(--sp-1) 0 0;
   padding-left: var(--sp-4);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .events__filter {
@@ -4561,7 +4561,7 @@ button:disabled {
   background: none;
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
   cursor: pointer;
 }
 
@@ -4602,7 +4602,7 @@ button:disabled {
 
 .events__at {
   min-width: 2ch;
-  color: var(--fg-4);
+  color: var(--fg-3);
   text-align: right;
 }
 
@@ -4611,11 +4611,11 @@ button:disabled {
 }
 
 .events__run {
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .events__summary {
-  color: var(--fg-4);
+  color: var(--fg-3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4625,7 +4625,7 @@ button:disabled {
 .events__truncated {
   margin: 0;
   font-family: var(--font-sans);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .events__payload {
@@ -4648,7 +4648,7 @@ button:disabled {
   padding: var(--sp-1);
   border: 0;
   background: none;
-  color: var(--fg-4);
+  color: var(--fg-3);
   cursor: pointer;
 }
 
@@ -4675,7 +4675,7 @@ button:disabled {
   left: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-sm);
-  background: var(--bg-accent);
+  background: var(--bg-accent-strong);
   font-size: var(--fs-body-s);
   color: var(--fg-on-accent);
   text-decoration: none;
@@ -4733,7 +4733,7 @@ button:disabled {
 
 .propose__path {
   font-family: var(--font-mono);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .propose__drift,
@@ -4752,7 +4752,7 @@ button:disabled {
   flex-direction: column;
   gap: var(--sp-1);
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .propose__field textarea {
@@ -4885,7 +4885,7 @@ button:disabled {
   font-weight: var(--fw-semibold);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .playground__duration {
@@ -4981,7 +4981,7 @@ button:disabled {
 .voice-picker__note {
   margin: 0;
   font-size: var(--fs-caption);
-  color: var(--fg-4);
+  color: var(--fg-3);
 }
 
 .voice-picker__options {
@@ -5078,6 +5078,23 @@ button:disabled {
    `contrast.test.ts` checks the pair in both. */
 :root {
   --fg-harness: var(--ds-blue-700);
+
+  /* The accent fill **that carries text** (spec 046).
+
+     `--bg-accent` stays the decorative blue — carets, the pulsing dots, the timeline bars, the
+     swatches — because those carry no text and non-text contrast is a different rule. White on it
+     measured 4.25:1 in light and 3.22:1 in dark; `--ds-blue-700` is the only step in the blue ramp
+     white clears 4.5 on, at 5.90:1.
+
+     One declaration for both themes on purpose: white is white and the step is the step, so there
+     is nothing for a dark override to say. */
+  --bg-accent-strong: var(--ds-blue-700);
+
+  /* A link is content, so it answers to the content bar. The vendored sheet maps `--fg-link` to
+     `--ds-blue`, which is 4.25:1 on white and 3.86:1 on the deepest light surface; `--ds-blue-700`
+     clears it everywhere at 5.36–5.90. Overridden here rather than in the vendored file, for the
+     same reason `--fg-harness` is. Dark already passes on its own mapping (4.65–5.50) and keeps it. */
+  --fg-link: var(--ds-blue-700);
 }
 
 /* --- Side by side (spec 020) ---------------------------------------------

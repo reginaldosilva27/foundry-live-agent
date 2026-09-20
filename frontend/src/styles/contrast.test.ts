@@ -76,6 +76,16 @@ const PAIRS: [string, string][] = [
   // and **2.70 on the dark surface**, because a ramp step does not move when the theme does. Now a
   // token with a mapping in each theme, so this pair is checked in both.
   ['--fg-harness', '--bg-1'],
+  // Spec 046 AC2. The one surface in the app that is a saturated colour, and until now the only
+  // one no pair covered: the send button, the monograms, the user's own bubbles, the skip link.
+  // White on the fill it had measured 4.25:1 in light and 3.22:1 in dark.
+  ['--fg-on-inverse', '--bg-accent-strong'],
+  // A link is content, and `--fg-link` is a semantic text token like any other — it was simply
+  // never paired. The browser sweep found `view trace` at 4.06:1 on `--bg-2` in light, which is
+  // what AC8 exists to catch: a token the pairs did not think to name.
+  ['--fg-link', '--bg-1'],
+  ['--fg-link', '--bg-2'],
+  ['--fg-link', '--bg-3'],
   ['--fg-1', '--bg-2'],
   ['--fg-2', '--bg-1'],
   ['--fg-2', '--bg-2'],
@@ -110,6 +120,52 @@ const PAIRS: [string, string][] = [
  * This is the whole family, listed rather than pattern-matched: a selector that renders on the rail
  * is a fact about the markup, not something a regex over the stylesheet can decide.
  */
+/**
+ * Spec 046 AC3 — the quietest ink may only be worn by text WCAG actually exempts.
+ *
+ * This is the assertion the spec exists to leave behind. `--fg-4` was held to 3:1 on the strength
+ * of a comment saying it "carries captions, placeholders and disabled text" — but WCAG's exemption
+ * is for *disabled controls*, and the comment quietly widened it to captions. Sixty-four selectors
+ * had accumulated on it, one spec at a time: five genuinely disabled or placeholder, and
+ * **fifty-nine carrying content a reader is meant to read** — a turn's cost, where an answer came
+ * from, the About panel's field names, a chart's axis labels.
+ *
+ * The ratios were always computable. What no test could see was the drift, because the exemption
+ * lived in prose. So this is an allowlist: a sixtieth content selector reaching for `--fg-4` fails
+ * CI, and a genuinely disabled one is added here, where a reviewer sees it.
+ */
+describe('who may wear the quietest ink', () => {
+  /** States WCAG exempts: a disabled control, and text that is not content but a prompt. */
+  const EXEMPT = /(:disabled|::placeholder|\[data-runnable='false'\]|\[aria-disabled='true'\])/
+
+  /**
+   * Every selector in `app.css` that paints text with `--fg-4`.
+   *
+   * `fill` counts, not just `color`: SVG text takes its colour from `fill`, and the first version
+   * of this scan missed `.chart__axis-label` for exactly that reason — a chart's axis labels, at
+   * 8px, which is the worst case in the whole sweep and the example the spec opens on.
+   */
+  function wearers(): string[] {
+    const out: string[] = []
+    let selector = ''
+    for (const line of APP.split('\n')) {
+      const opened = /^([.\w#[][^{]*)\{\s*$/.exec(line)
+      if (opened) selector = opened[1].trim()
+      if (/^\s*(color|fill):\s*var\(--fg-4\)/.test(line)) out.push(selector)
+    }
+    return out
+  }
+
+  it('found the rules, so a passing run means something', () => {
+    expect(wearers().length).toBeGreaterThan(0)
+  })
+
+  it('is worn only by disabled or placeholder text', () => {
+    const content = wearers().filter((selector) => !EXEMPT.test(selector))
+    expect(content, `these carry content and must use --fg-3: ${content.join(', ')}`).toEqual([])
+  })
+})
+
 describe('text on the rail', () => {
   const base = ramp()
   const INK = base['--ds-ink']
@@ -176,7 +232,12 @@ describe('the surface the app actually paints', () => {
 describe('text on its surface', () => {
   const base = ramp()
   const light = semantic(lightBlock(), base)
-  const dark = semantic(darkBlock(), base)
+  // Dark is the light mapping **overlaid** with what the dark block redeclares, which is what the
+  // cascade actually does: `:root[data-theme='dark']` overrides the tokens it names and leaves the
+  // rest at their `:root` value. Resolved against the bare ramp instead, any token declared only
+  // once — because it is the same in both themes — vanished from this side and its pair asserted
+  // nothing.
+  const dark = semantic(darkBlock(), light)
 
   it('resolved both palettes, so the assertions below are not vacuous', () => {
     for (const theme of [light, dark]) {
@@ -197,9 +258,33 @@ describe('text on its surface', () => {
     expect(ratio(dark[fg], dark[bg])).toBeGreaterThanOrEqual(4.5)
   })
 
+  /**
+   * Spec 046 AC5, AC6 — the fix must not trade a measurable problem for an unmeasurable one.
+   *
+   * Content text and disabled text now use different tokens; if they resolved to the same value a
+   * disabled control would look enabled, which is its own defect and the reason WCAG exempts it.
+   * And the ink must still read as a hierarchy: strongest, body, muted — three values, not one
+   * value written three ways, which is what raising `--fg-4` into `--fg-3` would have produced.
+   */
+  it('keeps content text and disabled text apart', () => {
+    for (const [name, theme] of [['light', light], ['dark', dark]] as const) {
+      expect(theme['--fg-3'], name).not.toBe(theme['--fg-4'])
+    }
+  })
+
+  it('keeps three distinct weights of ink on every surface', () => {
+    for (const [name, theme] of [['light', light], ['dark', dark]] as const) {
+      const inks = [theme['--fg-1'], theme['--fg-2'], theme['--fg-3']]
+      expect(new Set(inks).size, `${name}: ${inks.join(' ')}`).toBe(3)
+    }
+  })
+
   it('keeps the muted step readable at large sizes at least (3:1)', () => {
-    // `--fg-4` carries captions, placeholders and disabled text. 4.5:1 is the wrong bar for it;
-    // 3:1 is the one that matters, and saying so is more honest than exempting it silently.
+    // `--fg-4` carries **disabled controls and placeholders only** — five selectors, listed and
+    // enforced by the allowlist below. That is the state WCAG actually exempts, and 3:1 is the bar
+    // that matters for it. It used to say "captions, placeholders and disabled text", which was
+    // the sentence that let fifty-nine pieces of content accumulate on a token nobody was
+    // measuring at the content bar (spec 046).
     for (const theme of [light, dark]) {
       expect(ratio(theme['--fg-4'], theme['--bg-1'])).toBeGreaterThanOrEqual(3)
     }

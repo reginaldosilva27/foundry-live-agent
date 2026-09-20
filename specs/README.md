@@ -99,6 +99,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 043 | [Choosing the voice on the screen](043-voice-on-screen/spec.md) | 4 | ✅ done |
 | 044 | [Images in an answer](044-images-in-answers/spec.md) | 4 | ✅ done |
 | 045 | [Attachments on a question](045-attachments/spec.md) | 4 | ⛔ blocked |
+| 046 | [The contrast nobody guarded — the muted ink and the accent fill](046-muted-ink-and-accent-fill/spec.md) | 4 | ✅ done |
 
 `*` — **done with a named exception.** Spec 020 ships every acceptance criterion but AC16, which
 needs a measured run against the live service; the reason and what closes it are in the spec and in
