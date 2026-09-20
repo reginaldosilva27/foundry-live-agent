@@ -53,6 +53,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     that searches again after reading the first result opens the second leg with its own sentence,
     so every silence gets covered instead of only the first.
 
+### Fixed
+- **A healthy agent no longer reports itself unusable** (spec 031). `GET /agents/{name}` returns an
+  `agent_endpoint` for **every** agent, and an unpinned one carries a `FixedRatio` rule naming the
+  sentinel **`@latest`** rather than a version. The code read any rule as a pin, so it looked for a
+  version called `@latest`, found none, fell to `status: unknown`, and rendered `foundry-live-agent`
+  — enabled, eight active versions — as `version_not_active` and unselectable. Every agent, on the
+  detail screen, against any real deployment. `_pinned_version` is now the one place a selector is
+  read and the sentinel counts as no pin. Driven by the recorded payload, in
+  `backend/tests/fixtures/agent-endpoint-20260920.json`.
+
+### Changed
+- **Three open questions closed, and one long-standing excuse withdrawn** (§10). Every unverified
+  item since spec 031 was recorded as blocked on a broken `az`. The diagnosis named the wrong
+  binary: the machine is arm64, `/usr/local` is the Intel Homebrew prefix, and a working, signed-in
+  `az` was at `/opt/homebrew/bin` the whole time — first on `PATH` wins, and `DefaultAzureCredential`
+  found the broken one. Reads made 2026-09-20 answered spec 031's endpoint question (above), gave
+  spec 044 its image model (`FLUX-1.1-pro`, the project's only non-chat deployment, declaring no
+  capabilities), and a doc read answered spec 045's blocking question: the Responses API does take
+  file input, as `input_image` / `input_file` parts carrying a URL, a `data:` URI or a `file_id`.
+  Spec 045 stays blocked — on retention, which is the operator's decision, not a document.
+  Spec 020's AC16 and spec 033's chart question are unblocked as tooling and still open as
+  measurements: both need turns actually run.
+
 ### Changed
 - **The `Speak` toggle is off the header** (spec 008, parked). Beside `Voice` it read as a second
   way into the same thing, and on this deployment it was permanently disabled because the Speech
