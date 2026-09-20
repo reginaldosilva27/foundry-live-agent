@@ -1,6 +1,7 @@
 # foundry-live-agent — PLAN
 
-> Status (2026-09-20): **47 of 48 specs done**; 045 is blocked by design. Phases 0–3 closed and
+> Status (2026-09-20): **48 of 49 specs done** (000–048) — one of them, 020, with its AC16
+> measurement still outstanding; 045 is blocked by design. Phases 0–3 closed and
 > Phase 4 delivered its hosted agent (spec 018) — see §6. Chat, voice, tracing and the whole UI run
 > against a live Foundry project. Voice findings observed 2026-09-15 — see §9 for what the docs got
 > wrong. **`specs/README.md` is the live index**; this file is the architecture record behind it.
