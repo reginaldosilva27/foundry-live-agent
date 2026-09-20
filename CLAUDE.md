@@ -188,8 +188,11 @@ violation.
   and reading the sentinel as one made a healthy agent report `version_not_active`. `_pinned_version`
   and `LATEST_SENTINEL` are the one place that is decided. Promoting is
   **the app's only write**: `update_details` with one `FixedRatioVersionSelectionRule` at 100%,
-  read from the SDK 2.6.0 typespec and **not verified against the live service** — recorded as an
-  open item in `docs/REFERENCES.md`, which is why it ships off by default. Three gates, and only
+  read from the SDK 2.6.0 typespec and **verified against the live service on 2026-09-20**: the call
+  is accepted, and restoring to `@latest` is accepted *as a write*, so a rollback demonstration is
+  reversible rather than one-way. It still ships off by default, and never was only because of that
+  gap — the flag is a **permission** (`SECURITY.md`). Which role is the *minimum* is still unknown:
+  the identity that verified it was Owner. Three gates, and only
   one is a permission: `FOUNDRY_ALLOW_VERSION_PROMOTE` (off), `OWNED_AGENT_NAMES` (this repo's own
   agents, from the harness `agent.yaml` files), and RBAC — the flag reveals a control, it cannot
   grant anything. The route takes **no body**, so no agent definition can travel on it, and the app

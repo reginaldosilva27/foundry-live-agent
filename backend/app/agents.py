@@ -637,9 +637,15 @@ def promote_version(agents: Any, name: str, version: str, *, owned: bool) -> Non
     ``owned`` is decided by the caller from `OWNED_AGENT_NAMES`, and refused **here** rather than
     only on the screen: a restriction the server does not keep is not a restriction (AC13).
 
-    **Not verified against the live service** (§10). `az` was a broken build when this was written,
-    so the call shape comes from the `azure-ai-projects` 2.6.0 typespec and the round trip is an
-    open item in `docs/REFERENCES.md`. That is why the route is off by default.
+    **Verified against the live service on 2026-09-20** (§10): this exact call pinned
+    `foundry-live-agent` to version 7 and a second one restored it to `@latest`, which is accepted
+    as a write and not only returned as a read — so a rollback demonstration is reversible. The
+    call shape originally came from the `azure-ai-projects` 2.6.0 typespec and did not change.
+
+    The route is still off by default, and never was only because of that gap: the flag is a
+    *permission*. Anyone who can reach this BFF could change what the whole project serves, and
+    this app has no notion of a user to record. See `SECURITY.md`. Which role is the *minimum* is
+    still unknown — the identity that verified it was Owner.
     """
     if not owned:
         raise AgentsUnavailable("not_owned", name)

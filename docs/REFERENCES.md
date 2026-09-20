@@ -531,7 +531,8 @@ beside it is the part that decides the formula, and that is measured here rather
 | Hosting package | `langchain-azure-ai[hosting]>=1.2.9`, pip **≥ 26** | LangGraph hosted-agents guide + observed 2026-09-16 |
 | azd extensions | `azure.ai.agents` ≥ 1.0.0-beta.8, `azure.ai.projects` ≥ 1.0.0-beta.4, azd ≥ 1.27.1 | azure.yaml reference |
 | Hosted agent trace join | `microsoft.session.id` == `agent_session_id` (**not** `gen_ai.response.id`) | observed 2026-09-16 |
-| Promote a version | `update_details(agent_name, agent_endpoint=...version_selector...)`, one rule at 100% | **SDK 2.6.0 typespec, 2026-09-19 — the write is still NOT verified live** |
+| Promote a version | `update_details(agent_name, agent_endpoint=...version_selector...)`, one rule at 100% | SDK 2.6.0 typespec 2026-09-19, **accepted by the live service 2026-09-20** |
+| Restore an endpoint to tracking the newest | the same call with `agent_version="@latest"` | **observed 2026-09-20** — the sentinel is writable, not only readable |
 | Unpinned `version_selector` rule | `{"type": "FixedRatio", "agent_version": "@latest", "traffic_percentage": 100}` | **observed 2026-09-20** — the sentinel, on every agent |
 
 ## Promoting a version — spec 031, read from the SDK 2026-09-19
@@ -605,16 +606,23 @@ token for `https://ai.azure.com/.default`. Recorded, scrubbed of identity GUIDs,
 | **The projection was run against the live listing, not only the recording.** `summarise` renders all 10 agents with their kind, harness and version, every one selectable; `detail_of` on `foundry-live-agent` with the live endpoint and the live version list gives `served=8 latest=8 pinned=False status=active selectable=True`, four tools and its instructions; `versions_of` marks 8 served and not promotable, 1–7 promotable. Before the `@latest` correction the same inputs gave `version_not_active` and `selectable=False`. | the same three responses, through `backend/app/agents.py` unchanged |
 | **The project serves 32 model deployments**, of which exactly one is neither chat nor embeddings: **`FLUX-1.1-pro`** (Black Forest Labs). Its `capabilities` map comes back **empty** — as does the Cohere embedding model's — so the listing does **not** declare it image-capable. Relevant to spec 044, and not sufficient for it; see below. | `GET …/deployments?api-version=v1`, 32 rows |
 
-### Open — still, and now for a stated reason (spec 031)
+### The write, verified — 2026-09-20 (spec 031)
 
-| Open question | Why it matters | Why it is still open |
-|---|---|---|
-| Does `update_details` accept this selector as written? | It is the whole feature | It is a **write** against a live agent. Read-only was the sanctioned scope of the 2026-09-20 session |
-| Which role does `update_details` require? | `Foundry User` covers the data-plane reads (recorded above); a write may want `Foundry Project Manager` | same — and the lesser-role test only means something once the call itself is known to work |
-| Does `GET /agents` carry `agent_endpoint` once something is pinned? | If it does, the listing could resolve the served version without the per-agent call spec 031 avoided (AC12) | nothing in the project has ever been pinned, so this needs the write above first |
+Run against `foundry-live-agent` through the app's **own** `promote_version`, not a copy of it, so
+what was verified is the shape the route actually sends. Pinned to version 7, read back, restored
+to `@latest`, read back again.
 
-The first question is no longer blocked by tooling, only by the decision to make the write. The
-path still ships **off by default**.
+| Question | Answer |
+|---|---|
+| Does `update_details` accept this selector as written? | **Yes.** `update_details(name, agent_endpoint=AgentEndpointConfig(version_selector=VersionSelector(version_selection_rules=[FixedRatioVersionSelectionRule(agent_version="7", traffic_percentage=100)])))` is accepted, and the read-back shows the pin in effect. |
+| Is it reversible? | **Yes** — and this matters more than it looks. `agent_version="@latest"` is accepted as a *write*, not only returned as a read, so a rollback demonstration restores the agent exactly rather than leaving it permanently pinned to a number. |
+| Does `GET /agents` carry `agent_endpoint` once something is pinned? | **No.** While version 7 was serving, the listing returned the same six keys as ever — no `agent_endpoint` — and still reported `versions.latest.version: 8`. This **confirms** spec 031's AC12 split rather than removing it: the rail can only report the newest version, and the detail screen is the only place a pin can be resolved. |
+| Which role does `update_details` require? | **Still unknown, and not claimed.** The write succeeded, but the identity that made it holds `Foundry User` *and* `Foundry Project Manager` on the account *and* `Owner` on the management group. Owner subsumes the question. Knowing the minimum needs an identity that has only the lesser role — which nobody has created. |
+
+**The default stays `false`, and the reason is unchanged.** It was never only "unverified": the flag
+is a *permission* question. Anyone who can reach this BFF can change which version the whole project
+serves, and the app has no notion of a user to record. See [`SECURITY.md`](../SECURITY.md) — that
+argument is untouched by the call now being known to work.
 
 ### Can a question carry a file? — the doc question is answered (spec 045), 2026-09-20
 
