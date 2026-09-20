@@ -70,6 +70,31 @@ const PAIRS: [string, string][] = [
   ['--fg-3', '--bg-2'],
 ]
 
+/**
+ * The surface those pairs are checked against has to be the surface the app paints.
+ *
+ * Measured in a real browser at `data-theme='dark'`: `.main` computed to `rgb(248, 250, 252)` while
+ * `--fg-1` computed to `#FFFFFF` — the answer text at **1.05:1**, on the primary reading surface of
+ * every screen. The pairs above were green throughout, because `.main` named `--ds-n-50`, a step on
+ * the neutral **ramp**, and a ramp step does not move when the theme does. Only the semantic layer
+ * (`--bg-*`, `--fg-*`) is redeclared for dark.
+ *
+ * `layout.test.ts` did not catch it either: its rule is that `app.css` names tokens and never
+ * values, and `--ds-n-50` *is* a token — the wrong kind.
+ *
+ * The rail and the panels that deliberately stay dark in both themes still name ramp steps, and
+ * that is correct (spec 036: the rail does not invert). This is about the surfaces that must.
+ */
+describe('the surface the app actually paints', () => {
+  it('gives the main column a semantic background, not a step on the ramp', () => {
+    const rule = APP.split('\n.main {')[1].split('}')[0]
+    const background = /background:\s*var\((--[a-z0-9-]+)\)/.exec(rule)
+
+    expect(background, '.main declares no background at all').not.toBeNull()
+    expect(background![1]).toMatch(/^--bg-/)
+  })
+})
+
 describe('text on its surface', () => {
   const base = ramp()
   const light = semantic(lightBlock(), base)

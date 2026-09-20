@@ -197,7 +197,10 @@ button:disabled {
   /* Same reason, one level down: without it this item is floored at its content height and the
      `minmax(0, 1fr)` row above never gets to cap the conversation. */
   min-height: 0;
-  background: var(--ds-n-50);
+  /* The semantic surface, not the ramp step it resolves to in light. In light mode `--bg-2` IS
+     `--ds-n-50`, so this changes nothing there — and in dark it is what makes the column follow
+     the theme instead of staying white under white text (measured at 1.05:1; spec 036). */
+  background: var(--bg-2);
 }
 
 /* ---------- Sidebar -------------------------------------------------------
