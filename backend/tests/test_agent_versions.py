@@ -7,9 +7,14 @@ moment that happens the newest version and the serving version come apart.
 
 So `served_version` is one concept with two branches, and both are tested here. The fallback branch
 is driven by the **real listing** recorded 2026-09-16, in which no agent carries an `agent_endpoint`
-key at all. The pinned branch has never existed in that project, and §5 forbids hand-writing a
-recorded response to make a test pass — so the pinned fixtures here are built in code, from the
-documented selector shape, and labelled as constructed rather than recorded.
+key at all. Nothing in that project has ever been pinned, and §5 forbids hand-writing a recorded
+response to make a test pass — so the pinned fixtures here are built in code, from the documented
+selector shape, and labelled as constructed rather than recorded.
+
+What *was* recorded, on 2026-09-20 once a working `az` was found: the **per-agent** read, which
+does carry an `agent_endpoint` — for every agent, pinned or not. See
+`TestTheDefaultEndpointTracksLatest` at the foot of this file; the sentinel it found is why
+"has a selector" and "is pinned" are no longer the same question.
 """
 
 from __future__ import annotations
@@ -347,3 +352,102 @@ class TestSuggestions:
         assert EXAMPLES_FOR_AGENT["foundry-live-agent"] == [
             {"en": e["en"], "pt": e["pt"]} for e in declared
         ]
+
+
+# --- What the endpoint says when nobody has pinned anything (recorded 2026-09-20) --------
+
+
+LIVE = Path(__file__).parent / "fixtures" / "agent-endpoint-20260920.json"
+
+
+@pytest.fixture
+def live() -> dict:
+    """`GET /agents/{name}` and `/versions`, recorded from the live project on 2026-09-20.
+
+    The shape spec 031 could not probe — it was written against the SDK typespec while `az` on the
+    author's machine was unusable, and recorded the result as an open question (§10). This closes
+    it, and the answer is not the one the typespec suggested.
+    """
+    return json.loads(LIVE.read_text())
+
+
+def live_agent(listing: dict, live: dict) -> dict[str, Any]:
+    """The recorded agent with the endpoint the service really returns for it."""
+    return {**ours(listing), "agent_endpoint": live["agent_endpoint"]["foundry-live-agent"]}
+
+
+class TestTheDefaultEndpointTracksLatest:
+    """Every agent has an `agent_endpoint`, and it names `@latest` until somebody pins a number.
+
+    Spec 031 assumed a selector's presence *was* the pin, because the recorded listing carried no
+    `agent_endpoint` at all and the typespec models `agent_version` as a version. Against the live
+    service it is a **sentinel**: the default endpoint of an agent nobody has touched says
+    `@latest`, which means "whatever is newest" — exactly the fallback branch, spelled out rather
+    than absent. Read as a version it matches no row, and the detail screen calls a perfectly
+    healthy agent `version_not_active`.
+    """
+
+    def test_the_recorded_endpoint_really_names_the_sentinel(self, live):
+        """The premise, asserted rather than assumed — the house style of this file.
+
+        A future recording that carries a number here fails loudly instead of quietly making the
+        tests below vacuous.
+        """
+        for name, endpoint in live["agent_endpoint"].items():
+            rules = endpoint["version_selector"]["version_selection_rules"]
+            assert [r["agent_version"] for r in rules] == ["@latest"], name
+            assert [r["traffic_percentage"] for r in rules] == [100], name
+
+    def test_the_sentinel_resolves_to_the_newest_version(self, listing, live):
+        """Not to the string `@latest`, which is no version at all."""
+        agent = live_agent(listing, live)
+        assert served_version(agent) == str(agent["versions"]["latest"]["version"])
+
+    def test_an_agent_nobody_pinned_is_not_reported_as_pinned(self, listing, live):
+        """`pinned` means *a version was chosen*, not *an endpoint exists* — every agent has one."""
+        from app.agents import detail_of
+
+        detail = detail_of(live_agent(listing, live), live["versions"]["foundry-live-agent"])
+        assert detail.pinned is False
+        assert detail.served_version == detail.latest_version
+
+    def test_the_detail_of_a_healthy_agent_stays_selectable(self, listing, live):
+        """The regression this fixture exists for: the whole screen against the real service.
+
+        Unresolved, `served` matches no row, the status falls to `unknown`, and our own working
+        agent comes back unusable with a reason meant for a failed rollback.
+        """
+        from app.agents import detail_of
+
+        detail = detail_of(live_agent(listing, live), live["versions"]["foundry-live-agent"])
+        assert detail.version == str(detail_of(ours(listing)).latest_version)
+        assert detail.version_status == "active"
+        assert detail.reason == ""
+        assert detail.selectable is True
+
+    def test_exactly_one_recorded_version_is_served_and_it_is_the_newest(self, listing, live):
+        """AC3's property, under the shape the service actually returns."""
+        from app.agents import versions_of
+
+        rows = versions_of(live_agent(listing, live), live["versions"]["foundry-live-agent"])
+        served = [r for r in rows if r.served]
+
+        assert [r.version for r in served] == [rows[0].version]
+        assert not served[0].promotable
+        assert served[0].promote_reason == "served"
+
+    def test_a_real_pin_still_wins_over_the_sentinel(self, listing, live):
+        """The sentinel is ignored, not the selector — promoting must still take effect."""
+        from app.agents import detail_of
+
+        agent = live_agent(listing, live)
+        rules = agent["agent_endpoint"]["version_selector"]["version_selection_rules"]
+        agent["agent_endpoint"] = {
+            **agent["agent_endpoint"],
+            "version_selector": {"version_selection_rules": [{**rules[0], "agent_version": "7"}]},
+        }
+        detail = detail_of(agent, live["versions"]["foundry-live-agent"])
+
+        assert detail.served_version == "7"
+        assert detail.pinned is True
+        assert detail.latest_version == "8"

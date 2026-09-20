@@ -179,9 +179,14 @@ violation.
 - **The newest version is not the served version, and this app can now change which is (spec 031).**
   An agent endpoint pins a version through `agent_endpoint.version_selector`; `served_version()` in
   `backend/app/agents.py` is the only place that distinction is decided, and `version_not_active`
-  follows it. The recorded listing has **no `agent_endpoint` key at all**, so the correction ships
-  dormant — and the **listing must stay one request** (§4's cost, spec 030's verified property), so
-  the rail reports the *latest* version and the agent detail screen resolves the pin. Promoting is
+  follows it. The **listing** carries no `agent_endpoint` key at all — and it must stay one request
+  (§4's cost, spec 030's verified property) — so the rail reports the *latest* version and the
+  agent detail screen resolves the pin from `GET /agents/{name}`. That per-agent read was verified
+  against the live service on **2026-09-20** and corrected the assumption underneath it: **every**
+  agent carries an `agent_endpoint`, and an untouched one names the sentinel **`@latest`** rather
+  than a version. So *having a selector* is not *being pinned* — only a rule naming a version is —
+  and reading the sentinel as one made a healthy agent report `version_not_active`. `_pinned_version`
+  and `LATEST_SENTINEL` are the one place that is decided. Promoting is
   **the app's only write**: `update_details` with one `FixedRatioVersionSelectionRule` at 100%,
   read from the SDK 2.6.0 typespec and **not verified against the live service** — recorded as an
   open item in `docs/REFERENCES.md`, which is why it ships off by default. Three gates, and only

@@ -21,9 +21,15 @@ serves one version and that traffic splitting is unsupported.
 **The newest version is not necessarily the one that answers** (spec 031). An agent endpoint can
 pin a version through `agent_endpoint.version_selector`, and once anything does, "latest" and
 "serving" are different facts. :func:`served_version` is the one place that distinction is decided.
-No agent in the recorded listing carries an `agent_endpoint` key, so today every agent takes the
-fallback and nothing on screen changes — but the listing is the wrong place to learn about a pin
-anyway: the field is absent here, and `GET /agents/{name}` is what resolves it (spec 031, AC12).
+No agent in the recorded listing carries an `agent_endpoint` key, so the listing always takes the
+fallback — and it is the wrong place to learn about a pin anyway: the field is absent here, and
+`GET /agents/{name}` is what resolves it (spec 031, AC12).
+
+That per-agent read was verified against the live service on 2026-09-20, and the answer corrected
+an assumption: **every** agent carries an `agent_endpoint`, and an untouched one names
+:data:`LATEST_SENTINEL` rather than a version. So the presence of a selector is not a pin — only a
+rule naming a version is — and reading the sentinel as one made a healthy agent report
+`version_not_active`.
 
 **Two shapes that bite.** A *prompt* agent's definition carries `model`; a *hosted* agent's does
 not — it carries `cpu`, `memory`, `container_configuration`, and its deployment name inside
@@ -70,6 +76,11 @@ AZURE_AI_SCOPE = "https://ai.azure.com/.default"
 
 #: Documented version statuses; only `active` serves traffic.
 ACTIVE = "active"
+
+#: What a `version_selection_rule` names when nothing has been pinned: "whatever is newest".
+#: Recorded from the live service on 2026-09-20 — every agent's default endpoint carries a rule,
+#: and this sentinel is what it holds. It is not a version, and must never be read as one.
+LATEST_SENTINEL = "@latest"
 
 
 class AgentsUnavailable(RuntimeError):
@@ -314,7 +325,7 @@ def detail_of(
 
     served = served_version(agent)
     latest = str(((agent.get("versions") or {}).get("latest") or {}).get("version") or "")
-    pinned = served != "" and served != latest or _has_selector(agent)
+    pinned = _pinned_version(agent) != ""
 
     if pinned:
         # The pinned version's own status decides selectability. Unknown when the version list was
@@ -347,12 +358,27 @@ def _enabled(agent: dict[str, Any]) -> bool:
     return agent.get("state", "enabled") != "disabled"
 
 
-def _has_selector(agent: dict[str, Any]) -> bool:
-    """Whether the endpoint chose the version, rather than it merely being the newest one."""
+def _pinned_version(agent: dict[str, Any]) -> str:
+    """The version the endpoint was *pinned* to, or ``""`` when it simply tracks the newest.
+
+    The one place the selector is read (§4). Only the first rule is considered: the service
+    documents one version at 100% and forbids traffic splitting, so a second rule would be a shape
+    this app has no opinion about (spec 031, out of scope).
+
+    :data:`LATEST_SENTINEL` is **not** a pin. Every agent's endpoint carries a rule — an untouched
+    one names `@latest` — so the presence of a selector says nothing, and only a rule naming a
+    version does.
+
+    Defensive about *shape*, never about *facts*: a selector with no rules falls back rather than
+    raising, because a read of ten agents must not die on one unfamiliar endpoint.
+    """
     rules = ((agent.get("agent_endpoint") or {}).get("version_selector") or {}).get(
         "version_selection_rules"
     ) or []
-    return any((rule or {}).get("agent_version") for rule in rules)
+    for rule in rules:
+        if (pinned := str((rule or {}).get("agent_version") or "")) != LATEST_SENTINEL:
+            return pinned
+    return ""
 
 
 def versions_of(
@@ -409,25 +435,17 @@ def _find_agent(listing: dict[str, Any], name: str) -> dict[str, Any]:
 def served_version(agent: dict[str, Any]) -> str:
     """Which version this agent's endpoint actually serves.
 
-    The endpoint's `version_selector` when it carries one, and the newest version when it does not.
+    The version the endpoint was pinned to, and the newest version when it was not.
     **One concept, two branches** — the alternative was teaching every reader two words ("latest"
     and "serving") for something that is the same thing until someone rolls back (spec 031).
 
     The selector shape is `azure-ai-projects` 2.6.0's `VersionSelector` →
-    `FixedRatioVersionSelectionRule`, the same one :func:`promote_version` builds. Only the first
-    rule is read: the service documents one version at 100% and forbids traffic splitting, so a
-    second rule would be a shape this app has no opinion about (spec 031, out of scope).
-
-    Defensive about *shape*, never about *facts*: a selector with no rules falls back rather than
-    raising, because a read of ten agents must not die on one unfamiliar endpoint.
+    `FixedRatioVersionSelectionRule`, the same one :func:`promote_version` builds; what counts as
+    a pin is :func:`_pinned_version`.
     """
-    rules = ((agent.get("agent_endpoint") or {}).get("version_selector") or {}).get(
-        "version_selection_rules"
-    ) or []
-    for rule in rules:
-        if pinned := (rule or {}).get("agent_version"):
-            return str(pinned)
-    return str(((agent.get("versions") or {}).get("latest") or {}).get("version") or "")
+    return _pinned_version(agent) or str(
+        ((agent.get("versions") or {}).get("latest") or {}).get("version") or ""
+    )
 
 
 def _reported_str(value: Any) -> str | None:

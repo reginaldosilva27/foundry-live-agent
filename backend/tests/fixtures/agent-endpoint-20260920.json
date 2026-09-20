@@ -1,0 +1,246 @@
+{
+  "agent_endpoint": {
+    "foundry-live-agent": {
+      "authorization_schemes": [
+        {
+          "type": "Entra"
+        }
+      ],
+      "protocol_configuration": {
+        "responses": {}
+      },
+      "protocols": [
+        "responses"
+      ],
+      "publish_approval_status": "not_published",
+      "version_selector": {
+        "version_selection_rules": [
+          {
+            "agent_version": "@latest",
+            "traffic_percentage": 100,
+            "type": "FixedRatio"
+          }
+        ]
+      }
+    },
+    "foundry-live-agent-hosted": {
+      "authorization_schemes": [
+        {
+          "type": "Entra"
+        }
+      ],
+      "protocol_configuration": {
+        "responses": {}
+      },
+      "protocols": [
+        "responses"
+      ],
+      "publish_approval_status": "not_published",
+      "version_selector": {
+        "version_selection_rules": [
+          {
+            "agent_version": "@latest",
+            "traffic_percentage": 100,
+            "type": "FixedRatio"
+          }
+        ]
+      }
+    }
+  },
+  "versions": {
+    "foundry-live-agent": [
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789565875,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:8",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "8"
+      },
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789565338,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:7",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "7"
+      },
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789564002,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:6",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "6"
+      },
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789557739,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:5",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "5"
+      },
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789557063,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:4",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "4"
+      },
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789484607,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:3",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "3"
+      },
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789482663,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:2",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "2"
+      },
+      {
+        "agent_guid": "00000000-0000-0000-0000-000000000004",
+        "blueprint": {
+          "client_id": "00000000-0000-0000-0000-000000000003",
+          "principal_id": "00000000-0000-0000-0000-000000000002"
+        },
+        "blueprint_reference": {
+          "blueprint_id": "foundry-live-agent-e9254",
+          "type": "ManagedAgentIdentityBlueprint"
+        },
+        "created_at": 1789482538,
+        "description": "",
+        "draft": false,
+        "id": "foundry-live-agent:1",
+        "instance_identity": {
+          "client_id": "00000000-0000-0000-0000-000000000001",
+          "principal_id": "00000000-0000-0000-0000-000000000001"
+        },
+        "metadata": {},
+        "name": "foundry-live-agent",
+        "object": "agent.version",
+        "status": "active",
+        "version": "1"
+      }
+    ]
+  }
+}
