@@ -51,6 +51,20 @@ export interface AgentMessage {
   events?: unknown[]
   /** The cap bit. Said out loud rather than dropping the rest silently (AC12). */
   truncated?: boolean
+  /**
+   * When the first token of the ANSWER arrived (spec 020, AC4).
+   *
+   * The browser's clock, like `startedAt` and `endedAt` beside it — an observation about what this
+   * machine saw, not a claim about the run, and deliberately never laid over spans, which measure a
+   * different clock on a different machine (spec 029).
+   *
+   * `text_delta` only. A reasoning summary is not the answer starting, and counting it would make
+   * an agent that thinks out loud look faster than one that does not.
+   *
+   * **Absent** on a turn that produced no text — a turn that only called tools and then failed. A
+   * zero there would say the answer began instantly (§5).
+   */
+  firstTokenAt?: number
 }
 
 /** A pathological turn's ceiling. A long answer is a few hundred deltas; nothing ordinary hits this. */
@@ -97,7 +111,16 @@ export interface AgentStream {
   reset: () => void
 }
 
-export function useAgentStream(): AgentStream {
+/**
+ * @param idPrefix What this stream's turn ids are built from.
+ *
+ * One stream per screen was always true until spec 020 put two side by side, and each instance
+ * counts from zero — so two of them mint `turn_0` twice. The trace panel, the event inspector and
+ * the log reader all address a turn by this id, and two turns sharing one opens the wrong payload
+ * under the wrong agent. The prefix is what lets those three keep their single lookup instead of
+ * growing a second one for the second column (§4).
+ */
+export function useAgentStream(idPrefix = 'turn'): AgentStream {
   const [messages, setMessages] = useState<Message[]>([])
   const [streaming, setStreaming] = useState(false)
   // Foundry owns conversation state; we only carry the id it gave us (§8). The ref is what the
@@ -128,11 +151,12 @@ export function useAgentStream(): AgentStream {
     (incoming: Message[], id?: string) => {
       // Turn ids are minted from a counter, and a restored transcript already contains some. Move
       // past the highest one so the next turn cannot collide with a turn already on screen.
-      nextId.current = Math.max(nextId.current, ...incoming.map(turnNumber).map((n) => n + 1))
+      const numbered = incoming.map((message) => turnNumber(message, idPrefix))
+      nextId.current = Math.max(nextId.current, ...numbered.map((n) => n + 1))
       remember(id)
       setMessages(incoming)
     },
-    [remember],
+    [idPrefix, remember],
   )
 
   const stop = useCallback(() => {
@@ -143,7 +167,7 @@ export function useAgentStream(): AgentStream {
   }, [])
 
   const send = useCallback(async (text: string, agent?: string, repeatOf?: string) => {
-    const id = `turn_${nextId.current++}`
+    const id = `${idPrefix}_${nextId.current++}`
     const startedAt = Date.now()
     const flight = { controller: new AbortController(), aborted: false }
     inFlight.current = flight
@@ -169,7 +193,13 @@ export function useAgentStream(): AgentStream {
      * opened at any moment and see the whole turn. Past the cap the events stop accumulating and
      * the message says so — dropping them silently would make the panel lie about what arrived.
      */
-    const apply = (mutate: (turn: Turn) => Turn, ended: boolean, raw?: unknown) =>
+    const apply = (mutate: (turn: Turn) => Turn, ended: boolean, raw?: unknown) => {
+      // Read once, out here. The updater below can run more than once for one event — React
+      // invokes it again in StrictMode — and a clock read inside it would give two fields of the
+      // same turn two different instants for the same arrival.
+      const at = Date.now()
+      const opensTheAnswer = isTextDelta(raw)
+
       setMessages((prev) =>
         prev.map((m) => {
           if (m.role !== 'agent' || m.id !== id) return m
@@ -178,12 +208,15 @@ export function useAgentStream(): AgentStream {
           return {
             ...m,
             turn: mutate(m.turn),
-            endedAt: ended ? Date.now() : m.endedAt,
+            endedAt: ended ? at : m.endedAt,
+            // First, not latest: `??` so the second delta and every one after it leave it alone.
+            firstTokenAt: m.firstTokenAt ?? (opensTheAnswer ? at : undefined),
             events: raw !== undefined && !full ? [...kept, raw] : kept,
             truncated: m.truncated || full,
           }
         }),
       )
+    }
 
     try {
       const response = await fetch(`${BFF_URL}/chat`, {
@@ -246,7 +279,7 @@ export function useAgentStream(): AgentStream {
       // outcome, and `stopTurn` is a no-op on a turn that had already settled.
       if (flight.aborted) apply(stopTurn, true)
     }
-  }, [remember])
+  }, [idPrefix, remember])
 
   const append = useCallback((incoming: Message[]) => {
     if (incoming.length > 0) setMessages((prev) => [...prev, ...incoming])
@@ -255,10 +288,20 @@ export function useAgentStream(): AgentStream {
   return { messages, streaming, conversationId: conversation, send, stop, append, restore, reset }
 }
 
-/** The counter inside a minted message id (`turn_7`, `turn_7_user`), or -1 for anything else. */
-function turnNumber(message: Message): number {
-  const match = /^turn_(\d+)/.exec(message.id)
+/** The counter inside a minted message id (`turn_7`, `left_7_user`), or -1 for anything else. */
+function turnNumber(message: Message, prefix: string): number {
+  const match = new RegExp(`^${escapeForRegExp(prefix)}_(\\d+)`).exec(message.id)
   return match ? Number(match[1]) : -1
+}
+
+/** A prefix is ours, not a pattern; anything special in it must match itself. */
+function escapeForRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** The answer starting. A reasoning summary is not it — see `firstTokenAt`. */
+function isTextDelta(event: unknown): boolean {
+  return (event as { type?: unknown })?.type === 'text_delta'
 }
 
 function isTerminal(event: unknown): boolean {

@@ -32,9 +32,16 @@ interface Props {
   onOpenTrace: (turnId: string, callId?: string) => void
   /** The answering agent's own examples (spec 037). The frontend holds no list of its own. */
   suggestions?: Suggestion[]
-  /** Ask a question again, and put one back in the composer (spec 026). */
-  onRepeat: (turnId: string, question: string) => void
-  onEdit: (text: string) => void
+  /**
+   * Ask a question again, and put one back in the composer (spec 026).
+   *
+   * **Optional**, because a comparison has neither (spec 020): its composer asks *both* agents, so
+   * a repeat under one column is undefined, and an edit would put the question back into a field
+   * that belongs to the pair. Absent means the control does not render — a control that is there
+   * and does nothing is worse than one that is not there.
+   */
+  onRepeat?: (turnId: string, question: string) => void
+  onEdit?: (text: string) => void
   /** Why this conversation cannot be continued, if it cannot (021 AC18). */
   blocked?: string
   /** Nothing may be asked again while a turn is in flight (026 AC10). */
@@ -151,7 +158,9 @@ export function Conversation({
             <MessageBubble
               key={message.id}
               text={message.text}
-              onEdit={streaming || blocked ? undefined : () => onEdit(message.text)}
+              onEdit={
+                onEdit && !streaming && !blocked ? () => onEdit(message.text) : undefined
+              }
             />
           ) : (
             <section key={message.id} className="turn" aria-label={s('turn.agent')}>
@@ -215,9 +224,9 @@ export function Conversation({
                       repeatOf={message.repeatOf}
                       blocked={blocked}
                       onRepeat={
-                        streaming
-                          ? undefined
-                          : () => onRepeat(message.id, questionFor(messages, message.id))
+                        onRepeat && !streaming
+                          ? () => onRepeat(message.id, questionFor(messages, message.id))
+                          : undefined
                       }
                       latencyMs={
                         message.endedAt ? message.endedAt - message.startedAt : undefined
@@ -231,6 +240,14 @@ export function Conversation({
                       harness={harness}
                       latencyMs={
                         message.endedAt ? message.endedAt - message.startedAt : undefined
+                      }
+                      // Spec 020 AC4. Passed unconditionally rather than only in the comparison:
+                      // one figure with one rule is better than the same figure appearing on one
+                      // screen and not the other, and a turn with no token still renders none.
+                      firstTokenMs={
+                        message.firstTokenAt
+                          ? message.firstTokenAt - message.startedAt
+                          : undefined
                       }
                       onOpenTrace={() => onOpenTrace(message.id)}
                     />

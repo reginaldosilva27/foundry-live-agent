@@ -53,7 +53,16 @@ describe('nothing asks again on its own (§8)', () => {
    * is a change a reviewer sees.
    */
   it('starts a turn from nowhere but the composer, the palette and the repeat control', () => {
-    const allowed = ['App.tsx', 'hooks/useAgentStream.ts']
+    const allowed = [
+      'App.tsx',
+      'hooks/useAgentStream.ts',
+      // Spec 020. Both are a person's send, carried: `Compare` hands the composer's text to
+      // `useComparison`, which posts it to the two agents a person chose. Neither reads an answer,
+      // and in particular neither compares the two — which is the §8 line this feature sits
+      // closest to, and why the pair is named here rather than the guard being loosened.
+      'hooks/useComparison.ts',
+      'panes/Compare.tsx',
+    ]
     const callers = files
       .filter(([, text]) => /\bsend\s*\(/.test(text))
       .map(([path]) => path)

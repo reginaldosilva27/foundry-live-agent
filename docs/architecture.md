@@ -249,7 +249,7 @@ round-trip for **every** route in `ROUTES`, so this table cannot quietly fall be
 | `/tools` | run one function tool, outside any conversation (spec 042) |
 | `/c/<id>` | a conversation **this browser** kept (spec 021) |
 | `/trace/<response_id>` | the trace panel on that response |
-| `/compare` | reserved for spec 020; renders the chat until that spec is built |
+| `/compare` | one question to two agents, side by side (spec 020) |
 
 Two properties are load-bearing and are tested, not merely intended:
 

@@ -19,6 +19,14 @@ interface Props {
   /** A turn is in flight: the field waits, and the primary control stops instead of sending. */
   streaming: boolean
   voiceEnabled: boolean
+  /**
+   * Why voice is unavailable, when the reason is something other than the deployment (spec 020).
+   *
+   * The default reason is "this build has no Voice Live". Comparison mode disables it for a
+   * different reason — two spoken answers at once are not a feature — and a control that gives the
+   * wrong reason is worse than one that gives none (§5).
+   */
+  voiceReason?: string
   /** Why this conversation cannot be continued, if it cannot (spec 021 AC18). */
   blocked?: string
   /** The agent chip. Passed in rather than built here: the composer knows nothing about agents. */
@@ -48,6 +56,7 @@ const MAX_HEIGHT = '40vh'
 export function Composer({
   streaming,
   voiceEnabled,
+  voiceReason,
   blocked,
   chip,
   onSend,
@@ -148,7 +157,7 @@ export function Composer({
             type="button"
             className="composer__mic"
             disabled={!voiceEnabled || streaming}
-            title={voiceEnabled ? undefined : s('header.voiceUnavailable')}
+            title={voiceEnabled ? undefined : (voiceReason ?? s('header.voiceUnavailable'))}
             aria-label={s('composer.voiceInput')}
             onClick={onVoice}
           >

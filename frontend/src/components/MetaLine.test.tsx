@@ -111,3 +111,46 @@ describe('a hosted turn says what the figure leaves out', () => {
     expect(screen.queryByText(t('cost.excludesContainer', 'en'))).toBeNull()
   })
 })
+
+/**
+ * Spec 020 AC4 — time to first token.
+ *
+ * The figure a comparison is actually about: two agents given the same question rarely differ much
+ * in total, and differ a lot in how long they sit silent first. It is the browser's clock, same as
+ * the latency beside it, which is why the two are formatted identically and only the label differs.
+ */
+describe('how long before the answer started (spec 020 AC4)', () => {
+  it('renders the figure when the turn produced a token', () => {
+    show({ firstTokenMs: 820, latencyMs: 4200 })
+
+    expect(screen.getByTestId('meta-line')).toHaveTextContent(`820 ms ${t('meta.firstToken', 'en')}`)
+  })
+
+  it('renders nothing at all when no token ever arrived, rather than a zero', () => {
+    // A turn that called tools and then failed never started answering. `0 ms to first token`
+    // would say it answered instantly, which is the opposite of what happened (§5).
+    show({ firstTokenMs: undefined, latencyMs: 4200 })
+
+    expect(screen.getByTestId('meta-line')).not.toHaveTextContent(t('meta.firstToken', 'en'))
+  })
+
+  it('puts the labelled figure AFTER the bare total, or the line reads as one phrase', () => {
+    // Seen in a browser, not in jsdom: rendered first, the line read
+    // `… 820 ms to first token 4.2 s`, where the label sits between the two numbers and a
+    // reader cannot tell which one it belongs to. The total has always been the bare number on
+    // this line, so the labelled one goes after it.
+    show({ firstTokenMs: 820, latencyMs: 4200 })
+
+    const line = screen.getByTestId('meta-line')
+    expect(line).toHaveTextContent('820 ms')
+    expect(line).toHaveTextContent('4.2 s')
+    const text = line.textContent ?? ''
+    expect(text.indexOf('4.2 s')).toBeLessThan(text.indexOf('820 ms'))
+  })
+
+  it('says it in the active language', () => {
+    show({ firstTokenMs: 820 }, 'pt')
+
+    expect(screen.getByTestId('meta-line')).toHaveTextContent(t('meta.firstToken', 'pt'))
+  })
+})

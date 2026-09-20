@@ -21,6 +21,20 @@
 | **State** | Foundry conversations | Conversations + per-session `$HOME` and `/files` (2–60 min idle, 15 default) |
 | **Best for** | Fast start; production agents without custom orchestration | Agents that call into custom code; custom orchestration |
 
+## Side by side, in the app
+
+Spec 020 puts the two columns of this table on a screen: `/compare` sends one question to two agents
+at once and each answers into its own column, with its own tool rows, its own executor tags and its
+own figures. It is the demonstration of what the table argues.
+
+**The measured run is outstanding.** AC16 asks for the same question put to both agents against the
+**live** service, recorded as a dated fixture, with the differences written here as measurements.
+That needs a credential this machine does not have — `az` is a broken build here
+(`Bad CPU type in executable`) — and constitution §5 forbids hand-writing a recording to stand in
+for one. So this section states what the screen does and **no numbers**: a table of plausible
+latencies nobody measured would be worse than an empty one. The open item is in
+[REFERENCES.md](REFERENCES.md), and one comparison run closes it.
+
 ## What you give up by choosing each
 
 **Choosing the prompt agent**, you give up custom orchestration: you cannot express a graph, a

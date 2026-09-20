@@ -17,6 +17,13 @@ interface Props {
   turn: Turn
   model?: string
   latencyMs?: number
+  /**
+   * How long before the first token of the answer arrived (spec 020 AC4).
+   *
+   * Absent when the turn produced no text, and rendered as nothing rather than as `0 ms`, which
+   * would say the answer began instantly (§5).
+   */
+  firstTokenMs?: number
   /** The declared rate table, or nothing. Most deployments of this repo run with nothing. */
   pricing?: Pricing
   /**
@@ -33,7 +40,15 @@ interface Props {
 /** The harness whose cost model includes compute this app cannot measure. */
 const BILLS_CONTAINER_COMPUTE = 'langgraph'
 
-export function MetaLine({ turn, model, latencyMs, pricing, harness, onOpenTrace }: Props) {
+export function MetaLine({
+  turn,
+  model,
+  latencyMs,
+  firstTokenMs,
+  pricing,
+  harness,
+  onOpenTrace,
+}: Props) {
   const s = useT()
   const lang = useLang()
   const { usage } = turn
@@ -53,6 +68,16 @@ export function MetaLine({ turn, model, latencyMs, pricing, harness, onOpenTrace
         </span>
       )}
       {latencyMs !== undefined && <span className="meta-line__item">{formatMs(latencyMs)}</span>}
+
+      {/* Labelled, where the total is not — and AFTER it. Rendered first, the line read
+          `820 ms to first token 4.2 s`, with the label between the two numbers and no way to tell
+          which it belonged to. The bare number has always been the total; the labelled one follows
+          it, so each reads with the words on its own side. */}
+      {firstTokenMs !== undefined && (
+        <span className="meta-line__item" data-testid="first-token">
+          {`${formatMs(firstTokenMs)} ${s('meta.firstToken')}`}
+        </span>
+      )}
 
       {/* The qualifier is part of how the figure is written, not a note under it (AC2). */}
       {cost && (

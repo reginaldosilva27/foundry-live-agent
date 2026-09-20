@@ -309,6 +309,21 @@ violation.
   `referrerpolicy="no-referrer"`. Base64 cannot arrive: `react-markdown` sanitises `data:` away,
   measured rather than implemented. An undescribed image says it has no description; it never gets
   an invented one (§5).
+- **Two agents, one question, and no backend at all (spec 020).** `/compare` sends the same text to
+  two agents at once and draws two columns. The tempting design was a transport — a multiplexed
+  stream, or an agent id on every event (§9). It needed neither: `POST /chat` already takes `agent`
+  per request and resolves the harness per request (spec 019), so a comparison is **two ordinary
+  posts**, and the backend diff for the whole spec is empty. Two independent conversations (AC10)
+  and independent failure (AC8) therefore hold *by construction* rather than by a rule. Each column
+  is the same `Conversation` the chat uses, parameterised — a second copy of the turn rendering
+  would drift within a release (§4) — which is also why **repeat and edit are absent** there rather
+  than wired to no-ops: asking again would have to ask both, which is what the composer does. The
+  one new thing is the **turn-id prefix** on `useAgentStream`: two instances both mint `turn_0`, and
+  the trace panel, the event inspector and the log reader all address a turn by that id. **The app
+  says nothing about which answer is better** — no score, no ranking — because that is one step from
+  the app reading model output. AC16, the *measured* run against the live service, is outstanding
+  and recorded in `docs/REFERENCES.md`; `docs/harness-comparison.md` carries the section with **no
+  numbers in it**, since a table of plausible latencies nobody measured is worse than an empty one.
 - **A question cannot carry a file, and that is a decision (spec 045).** Clarified and **blocked**
   on its own first question — does the Responses API accept file input beside a message, and how? No
   doc read, no credential to probe with, and three different designs wear the same name (§10). Two

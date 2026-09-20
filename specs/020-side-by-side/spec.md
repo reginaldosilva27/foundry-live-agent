@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **ID** | 020-side-by-side |
-| **Status** | clarified |
+| **Status** | done — AC16 outstanding |
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 
@@ -150,6 +150,36 @@ Taken 2026-09-16 with the user.
 | 5 | Does the cost figure include container compute? | **No, and it says so** (AC12). The platform bills CPU + memory across active sessions; this app cannot see that number, and a cost figure that quietly omits it would be the kind of confident-looking wrong number §5 exists to prevent. |
 | 6 | Two concurrent client-side tool calls in the BFF? | Twice the work, nothing structural to decide. Third-party rate limits on `search_web` are a `plan.md` risk, not a spec question. |
 | 7 | How is comparison mode entered? | A `plan.md` decision — a header toggle or an action on the agents list. The behavior is fixed by the ACs either way. |
+
+## What shipped, and what did not
+
+Built 2026-09-19. Every acceptance criterion has a passing test except **AC16**, which asks for a
+**measured** run against the live service. That needs a credential this machine does not have, and
+§5 forbids hand-writing a recording to stand in for one — so `docs/harness-comparison.md` carries
+the section with no numbers in it and `docs/REFERENCES.md` carries the open item.
+
+Three things this spec expected to decide turned out to need no decision, and that is worth
+recording rather than quietly enjoying:
+
+- **The transport.** The contract section left "two SSE streams or one multiplexed stream" as a plan
+  decision. `POST /chat` already takes `agent` per request and resolves the harness per request
+  (spec 019), so two columns are two ordinary posts. **The backend diff for this spec is empty**,
+  and AC8 and AC10 hold by construction rather than by a rule.
+- **Clarify decision #1** — the activity panel giving way so each column carries its own activity
+  inline — was implemented by **spec 021**, which moved `ActivityPanel` inside each turn. AC3's
+  second half was already true before this spec started.
+- **AC5 and AC12** were already built: `ToolRow`'s executor tag, and the sentence spec 028 added for
+  exactly this comparison. This spec passes each column its own `harness` and asserts the result.
+
+Two defects were found by **rendering the screen and looking at it**, neither visible to a test that
+reads the DOM or the stylesheet, and both now have tests:
+
+- The meta line read `… 820 ms to first token 4.2 s`, with the label between the two numbers and no
+  way to tell which it belonged to. The bare number has always been the total, so the labelled one
+  moved after it.
+- The columns handed `Conversation` no-op handlers, so **repeat** and **edit** rendered and did
+  nothing. They are absent now: asking again here would have to ask both agents, which is what the
+  composer already does.
 
 ## Out of scope / deferred
 

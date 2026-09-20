@@ -34,6 +34,46 @@ describe('app.css', () => {
     expect(main).toContain('min-height: 0')
   })
 
+  /**
+   * Spec 020 — the comparison must be able to shrink.
+   *
+   * Both axes, for the same reason: a grid item is floored at its content size unless it is told
+   * otherwise, so without `min-width: 0` the two columns push `.main` past the viewport and the
+   * shell scrolls sideways, and without `min-height: 0` each column stops scrolling inside itself
+   * and the whole screen scrolls instead — which moves one column while the reader is on the other.
+   */
+  it('lets the two comparison columns shrink on both axes', () => {
+    for (const selector of ['.compare {', '.compare__columns {', '.compare__column {']) {
+      // Anchored at the start of a line, so this reads the BASE rule rather than the indented
+      // override of the same selector inside the breakpoint block.
+      const rule = css.split(`\n${selector}`)[1].split('}')[0]
+      expect(rule, selector).toContain('min-width: 0')
+      expect(rule, selector).toContain('min-height: 0')
+    }
+  })
+
+  /**
+   * Two 200px columns are unreadable, so below the breakpoint they stack.
+   *
+   * The assertion is about **source order**, because that is what was wrong the first time. A
+   * media query adds no specificity: folded into the shell's 1100px block near the top of the
+   * file, the override lost to the base rule declared 2800 lines further down, and at 900px the
+   * columns stayed side by side with the page scrolling sideways. Reading the rule alone would
+   * have called that green.
+   */
+  it('stacks the comparison below the breakpoint, in a block that outranks the base rule', () => {
+    const base = css.indexOf('\n.compare__columns {')
+    const stacked = css.search(
+      /\.compare__columns\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/,
+    )
+
+    expect(base).toBeGreaterThan(-1)
+    expect(stacked).toBeGreaterThan(base)
+    // …and it really is inside the breakpoint, not loose in the sheet.
+    const query = css.lastIndexOf('@media (max-width: 1100px)', stacked)
+    expect(query).toBeGreaterThan(base)
+  })
+
   it('turns the trace panel into an overlay below the breakpoint', () => {
     const breakpoint = css.split('@media (max-width: 1100px)')[1]
     expect(breakpoint).toBeDefined()

@@ -146,6 +146,16 @@ describe('every control says what it does (AC8)', () => {
     expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
   })
 
+  it('on the comparison, with its second-agent picker (spec 020)', async () => {
+    fakeBff()
+    window.history.pushState({}, '', '/compare')
+    const { container } = render(<App />)
+    await screen.findByLabelText(t('compare.with', 'en'))
+
+    const missing = unnamed(container)
+    expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
+  })
+
   it('after a turn, with its answer actions', async () => {
     fakeBff()
     const { container } = render(<App />)

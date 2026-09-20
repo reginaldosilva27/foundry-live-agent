@@ -24,7 +24,15 @@
 import { useState } from 'react'
 import { Favourites } from './Favourites'
 import { HistoryList } from './HistoryList'
-import { AgentsIcon, ChatIcon, ClockIcon, PanelIcon, PlusIcon, SearchIcon } from '../components/Icon'
+import {
+  AgentsIcon,
+  ChatIcon,
+  ClockIcon,
+  ColumnsIcon,
+  PanelIcon,
+  PlusIcon,
+  SearchIcon,
+} from '../components/Icon'
 import { Monogram } from '../components/Monogram'
 import { modelName } from '../components/format'
 import { useT } from '../i18n/context'
@@ -41,7 +49,15 @@ import type { AgentRow } from '../types/agents'
  * Derived from the address rather than stored beside it (spec 024) — `App` maps one to the other,
  * and `route.ts` stays the single definition of the scheme (§4).
  */
-export type View = 'chat' | 'agents' | 'history' | 'agent' | 'about' | 'preferences' | 'tools'
+export type View =
+  | 'chat'
+  | 'agents'
+  | 'history'
+  | 'agent'
+  | 'about'
+  | 'preferences'
+  | 'tools'
+  | 'compare'
 
 /**
  * The views the rail can switch to.
@@ -139,6 +155,8 @@ export function Sidebar({
             [
               ['chat', ChatIcon, 'nav.chat'],
               ['agents', AgentsIcon, 'nav.agents'],
+              // Side by side (spec 020). A mode you go to, not a decoration on the chat.
+              ['compare', ColumnsIcon, 'nav.compare'],
               ['history', ClockIcon, 'nav.history'],
             ] as const
           ).map(([id, Icon, key]) => (

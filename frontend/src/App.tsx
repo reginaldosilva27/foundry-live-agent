@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AgentChip } from './panes/AgentChip'
 import { AgentsScreen } from './panes/AgentsScreen'
 import { Composer } from './panes/Composer'
+import { Compare } from './panes/Compare'
 import { Conversation } from './panes/Conversation'
 import { Header } from './panes/Header'
 import { Sidebar, type NavView, type View } from './panes/Sidebar'
@@ -22,7 +23,8 @@ import { VoiceOverlay } from './panes/VoiceOverlay'
 import { BFF_URL } from './config'
 import { LangContext } from './i18n/context'
 import { detectLang, t as translate, type Lang } from './i18n/strings'
-import { useAgentStream } from './hooks/useAgentStream'
+import { useAgentStream, type Message } from './hooks/useAgentStream'
+import { useComparison } from './hooks/useComparison'
 import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
 import { CommandPalette } from './panes/CommandPalette'
@@ -68,7 +70,7 @@ export default function App() {
   /**
    * The address (spec 024). `view` is derived from it rather than stored beside it: two homes for
    * "which screen is showing" is the drift §4 is about, and the route is the one that survives a
-   * reload. `/compare` is reserved for spec 020 and renders the chat until that spec builds it.
+   * reload.
    */
   const { route, navigate } = useRoute()
   const view: View =
@@ -77,7 +79,8 @@ export default function App() {
     route.name === 'agent' ||
     route.name === 'about' ||
     route.name === 'preferences' ||
-    route.name === 'tools'
+    route.name === 'tools' ||
+    route.name === 'compare'
       ? route.name
       : 'chat'
   // Spec 030. Read only while the detail is on screen: the listing already answers every other
@@ -130,6 +133,15 @@ export default function App() {
   }, [route.name, config?.playground?.enabled])
   const { messages, streaming, conversationId, send, stop, append, restore, reset } =
     useAgentStream()
+  /**
+   * The comparison's own two streams (spec 020).
+   *
+   * Held here rather than inside the screen so the trace panel, the event inspector and the log
+   * reader keep reading from **one** place — `onScreen` below — instead of growing a second
+   * lookup for the second screen (§4). It is inert until a second agent is chosen, and it never
+   * touches the chat's own conversation, which is what makes leaving the mode a no-op (AC14).
+   */
+  const comparison = useComparison()
   const history = useHistory()
   const favourites = useFavourites()
 
@@ -335,6 +347,15 @@ export default function App() {
   }, [])
 
   /**
+   * The turns the panels address: the chat's, or — while comparing — both columns'.
+   *
+   * Safe to concatenate only because the two comparison streams mint ids under different prefixes
+   * (spec 020). Without that both columns would produce `turn_0`, and the trace panel would open
+   * one column's payload under the other's agent.
+   */
+  const onScreen: Message[] = view === 'compare' ? comparison.messages : messages
+
+  /**
    * The turn the panel is on, and where it sits in the session (spec 014 AC4).
    *
    * Derived rather than stored: with no `turnId` the panel follows the newest turn, which is what
@@ -342,11 +363,11 @@ export default function App() {
    * move a panel the reader has parked on an older one.
    */
   const shown = useMemo(() => {
-    const agentMessages = messages.filter((m) => m.role === 'agent')
+    const agentMessages = onScreen.filter((m) => m.role === 'agent')
     const found = trace.turnId ? agentMessages.findIndex((m) => m.id === trace.turnId) : -1
     const index = found >= 0 ? found : agentMessages.length - 1
     return { message: agentMessages[index], index, total: agentMessages.length, agentMessages }
-  }, [messages, trace.turnId])
+  }, [onScreen, trace.turnId])
 
   const shownTurn = shown.message
 
@@ -383,11 +404,11 @@ export default function App() {
 
       // Only a turn Foundry has already identified has an address. One still streaming does not,
       // and the panel opens without one rather than inventing a placeholder id (§5).
-      const target = messages.find((message) => message.id === turnId)
+      const target = onScreen.find((message) => message.id === turnId)
       const responseId = target?.role === 'agent' ? target.turn.trace?.responseId : undefined
       if (responseId) navigate({ name: 'trace', responseId })
     },
-    [messages, navigate],
+    [navigate, onScreen],
   )
 
   /** The call the reader is showing, resolved from the turn the panel is on (spec 010). */
@@ -552,6 +573,17 @@ export default function App() {
             // Handed the config the rail already read (spec 032, AC2): the panel issues no request
             // of its own, which is what makes "read-only" a property rather than a promise.
             <AboutScreen config={config} failed={failed} />
+          ) : view === 'compare' ? (
+            // One question, two agents, two streams (spec 020). The screen renders no turn of its
+            // own: each column is the same `Conversation` the chat uses, parameterised.
+            <Compare
+              comparison={comparison}
+              agents={agents.agents}
+              first={answering}
+              model={config?.model}
+              pricing={config?.pricing}
+              onOpenTrace={openTrace}
+            />
           ) : view === 'history' ? (
             <HistoryScreen history={history} onOpen={openConversation} />
           ) : view === 'agents' ? (

@@ -656,6 +656,31 @@ measurement we did not make (§5).
 | Does the control channel emit anything when the user barges in? | run a session, talk over the agent mid-answer, record the frames |
 | If it does, is it on the data channel or the control WebSocket? | the same recording answers both |
 
+### Open — what does the comparison actually measure? (spec 020)
+
+`/compare` puts one question to two agents at once and draws two columns. Everything about **how**
+it does that is verified: the two requests are two ordinary `POST /chat` calls, each already
+carrying `agent` and its own `conversation_id`, so the feature needed no contract change and none
+was made. `frontend/src/panes/Compare.test.tsx` asserts the two turns share no conversation, that one
+column failing leaves the other running, and that stopping settles both.
+
+What is **not** verified is the comparison itself. AC16 asks for the same question put to both
+agents against the live service, recorded as a dated fixture, with the observed differences written
+into [`harness-comparison.md`](harness-comparison.md) as measurements with their date. That needs a
+credential; `az` here is the broken build described above, and §5 forbids hand-writing a recording to
+stand in for one. So `harness-comparison.md` gains the section and **no numbers** — a table of
+plausible latencies nobody measured is worse than an empty one.
+
+| Open question | How to close it |
+|---|---|
+| How far apart are the two harnesses on the same question — first token, total, tokens, cost? | run one comparison against both deployed agents and record both turns |
+| Does the hosted column really report `usage: null`, as spec 018 measured? | the same run; `MetaLine` already renders nothing rather than a zero if it does |
+| Does a hosted turn emit `mcp_call` at all? | the same run — spec 018 says it is harness-specific, and the column is built to render its absence as normal (AC6) |
+
+One property this spec did **not** need a credential for, and which is asserted rather than assumed:
+the BFF resolves the harness per request and never mutates `app.state.harness` (spec 019), so two
+concurrent turns from one browser cannot change each other's agent.
+
 ### Open — does the agent actually write a chart block? (spec 033)
 
 `ai/harness/_shared/agent_core.yaml` now tells the agent how to write a `foundry-chart` block, and

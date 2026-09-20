@@ -5047,3 +5047,129 @@ button:disabled {
   color: var(--fg-1);
   cursor: pointer;
 }
+
+/* --- Side by side (spec 020) ---------------------------------------------
+   Two columns of equal weight: the screen IS the comparison, so neither side
+   may look like the main one with a second beside it. Below the breakpoint
+   they stack — a comparison squeezed into two 200px columns is unreadable,
+   and stacking loses the side-by-side while keeping each column's figures,
+   which is the part that does not fit in memory. */
+.compare {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  /* A grid item is floored at its content width by `min-width: auto`, so without this the columns
+     push `.main` wider than the viewport and the whole shell scrolls sideways — header, picker and
+     composer all cut off. Seen at 900px in a browser; the rule above it is the vertical twin. */
+  min-width: 0;
+}
+
+.compare__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-2) var(--sp-4);
+  padding: var(--sp-5) var(--sp-5) var(--sp-3);
+  border-bottom: 1px solid var(--border-1);
+}
+
+.compare__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+}
+
+.compare__lead {
+  flex: 1 1 22ch;
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.compare__pick {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.compare__pick-label {
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.compare__select {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  font-family: inherit;
+  font-size: var(--fs-caption);
+}
+
+.compare__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  min-width: 0;
+}
+
+.compare__column {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
+/* The divider between the two, drawn once rather than as a border on each,
+   so the gutter does not double. */
+.compare__column + .compare__column {
+  border-left: 1px solid var(--border-1);
+}
+
+.compare__column-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-1);
+  background: var(--bg-1);
+}
+
+.compare__column-name {
+  font-size: var(--fs-body);
+  color: var(--fg-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Each column scrolls inside itself. Without `min-height: 0` the grid child
+   refuses to shrink below its content and the whole screen scrolls instead,
+   which moves one column's answer while the reader is on the other. */
+.compare__column .conversation {
+  min-height: 0;
+  padding: var(--sp-5) var(--sp-4);
+}
+
+/* Below the breakpoint the comparison stacks rather than squeezing. Two 200px columns are
+   unreadable; stacking loses the side-by-side and keeps each column's figures, which is the part
+   that does not fit in memory.
+
+   **This block must stay after the base rules above.** A media query adds no specificity, so the
+   same selector declared later in the file wins regardless of the query — which is exactly what
+   happened when these three rules were first folded into the shell's own 1100px block near the top
+   of this file: at 900px the columns stayed side by side and the page scrolled sideways. */
+@media (max-width: 1100px) {
+  .compare__columns {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .compare__column + .compare__column {
+    border-left: none;
+    border-top: 1px solid var(--border-1);
+  }
+}

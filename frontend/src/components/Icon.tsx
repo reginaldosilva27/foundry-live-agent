@@ -151,6 +151,16 @@ export const InfoIcon = (p: IconProps) =>
     p,
   )
 
+/** Side by side (spec 020). Two panes of equal weight — the screen is the comparison. */
+export const ColumnsIcon = (p: IconProps) =>
+  svg(
+    <>
+      <rect x="3" y="4" width="8" height="16" rx="1.5" />
+      <rect x="13" y="4" width="8" height="16" rx="1.5" />
+    </>,
+    p,
+  )
+
 /** The history screen and its nav item (spec 027). A record is a thing with a time on it. */
 export const ClockIcon = (p: IconProps) =>
   svg(

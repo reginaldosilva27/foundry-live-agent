@@ -73,36 +73,44 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 017 | [A spoken answer does not read URLs out loud](017-no-urls-out-loud/spec.md) | 3 | ✅ done |
 | 018 | [The second harness — a LangGraph graph running as a Foundry hosted agent](018-hosted-agent-harness/spec.md) | 4 | ✅ done |
 | 019 | [The agents screen — pick which Foundry agent answers](019-agent-picker/spec.md) | 4 | ✅ done |
-| 020 | [Side by side — one question, two agents, two streams](020-side-by-side/spec.md) | 4 | 🔍 clarified |
+| 020 | [Side by side — one question, two agents, two streams](020-side-by-side/spec.md) | 4 | ✅ done * |
 | 021 | [The shell, elaborated — navigation, an agents screen, answer actions, local history](021-ui-shell/spec.md) | 4 | ✅ done |
 | 022 | [Favourite agents — the two you actually use, in the rail](022-agent-favourites/spec.md) | 4 | ✅ done |
 | 023 | [The composer, and stopping a turn](023-composer-and-stop/spec.md) | 4 | ✅ done |
 | 024 | [Addressable — the app gets URLs](024-addressable/spec.md) | 4 | ✅ done |
 | 025 | [The keyboard — shortcuts and a command palette](025-keyboard/spec.md) | 4 | ✅ done |
 | 026 | [Asking again — repeat and edit a question](026-ask-again/spec.md) | 4 | ✅ done |
-| 027 | [History you can search, and take with you](027-history-search-export/spec.md) | 4 | ✏️ draft |
-| 028 | [What a turn cost](028-turn-cost/spec.md) | 4 | ✏️ draft |
-| 029 | [The shape of a turn — a measured timeline](029-turn-timeline/spec.md) | 4 | ✏️ draft |
-| 030 | [The agent, inspected](030-agent-inspector/spec.md) | 4 | ✏️ draft |
-| 031 | [Versions, and going back to one](031-agent-versions/spec.md) | 4 | ✏️ draft |
-| 032 | [What this build is talking to](032-connection-panel/spec.md) | 4 | ✏️ draft |
-| 033 | [Charts and diagrams in an answer](033-charts-in-answers/spec.md) | 4 | ✏️ draft |
-| 034 | [Where an answer came from](034-answer-sources/spec.md) | 4 | ✏️ draft |
-| 035 | [Tables and code you can take](035-tables-and-code/spec.md) | 4 | ✏️ draft |
-| 036 | [Preferences, and a second theme](036-preferences-and-theme/spec.md) | 4 | ✏️ draft |
-| 037 | [Suggestions that belong to the agent](037-agent-suggestions/spec.md) | 4 | ✏️ draft |
-| 038 | [The event inspector](038-event-inspector/spec.md) | 4 | ✏️ draft |
-| 039 | [What the voice session is doing, while it does it](039-voice-activity/spec.md) | 4 | ✏️ draft |
-| 040 | [The keyboard and screen-reader pass](040-accessibility-pass/spec.md) | 4 | ✏️ draft |
-| 041 | [Proposing a change to the agent](041-propose-agent-change/spec.md) | 4 | ✏️ draft |
-| 042 | [The tool playground](042-tool-playground/spec.md) | 4 | ✏️ draft |
-| 043 | [Choosing the voice on the screen](043-voice-on-screen/spec.md) | 4 | ✏️ draft |
-| 044 | [Images in an answer](044-images-in-answers/spec.md) | 4 | ✏️ draft |
-| 045 | [Attachments on a question](045-attachments/spec.md) | 4 | ✏️ draft |
+| 027 | [History you can search, and take with you](027-history-search-export/spec.md) | 4 | ✅ done |
+| 028 | [What a turn cost](028-turn-cost/spec.md) | 4 | ✅ done |
+| 029 | [The shape of a turn — a measured timeline](029-turn-timeline/spec.md) | 4 | ✅ done |
+| 030 | [The agent, inspected](030-agent-inspector/spec.md) | 4 | ✅ done |
+| 031 | [Versions, and going back to one](031-agent-versions/spec.md) | 4 | ✅ done |
+| 032 | [What this build is talking to](032-connection-panel/spec.md) | 4 | ✅ done |
+| 033 | [Charts and diagrams in an answer](033-charts-in-answers/spec.md) | 4 | ✅ done |
+| 034 | [Where an answer came from](034-answer-sources/spec.md) | 4 | ✅ done |
+| 035 | [Tables and code you can take](035-tables-and-code/spec.md) | 4 | ✅ done |
+| 036 | [Preferences, and a second theme](036-preferences-and-theme/spec.md) | 4 | ✅ done |
+| 037 | [Suggestions that belong to the agent](037-agent-suggestions/spec.md) | 4 | ✅ done |
+| 038 | [The event inspector](038-event-inspector/spec.md) | 4 | ✅ done |
+| 039 | [What the voice session is doing, while it does it](039-voice-activity/spec.md) | 4 | ✅ done |
+| 040 | [The keyboard and screen-reader pass](040-accessibility-pass/spec.md) | 4 | ✅ done |
+| 041 | [Proposing a change to the agent](041-propose-agent-change/spec.md) | 4 | ✅ done |
+| 042 | [The tool playground](042-tool-playground/spec.md) | 4 | ✅ done |
+| 043 | [Choosing the voice on the screen](043-voice-on-screen/spec.md) | 4 | ✅ done |
+| 044 | [Images in an answer](044-images-in-answers/spec.md) | 4 | ✅ done |
+| 045 | [Attachments on a question](045-attachments/spec.md) | 4 | ⛔ blocked |
 
-Specs 023–045 are the **UI backlog** written on 2026-09-16 from a review of `frontend/`. They are
-`draft` on purpose: each carries its WHAT, its acceptance criteria and its open questions, and none
-has a `plan.md` yet — planning happens after the clarify step, per the workflow above. They are
+`*` — **done with a named exception.** Spec 020 ships every acceptance criterion but AC16, which
+needs a measured run against the live service; the reason and what closes it are in the spec and in
+[`../docs/REFERENCES.md`](../docs/REFERENCES.md). Spec 045 is **blocked** by design, on a question
+no document has answered.
+
+> The status column is the spec's own `Status` field, transcribed. It drifted once — 027–045 sat at
+> `draft` here for a week after being built — so when the two disagree, the spec wins (§4).
+
+Specs 023–045 were the **UI backlog** written on 2026-09-16 from a review of `frontend/`. They were
+`draft` on purpose: each carried its WHAT, its acceptance criteria and its open questions, and none
+had a `plan.md` — planning happens after the clarify step, per the workflow above. They are
 ordered by number, not by priority; the priority argument lives with the review that produced them.
 
 The design provenance for 004 — the Dataside design system and the `Foundry Live Agent.dc.html`
@@ -135,8 +143,14 @@ changeable decision. Current order, chosen because **seeing Voice Live work is t
 
 ```
 000 ✅ → 001 ✅ → 003 ✅ → 004 ✅ → 002 ✅ → 006 ✅ → 007…014 ✅ → 005 ✅ → 015…017 ✅
-  → 018 ✅ → 019 ✅ → 021 ✅ → 022 ✅ → 020 🔍
+  → 018 ✅ → 019 ✅ → 021 ✅ → 022 ✅ → 023…044 ✅ → 045 ⛔ → 020 ✅
 ```
+
+**020 came last, and was the better order.** Built after the UI backlog rather than before it, it
+inherited an activity panel already living inside each turn (021), a per-turn `agent` on `POST
+/chat` (019), an executor tag on every tool row (018) and a cost line that already says what a
+hosted turn's figure leaves out (028) — so the screen is a composition of parts that existed, and
+the backend diff for it is empty. Built in numeric order it would have had to invent most of those.
 
 018 → 019 → 020 is a dependency chain, not a preference: 019's picker has nothing to pick between
 until 018 exists, and 020 cannot run two agents at once while exactly one of them is a startup

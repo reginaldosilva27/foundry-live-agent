@@ -19,6 +19,26 @@ type Entry = Record<Lang, string>
 export const strings = {
   'app.name': { en: 'Foundry Live Agent', pt: 'Foundry Live Agent' },
 
+  // --- Side by side (spec 020) -------------------------------------------
+  // The screen says what it is and, once, that it is not judging. Nothing else here describes an
+  // answer: the app draws two columns and the reader does the comparing.
+  'compare.title': { en: 'Side by side', pt: 'Lado a lado' },
+  'compare.lead': {
+    en: 'One question, two agents, two streams. The app shows both and picks no winner.',
+    pt: 'Uma pergunta, dois agentes, dois streams. O app mostra os dois e não escolhe um vencedor.',
+  },
+  'compare.with': { en: 'Compare with', pt: 'Comparar com' },
+  'compare.pick': { en: 'Choose a second agent', pt: 'Escolha um segundo agente' },
+  'compare.needsSecond': {
+    en: 'Choose a second agent to ask them both.',
+    pt: 'Escolha um segundo agente para perguntar aos dois.',
+  },
+  'compare.column': { en: 'Answers from {agent}', pt: 'Respostas de {agent}' },
+  'compare.voiceUnavailable': {
+    en: 'Voice is unavailable while comparing.',
+    pt: 'A voz não está disponível durante a comparação.',
+  },
+
   // --- Sidebar -------------------------------------------------------------
   'sidebar.newSession': { en: 'New session', pt: 'Nova sessão' },
   'sidebar.modelLabel': { en: 'model', pt: 'modelo' },
@@ -438,6 +458,7 @@ export const strings = {
   'nav.chat': { en: 'Chat', pt: 'Conversa' },
   'nav.agents': { en: 'Agents', pt: 'Agentes' },
   'nav.history': { en: 'History', pt: 'Histórico' },
+  'nav.compare': { en: 'Compare', pt: 'Comparar' },
   'nav.collapse': { en: 'Collapse sidebar', pt: 'Recolher barra lateral' },
   'nav.expand': { en: 'Expand sidebar', pt: 'Expandir barra lateral' },
   'history.today': { en: 'Today', pt: 'Hoje' },
@@ -732,6 +753,9 @@ export const strings = {
   'meta.tokens': { en: 'tokens', pt: 'tokens' },
   'meta.reasoningTokens': { en: 'reasoning', pt: 'raciocínio' },
   'meta.latency': { en: 'latency', pt: 'latência' },
+  // Spec 020: the browser's clock, like the latency beside it. Two agents given the same
+  // question usually differ far more in how long they sit silent than in the total.
+  'meta.firstToken': { en: 'to first token', pt: 'até o primeiro token' },
   'meta.cachedTokens': { en: 'cached', pt: 'cache' },
   'meta.agentVersion': { en: 'version', pt: 'versão' },
   'meta.viewTrace': { en: 'view trace', pt: 'ver rastro' },
