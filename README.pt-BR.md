@@ -9,11 +9,12 @@ Chat com streaming · atividade do agente ao vivo · traces distribuídos · voz
 
 <br />
 
-[![A interface do foundry-live-agent — barra lateral com favoritos e histórico local, uma resposta em streaming, o selo do harness no cabeçalho e o link do trace sob a resposta](docs/assets/screenshot-chat.png)](docs/assets/screenshot-chat.png)
+[![Um turno na interface do foundry-live-agent: a pergunta, o card de raciocínio recolhido, quatro linhas numeradas de atividade — duas executadas pelo BFF, duas pelo Foundry — e a resposta](docs/assets/screenshot-chat.png)](docs/assets/screenshot-chat.png)
 
-_Uma execução real. A barra lateral carrega os agentes que você de fato usa e o histórico deste
-navegador; o cabeçalho diz qual harness respondeu; sob a resposta, o modelo, a contagem de tokens e
-o caminho para os spans dela._
+_Um turno inteiro. As duas linhas marcadas `bff` são function tools que **esta aplicação** executou
+porque o Foundry pediu e parou; as duas marcadas `microsoft_learn` rodaram **dentro do Foundry**.
+Essa divisão é a arquitetura, na tela. Capturado com `just demo` — por isso a faixa de reprodução
+aparece: todo print desta página você reproduz sem conta no Azure._
 
 <br />
 
@@ -296,6 +297,13 @@ testes de contrato usam — então o streaming, a ida e volta do function call, 
 contagem de tokens, a árvore de spans e o inspetor de eventos são todos de verdade, chegando pelo
 normalizador de verdade. Escolha qual turno gravado assistir no banner do topo.
 
+![Um turno sendo reproduzido: o card de raciocínio se preenche, quatro linhas de ferramenta chegam uma a uma, e então a resposta faz streaming](docs/assets/demo-streaming-turn.gif)
+
+_Um turno, reproduzido. O resumo do raciocínio chega primeiro, depois as duas function calls que
+esta aplicação executa e as duas chamadas ao Microsoft Learn que o Foundry executa, e então a
+resposta. Nada aqui é mock: são os 310 eventos que o Foundry enviou em 2026-09-15, passando pelo
+mesmo normalizador do caminho ao vivo. Um pouco mais lento para dar para ler._
+
 **Ele não consegue responder a uma pergunta**, e diz isso em todas as telas em vez de deixar você
 descobrir digitando duas vezes. Voz e fala reportam *não configurado*, porque é o que são. A
 demonstração é um **entrypoint separado**: o `create_app` nunca ouviu falar dela, então nenhuma
@@ -342,20 +350,32 @@ Opcional — o AI Gateway é um fluxo de portal sem caminho de IaC: `just gatewa
 
 ## 📸 Telas
 
+Todos os prints abaixo saem do `just demo`, nas larguras indicadas — então cada um é algo que você
+coloca na sua própria tela em cerca de um minuto, sem conta no Azure. A faixa de reprodução no topo
+faz parte daquela build; não é mock.
+
 | | |
 |---|---|
-| ![Um turno que falhou renderizado como erro, com o painel de rastros aberto](docs/assets/screenshot-error-and-trace.png) | ![Uma sessão de voz ao vivo: barras de nível, transcrição, silenciar e encerrar](docs/assets/screenshot-voice.png) |
-| _Um `error` terminal aparece como erro, não como um stream que parou_ | _Uma sessão do Voice Live ao vivo no mesmo agente — a transcrição chega pelo data channel do WebRTC_ |
+| [![A gaveta de trace: totais da execução, ids de response e conversation, o otel trace id, as linhas de atividade do agente e uma árvore de spans com durações](docs/assets/screenshot-trace.png)](docs/assets/screenshot-trace.png) | [![O inspetor de eventos aberto como quarta coluna ao lado da gaveta de trace, listando todos os eventos crus do turno com um filtro por tipo](docs/assets/screenshot-events.png)](docs/assets/screenshot-events.png) |
+| **A gaveta de trace** (specs 005, 014). `invoke_agent` sobre duas chamadas MCP do Learn e a chamada de modelo, com durações reais — e a linha que importa: *"O Foundry rastreia o que o Foundry executa. Ferramentas que esta aplicação executa não deixam span."* É a §8 aparecendo na telemetria. | **O inspetor de eventos** (spec 038), a 1680px, onde ele ganha uma coluna própria. Todos os eventos crus do turno, filtrados por tipo, com o relatório de honestidade do próprio contrato acima: *21 de 25 nomes de evento do Foundry verificados contra uma execução gravada.* |
+| [![A tela de agentes: dez cards de um projeto real, cada um com tipo, versão, status e harness; o hosted desabilitado](docs/assets/screenshot-agents.png)](docs/assets/screenshot-agents.png) | [![A mesma tela de agentes no tema escuro](docs/assets/screenshot-dark.png)](docs/assets/screenshot-dark.png) |
+| **A tela de agentes** (specs 019, 030). Dez agentes de um projeto Foundry real — oito deles este repositório não escreveu. O card desabilitado não é escondido: ele diz, no idioma de quem lê, *por que* não pode responder. | **Dois temas** (spec 036). Claro é a base, escuro é uma escolha explícita, e `system` remove o atributo em vez de escrever um. Todo literal de cor mora na paleta vendorizada; o `app.css` nomeia tokens e um teste garante isso. |
+| [![Dois quadros em largura de celular lado a lado: um turno a 390px, e a barra de navegação aberta por cima dele](docs/assets/screenshot-narrow.png)](docs/assets/screenshot-narrow.png) | [![Um turno que falhou renderizado como card de erro, dizendo "the BFF answered 502"](docs/assets/screenshot-error.png)](docs/assets/screenshot-error.png) |
+| **390px** (spec 047). A barra nunca é escondida — abaixo de 760px ela vem **por cima** da conversa, porque `display: none` também tira o controle da árvore de acessibilidade, e essa barra é o único caminho para cinco das sete telas. | **Um turno que falhou** (spec 003). O BFF foi derrubado no meio da sessão de propósito. Um turno sempre termina em `done` ou `error` e nunca simplesmente emudece — a promessa da §9, renderizada. |
 
-A interface em si está no topo desta página. As duas acima são capturas reais de execuções reais, e
-a primeira mostra o que o app exibe quando o projeto
-do Foundry ainda não tem um model deployment atrás da conexão do gateway: o round trip completou, o
-gateway respondeu `404`, e o contrato transformou isso em um evento terminal em vez de silêncio.
+<details>
+<summary>E um print mais antigo que os outros, de propósito</summary>
 
-Duas ressalvas honestas (constituição §5): as duas foram capturadas **antes** da
-interface atual (spec 021), então a moldura em volta delas é mais velha que a do topo desta página;
-e a árvore de spans — que existe, specs 005 e 014 — ainda não tem captura commitada. Essa falta por
-descuido, não por motivo.
+[![Uma sessão de voz ao vivo: barras de nível, transcrição, silenciar e encerrar](docs/assets/screenshot-voice.png)](docs/assets/screenshot-voice.png)
+
+_Uma sessão do Voice Live ao vivo no mesmo agente — a transcrição chega pelo data channel do WebRTC._
+
+**Este é anterior à interface atual**, e é o único. Uma sessão do Voice Live é uma negociação ao vivo
+com um serviço ao vivo: o `just demo` reporta voz como *não configurada*, porque naquela build ela é,
+e reproduzir uma sessão WebRTC seria o desenho de um recurso em vez do recurso (constituição §5).
+Recapturar exige um deployment.
+
+</details>
 
 ## 🔌 Harnesses
 

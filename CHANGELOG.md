@@ -59,6 +59,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/preferences`, and only where the deployment enabled it: a door onto a 403 is worse than no door.
 
 ### Changed
+- **Every screenshot in the README is new, and every one of them is reproducible.** They are taken
+  from `just demo`, at the widths they name, so a reader can put the same frame on their own screen
+  in a minute with no Azure account — which is also why the replay banner is in all of them. Added:
+  a **GIF of a turn replaying** (the reasoning card, four tool rows landing one by one, the answer),
+  the **trace drawer with its span tree**, the **event inspector as a fourth column**, the **agents
+  screen** with ten agents from a real project, the **dark theme**, and **390px** with the rail over
+  the conversation. The span tree closes a gap the README itself had listed as "missing out of
+  neglect, not for a reason" since spec 014.
+  - `screenshot-error-and-trace.png` is **replaced** by a freshly captured error card (the BFF
+    stopped mid-session on purpose: *the BFF answered 502*) and by the new trace shot. Both of the
+    old captures predated the current shell, which the README had been apologising for in prose.
+  - `screenshot-voice.png` stays, and is now the **only** older asset. It is behind a `<details>`
+    that says why: `just demo` reports voice as *not configured*, because in that build it is, and a
+    replayed WebRTC session would be a drawing of a feature rather than the feature (§5).
 - **The README's status block was two months stale, in both languages.** It claimed specs 000–019,
   021 and 022 were done and that spec 020 was "clarified and not built yet" — against 48 of 50 done
   and `/compare` shipped. `specs/README.md` already carries the per-spec table and already records

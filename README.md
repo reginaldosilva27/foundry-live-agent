@@ -9,11 +9,12 @@ Streaming chat · live agent activity · distributed traces · real-time voice
 
 <br />
 
-[![The foundry-live-agent shell — agent rail with favourites and local history, a streaming answer, the harness badge in the header and the trace link under the answer](docs/assets/screenshot-chat.png)](docs/assets/screenshot-chat.png)
+[![One turn in the foundry-live-agent shell: the question, the collapsed reasoning card, four numbered activity rows — two run by the BFF, two by Foundry — and the answer](docs/assets/screenshot-chat.png)](docs/assets/screenshot-chat.png)
 
-_A real run. The rail carries the agents you actually use and this browser's history; the header
-says which harness answered; under the answer, the model, the token count and the way into its
-spans._
+_One turn, whole. Two rows marked `bff` are function tools **this app** executed because Foundry
+asked and stopped; two marked `microsoft_learn` ran **inside Foundry**. That split is the
+architecture, on screen. Taken from `just demo`, which is why the replay banner is there — every
+screenshot on this page is one you can reproduce with no Azure account._
 
 <br />
 
@@ -293,6 +294,13 @@ use — so the streaming, the function-call round trip, the MCP calls, the token
 tree and the event inspector are all the real thing, arriving through the real normaliser. Pick
 which recorded turn to watch from the banner at the top.
 
+![A turn replaying: the reasoning card fills in, four tool rows land one by one, then the answer streams in](docs/assets/demo-streaming-turn.gif)
+
+_One turn, replayed. The reasoning summary arrives first, then the two function calls this app runs
+and the two Microsoft Learn calls Foundry runs, then the answer. Nothing here is a mock: these are
+the 310 events Foundry sent on 2026-09-15, through the same normaliser the live path uses. Slowed
+a little so it can be read._
+
 **It cannot answer a question**, and it says so on every screen rather than letting you find out by
 typing twice. Voice and speech report *not configured*, because they are. The demo is a **separate
 entrypoint**: `create_app` has never heard of it, so no environment variable can make a real
@@ -337,20 +345,32 @@ Optional — the AI Gateway is a portal flow with no IaC path: `just gateway` pr
 
 ## 📸 Screenshots
 
+Every shot below is from `just demo`, at the widths named — so each one is a thing you can put on
+your own screen in about a minute, with no Azure account. The replay banner across the top is part
+of that build and not a mock-up.
+
 | | |
 |---|---|
-| ![A failed turn rendered as an error, with the trace panel open](docs/assets/screenshot-error-and-trace.png) | ![A live voice session: level bars, transcript, mute and end](docs/assets/screenshot-voice.png) |
-| _A terminal `error` renders as an error, not as a stream that stopped_ | _A live Voice Live session on the same agent — the transcript arrives on the WebRTC data channel_ |
+| [![The trace drawer: run totals, response and conversation ids, the otel trace id, the agent activity rows and a span tree with durations](docs/assets/screenshot-trace.png)](docs/assets/screenshot-trace.png) | [![The event inspector open as a fourth column beside the trace drawer, listing every raw event of the turn with a type filter](docs/assets/screenshot-events.png)](docs/assets/screenshot-events.png) |
+| **The trace drawer** (specs 005, 014). `invoke_agent` over two Learn MCP calls and the model call, with real durations — and the line that matters: *"Foundry traces what Foundry runs. Tools this app executes leave no span."* That is §8 showing up in telemetry. | **The event inspector** (spec 038), at 1680px where it takes a column of its own. Every raw event of the turn, filtered by type, with the contract's own honesty report above it: *21 of 25 Foundry event names verified against a recorded run.* |
+| [![The agents screen: ten agent cards from a real project, each with kind, version, status and harness; the hosted one dimmed](docs/assets/screenshot-agents.png)](docs/assets/screenshot-agents.png) | [![The same agents screen in the dark theme](docs/assets/screenshot-dark.png)](docs/assets/screenshot-dark.png) |
+| **The agents screen** (specs 019, 030). Ten agents from a real Foundry project — eight of which this repository did not write. The dimmed card is not hidden: it says, in the reader's language, *why* it cannot answer. | **Two themes** (spec 036). Light is the base, dark is an explicit choice, and `system` removes the attribute rather than writing one. Every colour literal lives in the vendored palette; `app.css` names tokens and a test enforces it. |
+| [![Two phone-width frames side by side: a turn at 390px, and the navigation rail open over it](docs/assets/screenshot-narrow.png)](docs/assets/screenshot-narrow.png) | [![A failed turn rendered as an error card reading "the BFF answered 502"](docs/assets/screenshot-error.png)](docs/assets/screenshot-error.png) |
+| **390px** (spec 047). The rail is never hidden — below 760px it comes **over** the conversation, because `display: none` takes a control out of the accessibility tree too, and this one is the only route to five of the seven screens. | **A turn that failed** (spec 003). The BFF was stopped mid-session on purpose. A turn always ends in `done` or `error` and never just goes quiet — §9's promise, rendered. |
 
-The shell itself is at the top of this page. Both of these are real screenshots of real runs, and
-the first is what the app shows when the Foundry
-project has no model deployment behind the gateway connection yet: the round trip completed, the
-gateway answered `404`, and the contract turned that into a terminal event instead of silence.
+<details>
+<summary>And one shot that is older than the rest, on purpose</summary>
 
-Two honest caveats (constitution §5): both shots were taken **before** the current
-shell (spec 021), so the chrome around them is older than the one at the top of this page; and the
-span tree — which ships, specs 005 and 014 — has no committed capture yet. That one is missing out
-of neglect, not for a reason.
+[![A live voice session: level bars, a transcript, mute and end session](docs/assets/screenshot-voice.png)](docs/assets/screenshot-voice.png)
+
+_A live Voice Live session on the same agent — the transcript arrives on the WebRTC data channel._
+
+**This one predates the current shell**, and it is the only one that does. A Voice Live session is a
+live negotiation with a live service: `just demo` reports voice as *not configured*, because in that
+build it is, and replaying a WebRTC session would be a drawing of a feature rather than the feature
+(constitution §5). Re-taking it needs a deployment.
+
+</details>
 
 ## 🔌 Harnesses
 
