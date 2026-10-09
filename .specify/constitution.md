@@ -40,7 +40,7 @@ Each fact (a schema, a config default, a piece of prose) lives in exactly one pl
 everything else derives from or links to it. Docs follow the code in the **same** change.
 Don't duplicate a behavior across files when one shared definition will do.
 
-*Applied here:* the two function tools are implemented **once** in `ai/harness/_shared/tools/` and
+*Applied here:* the three function tools are implemented **once** in `ai/harness/_shared/tools/` and
 shared by every harness. `justfile` recipes delegate to the canonical gate commands rather than
 restating them.
 
@@ -53,8 +53,9 @@ mode is allowed only if it is obviously labelled and replays real captured data 
 fabricated.)*
 
 *Applied here:* the `AgentEvent` fixtures under `ai/tests/fixtures/` are **recorded from real
-Foundry runs**, never hand-written to make a test pass. `ai/harness/langgraph/` is a scaffold and
-says so in its README and by raising `NotImplementedError` — it never pretends to work.
+Foundry runs**, never hand-written to make a test pass. `ai/harness/langgraph/` implements a hosted
+agent and documents its measured limitations. Its adapter rejects `submit_tool_output` because the
+container already answered the call, not because the harness is unimplemented.
 Infrastructure we cannot verify is documented as a manual step, not shipped as unverified IaC.
 
 ### 6. Agent guidance stays in sync

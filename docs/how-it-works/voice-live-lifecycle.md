@@ -1,6 +1,6 @@
 # The Voice Live session lifecycle
 
-The same agent, the same two function tools, a completely different transport — and the application
+The same agent, the same three function tools, a completely different transport — and the application
 gains no second brain to make it work. That is the whole point of this page.
 
 Everything here was **observed against the live service on 2026-09-15** by

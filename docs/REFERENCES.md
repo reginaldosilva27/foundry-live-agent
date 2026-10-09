@@ -807,12 +807,9 @@ carrying `agent` and its own `conversation_id`, so the feature needed no contrac
 was made. `frontend/src/panes/Compare.test.tsx` asserts the two turns share no conversation, that one
 column failing leaves the other running, and that stopping settles both.
 
-What is **not** verified is the comparison itself. AC16 asks for the same question put to both
-agents against the live service, recorded as a dated fixture, with the observed differences written
-into [`harness-comparison.md`](harness-comparison.md) as measurements with their date. That needs a
-run that spends model tokens, which the read-only 2026-09-20 session deliberately did not make, and
-§5 forbids hand-writing a recording to stand in for one. So `harness-comparison.md` gains the section and **no numbers** — a table of
-plausible latencies nobody measured is worse than an empty one.
+**Historical initial deferral.** The implementation session initially left AC16 unmeasured rather
+than fabricating a live fixture. That deferral was superseded by the recorded run below; it is not
+an outstanding acceptance criterion now. This reconciliation does not constitute a new live run.
 
 **Closed 2026-09-20.** Six turns, three probes, both agents, through the real BFF. The measurements
 are in [`harness-comparison.md`](harness-comparison.md) and every turn is committed under
@@ -820,11 +817,11 @@ are in [`harness-comparison.md`](harness-comparison.md) and every turn is commit
 
 | Question | Answer |
 |---|---|
-| How far apart are the two harnesses on the same question? | **Time to first token: 2–3×**, consistently — 6.4/4.3/6.6s for the prompt agent against 14.6/13.6/13.9s for the hosted one. *Total* time is comparable, so the gap is where the container plans before speaking, not throughput. |
+| How far apart are the two harnesses on the same question? | **Time to first text: about 2–3× in these probes** — 6.4/4.3/6.6s for the prompt agent against 14.6/13.6/13.9s for the hosted one. *Total* durations overlap. This run cannot identify planning, cold starts, network effects or throughput as the cause. |
 | Does the hosted column really report `usage: null`? | **Yes**, in all three probes. Spec 018's measurement holds, and `MetaLine` renders nothing rather than a zero. |
 | Does a hosted turn emit `mcp_call` at all? | **No — not once.** Learn arrives as `microsoft_docs_search` / `microsoft_docs_fetch` with `executor: "foundry"`, because the container is the MCP client. The prompt agent emits `mcp_call` for the same work. |
 
-These are **two samples per probe from one machine on one day**, not a benchmark, and the numbers
+These are **one prompt and one hosted turn per probe, from one machine on one day**, not a benchmark, and the numbers
 include a localhost hop. Said here rather than left for a reader to assume.
 
 One property this spec did **not** need a credential for, and which is asserted rather than assumed:
@@ -847,7 +844,7 @@ one. Recorded under `ai/tests/fixtures/recorded/compare-chart-*`.
 
 | Probe | What was asked | What came back |
 |---|---|---|
-| `chart-qualitative` | compare the two harnesses on cost to operate and what each gives you | Prose and headings. **This is the correct behaviour**: the instruction says "a comparison *of quantities*", the repository's own comparison doc deliberately carries no numbers, and another rule in the same block forbids inventing a value it does not have. Recorded because declining for the right reason is a finding. |
+| `chart-qualitative` | compare the two harnesses on cost to operate and what each gives you | Prose and headings. **This is the correct behaviour**: the instruction says "a comparison *of quantities*", the comparison document available to that historical run carried no quantitative chart inputs, and another rule in the same block forbids inventing a value it does not have. Recorded because declining for the right reason is a finding. |
 | `chart-quantities` | the populations of São Paulo, Rio and Brasília, compared | **A Markdown table** — three real figures from IBGE via `search_web`, ranked, with ratios and percentages in prose. Every condition the instruction describes was met. It still chose a table. |
 
 So the gap is not the renderer and not the schema — CI proves those agree — it is that **`gpt-5.5`

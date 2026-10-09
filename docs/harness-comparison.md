@@ -33,7 +33,7 @@ AC16, run. Six turns through the real BFF (`ai/scripts/compare_harnesses.py`, wh
 `/chat` exactly as the screen does), against the live project `ai-admin2354ai223634534-project`,
 `gpt-5.5`, from São Paulo. Every turn is committed under
 [`ai/tests/fixtures/recorded/`](../ai/tests/fixtures/recorded/) with its summary; **these are two
-samples per probe, not a benchmark** — they are what one run looked like, on one day, from one
+turns per probe (one per harness), not a benchmark** — they are what one run looked like, on one day, from one
 machine, and the numbers include one localhost hop.
 
 | | prompt agent | hosted agent |
@@ -41,22 +41,18 @@ machine, and the numbers include one localhost hop.
 | First `text_delta` | **6.4s** · 4.3s · 6.6s | **14.6s** · 13.6s · 13.9s |
 | Total | 22.8s · 43.5s · 28.3s | 27.6s · 30.7s · 27.2s |
 | Events in the turn | 387 · 311 · 198 | 373 · 491 · 269 |
-| `reasoning_summary` | 250 · 88 · 79 | **none, ever** |
+| `reasoning_summary` | 250 · 88 · 79 | **absent in these recordings** |
 | `usage` | reported | **`null`** |
-| `mcp_call` | 2 · 0 · 0 | **none, ever** |
+| `mcp_call` | 2 · 0 · 0 | **absent in these recordings** |
 
-Three differences are structural rather than incidental, and each confirms something this table
-already argued:
+These observations distinguish the implementations, without explaining latency causally:
 
-- **Time to first token is the gap that matters.** The hosted agent took 2–3× longer to say its
-  first word in all three probes, while *total* time was comparable or better. The container is
-  doing its own planning before it speaks; the prompt agent starts streaming reasoning almost
-  immediately. For a chat UI, that difference is the whole felt experience.
-- **The hosted turn reports no usage at all** — `usage: null`, exactly as spec 018 measured, so
-  `MetaLine` renders nothing rather than a zero and the cost column stays honestly empty (§5).
-- **The hosted turn emits no `mcp_call`.** Microsoft Learn is reached as `microsoft_docs_search`
-  and `microsoft_docs_fetch` with `executor: "foundry"` — plain tool calls — because the container
-  is the MCP client, not Foundry. Spec 018 predicted this; here it is, in both chart probes too.
+- **First text arrived later for hosted in these three probes.** Total durations overlapped.
+  One turn per harness per probe cannot separate planning, cold starts, network effects or
+  throughput. This is not a performance ranking or production recommendation.
+- **Hosted usage was null**, so the UI reports no token price rather than inventing a zero.
+- **Learn appeared as ordinary hosted tool calls**, not `mcp_call`, because this container is the
+  MCP client. Prompt Learn calls appear under `microsoft_learn`.
 
 One more, which is a property and not a measurement: the prompt agent's function tools arrive with
 `executor: "app"` (`get_current_datetime`, `lookup_knowledge`, `search_web` — our BFF answers them),
@@ -89,36 +85,36 @@ Microsoft has retired.
 `ai/harness/langgraph/agent.yaml`, with a test that fails if the committed file drifts (§4). The
 behaviour they share — model, instructions, tools — lives in neither: it is in
 `ai/harness/_shared/agent_core.yaml`, which both harnesses `extends:`. That is what makes this
-comparison a measurement of the harness rather than of two agents that drifted apart.
+comparison less vulnerable to definition drift. It does not isolate the causes of latency.
 
 ## Tools: why not a Toolbox (yet)
 
 A **Toolbox** — a curated tool set behind one managed MCP endpoint — is the recommended way to scale
 tools across many agents. This repo declares tools **directly on the agent** instead, for one
 concrete reason: **function calling cannot live in a Toolbox.** It is client-side execution by
-definition. Putting the Learn MCP server in a Toolbox while the two function tools stayed direct
-would split three tools across two mechanisms and teach the split rather than the idea. Toolbox is
+definition. Putting the Learn MCP server in a Toolbox while the three function tools stayed direct
+would split four declared surfaces across two mechanisms and teach the split rather than the idea. Toolbox is
 documented here as the scaling path, and is the natural home for the extra MCP tools in Phase 4.
 
 ## Measured, not documented — what spec 018 found
 
 Both agents run the **same model, the same instructions and the same four tools**, from one file
-(`ai/harness/_shared/agent_core.yaml`). Only the harness differs. Everything below is therefore a
-property of the harness, and every row came from a recording or a live query on 2026-09-16.
+(`ai/harness/_shared/agent_core.yaml`). This reduces authoring drift; the rows below describe
+this implementation and its recordings/live queries on 2026-09-16, not every hosted runtime.
 
 | | **Prompt agent** | **Hosted agent** |
 |---|---|---|
 | Who executes `search_web` et al. | the BFF | the container |
 | The event | `tool_call` `executor: "app"` → `tool_result` | `tool_call` `executor: "foundry"` → `tool_result` |
 | Rendered tag | `bff` | `foundry` |
-| Who is the MCP client | **Foundry** → `mcp_call` | **the container** → ordinary tool calls, **never `mcp_call`** |
+| Who is the MCP client | **Foundry** → `mcp_call` | **the container** → ordinary tool calls, **no `mcp_call` in the current normalizer** |
 | Learn tool names | `microsoft_learn` (one server) | `microsoft_docs_search` · `microsoft_code_sample_search` · `microsoft_docs_fetch` (three tools) |
-| `response.completed` per turn | **2** — Foundry completes the leg it is waiting on | **1** — the container never hands the turn back |
+| `response.completed` per turn | **2 for one function round trip**; more rounds mean more completions | **1** — the container never hands the turn back |
 | Token usage | reported | **`usage: null`** — none at all |
-| Reasoning summaries | `detailed`; the card fills | **none**; the card stays empty |
+| Reasoning summaries | `detailed`; present in these probes, optional per turn | **absent in this stream**; the card stays empty |
 | Trace join key | `gen_ai.response.id` | **`microsoft.session.id`** == `agent_session_id`; no span carries a response id |
 | A BFF-run tool in traces | invisible — §8 showing in telemetry | **visible**: `execute_tool get_current_datetime` is a span |
-| Voice Live | attaches | **attaches** — same query, only the agent named changes |
+| Voice Live | attaches | **attachment observed** — one `session.created` frame, not a full voice turn |
 | Adapter shape | a loop over legs, answering function calls | one stream, no loop, nothing to answer |
 | Compute bill | none | per active session |
 
@@ -159,7 +155,16 @@ See [`../ai/harness/langgraph/README.md`](../ai/harness/langgraph/README.md) for
 
 ## Also possible later
 
-A third column, `ai/harness/agent-framework/`, using Microsoft Agent Framework's `FoundryChatClient`.
+A third harness or a Copilot integration remains a separate educational increment. No SDK client,
+product surface or API is selected here without a current documentation read (§10).
+
+## Learn by observing
+
+Follow the [English](learning-journey.md) or [Portuguese](learning-journey.pt-BR.md) journey.
+The hosted graph compiles without a checkpointer; a forwarded Foundry conversation pointer is not
+proof of end-to-end hosted multi-turn continuity. Verify that separately before teaching it as a
+delivered capability. Manual provisioning/cleanup is described in [infra](../infra/README.md);
+root setup instructions and new command/capture verification await #32.
 
 ## `examples:` — what an agent is worth being asked (spec 037)
 

@@ -13,7 +13,7 @@ they normalise different raw streams: `ai/harness/langgraph/events.py` has its o
 `verified` flags, and `GET /config` reports whichever one is running. The **nine-event vocabulary is
 the same for both** — that is §9's whole claim, and a second harness is how it got tested.
 
-Two things this page describes that the **hosted agent never produces**, both findings rather than
+Two things this page describes that the **current hosted normalizer/recordings do not produce**, both findings rather than
 gaps (see [harness-comparison.md](../harness-comparison.md)):
 
 - **`mcp_call`.** With a prompt agent Foundry is the MCP client; with a hosted agent the container
@@ -166,12 +166,15 @@ awaiting (asyncio.sleep)     0.20s  0.41s  0.61s  0.81s  …
 So each `next()` now runs in a worker thread (`PromptAgentAdapter._stream_events`). The awaits are
 sequential, so ordering is untouched; the loop is free to write each frame as it arrives.
 
-## Unknown events are counted, not dropped
+## Unknown-event analysis is offline today
 
-`unmapped_types()` counts raw event types the normaliser does not know. An event Foundry starts
-sending that we ignore is exactly the kind of thing that should be visible rather than invisible.
+`unmapped_types()` counts unknown raw event types in an iterable supplied by a caller, such as
+recording analysis. It is not wired into live BFF diagnostics. `GET /config` reports mapping
+coverage, not a live counter of unexpected upstream events; that diagnostics work belongs to #39.
 
 ## What a turn looks like on the wire
+
+Illustrative contract payloads, not a recorded run; real fixtures are linked above.
 
 ```
 event: reasoning_summary
@@ -187,7 +190,7 @@ event: text_delta
 data: {"type":"text_delta","text":"It is 17:00 in São Paulo."}
 
 event: usage
-data: {"type":"usage","input_tokens":312,"output_tokens":28,"reasoning_tokens":68,"cached_input_tokens":1024}
+data: {"type":"usage","input_tokens":312,"output_tokens":96,"reasoning_tokens":68,"cached_input_tokens":128}
 
 event: trace_ids
 data: {"type":"trace_ids","response_id":"resp_1"}
@@ -257,10 +260,11 @@ Three properties are the point:
 
 - **The events are retained whether or not it is open.** Opening it mid-turn shows the whole turn,
   not the remainder of one — which matters because the turn somebody opens it for is usually the
-  one that just went wrong. Each turn keeps at most 2000 raw events and says so if it hits the cap.
-- **They are kept raw and untyped.** `unknown[]`, not `AgentEvent[]`: the job is to show what
-  crossed the wire, and typing them would hide an event the contract does not know about — which is
-  exactly what somebody opens it to find.
+  one that just went wrong. Each turn keeps at most 2000 normalized wire payloads and says so if it hits the cap.
+- **They are retained as received from the BFF.** `unknown[]`, not `AgentEvent[]`, avoids a
+  frontend assumption hiding a wire payload. These are normalized SSE payloads, not upstream
+  Foundry frames: backend contract validation still applies. The inspector cannot discover an
+  upstream event the normalizer never emitted.
 - **The filter's vocabulary comes from `GET /config`.** A list of type names in the frontend would
   be a fourth place the contract is written down, after `contract.py`, its parity-tested mirror in
   `types/events.ts`, and the config.

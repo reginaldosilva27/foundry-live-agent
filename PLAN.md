@@ -1,13 +1,13 @@
 # foundry-live-agent — PLAN
 
-> Status (2026-09-20): **48 of 49 specs done** (000–048), every acceptance criterion met; 045 is
-> blocked by design, on a retention decision rather than on a document. **050 specs in total**: 049
-> (Foundry IQ) is `planned`, blocked on provisioning an Azure AI Search service. Phases 0–3 closed and
-> Phase 4 delivered its hosted agent (spec 018) — see §6. Chat, voice, tracing and the whole UI run
-> against a live Foundry project. Voice findings observed 2026-09-15 — see §9 for what the docs got
-> wrong. **`specs/README.md` is the live index**; this file is the architecture record behind it.
-> Foundry API details verified against learn.microsoft.com on **2026-09-04** — every URL and API
-> version is recorded in [docs/REFERENCES.md](docs/REFERENCES.md).
+> **Architecture record, reconciled with code and committed evidence.** Spec status lives only in
+> [specs/README.md](specs/README.md), not a manually counted total here. Prompt and hosted agents
+> are implemented; spec 020 AC16 closed historically on **2026-09-20** with six recorded turns,
+> not a benchmark. Infrastructure remains manual. Local retrieval is lexical; Foundry IQ is
+> provisioning-bound. [REFERENCES](docs/REFERENCES.md) owns dated API/evidence provenance.
+> The [EN](docs/learning-journey.md) / [PT-BR](docs/learning-journey.pt-BR.md) learning outline
+> separates implementation from historical live evidence and unverified exercises. README/setup
+> reconciliation and new command/browser-capture verification await baseline issue #32.
 > Engineering practices inherited from
 > [reginaldosilva27/agentic-coding-template](https://github.com/reginaldosilva27/agentic-coding-template).
 
@@ -47,7 +47,7 @@ orchestration, no planning. The backend is a **BFF (Backend For Frontend)** whos
 2. **Streaming** — normalise Foundry's Responses event stream into a typed `AgentEvent` protocol, re-emit as SSE.
 3. **Tool execution** — run the *client-side function tools* Foundry asks us to run, and submit their output.
 4. **Trace lookup** — query Application Insights for the spans of a run.
-5. **Voice signalling** — hold the Voice Live control channel; the browser gets audio only.
+5. **Voice signalling** — hold the Voice Live control channel; the browser carries WebRTC audio/data.
 
 This separation is the repository's main educational point and must stay visible in the folder
 structure and the docs. A reader should point at any file and say *"Foundry does this"* or
@@ -90,72 +90,24 @@ prompts, RAG" layer, and the harness separation stays visually intact.
 
 ## 3. Repository layout
 
-```
-foundry-live-agent/
-├── .specify/constitution.md     Principles + gates + amendment process (the law)
-├── specs/                       SDD decision record — 001…006 (§6)
-│   ├── README.md                Workflow + status index
-│   └── _template/               spec.md · plan.md · tasks.md
-├── .claude/                     skills (new-spec, grilling, verify-gates) + review subagents
-├── .codex/prompts/              Twins of the above for Codex
-├── infra/                       Bicep + azd (azd up / azd down)
-│   ├── main.bicep               Foundry resource, project, model deployment, App Insights
-│   └── modules/                 foundry.bicep · monitoring.bicep · gateway.bicep (O-4)
-├── ai/                          THE AGENT LAYER — harnesses + tools
-│   ├── harness/
-│   │   ├── _shared/
-│   │   │   ├── contract.py      HarnessAdapter Protocol + AgentEvent types  ← built first
-│   │   │   ├── agent_spec.py    Loader/validator for our agent.yaml (§4.1)
-│   │   │   └── tools/           The client-side function tools, implemented ONCE
-│   │   │       ├── datetime_tool.py     get_current_datetime(timezone)
-│   │   │       ├── knowledge_tool.py    lookup_knowledge(query) — swappable for Foundry IQ
-│   │   │       ├── web_search_tool.py   search_web(query) — swappable search backend
-│   │   │       ├── registry.py          name -> (schema, callable)
-│   │   │       └── knowledge/           local markdown corpus
-│   │   ├── prompt-agent/        ← IMPLEMENTED THIS PASS
-│   │   │   ├── agent.yaml       Agent definition as code
-│   │   │   ├── adapter.py       PromptAgentAdapter(HarnessAdapter)
-│   │   │   ├── events.py        Responses stream -> AgentEvent normaliser
-│   │   │   └── README.md        What Foundry runs vs. what the harness runs
-│   │   └── langgraph/           ← SCAFFOLD ONLY (README + stubs + TODOs, no working code)
-│   ├── tests/
-│   │   ├── fixtures/            Recorded Foundry event streams (JSONL)
-│   │   ├── test_contract.py     Parameterised over adapters — LangGraph reuses it verbatim
-│   │   └── test_events.py
-│   └── scripts/apply_agent.py   agent.yaml -> Agent Service SDK (azd up leaves a working agent)
-├── backend/                     FastAPI BFF (Python 3.12, async)
-│   ├── app/
-│   │   ├── main.py              App factory, lifespan, OTel wiring
-│   │   ├── routers/             chat.py · traces.py · voice.py · config.py
-│   │   ├── harness_factory.py   AGENT_HARNESS env var -> adapter instance
-│   │   ├── sse.py               AgentEvent -> text/event-stream
-│   │   ├── tool_executor.py     Runs ai/harness/_shared/tools by name
-│   │   └── telemetry.py         Azure Monitor OTel exporter
-│   └── tests/                   test_tools.py · test_routers.py · test_smoke.py (env-gated)
-├── frontend/                    React + TypeScript + Vite, minimal deps
-│   └── src/
-│       ├── panes/               Conversation · ActivityPanel · TraceDrawer
-│       ├── voice/               WebRTC session, mic capture, playback, barge-in
-│       ├── hooks/               useAgentStream (SSE) · useVoiceSession
-│       ├── i18n/strings.ts      { en, pt } — constitution §7
-│       └── components/          Markdown renderer · SettingsPanel · HarnessBadge
-├── docs/
-│   ├── architecture.md          What runs in Foundry vs. in this app
-│   ├── harness-comparison.md    Prompt agent vs. hosted agent (LangGraph = "planned")
-│   ├── development-workflow.md  SDD + TDD contributor companion
-│   ├── how-it-works/            streaming-events · function-call-round-trip ·
-│   │                            tracing-and-gateway · voice-live-lifecycle
-│   └── REFERENCES.md            ✅ written — doc URLs + API versions actually used
-├── .github/workflows/           ci.yml (4 layer jobs) · release.yml
-├── CLAUDE.md  AGENTS.md         One rule set, two front doors (§6)
-├── README.md  README.pt-BR.md   English + Português 🇧🇷
-├── CHANGELOG.md  CONTRIBUTING.md  SECURITY.md  LICENSE (MIT)
-├── justfile  .env.example  .editorconfig
-└── PLAN.md                      This file — the pre-spec architecture record
-```
+This is a layer map, not a promise of generated infrastructure or an exhaustive file listing:
+
+| Path | Current responsibility |
+|---|---|
+| `.specify/constitution.md`, `specs/` | Principles, gates, decision records and status index |
+| `.claude/`, `.codex/prompts/`, `AGENTS.md`, `CLAUDE.md` | Synchronized agent workflows/guidance |
+| `infra/README.md` | Manual provisioning/cleanup; no root `main.bicep` or modules |
+| `ai/harness/_shared/` | Contract, schema loader, shared core and three function implementations |
+| `ai/harness/prompt_agent/` | Prompt definition, BFF adapter and Responses normalizer |
+| `ai/harness/langgraph/` | Hosted adapter/normalizer plus deployed `agent/` graph/container |
+| `ai/azure.yaml`, `ai/scripts/` | Generated hosted config, apply/build/deploy and recording utilities |
+| `ai/tests/fixtures/recorded/` | Recorded upstream streams, comparison summaries and spans |
+| `backend/app/` | Factory, per-request harness selection, SSE, executor, traces and voice control |
+| `frontend/src/` | Chat, comparison, inspector, history, preferences and WebRTC rendering |
+| `docs/` | Current architecture, measured comparison, lifecycle explanations and learning journey |
 
 **Why the tools live under `ai/harness/_shared/tools/`:** they belong to the *agent*, not the web
-app. Both harnesses declare and execute the same two functions. The location makes it structurally
+app. Both harnesses declare and execute the same three functions. The location makes it structurally
 obvious that swapping the harness does not change the tools.
 
 ---
@@ -177,10 +129,11 @@ A **prompt agent** created via `project.agents.create_version(...)` with a
 The function tools are the teaching moment: **Foundry emits the call and stops. If the BFF does not
 return the output, the run hangs and expires after 10 minutes.**
 
-**Model:** default `gpt-5.4` — GA, unrestricted access, reasoning summaries, tool calling on the
-Responses API, and *interleaved thinking* (visible output before and between reasoning), which makes
-the Activity panel genuinely interesting. Configurable via `FOUNDRY_MODEL_DEPLOYMENT`. Reasoning
-requested with `reasoning={"effort": "medium", "summary": "auto"}` (`concise` unsupported on GPT-5).
+**Model:** the shared `agent_core.yaml` declares `gpt-5.5`. Prompt reasoning summaries are
+configured as `detailed` in `prompt_agent/agent.yaml`, not as a per-request override. A summary
+can still be absent. Read those definitions for defaults rather than treating this plan as a
+second config source; the recorded experiments and rejection of request-side reasoning live in
+[REFERENCES](docs/REFERENCES.md).
 
 **On `agent.yaml` — deliberate deviation.** Foundry's own `agent.yaml` (AgentSchema) is *deprecated*,
 and its replacement `azure.yaml` describes **hosted** agents, not prompt agents. So we keep
@@ -192,7 +145,7 @@ keeps "agent definition as code" without teaching a schema Microsoft retired;
 `ai/harness/langgraph/agent.yaml` so the two cannot disagree (§4).
 
 **Tools: direct integration, not a Toolbox.** Function calling *cannot* live in a Toolbox, so a
-Toolbox would split our three tools across two mechanisms for no pedagogical gain. Toolbox is
+Toolbox would split our four declared tool surfaces across two mechanisms for no pedagogical gain. Toolbox is
 documented as the scaling path.
 
 ### 4.2 Backend (FastAPI BFF)
@@ -200,7 +153,7 @@ documented as the scaling path.
 | Endpoint | Purpose |
 |---|---|
 | `POST /chat` | Streams via the selected `HarnessAdapter`, executes function tools, re-streams SSE |
-| `GET /traces/{response_id}` | Log Analytics query → span tree (agent run > model calls > tool calls) with durations, tokens, APIM correlation |
+| `GET /trace/{response_id}` | Log Analytics query → span tree (agent run > model calls > tool calls) with recorded attributes; hosted response-id correlation is unavailable |
 | `POST /voice/session` | Establishes the Voice Live control channel (§4.4) |
 | `GET /config` | Harness, gateway route, model alias, agent version — feeds the settings panel |
 | `GET /health` | Liveness |
@@ -223,75 +176,18 @@ response = openai.responses.create(input=outputs, conversation=conversation.id,
     extra_body={"agent_reference": {"name": agent.name, "type": "agent_reference"}})
 ```
 
-### 4.3 AI Gateway (APIM) — corrected
+### 4.3 AI Gateway — historical design versus running baseline
 
-> **⚠ This section was wrong in the first draft and is corrected here.** The earlier claim, that all
-> agent and model traffic routes through the AI Gateway, does not hold. Constitution §10 is what
-> caught it. The correction is recorded in `docs/REFERENCES.md`.
+The initial plan considered an admin-connected APIM model (`<connection>/<model>`) and recorded
+portal findings on 2026-09-04. Those findings are design history, not proof of current routing.
+The later recorded baseline uses a plain deployment and **bypasses the gateway**; nothing here
+certifies reasoning summaries through BYOM. [REFERENCES](docs/REFERENCES.md) retains the dated
+reads/findings, and [tracing-and-gateway](docs/how-it-works/tracing-and-gateway.md) explains the
+separate inference, tracing and APIM surfaces.
 
-There are **two different things both called "AI Gateway"**, and the difference decides our config:
-
-| | **Project AI Gateway** (Manage → AI Gateway) | **Bring your own model (BYOM)** |
-|---|---|---|
-| What it governs | **Direct model calls** from clients | **The agent's own inference** |
-| Does agent inference flow through it? | **No** | **Yes** |
-| How it is set up | Associate an APIM v2 instance with the Foundry resource, add projects | An *Admin-connected model* connection of type **Azure API Management** |
-| What the agent's model is called | `gpt-5.4` | **`<connection-name>/<model-name>`** |
-
-This project uses **the second one**, because the whole point is that the *agent's* traffic is
-governed. Concretely, against `https://ai-gateway-foundry-analytics-demo.azure-api.net`:
-
-1. **Manage → Resource details → Admin-connected models → Add → Azure API Management.**
-2. **Base URL** = the gateway **base path only**. Foundry appends the route itself — it calls
-   `chat/completions` on whatever you give it. So a gateway exposing the OpenAI v1 shape takes
-   `https://ai-gateway-foundry-analytics-demo.azure-api.net/<api-base-path>/openai/v1`.
-3. **Auth** — either the APIM **subscription key** (portal → APIM → APIs → Subscriptions), or
-   **Managed Identity**, which is the better choice here: enable a managed identity on the project,
-   then validate it in APIM with a `validate-azure-ad-token` inbound policy. That keeps the "no keys
-   anywhere" property the rest of the repo has.
-4. **Model configuration** — add the deployment name the gateway routes to.
-5. The agent is then created with `model="<connection-name>/gpt-5.4"`.
-
-**The connection already exists** (confirmed 2026-09-04, Manage → Resource details →
-Admin-connected models): name **`foundry-analytics-demo`**, type *Azure API Management*, exposing
-one model — **`gpt-4o`**. So the agent's model is **`foundry-analytics-demo/gpt-4o`**, and there is
-no reason to create the `apim-analytics-demo` connection I had proposed. `FOUNDRY_GATEWAY_CONNECTION_NAME`
-and `FOUNDRY_MODEL_DEPLOYMENT` must agree or Foundry answers `model not found`.
-
-> The connection name matching the Foundry resource name makes `foundry-analytics-demo/gpt-4o` read
-> like *resource/model* rather than *connection/model*. It is only cosmetic and not worth churn.
-
-**`gpt-4o` is not a reasoning model, and that costs us a feature.** Reasoning summaries and
-interleaved thinking — the reason `gpt-5.4` was chosen — do not exist on GPT-4o. On the gateway path
-the `reasoning_summary` event never fires and the activity panel's reasoning card stays empty. Three
-ways out, in order of preference:
-
-1. **Expose a GPT-5.x model on the same connection.** The wizard accepts several models per
-   connection, so this keeps the gateway *and* the reasoning summaries. Recommended.
-2. Accept `gpt-4o`, and have the harness README say plainly that this path has no reasoning
-   summaries — rather than shipping a panel that is empty for reasons nobody can see (§5).
-3. Run the agent on a plain `gpt-5.4` deployment, which bypasses the gateway entirely. Defeats the
-   point of the exercise.
-
-This also partly settles **O-9**: on this connection the question is moot, because the model cannot
-produce reasoning summaries in the first place. Whether they survive the `chat/completions` hop stays
-open until a GPT-5.x model sits behind the gateway.
-
-**Constraints this imposes** (all from the BYOM page, all worth knowing before writing code):
-
-- **The gateway must speak OpenAI-compatible `chat/completions`.** That is the protocol between
-  *Foundry and your APIM* — our BFF still calls the *Responses API* against the project endpoint.
-  Two different hops; don't confuse them.
-- The page states: *"Only prompt agents in the Agent SDK support this feature. The Response API isn't
-  supported at present."* Read in context, that constrains the Foundry→gateway hop, not our
-  BFF→Foundry hop — the page's own walkthrough uses `responses.create()` with an `agent_reference`.
-  **This reading is an assumption and is Open Question O-8.**
-- Supported tools through BYOM include **Functions** and **MCP** — both of ours. Good.
-- **Reasoning summaries are a Responses-API feature.** Whether they survive a `chat/completions` hop
-  to a BYOM model is **not documented**. This is a direct risk to the Agent activity panel — see O-9.
-
-**Unchanged and still true:** the gateway does **not** log tool traces (those come only from Foundry
-tracing), and **Voice Live never passes through any gateway**.
+Gateway integration/provisioning remains a manual, separately verified exercise. Tool spans do
+not come from gateway logs, and Voice Live media never goes through that gateway. Do not teach
+an absent IaC layer or old model connection as an automatic setup/cleanup path.
 
 ### 4.4 Voice Live — revised design (deliberate deviation)
 
@@ -308,15 +204,17 @@ Strictly better for us: **no Azure credential ever reaches the browser**, audio 
 server, and function tool calls arrive on the same backend path the text chat already uses — so
 `tool_executor.py` is shared between text and voice, and the Activity panel keeps working in voice.
 
-Voice Live attaches to the **same prompt agent** via `agent_name` + `project_name` (+ optional
+Voice Live attaches to the **same prompt agent** via `agent_name` + `agent_project_name` (+ optional
 `agent_version`, `conversation_id`), **Entra-only — key auth is unsupported in agent mode**. One
-definition, one tool set, one trace store, two modalities.
+definition and tool set, two modalities. Hosted attachment was recorded, but its one-frame
+voice fixture is not proof of a complete spoken turn or shared trace correlation.
 
 ### 4.5 Frontend
 
 Three panes: **Conversation** (streaming markdown + code blocks) · **Agent activity** (live reasoning
 summaries, tool/MCP calls with arguments and results, token usage) · **Trace drawer** (span tree with
-durations). Plus voice mode (push-to-talk / continuous, barge-in, dual transcript, visual state) and
+durations). Plus voice mode (dual transcript, elapsed session state; interruption visualization remains
+deferred for lack of a recorded event) and
 a settings panel with a **harness badge** so the swap is visible to viewers. All strings `{ en, pt }`.
 
 ### 4.6 Stack decisions
@@ -341,46 +239,30 @@ Backend: **FastAPI + `uvicorn`**, `azure-ai-projects>=2.3.0`, `azure-identity`,
 
 ## 5. The harness contract (built first — it shapes everything)
 
-```python
-class AgentEvent(TypedDict):     # discriminated on "type"
-    type: Literal["reasoning_summary", "text_delta", "tool_call", "tool_result",
-                  "mcp_call", "usage", "trace_ids", "error", "done"]
+The authoritative protocol and event vocabulary live in
+[`contract.py`](ai/harness/_shared/contract.py); do not copy a partial signature here.
+`AGENT_HARNESS` configures the default, while person-selected agents use the per-request mapping
+in [`harness_factory.py`](backend/app/harness_factory.py). No singleton is swapped.
 
-class HarnessAdapter(Protocol):
-    async def stream_response(self, messages, conversation_state) -> AsyncIterator[AgentEvent]: ...
-    async def submit_tool_output(self, call_id: str, output: str, conversation_state) -> None: ...
-    def voice_attachment_params(self) -> VoiceAttachment: ...
-```
+[Streaming events](docs/how-it-works/streaming-events.md) explains each normalizer's mapping and
+recorded coverage. The prompt adapter performs **bounded protocol rounds**, not an agent decision
+loop; the hosted adapter reads one stream from a container that already executed its tools.
+Tests target the shared contract using recordings, with adapter-specific tests for those differences.
+Usage is accumulated across prompt legs and terminal `done` held back; hosted usage/reasoning/MCP
+absences in the current corpus are rendered honestly rather than inferred.
 
-Selected by `AGENT_HARNESS=prompt-agent|langgraph`. The `AgentEvent` protocol is **constitution §9**:
-one source of truth, changed only through a spec.
+### 5.1 `ai/harness/langgraph/` — implemented hosted agent
 
-**Event mapping** (Responses stream → `AgentEvent`; ⚠ = verified against a live stream, see O-1):
+Spec 018 delivered the [graph](ai/harness/langgraph/agent/graph.py), container and BFF adapter.
+The graph owns the model/tool cycle on Foundry; it shares definitions and tool implementations with
+the prompt harness. It compiles **without a checkpointer**: a Postgres checkpoint, a gateway route,
+Foundry IQ or a supervisor fallback from the original outline is not a delivered component.
 
-| Foundry event | `AgentEvent` |
-|---|---|
-| `response.output_text.delta` | `text_delta` |
-| `response.reasoning_summary_text.delta` ⚠ | `reasoning_summary` |
-| `response.output_item.added` (`function_call`) + `response.function_call_arguments.delta/.done` | `tool_call` |
-| our executor's return value | `tool_result` |
-| `response.mcp_call.*` ⚠ | `mcp_call` |
-| `response.completed` | `usage`, then `done` |
-| `response.failed` / `error` | `error` |
-
-**Tests target the contract, not the implementation.** `ai/tests/test_contract.py` is parameterised
-over adapters and driven by recorded JSONL fixtures, so the LangGraph adapter is later developed
-against the identical suite. This is the clearest payoff of TDD here, and why the contract is spec 001.
-
-### 5.1 `ai/harness/langgraph/` — scaffold only, documented not implemented
-
-To be written in its README with no working code: LangGraph graph packaged as a Foundry **hosted
-agent** container exposing the **Responses** protocol; model calls via the Responses API through the
-AI Gateway; Foundry-side tools (MCP, later Foundry IQ) declared in the Responses call or a Toolbox;
-**Postgres checkpointer** for graph state (noting hosted agents also persist `$HOME` + `/files` per
-session with a 5–60 min idle timeout, so document which state lives where); registered/versioned via
-`azure.yaml` + `azd`; Voice Live attached to the hosted agent, with a fallback of a thin prompt agent
-invoking the hosted agent as a tool (**chat-supervisor pattern**). Plus a note that
-`ai/harness/agent-framework/` may be added later as a third comparison point.
+The [hosted README](ai/harness/langgraph/README.md) owns deployment and identity/Key Vault steps;
+`ai/azure.yaml` is generated from our schema, not full root IaC. The
+[comparison](docs/harness-comparison.md) records usage/reasoning/trace gaps and attachment-only voice
+evidence. Hosted multi-turn continuity must be measured before teaching it as verified. A third
+harness or Copilot publication remains a separate decision; no API is chosen from memory.
 
 ---
 
@@ -397,14 +279,15 @@ one that does not need approval of the architecture**, since it is the inherited
 | **003** ✅ | 1 | BFF `/chat` streaming + SSE + function-call round trip + `/config` | Question forcing a Learn MCP lookup *and* a function call |
 | **004** ✅ | 1 | Frontend: three panes, streaming markdown, activity panel, harness badge — built on the **Dataside design system** imported from Claude Design | **Done** — the shell runs against the BFF; the full Phase 1 demo waits on a model deployment (spec 002, pass 2) |
 | **005** ✅ | 2 | Trace drawer + gateway correlation + usage/cost display | Open the drawer, see the span tree with durations and tokens |
-| **006** ✅ | 3 | Voice mode via Voice Live on the same prompt agent | Speak, interrupt mid-sentence, watch a tool call fire during voice |
+| **006** ✅ | 3 | Voice mode via Voice Live on the same prompt agent | Speak and watch requested tools; interruption visualization has no recorded evidence |
 | **018** ✅ | 4 | **Hosted agent harness** — the second harness behind the same contract, a LangGraph graph run by Foundry as a container | **Done** — `docs/harness-comparison.md`, measured |
-| **007–017, 019–048** ✅ | 3–4 | Everything the table above does not name: voice transcript and spoken answers, the trace panel, the agent picker, the whole UI backlog, the comparison screen | See [`specs/README.md`](specs/README.md) — the live index, one row per spec |
+| **Later numbered specs** | 3–4 | Subsequent UI/voice/history/comparison work; consult the index for individual done/blocked/deferred criteria | See [`specs/README.md`](specs/README.md) — the live index, one row per spec |
 | **049** 📐 | 4 | **Foundry IQ as a knowledge source** — `planned` 2026-09-20; blocked on one manual setup step (T0). Reading the docs found a **second** route: the GA `/retrieve` REST call, which swaps the `KnowledgeSource` behind `lookup_knowledge` and keeps the round trip, instead of the MCP tool that would have deleted it | — |
+| **050** | 4 | Separate local replay entrypoint, visibly labelled and based on recorded fixtures | Setup and learner command verification await #32 |
 | — | 4 | **Still not implemented.** More MCP tools (Databricks Genie, Azure DevOps), publish to M365 Copilot / Teams | — |
 
-**This table is the original phase plan, kept as the record of it.** It stops naming specs
-individually at 006 because after that the work stopped being phase-shaped — the numbered index in
+**This table preserves the original phase plan with selected later milestones.** After 006 the
+work stopped being phase-shaped — the numbered index in
 [`specs/README.md`](specs/README.md) is where execution order and status actually live (§4).
 
 Per the template, each spec goes through **grilling (clarify)** before its plan — which is where the
@@ -414,19 +297,20 @@ open questions below get resolved, one at a time.
 
 ## 7. Open questions
 
-**Eight of the nine are answered.** Each was closed by a spike or a doc read and the *answer* lives
+These original questions record their evidence status, not a count of closed platform questions.
+The dated *answer* lives
 in [`docs/REFERENCES.md`](docs/REFERENCES.md), with its date and its evidence — this table says
-which, and does not restate them (§4). Only **O-4** is still open.
+which, and does not restate them (§4). Gateway/BYOM behavior not exercised by the plain-deployment recordings remains unverified.
 
 | # | Question | Where it landed |
 |---|---|---|
 | **O-1** | Exact streaming event names for **reasoning summary** and **MCP call** deltas aren't in the docs I read. | ✅ **Answered in full** — 21 distinct event types, mapped and tested. `REFERENCES.md`, spike 2026-09-15. |
 | **O-2** | Does Voice Live **agent mode** work over the **WebRTC** `/calls` endpoint, or is agent mode WebSocket-only? Docs cover each separately. | ✅ **Answered: yes**, agent mode works over WebRTC — the full handshake completed. `REFERENCES.md`, 2026-09-15. The endpoint exists only on `api-version=2026-01-01-preview`. |
 | **O-3** | `require_approval` for the Learn MCP tool — docs consistently show `"always"`, which adds an approval round trip. Is `"never"` accepted? | ✅ **Answered: `never` is accepted.** Zero approval events across 441 recorded ones. `ai/harness/_shared/agent_core.yaml` declares it. |
-| **O-4** | **AI Gateway has no documented Bicep/azd path** — it is a portal flow that creates/associates an APIM v2 instance. | ⛔ **Still open** — the only one. No Bicep/azd path is documented for the AI Gateway; it remains a portal flow, and §5 forbids shipping IaC nobody could verify. `REFERENCES.md`. |
+| **O-4** | **AI Gateway has no documented Bicep/azd path** — it is a portal flow that creates/associates an APIM v2 instance. | ⛔ **Still open**. No Bicep/azd path is documented for the AI Gateway; it remains a portal flow, and §5 forbids shipping IaC nobody could verify. `REFERENCES.md`. |
 | **O-5** | Region. Voice Live, hosted agents, HD voices and gateway tiers have **different** region lists. | ✅ **Settled: `eastus2`**, which serves Voice Live for this resource. `REFERENCES.md`, 2026-09-15. |
 | **O-8** | The BYOM page says *"The Response API isn't supported at present."* I read that as constraining the **Foundry→gateway** hop (which must be `chat/completions`), not our **BFF→Foundry** hop — the page's own sample uses `responses.create()`. If that reading is wrong, the prompt agent cannot be driven by the Responses API while on a BYOM model, and the whole streaming design changes. | ✅ **Answered: yes.** `responses.create(stream=True)` with an `agent_reference` drives a prompt agent end to end. *Caveat:* it ran on a plain deployment; the `<connection>/<model>` BYOM hop is still unverified. `REFERENCES.md`. |
-| **O-9** | **Do reasoning summaries survive the BYOM hop?** | ✅ **Answered: yes, but only from the agent definition** — and `summary: auto` is not enough, so it says `detailed`. `REFERENCES.md`. |
+| **O-9** | **Do reasoning summaries survive the BYOM hop?** | **Partly answered:** summaries work from the agent definition on the plain deployment (`detailed`). Survival through BYOM is not established by that run. `REFERENCES.md`. |
 | **O-7** ✅ | **Frontend design source.** | **Settled.** Design read via `DesignSync` on 2026-09-04 and recorded in [`docs/design-system.md`](docs/design-system.md), together with nine points where the mock and the implementation disagree. Spec 004 unblocked. |
 | **O-6** | Voice Live **api-version is genuinely ambiguous**: `2026-04-10` (WS how-to), `2026-01-01-preview` (WebRTC + agent samples), `2026-06-01-preview` (a reference page), `2026-07-15` (gates Live-Reference AEC). Docs don't say which is current. | ✅ **Settled by pinning both.** `2026-01-01-preview` for the WebRTC `/calls` endpoint — the only one that serves it — and `2026-04-10` for plain WebSocket. Both in `.env.example`. |
 
@@ -449,7 +333,9 @@ Each is a considered choice with a documented reason. Say the word and I'll reve
 
 ## 9. Ground rules honoured
 
-- **Zero secrets.** `.env.example` placeholders only; `DefaultAzureCredential` everywhere; the browser never holds an Azure credential (§4.4).
+- **No Azure keys.** `.env.example` placeholders only; Entra via `DefaultAzureCredential`.
+  `TAVILY_API_KEY` is the documented third-party exception; the browser holds neither it nor an
+  Azure credential. Hosted retrieval of that secret uses Key Vault with the agent identity.
 - **One documented command per service** via `justfile`, delegating to the canonical gate commands.
 - **Code and comments in English.** README in English + `README.pt-BR.md`. MIT license.
 - **Every doc URL and API version recorded** in [`docs/REFERENCES.md`](docs/REFERENCES.md) ✅ written.
@@ -461,7 +347,7 @@ Each is a considered choice with a documented reason. Say the word and I'll reve
 
 It asked, at the bottom, for three confirmations before any feature code was written: the six
 deviations in §8, anything to redirect in the open questions, and a `DesignSync` login for spec 004.
-All three were given, and forty-eight specs followed.
+All three were given, and the numbered specs record the subsequent work.
 
 So this is **the architecture record**, not a live plan: §0, §4 and §5 are why the code looks the
 way it does, and §8 is the list of places it deliberately departs from the original brief. Two

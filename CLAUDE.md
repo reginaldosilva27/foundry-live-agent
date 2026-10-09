@@ -274,11 +274,11 @@ violation.
   because the app never asks a model what to ask it (§8). **The service has no field for these**,
   so the BFF joins its rows against our own YAML by name and an agent we did not write carries
   none; "ours only" is a permanent limitation, not a gap.
-- **The events are retained and watchable (spec 038).** `AgentMessage.events` keeps every raw event
-  of a turn **whether or not the inspector is open** — opening it mid-turn must show the whole turn
-  — capped at 2000 with `truncated` said out loud. They are `unknown[]`, not `AgentEvent[]`: the
-  panel exists to show what crossed the wire, and typing them would hide the event somebody opened
-  it to find. **Absent** on a turn that never streamed (a replayed voice session, a restored
+- **The events are retained and watchable (spec 038).** `AgentMessage.events` keeps every normalized
+  BFF SSE payload of a turn **whether or not the inspector is open** — opening it mid-turn must
+  show the whole turn — capped at 2000 with `truncated` said out loud. They are `unknown[]`, not
+  `AgentEvent[]`: the panel shows what crossed that wire without frontend type assumptions. It
+  cannot show upstream Foundry frames the normalizer never emitted. **Absent** on a turn that never streamed (a replayed voice session, a restored
   conversation) — different from empty. The filter's vocabulary comes from `GET /config`; the only
   sanctioned mirror of the contract in the frontend is `types/events.ts`, and a test enforces it.
 - **The voice overlay shows the session working, and one thing it refuses to show (spec 039).**
@@ -384,9 +384,9 @@ violation.
   one new thing is the **turn-id prefix** on `useAgentStream`: two instances both mint `turn_0`, and
   the trace panel, the event inspector and the log reader all address a turn by that id. **The app
   says nothing about which answer is better** — no score, no ranking — because that is one step from
-  the app reading model output. AC16, the *measured* run against the live service, is outstanding
-  and recorded in `docs/REFERENCES.md`; `docs/harness-comparison.md` carries the section with **no
-  numbers in it**, since a table of plausible latencies nobody measured is worse than an empty one.
+  the app reading model output. **AC16 closed historically on 2026-09-20**: six recorded turns,
+  one prompt and one hosted turn per probe. `docs/harness-comparison.md` carries the dated samples,
+  not a benchmark or proof of what caused the latency; `docs/REFERENCES.md` records their provenance.
 - **A question cannot carry a file, and that is a decision (spec 045).** Clarified and **blocked**
   on its own first question — does the Responses API accept file input beside a message, and how? No
   doc read, no credential to probe with, and three different designs wear the same name (§10). Two
@@ -473,11 +473,11 @@ violation.
 ## Conventions
 
 - **SDD + TDD are mandatory** (see "How we build here"), even when the request doesn't mention it.
-- **One source of truth (§4)** — each fact lives in one place; the two function tools are implemented
+- **One source of truth (§4)** — each fact lives in one place; the three function tools are implemented
   **once** in `ai/harness/_shared/tools/` and shared by every harness.
 - **Honesty (§5)** — fixtures are recorded from real runs, never hand-written to make a test pass.
-  `ai/harness/langgraph/` is a scaffold and says so. Unverifiable infrastructure is documented as a
-  manual step, not shipped as unverified IaC.
+  `ai/harness/langgraph/` implements the hosted agent; its recorded telemetry limits are explicit.
+  Unverifiable infrastructure is documented as a manual step, not shipped as unverified IaC.
 - **Agent guidance in sync (§6)** — change a rule in `CLAUDE.md`, change it in `AGENTS.md` and the
   `.claude`/`.codex` workflows in the same commit.
 - **Bilingual (§7)** — user-facing strings ship `{ en, pt }` in `frontend/src/i18n/strings.ts`;
@@ -499,3 +499,5 @@ violation.
   the Voice Live session lifecycle.
 - `docs/REFERENCES.md` — every Foundry doc URL and API version relied on (§10).
 - `docs/development-workflow.md` — SDD + TDD, the contributor companion to the constitution.
+- `docs/learning-journey.md` ↔ `docs/learning-journey.pt-BR.md` — educational modules, evidence and
+  publication checklist; runnable setup and capture verification remain dependency-bound (#32).

@@ -1,11 +1,10 @@
 # Architecture — what runs in Foundry vs. what runs in this app
 
-> **Status: stub.** This document describes the *running* system, so it is written as the system
-> comes to exist — filled by **specs 003–006**, and kept in sync with the code from then on
-> (constitution §4). The design record that precedes it is [`../PLAN.md`](../PLAN.md); this file will
-> replace it as the description of what actually runs.
->
-> Writing it now would mean describing software that does not run yet (constitution §5).
+> **Implemented reference system; evidence is dated, not a fresh deployment certificate.** Prompt
+> and hosted agents share the contract. [PLAN](../PLAN.md) preserves design history; this page
+> describes current code, and [REFERENCES](REFERENCES.md) distinguishes doc reads from live findings.
+> Start the educational outline in [English](learning-journey.md) or
+> [Português](learning-journey.pt-BR.md). Setup and new browser captures await #32.
 
 ## The one-sentence version
 
@@ -18,26 +17,26 @@ in [`../README.md`](../README.md).
 Since 2026-09-16 there are **two** agents in Foundry, behind one `AgentEvent` contract, running the
 same model, instructions and tools from one file (`ai/harness/_shared/agent_core.yaml`):
 
-```
-                     ┌── prompt agent ──────────────────────────────────────┐
-                     │  Foundry runs the loop.                              │
-Browser ──SSE──> BFF │  It emits a function call and WAITS; the BFF runs    │
-   │             │   │  the tool and answers. Two legs per turn.            │
-   │             │   │  Microsoft Learn is Foundry's MCP client → mcp_call  │
-   │             │   └──────────────────────────────────────────────────────┘
-   │             │   ┌── hosted agent (LangGraph) ──────────────────────────┐
-   │             └──>│  OUR CONTAINER runs the loop, on Foundry.            │
-   │                 │  It calls its own tools and answers them. One leg.   │
-   └──WebRTC────────>│  The container is the MCP client → no mcp_call       │
-      (Voice Live,   │  ai/harness/langgraph/agent/ — 1 vCPU / 2 GiB        │
-       both agents)  └──────────────────────────────────────────────────────┘
+```text
+Browser <──SSE── BFF ──┬──> prompt agent (Foundry runs the decision loop)
+   │                  │    Foundry requests functions; BFF answers them.
+   │                  │    Foundry is the Learn MCP client → mcp_call.
+   │                  │
+   │                  └──> hosted agent (our container runs on Foundry)
+   │                       The container selects and answers its tools.
+   │                       The container is the Learn MCP client → tool_call.
+   │                       Code: ai/harness/langgraph/agent/
+   │
+   └──WebRTC audio/data──> Voice Live (BFF holds a separate control channel)
 ```
 
 **Which half is "the app" matters, and §8 was amended to say it properly.** The BFF and the browser
 contain no agent-loop logic — that is unchanged. But a hosted agent's loop *is* in this repository,
 in `ai/harness/langgraph/agent/`, because that directory is where an agent is **authored** before
 being deployed to Foundry. Inside one harness: the **adapter** is imported by the BFF and contains no
-loop; the **agent** runs on Foundry and is nothing but loop.
+**agent** loop: the prompt adapter performs a capped protocol round trip, deciding nothing.
+The **agent** runs on Foundry; the hosted LangGraph graph contains the model/tool decision loop.
+The hosted voice recording proves attachment only, not a complete spoken conversation.
 
 What the two cost each other is measured, not described, in
 [`harness-comparison.md`](harness-comparison.md).
@@ -89,7 +88,8 @@ Browser ──POST /agents/{name}/versions/{version}/promote──> BFF ──up
 **"The served version" is not "the newest version".** An agent endpoint can pin a version through
 `agent_endpoint.version_selector`, and the moment anything does, the two come apart. One function,
 `served_version()` in `backend/app/agents.py`, is where that distinction is decided — the selector's
-version when the endpoint carries one, the newest when it does not.
+version when a rule names one, the newest for the `@latest` sentinel. Merely having an
+`agent_endpoint` is not evidence of a pin.
 
 Three properties, each a decision:
 
@@ -99,15 +99,17 @@ Three properties, each a decision:
   afford two more calls, is the authoritative place for what is actually served. A test asserts the
   absence of the extra call.
 - **The write is off by default and bounded twice.** A flag decides whether the surface exists at
-  all; the harness `agent.yaml` names decide which agents it applies to. Neither is a permission —
-  RBAC is — and [`SECURITY.md`](../SECURITY.md) is where that is spelled out, because a BFF this app
+  all; the harness `agent.yaml` names bound which agents it applies to. The flag is an operator
+  permission, not an RBAC grant; Azure RBAC must also allow the write.
+  [`SECURITY.md`](../SECURITY.md) spells this out, because a BFF this app
   puts no sign-in in front of is a real consideration rather than a footnote.
 - **It reads back rather than assuming.** The response to a promotion is a fresh read, so a
   promotion that silently did not take effect looks like one.
 
 This is the first thing in the app that writes to Foundry, and the deliberate shape of the route is
 that it *cannot* do more: there is no request body, so no agent definition can travel on it. Editing
-an agent from the browser remains out of scope, and creating a version stays with `apply_agent.py`.
+instructions on screen (spec 041) produces a proposal diff only: it saves neither the source
+file nor Foundry. Creating a version stays with `apply_agent.py`.
 
 ## What the browser keeps, and what it must never keep (spec 021)
 
@@ -116,7 +118,8 @@ conversations down the left. The last of those is the one that needed an argumen
 the platform already holds" is exactly what §8 forbids the app to duplicate.
 
 What this browser stores is **not the conversation**. Foundry owns that, keyed by
-`conversation_id`. `localStorage` holds two things beside it:
+`conversation_id`. `localStorage` holds rendering data and browser preferences beside it; the keys are owned by
+`frontend/src/state/storage.ts`. The conversation-related entries include:
 
 | Key | What it is |
 |---|---|
@@ -182,18 +185,29 @@ says so. There is no second failure mode and no "imported" flag on the record.
 The export format's single source of truth is `frontend/src/state/history.ts`, which owns the stored
 shape and the exported one together (§4).
 
-## Planned outline
+## Layers, trust and observation
 
-| Section | Filled by |
-|---|---|
-| The trust boundary — what holds a credential, and what never does | spec 003 |
-| Why a BFF exists at all, and what it is forbidden from doing (§8) | spec 003 |
-| The `AgentEvent` contract and why two harnesses can share it (§9) | spec 001 |
-| Request lifecycle: browser → BFF → Responses API → agent → tools → back | spec 003 |
-| Where state lives: Foundry conversations vs. anything we hold | spec 003 |
-| What the browser renders, and why it cannot decide anything (§8) | spec 004 |
-| Tracing topology: Foundry spans, APIM logs, and what neither one records | spec 005 |
-| Voice topology: three channels, and why audio skips our server | ✅ [how-it-works/voice-live-lifecycle.md](how-it-works/voice-live-lifecycle.md) |
+| Layer | Owns | Does not own |
+|---|---|---|
+| [AI](../ai/harness/) | Shared definitions, function implementations, adapters; hosted graph deployed to Foundry | A second app-side decision loop |
+| [BFF](../backend/app/) | Entra credentials, per-request adapter, SSE, requested function execution, trace lookup, voice control | Tool selection, browser history, audio media |
+| [Frontend](../frontend/src/) | Rendering, person-selected agent, local drawing/preferences, WebRTC media/data | Azure credentials, model decisions, Foundry conversation state |
+| [Infrastructure](../infra/README.md) | Documented manual provisioning | A verified root `azd up`/`azd down` lifecycle |
+
+`lookup_knowledge` is lexical retrieval over local Markdown sections, not vectors or Foundry IQ.
+The `KnowledgeSource` seam enables a future swap; [spec 049](../specs/049-foundry-iq-knowledge/) remains
+provisioning-bound. `search_web` uses the documented third-party `TAVILY_API_KEY` exception.
+Hosted execution reads that secret through its own identity/Key Vault path; the browser gets no key.
+
+[Streaming](how-it-works/streaming-events.md) distinguishes upstream frames from normalized SSE.
+[Tracing](how-it-works/tracing-and-gateway.md) explains the current response-id lookup:
+hosted spans use `microsoft.session.id`, so they are not reachable through that drawer today.
+No usage, reasoning summary or `mcp_call` is emitted by the current hosted normalizer/corpus;
+absence is not zero or proof of a universal service limitation. The baseline bypasses the gateway;
+no gateway tool-trace coverage is claimed.
+
+[Spec 050](../specs/050-demo-mode/) adds a separate replay entrypoint. It renders committed
+recordings rather than answering the new question; it does not certify a live deployment.
 
 ## Facts already established (cited in [REFERENCES.md](REFERENCES.md))
 
@@ -234,7 +248,7 @@ it is generated from the configuration, and this page is written.
 
 ## Addresses (spec 024)
 
-The frontend has nine addresses and one reservation. `frontend/src/state/route.ts` is their single
+The frontend routes below are implemented, not reservations. `frontend/src/state/route.ts` is their single
 source of truth — every link is built through it, and `route.test.ts` proves the parse and the build
 round-trip for **every** route in `ROUTES`, so this table cannot quietly fall behind the code again.
 
@@ -272,9 +286,9 @@ have the record.
 
 ## The one origin that is not the BFF (spec 044)
 
-"The browser talks to the BFF and nothing else" is true of every request this app **makes**. An
-`<img>` in an answer is not one of them: when the agent cites a page with a diagram, the browser
-loads that diagram from the documentation host.
+Application API calls go to the BFF, but there are two direct browser paths: WebRTC media/data
+to Voice Live, and an `<img>` URL in an answer loaded from its host. Neither carries an Azure
+credential from the browser. Images can still disclose a request to an external host.
 
 The alternative is worse. Proxying it would make the BFF a machine that fetches arbitrary URLs on
 request, which is a larger hole than loading an image. So the image is loaded directly, with

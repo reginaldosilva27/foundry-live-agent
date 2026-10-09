@@ -23,11 +23,12 @@ Ordered TDD. Each implement task is preceded by the failing test that drives it.
 - [x] **T13 — i18n + styles**: the strings in `en`/`pt`; the grid in tokens only.
 - [x] **T14 — a11y**: the compare screen joins `a11y.test.tsx`'s walk.
 - [x] **T15 — docs**: `/compare` stops being reserved; `harness-comparison.md` gains the section and
-      says it is unmeasured; `REFERENCES.md` records AC16's open item.
-- [x] **T16 — spec**: status `planned → done`, with AC16 named as outstanding and why.
+      records the dated samples; `REFERENCES.md` records AC16's historical closure (2026-09-20).
+- [x] **T16 — spec**: status `planned → done`; AC16 closed by the later recorded live run on 2026-09-20.
 
 ## Definition of done
 
-- [x] Every acceptance criterion maps to a passing test, or is deferred with its reason recorded
-      (AC16 is deferred — it needs a live run; recorded in `docs/REFERENCES.md`)
-- [x] Lint clean · Tests green · `verify-gates` green
+- [x] Every acceptance criterion maps to a passing test or recorded live evidence
+      (AC16 met 2026-09-20; recorded in `docs/REFERENCES.md`)
+- [x] Lint clean · Tests green · `verify-gates` green (historical implementation checks, not rerun
+      by the documentation reconciliation)

@@ -79,8 +79,8 @@ concatenation safe.
   no colour literals (spec 036).
 - `frontend/src/a11y.test.tsx` — the compare screen joins the screens walked on every commit.
 - `docs/architecture.md` — `/compare` stops being "reserved".
-- `docs/harness-comparison.md` — gains the section AC16 will fill, and says today it is unfilled.
-- `docs/REFERENCES.md` — AC16's live run as an open item, with what closes it.
+- `docs/harness-comparison.md` — carries the dated measurements that closed AC16 on 2026-09-20.
+- `docs/REFERENCES.md` — AC16's initial deferral and subsequent recorded closure.
 - `specs/README.md` — the index table's stale statuses for 020 and 027–045.
 
 ## Contract / data model changes (constitution §4)
@@ -137,16 +137,11 @@ them except to add the compare screen to `a11y.test.tsx`.
 | AC15 | every new key exists in `en` and `pt` | `strings.test.ts` (existing, automatic) |
 | AC16 | **met 2026-09-20** — `ai/scripts/compare_harnesses.py`, 6 recorded turns | `ai/tests/fixtures/recorded/compare-*` |
 
-**AC16 cannot be met in this change and is not pretended to be.** It asks for a live run of the same
-question against both agents, recorded as a dated fixture, with the observed differences written
-into `docs/harness-comparison.md`. That needs a run against the live service and §5 forbids
-hand-writing a recording to stand in for one. (**Amended 2026-09-20:** the credential was there all
-along — a shadowed `az` binary, see `docs/REFERENCES.md`. AC16 is not blocked on tooling; it is
-blocked on two turns actually being run, which spends model tokens.) So
-`docs/harness-comparison.md` gains the section with an explicit note that it is **unmeasured**, and
-`docs/REFERENCES.md` gains the open item with what closes it: one comparison run. The spec ships at
-`done` with AC16 named as outstanding, the same way spec 033's "does the agent write a valid chart
-block" and spec 039's barge-in did.
+**AC16 closed 2026-09-20.** The initial implementation deferred the metered live run rather than
+fabricating fixtures. A later run through the real BFF recorded six turns: three probes, one prompt
+and one hosted turn each. `docs/harness-comparison.md` reports the dated samples and
+`docs/REFERENCES.md` records their provenance. They are not a benchmark; the closure is historical,
+not evidence that commands or browser captures were rerun during documentation reconciliation.
 
 ## Risks / trade-offs
 
