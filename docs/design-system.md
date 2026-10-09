@@ -183,7 +183,11 @@ the rail through `aria-controls` and reports `aria-expanded`. The existing overl
 the rail initial focus, wraps Tab/Shift+Tab and returns focus on dismissal; Escape, the close
 control, outside click and navigation keep their existing dismissal handlers.
 
-**Observed in Chromium 156.0.8078.4, recorded demo only, no Azure calls:**
+**Observed in Chromium 156.0.8078.4, no Azure calls. Verification correction:** the initial
+18335 UI origin was outside the BFF's CORS allowlist; its layout/keyboard measurements were real,
+but its inspector screenshot did **not** prove replayed chat. Publication checks reran the app on
+the documented, allowed `http://127.0.0.1:5173` origin with the recorded-demo BFF on 18334. The
+observations below now refer to that successful replay run, not the blocked-origin attempt:
 
 - At **320, 390 and 760 CSS px**, in light and dark: backdrop computed `block`; 18 Tab steps
   skipped the closed rail; 35 forward and 35 reverse steps stayed inside the open rail. Escape,
@@ -212,7 +216,20 @@ green; neither the palette nor the focus-ring rules changed. No live-service beh
 After local integration of #29's preferences commit, the same gate commands passed again:
 **1055 frontend tests**, **299 backend tests**, **246 AI tests / 3 skipped**, with infra still
 absent. Both browser scripts were rerun against that integrated tree: the six mobile/theme cases,
-desktop inspectors and native 200% zoom checks passed unchanged.
+desktop inspectors and native 200% zoom checks passed. The allowed-origin run also confirmed
+persisted Portuguese and English after reload, a replayed chat with the reasoning summary opened
+by the stored preference, its per-turn collapse control, and no `/speech` request or automatic
+trace opening.
+
+That real listing exposed one tightly coupled demo regression: at 320px the recording picker
+extended to **414px**. Its flex item's intrinsic minimum was wider than the available row. Bounding
+the picker to `max-width: 100%` and allowing both picker and select to shrink (`min-width: 0`)
+keeps the original labelled native control and tokens. Regression command
+`cd frontend && npm test -- src/styles/layout.test.ts`: **RED 1 failed / 35 passed**, then
+**GREEN 36 passed**. All six mobile/theme cases again reported document width equal to viewport
+width; native 200% zoom and both desktop inspectors passed against actual replay. Final publication
+gates, using the exact commands above, passed **1056 frontend tests**, **299 backend tests** and
+**246 AI tests / 3 skipped**; infra remained absent. Existing ref-lint/bundle warnings remain.
 
 ## The focus ring (spec 048)
 

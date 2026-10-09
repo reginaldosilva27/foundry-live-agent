@@ -224,6 +224,8 @@ button:disabled {
 
 .demo-banner__pick {
   display: flex;
+  max-width: 100%;
+  min-width: 0;
   flex-shrink: 0;
   align-items: center;
   gap: var(--sp-2);
@@ -234,6 +236,7 @@ button:disabled {
 }
 
 .demo-banner__select {
+  min-width: 0;
   max-width: 22rem;
   padding: 2px var(--sp-2);
   border: 1px solid var(--border-2);

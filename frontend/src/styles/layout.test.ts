@@ -206,6 +206,14 @@ describe('app.css', () => {
     expect(banner).toMatch(/grid-row:\s*1/)
   })
 
+  it('bounds the demo picker to its row so long recording names fit the mobile floor', () => {
+    const pick = css.split('\n.demo-banner__pick {')[1].split('}')[0]
+    const select = css.split('\n.demo-banner__select {')[1].split('}')[0]
+    expect(pick).toMatch(/max-width:\s*100%/)
+    expect(pick).toMatch(/min-width:\s*0/)
+    expect(select).toMatch(/min-width:\s*0/)
+  })
+
   /**
    * Spec 038 — the inspector "lives beside the chat like the trace panel does", and it did not.
    *
