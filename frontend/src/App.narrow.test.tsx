@@ -138,6 +138,47 @@ describe('it is the same navigation, not a second one (AC3)', () => {
   })
 })
 
+describe('off-canvas keyboard regression (#34)', () => {
+  it('makes only the closed narrow rail inert and updates on resize', async () => {
+    const media = new EventTarget() as MediaQueryList
+    Object.defineProperty(media, 'matches', { value: true, writable: true })
+    vi.stubGlobal('matchMedia', vi.fn(() => media))
+    fakeBff()
+    render(<App />)
+    await screen.findByRole('textbox', { name: t('composer.placeholder', 'en') })
+    expect(rail()).toHaveAttribute('inert')
+    expect(openMenu()).toHaveAttribute('aria-expanded', 'false')
+    expect(openMenu()).toHaveAttribute('aria-controls', rail().id)
+    const user = userEvent.setup()
+    await user.click(openMenu())
+    expect(rail()).not.toHaveAttribute('inert')
+    expect(openMenu()).toHaveAttribute('aria-expanded', 'true')
+    await user.keyboard('{Escape}')
+    expect(openMenu()).toHaveFocus()
+    expect(rail()).toHaveAttribute('inert')
+    Object.defineProperty(media, 'matches', { value: false })
+    media.dispatchEvent(new Event('change'))
+    await waitFor(() => expect(rail()).not.toHaveAttribute('inert'))
+  })
+
+  it('takes focus on open, wraps Tab in the rail and returns it on dismissal', async () => {
+    fakeBff()
+    render(<App />)
+    await screen.findByRole('textbox', { name: t('composer.placeholder', 'en') })
+    const user = userEvent.setup()
+    await user.click(openMenu())
+    const close = within(rail()).getByRole('button', { name: t('nav.closeMenu', 'en') })
+    expect(close).toHaveFocus()
+    await user.tab({ shift: true })
+    expect(rail()).toContainElement(document.activeElement as HTMLElement)
+    expect(close).not.toHaveFocus()
+    await user.tab()
+    expect(close).toHaveFocus()
+    await user.click(screen.getByTestId('rail-backdrop'))
+    expect(openMenu()).toHaveFocus()
+  })
+})
+
 describe('closing it (AC4)', () => {
   it('closes on Escape', async () => {
     fakeBff()

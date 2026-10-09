@@ -155,6 +155,10 @@ describe('app.css', () => {
       expect(narrow).toBeDefined()
     })
 
+    it('restores the backdrop display at the narrow breakpoint', () => {
+      expect(narrow).toMatch(/\.rail-backdrop\s*\{[^}]*display:\s*block/)
+    })
+
     it('never hides the rail — it lifts it over the conversation instead', () => {
       expect(narrow).not.toMatch(/\.sidebar\s*\{[^}]*display:\s*none/)
       expect(narrow).toMatch(/\.sidebar\[data-overlay='true'\]\s*\{[^}]*position:\s*fixed/)

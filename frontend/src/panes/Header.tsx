@@ -31,6 +31,7 @@ interface Props {
    * duplicate there — but a control that exists only below a width is one `a11y.test.tsx` can never
    * walk, and the whole point of this spec is that a hidden control is an absent one.
    */
+  menuOpen?: boolean
   onOpenMenu: () => void
 }
 
@@ -44,6 +45,7 @@ export function Header({
   voiceLive,
   onToggleTraces,
   onVoice,
+  menuOpen = false,
   onOpenMenu,
 }: Props) {
   const s = useT()
@@ -55,6 +57,8 @@ export function Header({
         type="button"
         className="header__menu"
         aria-label={s('nav.openMenu')}
+        aria-expanded={menuOpen}
+        aria-controls="navigation-rail"
         title={s('nav.openMenu')}
         onClick={onOpenMenu}
       >

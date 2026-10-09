@@ -15,10 +15,10 @@ import { useEffect, type RefObject } from 'react'
 const FOCUSABLE =
   'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
 
-export function useModalFocus(container: RefObject<HTMLElement | null>): void {
+export function useModalFocus(container: RefObject<HTMLElement | null>, active = true): void {
   useEffect(() => {
     const element = container.current
-    if (!element) return
+    if (!element || !active) return
 
     // Captured before the first focus() call moves it — this is what "give it back" means.
     const opener = document.activeElement as HTMLElement | null
@@ -51,5 +51,5 @@ export function useModalFocus(container: RefObject<HTMLElement | null>): void {
       // was up — focusing a detached node silently sends focus to <body> instead.
       if (opener?.isConnected) opener.focus()
     }
-  }, [container])
+  }, [container, active])
 }

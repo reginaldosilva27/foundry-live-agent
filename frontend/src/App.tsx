@@ -99,9 +99,22 @@ export default function App() {
    * Below the narrow breakpoint the rail is not a column, and hiding it — which is what the
    * stylesheet used to do — took the only route to five of the seven screens out of the page, and
    * out of the accessibility tree with it. This is the boolean that opens the same rail as an
-   * overlay instead. Above the breakpoint the stylesheet ignores it entirely.
+   * overlay instead. The media query also gates `inert`, so a closed off-canvas rail cannot
+   * receive keyboard focus while the desktop column stays interactive.
    */
   const [menuOpen, setMenuOpen] = useState(false)
+  const [narrow, setNarrow] = useState(() => window.matchMedia?.('(max-width: 760px)').matches ?? true)
+  useEffect(() => {
+    const media = window.matchMedia?.('(max-width: 760px)')
+    if (!media) return
+    const update = () => {
+      setNarrow(media.matches)
+      if (!media.matches) setMenuOpen(false)
+    }
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
 
   const setView = useCallback(
     (next: NavView) => {
@@ -567,6 +580,7 @@ export default function App() {
         )}
         <Sidebar
           overlay={menuOpen}
+          inactive={narrow && !menuOpen}
           onCloseOverlay={() => setMenuOpen(false)}
           config={config}
           configFailed={failed}
@@ -603,6 +617,7 @@ export default function App() {
             voiceLive={voice.status === 'live'}
             onToggleTraces={toggleTraces}
             onVoice={startVoiceSession}
+            menuOpen={menuOpen}
             onOpenMenu={() => setMenuOpen(true)}
           />
           {view === 'agent' ? (

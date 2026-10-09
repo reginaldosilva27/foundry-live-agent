@@ -160,6 +160,43 @@ bit three times across specs 020, 046 and 047 — stacked columns that refused t
 control invisible at every width — and it is now enforced by `layout.test.ts` rather than
 remembered.
 
+### Mobile rail regression repair (#34, observed 2026-10-09)
+
+The mobile backdrop inherited the base `display: none`: positioning it in the breakpoint did not
+make it visible. The override now explicitly restores `display: block`. The same off-canvas rail
+is `inert` while closed at ≤760px, never on desktop. Opening it expands its content even if the
+stored desktop preference is collapsed, without changing that preference. The header control names
+the rail through `aria-controls` and reports `aria-expanded`. The existing overlay focus hook gives
+the rail initial focus, wraps Tab/Shift+Tab and returns focus on dismissal; Escape, the close
+control, outside click and navigation keep their existing dismissal handlers.
+
+**Observed in Chromium 156.0.8078.4, recorded demo only, no Azure calls:**
+
+- At **320, 390 and 760 CSS px**, in light and dark: backdrop computed `block`; 18 Tab steps
+  skipped the closed rail; 35 forward and 35 reverse steps stayed inside the open rail. Escape,
+  outside click and choosing Agents returned focus to the header opener. Document width equalled
+  viewport width at each size.
+- At **200% native browser zoom** (`chrome.tabs.setZoom`, not CSS zoom or emulated device scale),
+  a 1280px browser window reported `innerWidth: 640`, `devicePixelRatio: 2`, `scrollWidth: 640`.
+  Opening the rail, Tab containment and Escape focus return passed.
+- At **1800px**, the rail was not inert; a collapsed desktop rail expanded in the mobile overlay
+  and retained its collapsed preference after returning to desktop. Trace and event inspectors
+  were both open with `scrollWidth: 1800`. Screenshots and assertion reports remain session
+  artifacts, using only recorded demo content; these checks are not a screen-reader audit.
+
+Regression-first evidence and local gates:
+
+| Exact command | Result |
+|---|---|
+| `cd frontend && npm test -- src/App.narrow.test.tsx src/styles/layout.test.ts` | RED: 3 failed, 42 passed; GREEN: 45 passed |
+| `cd frontend && npm run lint && npm test && npm run build` | Passed: 1040 tests; existing ref-lint and bundle-size warnings |
+| `cd backend && ../.venv/bin/ruff check . && ../.venv/bin/ruff format --check . && ../.venv/bin/pytest -q` | Passed: 299 tests, 45 files formatted |
+| `cd ai && ../.venv/bin/ruff check . && ../.venv/bin/pytest -q` | Passed: 246 tests, 3 skipped |
+| `test -f infra/main.bicep` | Absent: Bicep build/lint skipped |
+
+Python gates used an isolated CPython 3.12.13 environment. Token, contrast and layout gates stayed
+green; neither the palette nor the focus-ring rules changed. No live-service behavior was tested.
+
 ## The focus ring (spec 048)
 
 Three rules, and no list:
