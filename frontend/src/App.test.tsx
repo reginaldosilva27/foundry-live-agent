@@ -8,6 +8,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { t } from './i18n/strings'
 import type { AgentEvent } from './types/events'
 import { asSseStream, failedTurn, twoToolTurn } from './test/fixtures'
 
@@ -110,6 +111,7 @@ describe('App', () => {
 
     await waitFor(() => expect(screen.getByTestId('answer')).toHaveTextContent('19:00'))
 
+    await userEvent.click(screen.getByRole('button', { name: t('reasoning.toggle', 'en') }))
     expect(screen.getByTestId('reasoning-body')).toHaveTextContent('what time it is')
 
     const [appRow, foundryRow] = screen.getAllByTestId('tool-row')

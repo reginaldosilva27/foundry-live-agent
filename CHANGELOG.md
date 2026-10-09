@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Preferences reach the application** (issue #29, spec 052): language choices from Preferences,
+  the rail and the command palette now share browser storage, application strings and document
+  language. Reasoning defaults apply to chat and comparison without resetting a deliberately
+  toggled card during streaming. Removed the unsupported reading and activity-expansion checkboxes:
+  reading remains parked, activity remains visible inline, and legacy stored values stay inert.
+
 ### Added
 - **Demo mode — the whole app, with no Azure credential** (spec 050). `just demo` replays turns
   recorded from real Foundry runs: the streaming, the function-call round trip, the MCP calls, the

@@ -18,6 +18,7 @@ import { EmptyState, type Suggestion } from './EmptyState'
 
 interface Props {
   messages: Message[]
+  reasoningOpen?: boolean
   model?: string
   /** Who is answering — it goes into the Markdown a reader downloads (spec 021). */
   agent?: string
@@ -104,6 +105,7 @@ const STICKY_PX = 120
 
 export function Conversation({
   messages,
+  reasoningOpen,
   model,
   agent,
   pricing,
@@ -180,6 +182,7 @@ export function Conversation({
 
                 <ActivityPanel
                   turn={message.turn}
+                  reasoningOpen={reasoningOpen}
                   onOpenCall={(callId) => onOpenTrace(message.id, callId)}
                 />
 

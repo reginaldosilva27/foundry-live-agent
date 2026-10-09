@@ -8,6 +8,11 @@
 | **Date** | 2026-09-16 |
 | **Clarified** | 2026-09-19 |
 
+> Reconciled by [spec 052](../052-preferences-applied/spec.md) for issue #29: language and
+> reasoning reach App; the reading and activity-expansion controls are withdrawn because reading
+> remains parked and inline activity has no expansion semantics. Legacy storage is retained inert.
+> The original acceptance criteria below remain as the historical record.
+
 ## Problem / motivation
 
 The app has one theme and no preferences. The CSS asks the system exactly one question —

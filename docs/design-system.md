@@ -3,6 +3,19 @@
 > Spec [036](../specs/036-preferences-and-theme/spec.md). What is vendored, what is ours, and why
 > the line is where it is.
 
+## Preferences that affect the screen
+
+[Spec 052](../specs/052-preferences-applied/spec.md) reconciles spec 036's controls. Preferences,
+rail language buttons and the command palette use one browser-kept language for strings and
+`document.lang`; only an absent choice falls back to browser detection. Reasoning defaults apply
+in chat and comparison, while a deliberate card toggle wins for that mounted turn as streaming
+updates arrive. Navigating away unmounts the card; reopening uses the current default.
+
+Reading remains parked (spec 008), so there is no checkbox promising it. Activity remains visible
+inline, with no expansion checkbox; it is not the Traces drawer. The old `speakAnswers` and
+`activityOpen` storage fields are preserved but inert, never authorization to spend speech costs.
+No preference changes the agent or travels to Foundry.
+
 ## Two files, one rule
 
 `frontend/public/ds/colors_and_type.css` is the Dataside design system, **vendored**: it holds the
