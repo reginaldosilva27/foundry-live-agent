@@ -10,11 +10,13 @@ esta trilha não entrega uma integração com serviço Copilot nem escolhe seu p
 
 ## Evidências e pré-requisitos
 
-**Este incremento é um roteiro baseado em código/specs/gravações, não um workshop executado.** Todos
-os comandos abaixo são exercícios candidatos vindos das receitas/testes existentes; nenhum foi
-validado como comando de aluno nesta sessão documental. Instalação limpa, reconciliação dos READMEs
-raiz, integração do setup e novas capturas no navegador aguardam a issue #32. Use seu setup validado
-quando disponível e execute os comandos a partir da raiz. Os exemplos não instalam dependências.
+**Este é um roteiro baseado em código/specs/gravações, não um workshop live concluído.** A baseline
+#32 está integrada: commit original `1d23b7a9b9a43c96854c48a995ccd7957cc2ee37`, cherry-pick local
+`082cac5e7098bcbf911bc9ad6f3c3d8fa3fc1a82`. Siga primeiro o [setup do README](../README.pt-BR.md)
+e execute os exercícios a partir da raiz com a venv correspondente ativada. Os exemplos não
+instalam dependências. Gates locais e checks HTTP do replay estão registrados abaixo; capturas no
+navegador e exercícios live tarifados continuam pendentes. Um teste de replay passando não é uma
+nova medição do Foundry.
 
 | Estado | Evidência e limite |
 |---|---|
@@ -161,10 +163,59 @@ pagos desligados salvo autorização deliberada do operador. Leia [SECURITY](../
   hosted completa e visualização de interrupção seguem não verificadas; não deduza barge-in do silêncio.
   Permissões de microfone/navegador e custos live são separados do replay.
 
+## Registro de verificação local — 2026-10-09
+
+São execuções nesta worktree documental após o cherry-pick da baseline, não resultados inferidos
+da #32. Dependências foram restauradas com Python 3.12 em **duas venvs separadas**, `backend/.venv`
+e `ai/.venv`, instalando `backend[dev]` mais `ai` na primeira e `ai[dev]` na segunda;
+`npm ci` restaurou o frontend. Não foi usado pytest global nem comando Azure live.
+
+```bash
+(cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check . && .venv/bin/pytest -q)
+(cd ai && .venv/bin/ruff check . && .venv/bin/pytest -q)
+(cd frontend && npm run lint && npm test -- --run && npm run build)
+just gate-infra
+```
+
+**Resultados:** lint/format backend passaram, **299 testes passaram**; lint AI passou, **233 passaram /
+5 skips**; lint/test/build frontend passaram, **1037 testes**; infra pulou pelo guard de Bicep
+ausente. O lint frontend reportou três avisos existentes de acesso a refs e o build reportou chunks
+grandes; nenhum falhou seu gate. A instalação reportou oito achados npm audit (2 low, 6 high);
+este incremento documental não mudou dependências nem corrigiu esses achados.
+
+Os comandos de teste dos módulos foram cobertos nestas seleções combinadas (não são sete execuções
+separadas de workshop):
+
+```bash
+(cd ai && .venv/bin/pytest -q -rs tests/test_recorded_turn.py tests/test_hosted_recorded_turn.py tests/test_tools.py tests/test_prompt_adapter.py tests/test_events.py tests/test_harness_parity.py tests/test_hosted_graph.py tests/test_contract.py tests/test_conformance.py tests/test_voice_events.py)
+(cd backend && .venv/bin/pytest -q tests/test_traces.py tests/test_trace_injection.py)
+```
+
+**Resultados:** AI **188 passaram / 1 skip**, backend **32 passaram**. Dependências do grafo hosted
+estão ausentes: seu teste pulou explicitamente; contratos gravados passando não provam um grafo
+recém-executado nem um agente hosted implantado.
+
+Com `backend/.venv/bin` no PATH, a receita de replay foi verificada em portas livres porque a
+sondagem inicial de disponibilidade em 8001/5173 encontrou porta ocupada e não iniciou servidor:
+
+```bash
+BACKEND_PORT=55976 FRONTEND_PORT=55977 VITE_BFF_URL=http://localhost:55976 just demo
+just down
+```
+
+**Resultados:** `/health` do demo, HTML da UI e `/config` responderam HTTP 200; `demo` estava no config.
+SIGINT equivalente a Ctrl+C saiu com código 130 e liberou ambas as portas dos servidores iniciados.
+Foi um **check HTTP e de ciclo de processos**, não um teste de navegador/CORS ou layout nessa origem
+alternativa da UI. `just down` imprimiu orientação de exclusão manual e saiu com código **1**, como
+esperado; não excluiu nada. Nenhum recurso Azure foi provisionado ou removido, e nenhuma captura ou
+medição live nova foi produzida.
+
 ## Checklist de publicação e conclusão
 
-- [ ] Integrar setup limpo da #32 e reconciliar README raiz EN/PT; validar todos os comandos
-  candidatos nessa baseline e registrar comando exato, resultado, commit e data. Nada está implicitamente aprovado.
+- [x] Integrar setup limpo da #32 e reconciliar README raiz EN/PT; repetir gates locais isolados e
+  verificar prontidão HTTP/shutdown do replay. Veja o registro de verificação abaixo.
+- [ ] Executar os comandos live restantes com consentimento do operador e registrar resultados;
+  testes/checks HTTP locais não validam provisionamento Azure, interação no navegador ou exercícios tarifados.
 - [ ] Após integrar mudanças de telas/preferências/mobile, capturar banner real de replay, chat/linha
   de função, payload Learn/fonte, retrieval local, comparação, inspetor/trace e overlay de voz.
   Confirmar nomes acessíveis/layout nas larguras suportadas; são propostas, não screenshots existentes.

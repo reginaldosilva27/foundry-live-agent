@@ -164,7 +164,8 @@ Follow the [English](learning-journey.md) or [Portuguese](learning-journey.pt-BR
 The hosted graph compiles without a checkpointer; a forwarded Foundry conversation pointer is not
 proof of end-to-end hosted multi-turn continuity. Verify that separately before teaching it as a
 delivered capability. Manual provisioning/cleanup is described in [infra](../infra/README.md);
-root setup instructions and new command/capture verification await #32.
+root setup instructions now include baseline #32. The learning outline records local command checks;
+new browser captures and live workshop exercises remain pending.
 
 ## `examples:` — what an agent is worth being asked (spec 037)
 

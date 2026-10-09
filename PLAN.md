@@ -6,8 +6,8 @@
 > not a benchmark. Infrastructure remains manual. Local retrieval is lexical; Foundry IQ is
 > provisioning-bound. [REFERENCES](docs/REFERENCES.md) owns dated API/evidence provenance.
 > The [EN](docs/learning-journey.md) / [PT-BR](docs/learning-journey.pt-BR.md) learning outline
-> separates implementation from historical live evidence and unverified exercises. README/setup
-> reconciliation and new command/browser-capture verification await baseline issue #32.
+> separates implementation from historical live evidence and unverified exercises. Baseline #32 is
+> integrated and README/setup reconciled; the outline records local checks and pending browser captures.
 > Engineering practices inherited from
 > [reginaldosilva27/agentic-coding-template](https://github.com/reginaldosilva27/agentic-coding-template).
 
@@ -283,7 +283,7 @@ one that does not need approval of the architecture**, since it is the inherited
 | **018** ✅ | 4 | **Hosted agent harness** — the second harness behind the same contract, a LangGraph graph run by Foundry as a container | **Done** — `docs/harness-comparison.md`, measured |
 | **Later numbered specs** | 3–4 | Subsequent UI/voice/history/comparison work; consult the index for individual done/blocked/deferred criteria | See [`specs/README.md`](specs/README.md) — the live index, one row per spec |
 | **049** 📐 | 4 | **Foundry IQ as a knowledge source** — `planned` 2026-09-20; blocked on one manual setup step (T0). Reading the docs found a **second** route: the GA `/retrieve` REST call, which swaps the `KnowledgeSource` behind `lookup_knowledge` and keeps the round trip, instead of the MCP tool that would have deleted it | — |
-| **050** | 4 | Separate local replay entrypoint, visibly labelled and based on recorded fixtures | Setup and learner command verification await #32 |
+| **050–051** | 4 | Separate local replay entrypoint, visibly labelled and based on recorded fixtures; external search isolated | Baseline #32 integrated; local readiness/shutdown and gates checked; browser captures pending |
 | — | 4 | **Still not implemented.** More MCP tools (Databricks Genie, Azure DevOps), publish to M365 Copilot / Teams | — |
 
 **This table preserves the original phase plan with selected later milestones.** After 006 the

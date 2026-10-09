@@ -502,4 +502,4 @@ violation.
 - `docs/REFERENCES.md` — every Foundry doc URL and API version relied on (§10).
 - `docs/development-workflow.md` — SDD + TDD, the contributor companion to the constitution.
 - `docs/learning-journey.md` ↔ `docs/learning-journey.pt-BR.md` — educational modules, evidence and
-  publication checklist; runnable setup and capture verification remain dependency-bound (#32).
+  publication checklist; baseline #32 is integrated, local checks recorded, final browser captures pending.

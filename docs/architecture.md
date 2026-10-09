@@ -4,7 +4,7 @@
 > and hosted agents share the contract. [PLAN](../PLAN.md) preserves design history; this page
 > describes current code, and [REFERENCES](REFERENCES.md) distinguishes doc reads from live findings.
 > Start the educational outline in [English](learning-journey.md) or
-> [Português](learning-journey.pt-BR.md). Setup and new browser captures await #32.
+> [Português](learning-journey.pt-BR.md). Baseline #32 is integrated; new browser captures remain pending.
 
 ## The one-sentence version
 
