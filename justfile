@@ -84,10 +84,29 @@ frontend:
 demo:
     #!/usr/bin/env bash
     set -euo pipefail
-    trap 'kill 0' EXIT
-    (cd backend && uvicorn app.demo:create_demo_app --factory --port ${BACKEND_PORT:-8000}) &
-    cd frontend && npm run dev
-    wait
+    backend_pid=''
+    frontend_pid=''
+    cleanup() {
+      if [ -n "$backend_pid" ]; then kill "$backend_pid" 2>/dev/null || true; fi
+      if [ -n "$frontend_pid" ]; then kill "$frontend_pid" 2>/dev/null || true; fi
+      wait 2>/dev/null || true
+    }
+    trap cleanup EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    (cd backend && exec uvicorn app.demo:create_demo_app --factory --port ${BACKEND_PORT:-8000}) &
+    backend_pid=$!
+    # Start Vite directly so the PID we own is the server, not an npm wrapper.
+    (cd frontend && exec node node_modules/vite/bin/vite.js --strictPort) &
+    frontend_pid=$!
+    while kill -0 "$backend_pid" 2>/dev/null && kill -0 "$frontend_pid" 2>/dev/null; do
+      sleep 1
+    done
+    if ! kill -0 "$backend_pid" 2>/dev/null; then
+      wait "$backend_pid"
+    else
+      wait "$frontend_pid"
+    fi
 
 # ── Quality gates (mirrors of CI — see constitution §3) ───────────────────
 gate-backend:

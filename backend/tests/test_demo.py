@@ -229,6 +229,77 @@ def test_the_playground_is_on_and_web_search_says_it_is_unavailable(demo):
     assert json.loads(clock["output"])["timezone"] == "UTC"
 
 
+def test_inherited_search_key_never_reaches_a_provider_in_replay(monkeypatch):
+    import httpx
+
+    monkeypatch.setenv("TAVILY_API_KEY", "test-inherited-key")
+    requests = []
+
+    def post(_client, url, **kwargs):
+        requests.append(url)
+        return httpx.Response(200, json={"results": []})
+
+    monkeypatch.setattr(httpx.Client, "post", post)
+    with TestClient(create_demo_app(pace_ms=0)) as replay:
+        response = replay.post("/tools/search_web/run", json={"arguments": '{"query":"Azure"}'})
+        assert json.loads(response.json()["output"])["error"] == "search_unavailable"
+        assert check_stream(stream_chat(replay))
+    assert requests == []
+    assert os.environ["TAVILY_API_KEY"] == "test-inherited-key"
+
+
+def test_live_and_replay_search_are_isolated_concurrently(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    import httpx
+
+    monkeypatch.setenv("TAVILY_API_KEY", "test-live-key")
+    requests = []
+
+    def post(_client, url, **kwargs):
+        requests.append(url)
+        return httpx.Response(200, json={"results": []})
+
+    monkeypatch.setattr(httpx.Client, "post", post)
+    with (
+        TestClient(create_demo_app(pace_ms=0)) as replay,
+        TestClient(create_app(allow_playground=True)) as live,
+        ThreadPoolExecutor(max_workers=4) as pool,
+    ):
+
+        def search(client):
+            body = client.post(
+                "/tools/search_web/run", json={"arguments": '{"query":"Azure"}'}
+            ).json()
+            assert body["error"] == ""
+            return json.loads(body["output"])
+
+        futures = [pool.submit(search, client) for client in [replay, live, replay, live]]
+        results = [future.result() for future in futures]
+        assert results[0]["error"] == results[2]["error"] == "search_unavailable"
+        assert "error" not in results[1] and "error" not in results[3]
+        knowledge = replay.post(
+            "/tools/lookup_knowledge/run", json={"arguments": '{"query":"harness"}'}
+        ).json()
+        assert knowledge["error"] == ""
+        assert json.loads(knowledge["output"])["passages"]
+    assert len(requests) == 2
+    assert os.environ["TAVILY_API_KEY"] == "test-live-key"
+
+
+def test_replay_disables_inherited_live_capabilities(monkeypatch):
+    monkeypatch.setenv("SPEECH_ENDPOINT", "https://example.invalid")
+    monkeypatch.setenv("SPEECH_RESOURCE_ID", "/subscriptions/test/resourceGroups/test")
+    monkeypatch.setenv("VOICELIVE_ENDPOINT", "https://example.invalid")
+    monkeypatch.setenv("FOUNDRY_ALLOW_VERSION_PROMOTE", "true")
+    with TestClient(create_demo_app(pace_ms=0)) as replay:
+        config = replay.get("/config").json()
+        assert config["speech"]["enabled"] is False
+        assert config["voice"]["enabled"] is False
+        assert replay.post("/agents/foundry-live-agent/versions/1/promote").status_code == 403
+        assert check_stream(stream_chat(replay))
+
+
 def test_voice_and_speech_report_not_configured(demo):
     """AC11 — nothing is faked. A replayed WebRTC session would be a drawing of a feature (§5)."""
     config = demo.get("/config").json()

@@ -31,7 +31,7 @@ aparece: todo print desta página você reproduz sem conta no Azure._
 
 ---
 
-> **Status: 48 das 50 specs estão concluídas.** O contrato do harness, **os dois harnesses**, o BFF,
+> **Status: 49 das 51 specs estão concluídas.** O contrato do harness, **os dois harnesses**, o BFF,
 > a interface, a voz no mesmo agente, o painel de traces, a tela de agentes e tudo que veio em cima
 > disso — escolha e inspeção de agente, lado a lado, traces, o inspetor de eventos, gráficos, temas
 > e a passada de acessibilidade. Duas não: a **045** (*anexos*) está clarificada e **bloqueada** em
@@ -284,13 +284,33 @@ Cada um destes tem uma página própria, com os frames gravados por trás:
 
 ## ▶️ Veja funcionando primeiro — sem Azure nenhum
 
-Tudo que vem abaixo precisa de uma assinatura. Isto não:
+Este é um laboratório **educacional, não de produção**. O replay não exige assinatura,
+Azure CLI, login nem `.env`. Instale [Python 3.12](https://www.python.org/downloads/),
+[Node 24 LTS](https://nodejs.org/) (as versões do CI) e [just](https://github.com/casey/just).
+Os comandos abaixo são para macOS/Linux com Bash; no Windows use WSL2.
+A instalação baixa pacotes; depois o replay não chama Azure nem Tavily.
 
 ```bash
 git clone https://github.com/reginaldosilva27/foundry-live-agent
 cd foundry-live-agent
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e "ai[dev]" -e "backend[dev]"
+(cd frontend && npm ci)
 just demo           # o BFF na :8000, a interface na :5173
 ```
+
+Abra **http://localhost:5173**; a API responde em **http://localhost:8000/health**.
+Mantenha o terminal aberto. **Ctrl+C** encerra os dois servidores locais; `just down` é para
+recursos Azure, não para parar o demo. Em um terminal novo, rode `source .venv/bin/activate`
+antes dos comandos Python/just.
+
+**Problemas comuns:** `uvicorn: command not found` ou `ModuleNotFoundError` → ative a venv e
+repita a instalação dos dois pacotes; Vite ausente → rode `(cd frontend && npm ci)`; erro de
+versão Node → use Node 24; porta ocupada → encerre o servidor que você iniciou naquela porta
+ou use `BACKEND_PORT=8001 VITE_BFF_URL=http://localhost:8001 just demo` (mantenha a interface
+na :5173, conforme as origens CORS configuradas).
+Não encerre processos de outras pessoas.
 
 Ele reproduz turnos inteiros **gravados de execuções reais no Foundry** — as mesmas fixtures que os
 testes de contrato usam — então o streaming, a ida e volta do function call, as chamadas MCP, a
@@ -310,16 +330,22 @@ demonstração é um **entrypoint separado**: o `create_app` nunca ouviu falar d
 variável de ambiente faz um deploy real servir uma gravação como se fosse ao vivo. Veja
 [`specs/050-demo-mode/`](specs/050-demo-mode/).
 
+O playground do replay executa relógio e conhecimento local, mas `search_web` sempre retorna
+`search_unavailable`, mesmo com `TAVILY_API_KEY` herdada. Voz/fala e promoção de versões ficam
+desabilitadas. Para a aula opcional com busca **ao vivo e tarifada**, use o caminho separado
+`just backend` abaixo e habilite `FOUNDRY_ALLOW_PLAYGROUND=true` conscientemente; nunca é uma
+opção implícita do replay. Veja [spec 051](specs/051-replay-isolation/spec.md).
+
 ## 🚀 Início rápido (10 minutos)
 
 **Pré-requisitos:** uma assinatura Azure · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) ·
 [azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) ·
-[just](https://github.com/casey/just) · Python 3.12 · Node 24 (Vite 8 needs ≥ 20.19; CI runs 24).
+[just](https://github.com/casey/just) · Python 3.12 · Node 24 LTS (as versões validadas pelo CI).
+
+Primeiro conclua a instalação da seção anterior. Este caminho usa serviços reais e pode gerar
+custos. Ative a venv; depois:
 
 ```bash
-git clone https://github.com/reginaldosilva27/foundry-live-agent
-cd foundry-live-agent
-
 just env            # 1. cria o .env a partir do template
 just login          # 2. az login — Entra ID; nenhum serviço Azure usa key
 just infra          # 3. provisiona o Foundry — imprime os passos manuais; ainda não há IaC aqui
@@ -327,6 +353,10 @@ just agent          # 4. aplica a definição do agente de ai/harness/prompt_age
 just backend        # 5. o BFF na :8000
 just frontend       # 6. a interface na :5173
 ```
+
+`just backend` e `just frontend` são servidores bloqueantes: use **dois terminais**, ative
+a mesma venv em ambos e encerre cada um com **Ctrl+C**. Após provisionar, preencha `.env`
+com os endpoints/nomes reais antes de `just agent`; criar o arquivo não configura o Foundry.
 
 **O passo 3 é manual, e o `just infra` diz isso em vez de fingir.** Este repositório não entrega
 Bicep: o recurso Foundry, o projeto, o deployment do modelo e o Application Insights são criados no
