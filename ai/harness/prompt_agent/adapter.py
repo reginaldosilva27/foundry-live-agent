@@ -15,10 +15,12 @@ same loop shape. §8 is intact: this code executes what Foundry asked for; it ch
 
 Three guarantees, in order of how much damage they prevent:
 
-1. **Every collected call is answered.** An unanswered function call leaves Foundry waiting until
-   the run expires ten minutes later, and the browser sees a stream that merely stops.
-2. **The stream always terminates.** If Foundry explodes, the last thing out is an ``error``.
-3. **The loop is capped.** A pathological agent ends with an ``error``, not an infinite stream.
+1. **Every executed call's output gets a submission leg.** The last execution leg reserves one
+   more request on the same conversation; a local ``tool_result`` alone is not a receipt.
+2. **Failure is explicit.** Transport failure or cancellation can prevent delivery. New requests
+   on the settlement leg remain unanswered, unexecuted, and end in ``turn_limit_exceeded``.
+3. **The loop is capped.** ``max_turns`` execution legs (default 8) plus at most one settlement
+   leg: at most 9 upstream requests by default, with no recursive settlement or retry.
 
 **The Foundry client is synchronous, and that is a streaming problem.** Iterating it directly
 inside this async generator blocks the event loop between events, so the server never gets to flush
@@ -81,9 +83,19 @@ class PromptAgentAdapter:
         inputs: list[Mapping[str, Any]] = list(messages)
         totals: dict[str, int] = {}
         done: AgentEvent | None = None
+        max_turns = self.max_turns
 
         try:
-            for _turn in range(self.max_turns):
+            if max_turns <= 0:
+                yield {
+                    "type": "error",
+                    "message": "the execution budget permits no turns; no request was sent",
+                    "code": "turn_limit_exceeded",
+                }
+                return
+
+            # Reserve one submission leg so the final execution never strands its outputs.
+            for turn in range(max_turns + 1):
                 pending: list[tuple[str, str, str]] = []
                 terminated = False
 
@@ -125,6 +137,18 @@ class PromptAgentAdapter:
                         }
                     return
 
+                if turn == max_turns:
+                    yield {
+                        "type": "error",
+                        "message": (
+                            f"the agent requested more tools after {max_turns} execution turns "
+                            "and one output-settlement leg; the settlement leg's tool calls "
+                            "were not executed or answered; stopping at the protocol budget"
+                        ),
+                        "code": "turn_limit_exceeded",
+                    }
+                    return
+
                 # Answer every collected call, then feed the outputs back as the next leg.
                 inputs = []
                 for call_id, name, arguments in pending:
@@ -154,14 +178,6 @@ class PromptAgentAdapter:
                         }
                     )
 
-            yield {
-                "type": "error",
-                "message": (
-                    f"the agent did not finish within {self.max_turns} turns; "
-                    "stopping rather than streaming indefinitely"
-                ),
-                "code": "turn_limit_exceeded",
-            }
         except Exception as exc:  # noqa: BLE001 - a terminal event is a promise (§9)
             yield {
                 "type": "error",

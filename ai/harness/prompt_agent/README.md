@@ -21,7 +21,15 @@ Our backend looks the name up in the registry, runs it, and posts a `function_ca
 the same conversation. If it doesn't, the run hangs until it expires ten minutes later — and from the
 browser that looks like the stream simply stopped.
 
-That is why `check_stream` in the contract has an invariant for it.
+That is why `check_stream` in the contract has an invariant for it. A local `tool_result` is
+not an upstream receipt, however: submission can fail after execution.
+
+The adapter permits `max_turns` execution legs (default 8) plus **one settlement leg** to submit
+the last outputs: at most 9 upstream requests by default. Settlement never executes new tool
+requests; it reports them and ends with `turn_limit_exceeded`, explicitly leaving them unanswered.
+It may instead finish normally, with one `done` and summed usage. This cap is a protocol bound,
+not an agent decision or an unlimited extension. See the
+[round-trip budget and failure limits](../../../docs/how-it-works/function-call-round-trip.md#the-budget-includes-settling-the-last-outputs-spec-054).
 
 ## The definition
 
