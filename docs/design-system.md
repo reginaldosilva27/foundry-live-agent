@@ -209,6 +209,10 @@ Regression-first evidence and local gates:
 
 Python gates used an isolated CPython 3.12.13 environment. Token, contrast and layout gates stayed
 green; neither the palette nor the focus-ring rules changed. No live-service behavior was tested.
+After local integration of #29's preferences commit, the same gate commands passed again:
+**1055 frontend tests**, **299 backend tests**, **246 AI tests / 3 skipped**, with infra still
+absent. Both browser scripts were rerun against that integrated tree: the six mobile/theme cases,
+desktop inspectors and native 200% zoom checks passed unchanged.
 
 ## The focus ring (spec 048)
 
