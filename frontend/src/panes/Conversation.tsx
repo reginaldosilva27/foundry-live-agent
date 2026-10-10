@@ -171,6 +171,7 @@ export function Conversation({
               </div>
 
               <div className="turn__stack">
+                <p className="turn__identity">{agent || s('turn.agent')}</p>
                 {message.repeatOf && (
                   <p className="turn__repeat" data-testid="turn-repeat">
                     {s('turn.repeatOf').replace(

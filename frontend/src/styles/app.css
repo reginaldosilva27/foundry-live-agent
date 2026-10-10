@@ -252,6 +252,7 @@ button:disabled {
 }
 
 .main {
+  --chat-width: 780px;
   display: grid;
   grid-template-rows: 60px minmax(0, 1fr) auto;
   /* The horizontal twin of the `min-height: 0` below, and it was missing. Declaring only rows
@@ -869,6 +870,21 @@ button:disabled {
   color: var(--fg-3);
 }
 
+/* Scoped to the chat header: other screens keep their own controls. */
+.header .pill-button {
+  border-radius: var(--r-sm);
+}
+
+.header .pill-button:hover:not(:disabled):not([aria-pressed='true']) {
+  border-color: var(--border-accent);
+  background: var(--bg-accent-soft);
+}
+
+.header .harness-badge {
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+}
+
 /* ---------- Conversation ---------- */
 .conversation {
   overflow-y: auto;
@@ -883,8 +899,8 @@ button:disabled {
 .conversation__inner {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-6);
-  max-width: 780px;
+  gap: var(--sp-7);
+  max-width: var(--chat-width);
   margin: 0 auto;
 }
 
@@ -893,13 +909,28 @@ button:disabled {
   justify-content: flex-end;
 }
 
+.bubble__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  max-width: 85%;
+  min-width: 0;
+}
+
+.bubble__label {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-3);
+}
+
 .bubble {
-  max-width: 78%;
   margin: 0;
   padding: var(--sp-3) var(--sp-4);
-  border-radius: 14px 14px 4px 14px;
-  background: var(--bg-accent-strong);
-  color: var(--fg-on-accent);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-3);
+  color: var(--fg-1);
   font-size: var(--fs-body-s);
   line-height: var(--lh-base);
   overflow-wrap: anywhere;
@@ -925,6 +956,14 @@ button:disabled {
   flex-direction: column;
   gap: var(--sp-3);
   min-width: 0;
+}
+
+.turn__identity {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+  overflow-wrap: anywhere;
 }
 
 .turn__answer {
@@ -1019,13 +1058,14 @@ button:disabled {
 
 /* ---------- Empty state ---------- */
 .empty {
+  width: 100%;
   max-width: 620px;
-  text-align: center;
+  text-align: left;
 }
 
 .empty__headline {
   margin: 0 0 var(--sp-3);
-  font-size: var(--fs-h1);
+  font-size: clamp(var(--fs-h3), 3vw, var(--fs-h2));
   line-height: var(--lh-snug);
   letter-spacing: var(--ls-tight);
 }
@@ -1038,8 +1078,7 @@ button:disabled {
 
 .empty__suggestions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
   gap: var(--sp-2);
   margin: 0;
   padding: 0;
@@ -1047,9 +1086,12 @@ button:disabled {
 }
 
 .chip {
-  padding: var(--sp-2) var(--sp-4);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  line-height: var(--lh-base);
   border: 1px solid var(--border-1);
-  border-radius: var(--r-pill);
+  border-radius: var(--r-md);
   background: var(--bg-1);
   color: var(--fg-2);
   font-size: var(--fs-body-s);
@@ -1057,9 +1099,9 @@ button:disabled {
 }
 
 .chip:hover {
-  border-color: var(--ds-blue-200);
-  background: var(--ds-blue-50);
-  color: var(--ds-blue-700);
+  border-color: var(--border-accent);
+  background: var(--bg-accent-soft);
+  color: var(--fg-link);
 }
 
 /* ---------- Activity ---------- */
@@ -1070,10 +1112,10 @@ button:disabled {
 }
 
 /* The reasoning is context for the answer, not a peer of it. Given the same white card the answer
-   sits on, the two competed for first read; on the page's own ground with a dashed edge, it reads
+   sits on, the two competed for first read; on the page's own ground with a quiet edge, it reads
    as the note it is and the answer wins the eye. */
 .reasoning-card {
-  border: 1px dashed var(--border-2);
+  border: 1px solid var(--border-1);
   border-radius: var(--r-md);
   background: transparent;
 }
@@ -1513,19 +1555,25 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  max-width: 780px;
-  width: 100%;
+  max-width: var(--chat-width);
+  width: calc(100% - var(--sp-5) * 2);
   margin: 0 auto;
   padding: var(--sp-3);
   border: 1px solid var(--border-1);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: var(--bg-1);
   box-shadow: var(--shadow-1);
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 
 .composer:focus-within {
-  border-color: var(--ds-blue);
+  border-color: var(--fg-focus);
+}
+
+.composer__hint {
+  padding-inline: var(--sp-3);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
 }
 
 .composer__input {
@@ -3107,8 +3155,18 @@ button:disabled {
   padding: 0 var(--sp-1) var(--sp-1);
 }
 
+.composer__row > .agent-chip {
+  min-width: 0;
+}
+
+.composer__row .agent-chip__button {
+  max-width: 100%;
+  border-radius: var(--r-sm);
+}
+
 .composer__actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--sp-2);
   margin-left: auto;

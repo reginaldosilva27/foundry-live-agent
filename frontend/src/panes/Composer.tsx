@@ -137,7 +137,7 @@ export function Composer({
         aria-describedby="composer-newline-hint"
         disabled={stopped}
       />
-      <span id="composer-newline-hint" className="visually-hidden">
+      <span id="composer-newline-hint" className="composer__hint">
         {s('composer.newline')}
       </span>
 
