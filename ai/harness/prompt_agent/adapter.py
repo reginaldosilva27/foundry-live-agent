@@ -43,9 +43,11 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping
+from contextlib import aclosing
 from typing import Any
 
 from harness._shared.contract import AgentEvent, VoiceAttachment
+from harness._shared.streaming import stream_items
 from harness.prompt_agent.events import convert
 
 __all__ = ["PromptAgentAdapter"]
@@ -99,23 +101,23 @@ class PromptAgentAdapter:
                 pending: list[tuple[str, str, str]] = []
                 terminated = False
 
-                async for event in self._stream_events(inputs, conversation_state):
-                    if event["type"] == "tool_call" and event["executor"] == "app":
-                        pending.append((event["call_id"], event["name"], event["arguments"]))
-                    if event["type"] == "usage":
-                        for key, value in event.items():
-                            if key != "type":
-                                totals[key] = totals.get(key, 0) + int(value)  # type: ignore[arg-type]
-                        continue
-                    if event["type"] == "done":
-                        terminated = True
-                        done = event
-                        continue
-                    if event["type"] == "error":
+                async with aclosing(self._stream_events(inputs, conversation_state)) as leg:
+                    async for event in leg:
+                        if event["type"] == "tool_call" and event["executor"] == "app":
+                            pending.append((event["call_id"], event["name"], event["arguments"]))
+                        if event["type"] == "usage":
+                            for key, value in event.items():
+                                if key != "type":
+                                    totals[key] = totals.get(key, 0) + int(value)  # type: ignore[arg-type]
+                            continue
+                        if event["type"] == "done":
+                            terminated = True
+                            done = event
+                            continue
+                        if event["type"] == "error":
+                            yield event
+                            return
                         yield event
-                        return
-                    yield event
-
                 if not pending:
                     if terminated and done is not None:
                         # The turn really is over: release what was held back across the legs.
@@ -196,15 +198,12 @@ class PromptAgentAdapter:
         `to_thread` per event keeps the loop free to write them as they arrive; ordering is
         unaffected, because the awaits are sequential.
         """
-        stream = iter(self._stream_factory(inputs, conversation_state))
-        exhausted = object()
-
-        while True:
-            raw = await asyncio.to_thread(next, stream, exhausted)
-            if raw is exhausted:
-                return
-            for event in convert(raw):  # type: ignore[arg-type]
-                yield event
+        async with aclosing(
+            stream_items(lambda: self._stream_factory(inputs, conversation_state))
+        ) as raw_events:
+            async for raw in raw_events:
+                for event in convert(raw):
+                    yield event
 
     async def submit_tool_output(
         self, call_id: str, output: str, conversation_state: Mapping[str, Any]

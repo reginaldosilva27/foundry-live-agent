@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator
+from contextlib import aclosing
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -63,10 +64,11 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
             # Mutable on purpose: the first turn of a session has no conversation yet, and the
             # stream factory writes the one it creates back here so every leg names it.
             state = {"conversation_id": body.conversation_id} if body.conversation_id else {}
-            async for event in harness.stream_response(messages, state):
-                if event["type"] in {"done", "error"}:
-                    terminated = True
-                yield format_event(event)
+            async with aclosing(harness.stream_response(messages, state)) as events:
+                async for event in events:
+                    if event["type"] in {"done", "error"}:
+                        terminated = True
+                    yield format_event(event)
         except Exception as exc:  # noqa: BLE001 - a terminal frame is a promise to the client
             terminated = True
             yield format_event(
@@ -76,7 +78,7 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
                     "code": "bff_error",
                 }
             )
-        finally:
+        else:
             if not terminated:
                 yield format_event(
                     {

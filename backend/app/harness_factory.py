@@ -296,8 +296,13 @@ def _foundry_stream_factory(
             "extra_body": {"agent_reference": {"name": agent_name, "type": "agent_reference"}},
         }
 
-        for event in openai.responses.create(**request):
-            yield event.model_dump() if hasattr(event, "model_dump") else dict(event)
+        stream = openai.responses.create(**request)
+        try:
+            for event in stream:
+                yield event.model_dump() if hasattr(event, "model_dump") else dict(event)
+        finally:
+            if close := getattr(stream, "close", None):
+                close()
 
     return factory
 

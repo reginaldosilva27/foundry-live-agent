@@ -221,7 +221,8 @@ because nobody has measured what a run does after the browser stops listening (ย
 
 **The stream's own invariant is unaffected.** `check_stream` still requires every stream to end in
 `done` or `error`; a stopped turn is not a stream that ended without one, it is a stream the client
-stopped reading. The BFF sees a dropped connection and nothing else.
+stopped reading. The BFF sees a dropped connection and closes its local stream; that is not a
+Foundry run-cancellation request.
 
 Two consequences worth knowing:
 
@@ -229,6 +230,42 @@ Two consequences worth knowing:
   `conversation_id`, because that is Foundry's state and this app does not own it (ยง8).
 - A stopped turn is **not** read aloud when spoken answers are on. Speaking the half of an answer
   somebody just interrupted is the opposite of what they asked for.
+
+### Local resource lifecycle and its limits (#33)
+
+Both adapters use `harness/_shared/streaming.py` for per-leg synchronous iteration. Factory
+creation and reads run off the event loop. Success, read failure, a terminal error and explicit
+consumer close release an iterator's `close()` where it exists. The prompt factory also closes
+the SDK response stream hidden behind its generator; the hosted factory unwinds its existing
+HTTP response/client contexts. Cleanup failures are logged, not emitted as a second terminal
+event. The SSE router explicitly closes its harness generator and never tries to yield a terminal
+frame during cancellation or `GeneratorExit`.
+
+Cleanup is serialized with reads: closing a Python generator while `next()` runs would itself
+fail. Cancellation stops awaiting the read, not the worker thread. A cleanup worker therefore
+waits until that read returns, then closes the iterator without requesting another event. If the
+read never returns, cleanup cannot finish; a blocked worker still occupies threadpool capacity.
+Cancelling during a function call likewise leaves its synchronous execution running, but does
+not submit its output or start a later leg. Delivery can be interrupted, including on spec 054's
+reserved settlement leg; local cleanup is no claim that Foundry received an answer or stopped
+billing. No upstream cancellation API is called.
+
+The search tool closes each HTTP client it creates, including on transport, status and parsing
+failures. An injected client stays open: its caller owns its lifetime. If a tool is already
+running when the stream is cancelled, its owned client closes when that synchronous call exits.
+
+**Timeout is not a turn deadline.** The hosted factory's `httpx.Client(timeout=300.0)` sets HTTP
+operation timeouts, not a total wall-clock budget. Repeated reads and multiple execution legs
+can exceed 300 seconds; a blocked tool has its own timeout. There is no total-turn deadline in
+this patch, nor a guarantee of immediate socket cleanup, stopped metering, or responsiveness
+under a saturated worker pool. A new deadline would require a clarified spec and a documented
+bound, not relabelling this timeout.
+
+`ai/tests/test_resource_lifecycle.py` and `backend/tests/test_chat_lifecycle.py` are local,
+close-observable probes, not Foundry recordings. They check owned/injected cleanup, normal/error
+termination, explicit close, cancellation during a blocked read/tool and event-loop progress.
+Voice cleanup remains the existing activity-stream reaping path, tested separately by
+`backend/tests/test_voice_reaping.py`; no voice protocol or deployment behavior changes here.
 
 ## What an answer consulted (spec 034)
 

@@ -29,11 +29,12 @@ thread.
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping
+from contextlib import aclosing
 from typing import Any
 
 from harness._shared.contract import AgentEvent, VoiceAttachment
+from harness._shared.streaming import stream_items
 from harness.langgraph.events import Normaliser
 
 __all__ = ["LangGraphAdapter"]
@@ -74,20 +75,15 @@ class LangGraphAdapter:
         terminated = False
 
         try:
-            stream = iter(self._stream_factory(messages, conversation_state))
-            exhausted = object()
-
-            while True:
-                # One `to_thread` per event: the factory is a blocking network read, and running it
-                # inline would hold frames unflushed until the turn ended.
-                raw = await asyncio.to_thread(next, stream, exhausted)
-                if raw is exhausted:
-                    break
-                for event in normaliser.convert(raw):  # type: ignore[arg-type]
-                    yield event
-                    if event["type"] in {"done", "error"}:
-                        terminated = True
-                        return
+            async with aclosing(
+                stream_items(lambda: self._stream_factory(messages, conversation_state))
+            ) as raw_events:
+                async for raw in raw_events:
+                    for event in normaliser.convert(raw):
+                        yield event
+                        if event["type"] in {"done", "error"}:
+                            terminated = True
+                            return
 
             if not terminated:
                 # The container stopped without completing. Dressing that up as `done` would mean
