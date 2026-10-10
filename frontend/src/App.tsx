@@ -164,13 +164,24 @@ export default function App() {
    * registry, and nothing else on any screen needs it.
    */
   const [playgroundTools, setPlaygroundTools] = useState<ToolSpec[]>([])
+  const [toolsStatus, setToolsStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
   useEffect(() => {
     if (route.name !== 'tools' || !config?.playground?.enabled) return
     let live = true
+    setToolsStatus('loading')
     fetch(`${BFF_URL}/tools`)
-      .then((r) => r.json())
-      .then((body: { tools?: ToolSpec[] }) => live && setPlaygroundTools(body.tools ?? []))
-      .catch(() => live && setPlaygroundTools([]))
+      .then((r) => {
+        if (!r.ok) throw new Error('unavailable')
+        return r.json()
+      })
+      .then((body: { tools: ToolSpec[] }) => {
+        if (!Array.isArray(body.tools)) throw new Error('unavailable')
+        if (live) {
+          setPlaygroundTools(body.tools)
+          setToolsStatus('ready')
+        }
+      })
+      .catch(() => live && setToolsStatus('failed'))
     return () => {
       live = false
     }
@@ -623,6 +634,8 @@ export default function App() {
           />
           {view === 'agent' ? (
             <AgentDetailScreen
+              key={inspecting}
+              canPropose={config?.agents?.can_propose ?? false}
               agent={inspected.agent}
               error={inspected.error}
               loading={inspected.loading}
@@ -644,7 +657,9 @@ export default function App() {
             />
           ) : view === 'tools' ? (
             // Outside the conversation, on purpose and visibly (spec 042).
-            <Playground tools={playgroundTools} />
+            config?.playground?.enabled ? (
+              <Playground tools={playgroundTools} status={toolsStatus} />
+            ) : null
           ) : view === 'preferences' ? (
             // The editable counterpart to `/about`: what THIS BROWSER keeps (spec 036).
             <PreferencesScreen prefs={prefs} />

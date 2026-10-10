@@ -32,17 +32,19 @@ export interface RunResult {
 
 interface Props {
   tools: ToolSpec[]
+  status?: 'loading' | 'ready' | 'failed'
   bffUrl?: string
 }
 
-export function Playground({ tools, bffUrl = BFF_URL }: Props) {
+export function Playground({ tools, status = 'ready', bffUrl = BFF_URL }: Props) {
   const s = useT()
   const [selected, setSelected] = useState(tools[0]?.name ?? '')
   const [args, setArgs] = useState('{}')
   const [result, setResult] = useState<RunResult | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const tool = tools.find((candidate) => candidate.name === selected)
+  const tool = tools.find((candidate) => candidate.name === selected) ?? tools[0]
+  if (tool && tool.name !== selected) setSelected(tool.name)
 
   async function run() {
     if (!tool) return
@@ -68,7 +70,11 @@ export function Playground({ tools, bffUrl = BFF_URL }: Props) {
       {/* The framing, not a footnote: this is what makes the screen legal under §8. */}
       <p className="playground__lead">{s('tools.lead')}</p>
 
-      <div className="playground__tools" role="group">
+      {status === 'loading' && <p role="status">{s('tools.loading')}</p>}
+      {status === 'failed' && <p role="alert">{s('tools.listFailed')}</p>}
+      {status === 'ready' && tools.length === 0 && <p>{s('tools.empty')}</p>}
+
+      {status === 'ready' && <div className="playground__tools" role="group">
         {tools.map((candidate) => (
           <button
             key={candidate.name}
@@ -82,9 +88,9 @@ export function Playground({ tools, bffUrl = BFF_URL }: Props) {
             {candidate.name}
           </button>
         ))}
-      </div>
+      </div>}
 
-      {tool && (
+      {status === 'ready' && tool && (
         <>
           <p className="playground__description">{tool.description}</p>
 

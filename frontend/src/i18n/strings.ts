@@ -85,6 +85,9 @@ export const strings = {
   // The framing is the safety argument, so it is the headline and not a disclaimer in small type:
   // this is not a conversation, no agent chose anything, and nothing was sent to a model.
   'tools.title': { en: 'Run a tool', pt: 'Executar uma ferramenta' },
+  'tools.loading': { en: 'Loading tools…', pt: 'Carregando ferramentas…' },
+  'tools.listFailed': { en: 'The tools could not be loaded.', pt: 'Não foi possível carregar as ferramentas.' },
+  'tools.empty': { en: 'This build lists no tools.', pt: 'Esta build não lista ferramentas.' },
   'tools.lead': {
     en: 'Not a conversation. No agent chose this, nothing was sent to a model, and nothing here appears in the chat.',
     pt: 'N\u00e3o \u00e9 uma conversa. Nenhum agente escolheu isto, nada foi enviado a um modelo, e nada aqui aparece no chat.',
@@ -110,6 +113,8 @@ export const strings = {
   // asserts that over these strings, in both languages \u2014 a screen that let a reader leave
   // believing the agent changed would be the \u00a75 failure this whole spec is built to avoid.
   'propose.title': { en: 'Propose a change', pt: 'Propor uma altera\u00e7\u00e3o' },
+  'propose.loading': { en: 'Reading this build’s definition…', pt: 'Lendo a definição desta build…' },
+  'propose.unavailable': { en: 'This build’s definition could not be read.', pt: 'Não foi possível ler a definição desta build.' },
   'propose.fromThisBuild': {
     en: 'The definition this build was made from \u2014 not a branch, and not necessarily what is deployed.',
     pt: 'A defini\u00e7\u00e3o a partir da qual esta build foi feita \u2014 n\u00e3o um branch, e n\u00e3o necessariamente o que est\u00e1 implantado.',

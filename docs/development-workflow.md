@@ -79,3 +79,9 @@ saves a `git apply`.
 Off by default (`FOUNDRY_ALLOW_PROPOSALS`). Nothing here writes, so the flag gates a surface rather
 than a permission.
 
+From `/agents/{name}`, choose **Propose a change** after the configured BFF reads this build's
+definition (integration spec 053). Ownership is decided by that read, not by a frontend list:
+non-owned agents have no editor. Loading and read failures are explicit. Leaving the detail or
+inspecting another agent discards the draft; the served definition remains the detail's read-only
+view, separate from the build definition in the proposal editor.
+

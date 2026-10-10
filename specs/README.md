@@ -106,6 +106,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 050 | [Demo mode — the whole app, with no Azure credential](050-demo-mode/spec.md) | 4 | ✅ done |
 | 051 | [Replay isolation](051-replay-isolation/spec.md) | 4 | ✅ done |
 | 052 | [Preferences that reach the application](052-preferences-applied/spec.md) | 4 | ✅ done |
+| 053 | [Playground and proposal integration](053-playground-and-proposal-integration/spec.md) | 4 | ✅ done |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is

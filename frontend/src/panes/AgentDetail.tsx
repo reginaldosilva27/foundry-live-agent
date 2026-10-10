@@ -15,7 +15,9 @@
  * **Instructions are rendered as text, never as Markdown.** They were written by somebody else for
  * eight of these ten agents, and this screen is a viewer, not a renderer of other people's markup.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { BFF_URL } from '../config'
+import { AgentDefinition, type Definition } from './AgentDefinition'
 import { HarnessBadge } from '../components/HarnessBadge'
 import { CopyIcon } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
@@ -41,6 +43,7 @@ interface Props {
    * yet shows nothing rather than something that will fail.
    */
   canPromote?: boolean
+  canPropose?: boolean
   /** The version currently being promoted, so the control can be busy and refuse a second press. */
   promoting?: string | null
   /** A failure CODE from the last attempt, translated here. */
@@ -75,6 +78,7 @@ export function AgentDetailScreen({
   onSelect,
   onBack,
   canPromote = false,
+  canPropose = false,
   promoting = null,
   promoteError = null,
   onPromote,
@@ -136,6 +140,8 @@ export function AgentDetailScreen({
         )}
       </Block>
 
+      {canPropose && <DefinitionProposal key={agent.name} agent={agent.name} />}
+
       <Block title={s('agent.tools')} testId="agent-tools">
         {agent.tools === null ? <NotReported /> : <Tools tools={agent.tools} />}
       </Block>
@@ -190,6 +196,40 @@ export function AgentDetailScreen({
         </Block>
       )}
     </section>
+  )
+}
+
+function DefinitionProposal({ agent }: { agent: string }) {
+  const s = useT()
+  const [read, setRead] = useState<{ definition: Definition | null; error: string | null } | null>(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    fetch(`${BFF_URL}/agents/${encodeURIComponent(agent)}/definition`)
+      .then(async (response) => {
+        const body = await response.json()
+        if (!response.ok || !body.definition) {
+          if (live) setRead({ definition: null, error: body.error ?? 'unavailable' })
+        } else if (live) {
+          setRead({ definition: body.definition, error: null })
+        }
+      })
+      .catch(() => live && setRead({ definition: null, error: 'unavailable' }))
+    return () => { live = false }
+  }, [agent])
+
+  if (!read) return <p role="status">{s('propose.loading')}</p>
+  if (!read.definition) {
+    if (read.error === 'not_owned' || read.error === 'proposals_disabled') return null
+    return <p className="agent-detail__error" role="alert">{s('propose.unavailable')}</p>
+  }
+  return open ? (
+    <AgentDefinition agent={agent} definition={read.definition} />
+  ) : (
+    <button type="button" className="agent-detail__back" onClick={() => setOpen(true)}>
+      {s('propose.title')}
+    </button>
   )
 }
 

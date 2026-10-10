@@ -173,3 +173,8 @@ verbatim, and it is the state most forks of this repository will be in.
 
 Off by default — see [`SECURITY.md`](../../SECURITY.md).
 
+The rail's **Run a tool** entry opens `/tools` only when configured. The registry arrives
+asynchronously: loading, a failed read and a successful empty list are distinct (spec 053).
+The first available tool supplies the initial schema; a valid user selection survives a refreshed
+list. Selecting a tool never executes it — only **Run** does.
+
