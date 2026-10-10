@@ -885,3 +885,22 @@ disconnect probes, demonstrate that coroutine cancellation does not stop synchro
 cleanup waits for that work to return. These are lifecycle stimuli, not recorded Foundry responses
 or evidence that a remote run stopped billing. See
 [the lifecycle limits](how-it-works/streaming-events.md#local-resource-lifecycle-and-its-limits-33).
+
+## Hosted multi-turn continuity (#35) — read 2026-10-10
+
+| Official source read | What the investigation relies on |
+|---|---|
+| [Develop LangChain hosted agents](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-hosted-agents) (updated 2026-08-31) | Without a checkpointer, `ResponsesHostServer` replays protocol-managed prior history plus current input; clients can chain `previous_response_id` or use `conversation`. With a checkpointer, current input alone is passed. Sandbox reuse additionally requires a session ID or conversation. |
+| [Hosted agents concepts](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents) (metadata updated 2026-09-29) | Responses supports platform-managed conversation history and conversation threading; the dedicated hosted Responses endpoint is `{project_endpoint}/agents/{name}/endpoint/protocols/openai/responses`. |
+| [Manage hosted agent sessions](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/manage-hosted-sessions) (metadata updated 2026-09-23) | `agent_session_id` reuses sandbox/filesystem state, not message history. `previous_response_id` chains history without implicit sandbox reuse. A conversation created through `POST .../endpoint/protocols/openai/conversations` can bind response history and a stable sandbox. These are distinct pointers, not interchangeable IDs. |
+
+**No live service verification was performed.** Both September 16 committed hosted completion
+recordings return `id: caresp_0000` and `agent_session_id: id_0001`, with `conversation` and
+`previous_response_id` absent. Those anonymized values are not live handles. The BFF's
+`conversation_id` does not reach the hosted request: its factory reads `response_id` instead.
+Two sequential actual **loopback HTTP** requests replaying the recording confirm outgoing bodies
+contain only `input` and `stream`, not continuity. The unresolved expectation is a strict xfail;
+that is not evidence of a repair. Conversation creation payload/returned ID, response binding,
+completion fields, two-turn history replay on the deployed version and cross-agent pointer behavior
+still need permission and recorded service evidence. See
+[the investigation and unblock conditions](how-it-works/hosted-continuity.md).
