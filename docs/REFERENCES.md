@@ -870,3 +870,39 @@ The recorded listing (`backend/tests/fixtures/agents-listing-20260916.json`, 10 
 `agent_endpoint` key at all** — consistent with nothing ever having been pinned, and not proof that
 the field would be omitted if something were. `test_agent_versions.py` asserts that premise, so a
 future recording that contradicts it fails loudly instead of quietly invalidating the reasoning.
+
+## Copilot learning paths — sources read 2026-10-09
+
+These **public official pages were read on 2026-10-09**, independently of the historical evidence
+above. This does not reverify earlier APIs, run a tenant integration, select a product, or authorize
+credentials/spend. The comparison and proposed lesson are in
+[English](copilot-learning-paths.md) / [Português](copilot-learning-paths.pt-BR.md).
+Source IDs make the same claim traceable from both translations; product entitlement/status can change.
+
+| ID | Official source | What this reading confirms / limits |
+|---|---|---|
+| C01 | [VS Code MCP servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers) | Tools/resources/prompts/MCP Apps, local/remote execution and server trust. Configuration scope matters; local code is privileged. |
+| C02 | [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-cli) | Terminal agent/customizations, local versus cloud modes, broad tool-approval risks. Cloud sandbox is explicitly public preview; do not apply that label to every CLI mode. |
+| C03 | [Copilot on GitHub](https://docs.github.com/en/copilot/concepts/copilot-surfaces/copilot-on-github) | Ephemeral cloud development execution; remote control does not relocate a local CLI session. |
+| C04 | [Configure repository MCP servers](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers) | Cloud agent/review tools only, no remote OAuth or per-call approval; admin configuration and review readOnlyHint requirement. |
+| C05 | [GitHub Copilot plans](https://docs.github.com/en/copilot/get-started/plans) | Current client entitlement/limits and GitHub AI Credits; organization policies still apply. No price literals copied. |
+| C06 | [Studio MCP](https://learn.microsoft.com/en-us/microsoft-copilot-studio/agent-extend-action-mcp) | Standard-harness generative orchestration supports MCP tools and resources. Not proof of every MCP primitive. |
+| C07 | [Studio MCP onboarding](https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-existing-server-to-agent) | Streamable transport, no-auth/API-key/OAuth choices; legacy MCP SSE no longer supported. |
+| C08 | [Studio licensing/access](https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-licensing-subscriptions) | Trial cannot publish; Teams subset differs from standalone and lacks generative orchestration in the reviewed table. |
+| C09 | [Studio connected agents](https://learn.microsoft.com/en-us/microsoft-copilot-studio/authoring-add-other-agents) | Child/connected/external-agent distinctions, extra orchestration/latency; Foundry connection public preview. |
+| C10 | [Studio → Foundry agent](https://learn.microsoft.com/en-us/microsoft-copilot-studio/add-agent-foundry-agent) | Preview, standard harness, new-portal agent requirement and Activity endpoint prerequisite; Responses/A2A alone insufficient. No enabling API copied or run. |
+| C11 | [M365 agents overview](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/agents-overview) | Declarative versus custom-engine orchestration and responsibility. Not the repository's two harnesses. |
+| C12 | [M365 declarative MCP plugin](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/build-mcp-plugins) | Remote-server plugin, dynamic discovery/pinned tools/MCP Apps, auth choices, custom-upload/Copilot access gates. Walkthrough not executed. |
+| C13 | [MCP as plugin capability](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-type-mcp-servers) | Host-specific feature/governance support; package references a server without hosting it. |
+| C14 | [Publish Foundry to Copilot/Teams](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/publish-copilot) | Stable endpoint, Activity, Bot Service/channel/package; personal/shared versus tenant authorization/admin approval. Foundry User plus Bot Service permissions, not project role alone. Does not confirm this repo's client-side functions on that channel. |
+| C15 | [Work IQ MCP](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/work-iq/mcp/overview) · [API overview](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/work-iq/api-overview) | M365 tool access in the opposite direction, including write/delete and Copilot invocation; Entra OAuth, permission/policy boundary. No tenant access made; exact selected flow/entitlement unresolved. |
+| C16 | [M365 extensibility costs](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/cost-considerations) | Eligible base subscription/Chat/add-on paths, shared-data credits, custom-engine Chat add-on distinction. Not a waiver of Azure/model hosting costs. |
+| C17 | [Foundry MCP](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/model-context-protocol) | Remote MCP, connections/approval, current Foundry User and Foundry Project Manager role names. No SDK/version/config changed. |
+| C18 | [Learn MCP overview](https://learn.microsoft.com/en-us/training/support/mcp) | Public Streamable HTTP endpoint https://learn.microsoft.com/api/mcp, no authentication/server charge, public docs only; client costs/terms remain. A browser GET/405 is not an MCP availability test. |
+| C19 | [Learn MCP getting started](https://learn.microsoft.com/en-us/training/support/mcp-get-started) | GitHub Copilot/VS Code documented route, CLI plugin alternative, actual search/fetch/code-sample tool names. No installation or tool call performed here. |
+
+**Still open:** selected Copilot client/product/license/tenant; policy/data/credential/spend consent;
+actual public Learn call capture; Studio/Activity compatibility of this repository's exact agents;
+where client-side function outputs would be answered outside its BFF. These require explicit selection
+and, for new integration code/configuration/contracts, a clarified spec before implementation.
+Issue #37 is research-partial, not a delivered M365 connector or third harness.
