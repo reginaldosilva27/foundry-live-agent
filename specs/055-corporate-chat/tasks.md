@@ -14,4 +14,3 @@
 - [x] Lint, tests and build pass.
 - [x] Related docs and bilingual labels included; no contract or guidance changes.
 - [x] Spec status done after verified evidence.
-

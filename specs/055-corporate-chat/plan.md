@@ -36,4 +36,3 @@ CSS assertion tests prove declarations only; browser measurements/screenshots mu
 No live-service claims. Baseline npm audit reports 8 dependency advisories; dependency remediation
 is separate from this refinement. Synthetic long-text/error browser probes are labelled probes,
 never presented as recorded service output.
-

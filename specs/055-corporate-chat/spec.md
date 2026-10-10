@@ -45,4 +45,3 @@ is reserved globally despite 053 being the highest folder in this explicit PR49 
 
 ## Out of scope / deferred
 A live Foundry/voice validation is not required for visual refinement and would spend Azure resources.
-
