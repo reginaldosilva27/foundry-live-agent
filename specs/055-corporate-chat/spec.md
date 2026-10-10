@@ -30,7 +30,7 @@ The composer exposes its existing newline guidance visibly. The replay banner re
 2. **AC2** — At desktop widths the empty state is left-aligned with vertically arranged full-width examples, the question uses a neutral surface, and the answer remains primary prose rather than another coloured bubble.
 3. **AC3** — The chat reading column and composer share a bounded width; the composer stays inset, displays the existing newline hint, and preserves Enter, Shift+Enter, IME, send/stop and voice semantics.
 4. **AC4** — Chat header controls and activity use restrained rectangular treatments rather than pill/dashed decoration; reasoning, tools, sources, trace/event inspection and metadata remain available.
-5. **AC5** — At 320, 390, 900 and 1440px, in light/dark, chat does not overflow the viewport; long code and tables scroll inside their containers, and the mobile navigation remains usable. Comparison continues using the same message rendering.
+5. **AC5** — At 320, 390, 900 and 1440px, in light/dark, chat does not overflow the viewport; long code stays contained (wrapping or internal scrolling), and wide tables scroll inside their containers, and the mobile navigation remains usable. Comparison continues using the same message rendering.
 6. **AC6** — Both palettes retain text contrast, visible keyboard focus and reduced-motion treatment; replay and request shape remain unchanged and no automatic or paid service calls are added.
 
 ## Contract / data impact
