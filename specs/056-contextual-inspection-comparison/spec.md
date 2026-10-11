@@ -59,4 +59,3 @@ published sibling, 055 is the base, and 057 is reserved elsewhere. Hosted contin
 
 ## Out of scope / deferred
 Hosted continuity repair; service health probes; remote deletion or history removal.
-
