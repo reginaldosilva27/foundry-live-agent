@@ -160,7 +160,18 @@ export const strings = {
   'events.title': { en: 'Events', pt: 'Eventos' },
   'events.close': { en: 'Close', pt: 'Fechar' },
   'events.all': { en: 'all', pt: 'todos' },
-  'events.empty': { en: 'No events yet', pt: 'Nenhum evento ainda' },
+  'events.empty': { en: 'No events captured yet for this turn.', pt: 'Nenhum evento capturado ainda neste turno.' },
+  'events.unretained': { en: 'Events were not retained for this turn. Restored and voice turns may have no event capture.', pt: 'Os eventos não foram retidos neste turno. Turnos restaurados e de voz podem não ter captura de eventos.' },
+  'events.filteredEmpty': { en: 'No captured events match this filter. Choose All to see the capture.', pt: 'Nenhum evento capturado corresponde a este filtro. Escolha Todos para ver a captura.' },
+  'events.noTurn': { en: 'No turn selected. Send a question or open a conversation to inspect its retained events.', pt: 'Nenhum turno selecionado. Envie uma pergunta ou abra uma conversa para inspecionar seus eventos retidos.' },
+  'events.context': { en: 'Turn {turn} of {total} · Agent: {agent}', pt: 'Turno {turn} de {total} · Agente: {agent}' },
+  'events.unknownAgent': { en: 'not recorded', pt: 'não registrado' },
+  'events.previous': { en: 'Previous turn', pt: 'Turno anterior' },
+  'events.next': { en: 'Next turn', pt: 'Próximo turno' },
+  'compare.independent': { en: 'Each column has its own context and conversation pointer. Changing one agent clears only that column; their contexts may differ. A pointer does not guarantee that a hosted agent retains earlier turns.', pt: 'Cada coluna tem seu próprio contexto e ponteiro de conversa. Trocar um agente limpa apenas aquela coluna; os contextos podem diferir. Um ponteiro não garante que um agente hospedado retenha turnos anteriores.' },
+  'compare.reset': { en: 'Restart both columns', pt: 'Reiniciar as duas colunas' },
+  'compare.resetScope': { en: 'Restart clears both columns and their pointers in this browser, keeping the chosen agents. It does not delete service conversations or change chat and browser history.', pt: 'Reiniciar limpa as duas colunas e seus ponteiros neste navegador, mantendo os agentes escolhidos. Não exclui conversas no serviço nem altera o chat e o histórico do navegador.' },
+  'compare.locked': { en: 'Agent changes and restart are unavailable while either column is streaming. Stop listening to both columns first, or wait.', pt: 'Trocar agentes e reiniciar ficam indisponíveis enquanto uma coluna transmite. Pare de ouvir as duas colunas primeiro ou aguarde.' },
   'events.runOf': { en: '\u00d7{count}', pt: '\u00d7{count}' },
   'events.verified': {
     en: '{verified} of {total} Foundry event names verified against a recorded run',
@@ -567,7 +578,10 @@ export const strings = {
     pt: 'A voz não está configurada neste servidor.',
   },
   'header.traces': { en: 'Traces', pt: 'Rastros' },
-  'header.status': { en: 'Ready', pt: 'Pronto' },
+  'header.status': { en: 'Idle', pt: 'Ocioso' },
+  'header.statusLoading': { en: 'Loading configuration', pt: 'Carregando configuração' },
+  'header.statusUnavailable': { en: 'Information unavailable', pt: 'Informações indisponíveis' },
+  'header.readUnavailable': { en: 'Configuration or agent information could not be loaded. Reload to read it again, or inspect the connection details. This is not a service health check.', pt: 'Não foi possível carregar a configuração ou as informações dos agentes. Recarregue para ler novamente ou inspecione os detalhes da conexão. Isto não é uma verificação de saúde do serviço.' },
   'header.statusStreaming': { en: 'Streaming', pt: 'Transmitindo' },
 
   // --- Voice (spec 006) ----------------------------------------------------
@@ -810,9 +824,10 @@ export const strings = {
 
   // --- Errors --------------------------------------------------------------
   'error.title': { en: 'The turn failed', pt: 'O turno falhou' },
+  'error.next': { en: 'Inspect the retained Events and reported error. You can send a new question manually; it may fail again. Restarting comparison is only a local reset, not a service repair.', pt: 'Inspecione os Eventos retidos e o erro informado. Você pode enviar uma nova pergunta manualmente; ela pode falhar novamente. Reiniciar a comparação é apenas um reset local, não um reparo do serviço.' },
   'error.hint': {
-    en: 'The stream ended with an error event rather than going quiet. That is the contract working.',
-    pt: 'O stream terminou com um evento de erro em vez de simplesmente parar. Isso é o contrato funcionando.',
+    en: 'These are the error details reported for this turn, not a diagnosis of the service.',
+    pt: 'Estes são os detalhes do erro informado neste turno, não um diagnóstico do serviço.',
   },
 
   // --- Trace panel ---------------------------------------------------------

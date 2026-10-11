@@ -90,6 +90,7 @@ interface Props {
   onNewSession: () => void
   onView: (view: NavView) => void
   onOpenConversation: (id: string) => void
+  selectionLocked?: boolean
   onSelectAgent: (name: string) => void
   /**
    * The rail is open **over** the conversation (spec 047).
@@ -120,6 +121,7 @@ export function Sidebar({
   onView,
   onOpenConversation,
   onSelectAgent,
+  selectionLocked = false,
   overlay,
   inactive,
   onCloseOverlay,
@@ -228,7 +230,8 @@ export function Sidebar({
           </div>
         )}
 
-        <Favourites rows={favourites} answering={answering} onSelect={onSelectAgent} />
+        {selectionLocked && <p className="sidebar__muted">{s('compare.locked')}</p>}
+        <Favourites rows={favourites} answering={answering} onSelect={onSelectAgent} selectionLocked={selectionLocked} />
 
         {/* The field appears with the second thing worth searching, not before: a search box over
             an empty list is chrome that promises something the rail cannot do yet. */}

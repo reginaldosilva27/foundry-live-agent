@@ -657,3 +657,13 @@ describe('the tool row grid', () => {
     expect(bar).toMatch(/grid-(column|area)/)
   })
 })
+
+// Notices must belong to the header slot, not steal the minmax scrolling row.
+describe('contextual observation header slot', () => {
+  it('contains readiness and offscreen-lock notices in the same grid child as Header', () => {
+    const app = readFileSync(join(import.meta.dirname, '../App.tsx'), 'utf8')
+    expect(app).toMatch(/<div className="main__head">[\s\S]*?<Header[\s\S]*?observation-notice[\s\S]*?<\/div>/)
+    expect(css).toMatch(/\.main\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto/)
+    expect(css).toMatch(/\.header\s*\{[^}]*min-height:\s*60px/)
+  })
+})

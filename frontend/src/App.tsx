@@ -250,10 +250,12 @@ export default function App() {
    */
   const selectAgent = useCallback(
     (name: string) => {
+      if (comparison.streaming) return
+      if (name !== answering) comparison.left.reset()
       agents.select(name)
       setView('chat')
     },
-    [agents, setView],
+    [agents, setView, comparison, answering],
   )
 
   const openConversationFromRail = useCallback(
@@ -433,6 +435,10 @@ export default function App() {
   }, [onScreen, trace.turnId])
 
   const shownTurn = shown.message
+  const shownAgent = view === 'compare' && shownTurn
+    ? (comparison.left.messages.some((message) => message.id === shownTurn.id)
+      ? answering : comparison.other ?? undefined)
+    : answering
 
   /** Move to the adjacent turn, pinning the panel to it so the newest one stops pulling it away. */
   const stepTurn = useCallback(
@@ -599,6 +605,7 @@ export default function App() {
           agents={agents}
           favourites={favouriteRows(agents.agents, favourites.names)}
           onSelectAgent={selectAgent}
+          selectionLocked={comparison.streaming}
           lang={lang}
           view={view}
           history={history}
@@ -619,19 +626,27 @@ export default function App() {
         />
 
         <main className="main" id="conversation" tabIndex={-1}>
-          <Header
-            config={config}
-            selectedAgent={selectedAgent}
-            selectedHarness={selectedRow?.harness ?? null}
-            configFailed={failed}
-            streaming={streaming}
-            tracesOpen={tracesOpen}
-            voiceLive={voice.status === 'live'}
-            onToggleTraces={toggleTraces}
-            onVoice={startVoiceSession}
-            menuOpen={menuOpen}
-            onOpenMenu={() => setMenuOpen(true)}
-          />
+          <div className="main__head">
+            <Header
+              config={config}
+              selectedAgent={selectedAgent}
+              selectedHarness={selectedRow?.harness ?? null}
+              configFailed={failed}
+              agentsLoading={agents.loading}
+              agentsUnavailable={!!agents.error}
+              eventsOpen={eventsOpen}
+              onToggleEvents={() => setEventsOpen((open) => !open)}
+              streaming={comparison.streaming || streaming}
+              tracesOpen={tracesOpen}
+              voiceLive={voice.status === 'live'}
+              onToggleTraces={toggleTraces}
+              onVoice={startVoiceSession}
+              menuOpen={menuOpen}
+              onOpenMenu={() => setMenuOpen(true)}
+            />
+            {(failed || agents.error) && <p className="observation-notice">{translate('header.readUnavailable', lang)}</p>}
+            {comparison.streaming && view !== 'compare' && <p className="observation-notice">{translate('compare.locked', lang)}</p>}
+          </div>
           {view === 'agent' ? (
             <AgentDetailScreen
               key={inspecting}
@@ -640,6 +655,7 @@ export default function App() {
               error={inspected.error}
               loading={inspected.loading}
               answering={answering}
+              selectionLocked={comparison.streaming}
               onSelect={selectAgent}
               onBack={() => navigate({ name: 'agents' })}
               // Absent reads as no (spec 031, AC9): a control this build cannot honour never
@@ -689,6 +705,7 @@ export default function App() {
               answering={answering}
               configuredAgent={config?.agent_name}
               favourites={favourites.names}
+              selectionLocked={comparison.streaming}
               onSelect={selectAgent}
               onFavourite={favourites.toggle}
               onInspect={(name) => navigate({ name: 'agent', agentName: name })}
@@ -779,11 +796,18 @@ export default function App() {
 
         {eventsOpen && (
           <EventInspector
-            events={(shownTurn?.role === 'agent' ? shownTurn.events : undefined) ?? []}
+            key={shownTurn?.id ?? 'no-turn'}
+            context={{ turn: shown.total ? shown.index + 1 : 0, total: shown.total, agent: shownAgent }}
+            onPrevious={shown.index > 0 ? () => stepTurn(-1) : undefined}
+            onNext={shown.index < shown.total - 1 ? () => stepTurn(1) : undefined}
+            events={shownTurn?.role === 'agent' ? shownTurn.events : undefined}
             truncated={shownTurn?.role === 'agent' ? shownTurn.truncated : undefined}
             types={config?.event_types ?? []}
             mapping={config?.event_mapping}
-            onClose={() => setEventsOpen(false)}
+            onClose={() => {
+              setEventsOpen(false)
+              document.querySelector<HTMLButtonElement>('[aria-controls="event-inspector"]')?.focus()
+            }}
           />
         )}
 

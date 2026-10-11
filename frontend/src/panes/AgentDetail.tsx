@@ -33,6 +33,7 @@ interface Props {
   loading: boolean
   /** The agent currently answering, so this screen can say when it is this one. */
   answering?: string
+  selectionLocked?: boolean
   onSelect: (name: string) => void
   onBack: () => void
   /**
@@ -76,6 +77,7 @@ export function AgentDetailScreen({
   loading,
   answering,
   onSelect,
+  selectionLocked = false,
   onBack,
   canPromote = false,
   canPropose = false,
@@ -121,7 +123,7 @@ export function AgentDetailScreen({
         <button
           type="button"
           className="agent-detail__choose"
-          disabled={!agent.selectable}
+          disabled={!agent.selectable || selectionLocked}
           aria-pressed={agent.name === answering}
           onClick={() => onSelect(agent.name)}
         >

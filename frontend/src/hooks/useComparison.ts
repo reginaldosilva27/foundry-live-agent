@@ -44,6 +44,8 @@ export interface Comparison {
   send: (text: string, first?: string) => void
   /** Stop both. Neither Foundry run stops — the browser stops listening (spec 023). */
   stop: () => void
+  /** Forget both local drawings and pointers, never delete a service conversation. */
+  reset: () => void
 }
 
 export function useComparison(): Comparison {
@@ -53,7 +55,7 @@ export function useComparison(): Comparison {
 
   const choose = useCallback(
     (name: string | null) => {
-      if (name === other) return
+      if (name === other || left.streaming || right.streaming) return
       setOther(name)
       // A Foundry conversation belongs to one agent (019 AC7), so the thread the previous second
       // agent held cannot be handed to the next one. Only this column resets: the left is still
@@ -61,14 +63,14 @@ export function useComparison(): Comparison {
       // comparison the reader did not ask to end.
       right.reset()
     },
-    [other, right],
+    [other, left.streaming, right],
   )
 
   const send = useCallback(
     (text: string, first?: string) => {
       // Nothing to compare against yet. The composer is disabled in this state; this is the second
       // line, so a send arriving any other way cannot produce a one-column "comparison".
-      if (!other) return
+      if (!other || left.streaming || right.streaming) return
       // Both fired before either is awaited — that is the whole of AC1. `void` rather than
       // `await`, because awaiting the first here would make the second column start when the
       // first finished, which is the sequential comparison this spec exists to replace.
@@ -83,6 +85,12 @@ export function useComparison(): Comparison {
     right.stop()
   }, [left, right])
 
+  const reset = useCallback(() => {
+    if (left.streaming || right.streaming) return
+    left.reset()
+    right.reset()
+  }, [left, right])
+
   const messages = useMemo(() => [...left.messages, ...right.messages], [left.messages, right.messages])
 
   return {
@@ -94,5 +102,6 @@ export function useComparison(): Comparison {
     messages,
     send,
     stop,
+    reset,
   }
 }

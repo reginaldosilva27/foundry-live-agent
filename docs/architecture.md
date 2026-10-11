@@ -265,6 +265,20 @@ round-trip for **every** route in `ROUTES`, so this table cannot quietly fall be
 | `/trace/<response_id>` | the trace panel on that response |
 | `/compare` | one question to two agents, side by side (spec 020) |
 
+**Contextual observation (spec 056).** The header's Events control opens the retained capture for
+one turn, naming its answering agent and allowing previous/next turn navigation. No capture, an
+empty capture, and no match for a filter are distinct states. Changing the turn clears the filter and
+expanded payload. Header status reports loading configuration, unavailable read information,
+streaming, or idle — never a service-health guarantee. Error details stay verbatim with manual next
+steps, not a guessed diagnosis.
+
+Comparison uses independent contexts and pointers. Restart clears both local message arrays and
+pointers, keeps the chosen agents, and leaves single chat/history untouched; it sends no delete or
+memory-reset request. Agent changes and restart are locked while either column streams; stopping
+listening remains available. A settled agent change clears only its column. This local reset is not
+a guarantee of hosted multi-turn continuity: the investigation in issue #35 / PR #50 remains
+unrepaired by this frontend-only change.
+
 Two properties are load-bearing and are tested, not merely intended:
 
 - **The URL is an address, not state.** Nothing the app needs in order to be correct lives only in
@@ -302,3 +316,11 @@ written into this browser's record.
 **The agent cannot produce an image yet.** That half of spec 044 is deferred for want of a verified
 Foundry API, and is recorded in [`REFERENCES.md`](REFERENCES.md).
 
+
+## Restrained presentation (spec 058)
+
+The shared chat and comparison rendering uses a centered reading column, unboxed assistant prose,
+a soft user bubble and an integrated rounded composer. Agent identity remains visible; reasoning
+discloses its text and tool rows still open traces. Header Events remains an explicit entry.
+This is a presentation change only: existing semantic light/dark palettes, definition-sourced
+examples, request bodies, stored records and the AgentEvent boundary are unchanged.

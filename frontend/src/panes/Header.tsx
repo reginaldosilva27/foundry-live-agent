@@ -19,6 +19,10 @@ interface Props {
   selectedHarness: string | null
   configFailed: boolean
   streaming: boolean
+  agentsLoading?: boolean
+  agentsUnavailable?: boolean
+  eventsOpen?: boolean
+  onToggleEvents?: () => void
   tracesOpen: boolean
   voiceLive: boolean
   onToggleTraces: () => void
@@ -42,6 +46,10 @@ export function Header({
   configFailed,
   streaming,
   tracesOpen,
+  agentsLoading = false,
+  agentsUnavailable = false,
+  eventsOpen = false,
+  onToggleEvents,
   voiceLive,
   onToggleTraces,
   onVoice,
@@ -68,12 +76,20 @@ export function Header({
       <span className="header__pill">{s('header.foundryPill')}</span>
       <span className="header__status" data-streaming={streaming}>
         <span className="dot" aria-hidden="true" />
-        {streaming ? s('header.statusStreaming') : s('header.status')}
+        {streaming ? s('header.statusStreaming')
+          : configFailed || agentsUnavailable ? s('header.statusUnavailable')
+          : !config || agentsLoading ? s('header.statusLoading') : s('header.status')}
       </span>
 
       <div className="header__spacer" />
 
       <HarnessBadge harness={selectedHarness ?? config?.harness} failed={configFailed} />
+
+      <button type="button" className="pill-button" aria-label={s('events.title')}
+        aria-pressed={eventsOpen} aria-controls="event-inspector" onClick={onToggleEvents}>
+        <ActivityIcon size={14} />
+        {s('events.title')}
+      </button>
 
       <button
         type="button"

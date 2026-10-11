@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
 import { t } from '../i18n/strings'
+import { KEYS } from '../state/storage'
 import { asSseStream } from '../test/fixtures'
 import type { AgentEvent } from '../types/events'
 import type { AgentRow } from '../types/agents'
@@ -408,5 +409,83 @@ describe('what comparison mode refuses (AC13) and what it leaves alone (AC14)', 
     await user.click(screen.getByRole('button', { name: t('nav.chat', 'en') }))
 
     expect(await screen.findByTestId('answer')).toHaveTextContent('The prompt agent answers.')
+  })
+})
+
+describe('spec 056 honest comparison controls', () => {
+  it('identifies the answering comparison column in Events', async () => {
+    fakeBff()
+    const user = await compareWith()
+    await ask(user)
+    await screen.findByText('The hosted agent answers.')
+    await user.click(screen.getByRole('button', { name: t('events.title', 'en') }))
+    let inspector = screen.getByRole('complementary', { name: t('events.title', 'en') })
+    expect(within(inspector).getByText('Turn 2 of 2 · Agent: hosted-two')).toBeInTheDocument()
+    await user.click(within(inspector).getByRole('button', { name: t('events.previous', 'en') }))
+    inspector = screen.getByRole('complementary', { name: t('events.title', 'en') })
+    expect(within(inspector).getByText('Turn 1 of 2 · Agent: prompt-one')).toBeInTheDocument()
+  })
+
+  it('blocks first-agent changes after navigating away from a running pair', async () => {
+    fakeBff({ hang: true })
+    const user = await compareWith()
+    await ask(user)
+    await user.click(screen.getByRole('button', { name: t('nav.agents', 'en') }))
+    expect(screen.getByText(t('header.statusStreaming', 'en'))).toBeInTheDocument()
+    expect(screen.getAllByRole('button').filter((button) => button.hasAttribute('data-agent')).every((button) => (button as HTMLButtonElement).disabled)).toBe(true)
+    await user.click(screen.getByRole('button', { name: t('nav.compare', 'en') }))
+    await user.click(screen.getByRole('button', { name: t('composer.stop', 'en') }))
+    await user.click(screen.getByRole('button', { name: t('nav.agents', 'en') }))
+    await waitFor(() => expect(screen.getAllByRole('button').filter((button) => button.hasAttribute('data-agent')).some((button) => !(button as HTMLButtonElement).disabled)).toBe(true))
+  })
+
+  it('leaves single-chat history and its pointer intact after resetting comparison', async () => {
+    fakeBff()
+    window.history.replaceState(null, '', '/')
+    const user = userEvent.setup()
+    render(<App />)
+    await ask(user, 'chat first')
+    await screen.findByTestId('answer')
+    const historyBefore = localStorage.getItem(KEYS.history)
+    expect(historyBefore).not.toBeNull()
+    await user.click(screen.getByRole('button', { name: t('nav.compare', 'en') }))
+    await user.selectOptions(screen.getByLabelText(t('compare.with', 'en')), 'hosted-two')
+    await ask(user, 'pair')
+    await screen.findByText('The hosted agent answers.')
+    await user.click(screen.getByRole('button', { name: t('compare.reset', 'en') }))
+    expect(localStorage.getItem(KEYS.history)).toBe(historyBefore)
+    await user.click(screen.getByRole('button', { name: t('nav.chat', 'en') }))
+    expect(screen.getByTestId('answer')).toHaveTextContent('The prompt agent answers.')
+    await ask(user, 'chat again')
+    await waitFor(() => expect(sent).toHaveLength(4))
+    expect(sent[3].conversation_id).toBe('conv_left')
+  })
+
+  it('explains independence and locally resets the pair by keyboard', async () => {
+    fakeBff()
+    const user = await compareWith()
+    expect(screen.getByText(t('compare.independent', 'en'))).toBeInTheDocument()
+    await ask(user)
+    await screen.findByText('The hosted agent answers.')
+    const reset = screen.getByRole('button', { name: t('compare.reset', 'en') })
+    reset.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.queryAllByTestId('compare-column')).toHaveLength(0)
+    expect(screen.getByLabelText(t('compare.with', 'en'))).toHaveValue('hosted-two')
+    expect(sent).toHaveLength(2)
+    await ask(user, 'again')
+    await waitFor(() => expect(sent).toHaveLength(4))
+    expect(sent.slice(2).every((body) => body.conversation_id === undefined)).toBe(true)
+  })
+
+  it('locks changes/reset while streaming but keeps stop and reports streaming', async () => {
+    fakeBff({ hang: true })
+    const user = await compareWith()
+    await ask(user)
+    expect(screen.getByLabelText(t('compare.with', 'en'))).toBeDisabled()
+    expect(screen.getByRole('button', { name: t('compare.reset', 'en') })).toBeDisabled()
+    expect(screen.getByText(t('header.statusStreaming', 'en'))).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: t('composer.stop', 'en') }))
+    await waitFor(() => expect(screen.getByLabelText(t('compare.with', 'en'))).not.toBeDisabled())
   })
 })
