@@ -35,4 +35,3 @@ None. Coordinator approved logging, prompt/hosted scope and opaque aliases on 20
 
 ## Out of scope / deferred
 Paid live probes, new verified shapes, voice diagnostics, and issue #35's unverified failure shape.
-
