@@ -25,8 +25,9 @@ were plausible and neither survived contact:
 2. ``response.function_call_arguments.done`` carries ``name: null``, so it cannot identify a call
    on its own either. The completed output item is again the only complete record.
 
-Unrecognised events are **counted**, not silently dropped — see :func:`unmapped_types`. An event
-Foundry starts sending that we ignore is exactly the kind of thing that should be visible.
+Unrecognised events get bounded, content-free diagnostics in whole-stream helpers and adapters.
+The offline :func:`unmapped_types` helper still exposes spellings for trusted recording analysis;
+it is not the live logging path (spec 057).
 """
 
 from __future__ import annotations
@@ -36,6 +37,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from harness._shared.contract import AgentEvent
+from harness._shared.event_diagnostics import MAX_TYPE_LENGTH, EventDiagnostics
 
 __all__ = ["MAPPINGS", "EventMapping", "convert", "mapping_report", "normalise", "unmapped_types"]
 
@@ -151,16 +153,26 @@ def normalise(raw_events: Iterable[Mapping[str, Any]]) -> Iterator[AgentEvent]:
     A single raw event may produce zero (lifecycle noise), one, or three (``response.completed``
     yields usage, trace ids and the terminal).
     """
-    for raw in raw_events:
-        yield from convert(raw)
+    diagnostics = EventDiagnostics("prompt_agent")
+    try:
+        for raw in raw_events:
+            yield from convert(raw, diagnostics=diagnostics)
+    finally:
+        diagnostics.flush()
 
 
-def convert(raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
+def convert(
+    raw: Mapping[str, Any], *, diagnostics: EventDiagnostics | None = None
+) -> Iterator[AgentEvent]:
     """Convert **one** raw event. Stateless, which is what lets the adapter consume the Foundry
     stream one event at a time off the event loop (see `adapter._stream_events`)."""
     etype = raw.get("type", "")
 
-    if etype in _IGNORED or etype not in _KNOWN:
+    if type(etype) is not str or len(etype) > MAX_TYPE_LENGTH or etype not in _KNOWN:
+        if diagnostics is not None:
+            diagnostics.observe(etype)
+        return
+    if etype in _IGNORED:
         return
 
     if etype == "response.output_text.delta":

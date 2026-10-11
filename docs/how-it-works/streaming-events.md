@@ -166,11 +166,49 @@ awaiting (asyncio.sleep)     0.20s  0.41s  0.61s  0.81s  …
 So each `next()` now runs in a worker thread (`PromptAgentAdapter._stream_events`). The awaits are
 sequential, so ordering is untouched; the loop is free to write each frame as it arrives.
 
-## Unknown-event analysis is offline today
+## Mapping coverage versus runtime diagnostics (spec 057, #39)
 
-`unmapped_types()` counts unknown raw event types in an iterable supplied by a caller, such as
-recording analysis. It is not wired into live BFF diagnostics. `GET /config` reports mapping
-coverage, not a live counter of unexpected upstream events; that diagnostics work belongs to #39.
+`GET /config` reports **offline mapping evidence**, not runtime counts. Each normalizer's
+`MAPPINGS` supplies the known vocabulary: handled types and deliberately ignored lifecycle,
+partial-argument and already-streamed text types all belong to it. An unverified known type is
+not an unknown type. Unknown **nested item kinds** on a known event are outside this diagnostic.
+`unmapped_types()` remains an offline analysis helper for separately reviewed, trusted recordings;
+it exposes spellings and is not the live logging path.
+
+Prompt and hosted adapters now collect unknown **top-level type** occurrences server-side and
+emit at most **one warning per turn**, in `finally` after completion, failure, cancellation or
+explicit generator close. Prompt legs share one budget, including settlement. No unknown types
+means no warning. Whole-stream `normalise()` helpers use the same policy; low-level `convert()`
+without a collector stays silent. Voice uses a different transport and is unchanged.
+
+The logger `harness._shared.event_diagnostics` supplies a `diagnostic` record attribute and the
+same content in its message. Operators use their existing Python logging sink; there is no new
+endpoint, configuration flag, browser event or `AgentEvent`. Example **synthetic** summary:
+
+```json
+{"normalizer":"prompt_agent","types":{"unmapped_type_1":3},"invalid_type":1,"omitted_occurrences":2,"truncated":true,"counts_saturated":false}
+```
+
+The exact policy lives in `ai/harness/_shared/event_diagnostics.py`:
+
+- Retain at most **16 distinct spellings** internally, each **1–96 ASCII characters** matching
+  `[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*`. Check length before regex/hash. No raw value is stringified.
+- Emit **only opaque, turn-local aliases** and counts. Even a valid spelling could contain a secret;
+  aliases are not globally identifiable types, hashes, or recoverable spellings. Names are cleared
+  on flush. Never log payloads, prompts, arguments, outputs, identifiers or exception representations.
+- Malformed, missing, non-string or oversized types increment one `invalid_type` counter, retaining
+  no name. A seventeenth valid type increments `omitted_occurrences` every time it occurs; that is
+  **not a distinct-type count**. Retained types continue accumulating after the cap.
+- Each counter saturates at **1,000,000**. Further increments set `counts_saturated`; `truncated`
+  means omitted occurrences or saturated counters. Invalid classification alone does not truncate
+  its occurrence count. All counts describe only events this consumer actually read.
+
+These limits bound memory and log volume per turn, not total stream duration or aggregate traffic
+across turns. A hard process kill can lose the summary. A failed logging handler is suppressed so
+it cannot change cleanup or settlement. No upstream cancellation is introduced. These warnings
+are **drift signals, not evidence of a new service shape**: recovering the real type requires
+separately reviewed recordings and §10 evidence before implementing a handler. The boundary tests
+in `ai/tests/test_event_diagnostics.py` are explicitly synthetic, not new Foundry recordings.
 
 ## What a turn looks like on the wire
 

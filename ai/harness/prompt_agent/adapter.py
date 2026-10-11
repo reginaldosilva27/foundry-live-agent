@@ -47,6 +47,7 @@ from contextlib import aclosing
 from typing import Any
 
 from harness._shared.contract import AgentEvent, VoiceAttachment
+from harness._shared.event_diagnostics import EventDiagnostics
 from harness._shared.streaming import stream_items
 from harness.prompt_agent.events import convert
 
@@ -86,6 +87,7 @@ class PromptAgentAdapter:
         totals: dict[str, int] = {}
         done: AgentEvent | None = None
         max_turns = self.max_turns
+        diagnostics = EventDiagnostics("prompt_agent")
 
         try:
             if max_turns <= 0:
@@ -101,7 +103,9 @@ class PromptAgentAdapter:
                 pending: list[tuple[str, str, str]] = []
                 terminated = False
 
-                async with aclosing(self._stream_events(inputs, conversation_state)) as leg:
+                async with aclosing(
+                    self._stream_events(inputs, conversation_state, diagnostics)
+                ) as leg:
                     async for event in leg:
                         if event["type"] == "tool_call" and event["executor"] == "app":
                             pending.append((event["call_id"], event["name"], event["arguments"]))
@@ -187,8 +191,14 @@ class PromptAgentAdapter:
                 "code": "harness_error",
             }
 
+        finally:
+            diagnostics.flush()
+
     async def _stream_events(
-        self, inputs: list[Mapping[str, Any]], conversation_state: Mapping[str, Any]
+        self,
+        inputs: list[Mapping[str, Any]],
+        conversation_state: Mapping[str, Any],
+        diagnostics: EventDiagnostics,
     ) -> AsyncIterator[AgentEvent]:
         """One leg of the turn, as contract events, without holding the event loop.
 
@@ -202,7 +212,7 @@ class PromptAgentAdapter:
             stream_items(lambda: self._stream_factory(inputs, conversation_state))
         ) as raw_events:
             async for raw in raw_events:
-                for event in convert(raw):
+                for event in convert(raw, diagnostics=diagnostics):
                     yield event
 
     async def submit_tool_output(

@@ -8,6 +8,20 @@ stack GenAI do Azure acompanhando uma pergunta pelas fronteiras: modelo, runtime
 harness, aplicação, telemetria e voz. Copilot pode ajudar a navegar pelo código e propor testes;
 esta trilha não entrega uma integração com serviço Copilot nem escolhe seu produto.
 
+## Drift em execução sem revelar conteúdo (#39, spec 057)
+
+[Diagnósticos de streaming](how-it-works/streaming-events.md#mapping-coverage-versus-runtime-diagnostics-spec-057-39)
+separa evidência offline de mapeamento em `GET /config` dos tipos desconhecidos encontrados em
+um turno prompt/hosted. Tipos conhecidos de ciclo de vida/parciais são ignorados de propósito,
+não são drift. Logs do servidor emitem um resumo limitado por turno: 16 aliases opacos locais
+ao turno, contador `invalid_type` e **ocorrências omitidas**, não tipos distintos omitidos.
+Nomes internos têm limite de 96 caracteres ASCII e nunca entram nos logs; contadores saturam
+em 1.000.000 com flags explícitas. Aliases não identificam um tipo entre turnos. Investigar a
+forma real exige gravações revisadas separadamente; estes logs não contêm payload, prompt,
+argumentos, resultados, identificadores ou nomes brutos. Testes usam limites claramente
+sintéticos e gravações históricas intactas, não uma nova medição do serviço. Não foi adicionado
+evento do navegador, endpoint ou comportamento de voz.
+
 ## Evidências e pré-requisitos
 
 **Este é um roteiro baseado em código/specs/gravações, não um workshop live concluído.** A baseline
