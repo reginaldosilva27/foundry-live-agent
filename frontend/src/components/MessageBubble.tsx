@@ -1,4 +1,4 @@
-/** A user turn. Blue, right-aligned, with the design's asymmetric corner. */
+/** A user turn, right-aligned with a visible role and a neutral surface. */
 import { PencilIcon } from './Icon'
 import { useT } from '../i18n/context'
 
@@ -29,9 +29,12 @@ export function MessageBubble({ text, onEdit }: Props) {
           <PencilIcon size={13} />
         </button>
       )}
-      <p className="bubble" aria-label={s('turn.you')}>
-        {text}
-      </p>
+      <div className="bubble__content">
+        <span className="bubble__label">{s('turn.you')}</span>
+        <p className="bubble" aria-label={s('turn.you')}>
+          {text}
+        </p>
+      </div>
     </div>
   )
 }

@@ -177,68 +177,103 @@ button:disabled {
   grid-template-columns: var(--rail) minmax(0, 1fr) var(--events);
 }
 
-/* The replay banner is a ROW of the shell, spanning every column (spec 050).
-
-   Placed, not auto-flowed. A direct child of this grid with no placement takes an implicit track,
-   which is precisely how the event inspector ended up 380px wide inside the 248px rail column — the
-   same mistake twice in one grid would be careless. The row is declared here so the conversation
-   still gets `minmax(0, 1fr)` and stays the thing that scrolls. */
-.app:has(.demo-banner) {
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.demo-banner {
-  grid-column: 1 / -1;
-  grid-row: 1;
-
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2) var(--sp-3);
-  padding: var(--sp-2) var(--sp-4);
-  border-bottom: 1px solid var(--border-accent);
+.replay-badge {
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-sm);
   background: var(--bg-accent-soft);
   font-size: var(--fs-caption);
   color: var(--fg-2);
 }
 
-.demo-banner__tag {
+.build-info__opener,
+.build-info__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  padding: 2px var(--sp-2);
+  width: 32px;
+  height: 32px;
+  border: 0;
   border-radius: var(--r-sm);
-  background: var(--bg-accent-strong);
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--fg-on-accent);
+  background: transparent;
+  color: var(--fg-3);
+  cursor: pointer;
 }
 
-/* The sentence takes the room that is left and wraps; the tag and the picker never shrink, because
-   the first is the label a reader scans for and the second is a control. */
-.demo-banner__body {
-  flex: 1 1 20rem;
-  min-width: 0;
-  margin: 0;
+.build-info__opener:hover,
+.build-info__close:hover {
+  background: var(--bg-2);
+  color: var(--fg-1);
 }
 
-.demo-banner__pick {
+.build-info__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: color-mix(in srgb, var(--ds-ink) 55%, transparent);
+}
+
+.build-info {
+  width: 480px;
   max-width: 100%;
   min-width: 0;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--sp-2);
+  max-height: calc(100dvh - var(--sp-4) * 2);
+  overflow-y: auto;
+  padding: var(--sp-4);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
-.demo-banner__pick-label {
+.build-info__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.build-info__head h2 {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--fg-1);
+}
+
+.build-info p {
+  margin: 0 0 var(--sp-2);
+}
+
+.demo-details {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border-1);
+}
+
+.demo-details__pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+  margin-top: var(--sp-3);
+}
+
+.demo-details__pick-label {
   color: var(--fg-3);
 }
 
-.demo-banner__select {
+.demo-details__select {
   min-width: 0;
-  max-width: 22rem;
-  padding: 2px var(--sp-2);
+  max-width: 100%;
+  padding: var(--sp-2);
   border: 1px solid var(--border-2);
   border-radius: var(--r-sm);
   background: var(--bg-1);
@@ -252,8 +287,9 @@ button:disabled {
 }
 
 .main {
+  --chat-width: 760px;
   display: grid;
-  grid-template-rows: 60px minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   /* The horizontal twin of the `min-height: 0` below, and it was missing. Declaring only rows
      leaves the implicit COLUMN track at `auto`, which is floored at the widest child's max-content
      — measured at 900px, that track resolved to 806px inside a 652px column and the whole shell
@@ -278,7 +314,7 @@ button:disabled {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-4);
   padding: var(--sp-4) var(--sp-3);
   background: var(--ds-ink);
   color: var(--fg-on-inverse);
@@ -426,20 +462,20 @@ button:disabled {
 .sidebar__new {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
   border: 0;
-  border-radius: var(--r-pill);
-  background: var(--bg-accent-strong);
-  color: var(--fg-on-accent);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--fg-on-inverse);
   font-size: var(--fs-body-s);
   font-weight: var(--fw-semibold);
   transition: background var(--dur-fast) var(--ease-out);
 }
 
 .sidebar__new:hover {
-  background: var(--ds-blue-500);
+  background: var(--ds-ink-2);
 }
 
 /* The rail's only label style. It used to have three — an uppercase mono `FAVOURITES`, an uppercase
@@ -448,10 +484,10 @@ button:disabled {
 .sidebar__section-title {
   margin: var(--sp-4) 0 var(--sp-1);
   padding-inline: var(--sp-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: var(--fs-caption);
   letter-spacing: var(--ls-wide);
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--ds-n-400);
 }
 
@@ -711,37 +747,15 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-.sidebar__footer p {
-  margin: 0;
-  font-size: inherit;
-  color: inherit;
-}
-
-/* A 58px rail under `model` bought a column nothing else lined up with, and spent it on a gap. */
-.sidebar__key {
-  margin-right: var(--sp-2);
-  color: var(--ds-n-400);
-}
-
-.sidebar__gateway {
-  color: var(--ds-n-400);
-}
-
-.sidebar__transport {
+/* ---------- Header ---------- */
+.header {
+  min-height: 60px;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin-top: var(--sp-1) !important;
-}
-
-/* ---------- Header ---------- */
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
   padding: 0 var(--sp-5);
-  border-bottom: 1px solid var(--border-1);
-  background: var(--bg-1);
+  border-bottom: 0;
+  background: transparent;
 }
 
 /* The header gives way in a chosen order, because at 652px it wants ~767.
@@ -775,7 +789,7 @@ button:disabled {
 
 .header__agent {
   margin: 0;
-  font-size: var(--fs-h5);
+  font-size: var(--fs-body-s);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--ls-snug);
   white-space: nowrap;
@@ -786,6 +800,7 @@ button:disabled {
 
 /* Branding, and the rail's head already says it — so this is what gives way first. */
 .header__pill {
+  display: none;
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-pill);
   background: var(--ds-blue-100);
@@ -869,10 +884,29 @@ button:disabled {
   color: var(--fg-3);
 }
 
+/* Scoped to the chat header: other screens keep their own controls. */
+.header .pill-button {
+  padding: var(--sp-2);
+  border-color: transparent;
+  background: transparent;
+  border-radius: var(--r-md);
+}
+
+.header .pill-button:hover:not(:disabled):not([aria-pressed='true']) {
+  border-color: var(--border-accent);
+  background: var(--bg-accent-soft);
+}
+
+.header .harness-badge {
+  border: 0;
+  padding: var(--sp-1);
+  border-radius: var(--r-sm);
+}
+
 /* ---------- Conversation ---------- */
 .conversation {
   overflow-y: auto;
-  padding: var(--sp-7) var(--sp-5);
+  padding: var(--sp-6) var(--sp-5) var(--sp-7);
 }
 
 .conversation--empty {
@@ -884,7 +918,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: var(--sp-6);
-  max-width: 780px;
+  max-width: var(--chat-width);
   margin: 0 auto;
 }
 
@@ -893,26 +927,41 @@ button:disabled {
   justify-content: flex-end;
 }
 
+.bubble__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  max-width: 85%;
+  min-width: 0;
+}
+
+.bubble__label {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-3);
+}
+
 .bubble {
-  max-width: 78%;
   margin: 0;
   padding: var(--sp-3) var(--sp-4);
-  border-radius: 14px 14px 4px 14px;
-  background: var(--bg-accent-strong);
-  color: var(--fg-on-accent);
-  font-size: var(--fs-body-s);
+  border: 0;
+  border-radius: var(--r-lg);
+  background: var(--bg-3);
+  color: var(--fg-1);
+  font-size: var(--fs-body);
   line-height: var(--lh-base);
   overflow-wrap: anywhere;
 }
 
 .turn {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--sp-3);
 }
 
 .turn__avatar {
-  display: grid;
+  display: none;
   place-items: center;
   width: 22px;
   height: 22px;
@@ -927,8 +976,16 @@ button:disabled {
   min-width: 0;
 }
 
-.turn__answer {
+.turn__identity {
+  margin: 0;
   font-size: var(--fs-body-s);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-3);
+  overflow-wrap: anywhere;
+}
+
+.turn__answer {
+  font-size: var(--fs-body);
   color: var(--fg-1);
 }
 
@@ -1019,27 +1076,28 @@ button:disabled {
 
 /* ---------- Empty state ---------- */
 .empty {
-  max-width: 620px;
+  width: 100%;
+  max-width: 600px;
   text-align: center;
 }
 
 .empty__headline {
   margin: 0 0 var(--sp-3);
-  font-size: var(--fs-h1);
+  font-size: clamp(var(--fs-h3), 3vw, var(--fs-h1));
   line-height: var(--lh-snug);
   letter-spacing: var(--ls-tight);
 }
 
 .empty__subtitle {
-  margin: 0 0 var(--sp-7);
+  margin: var(--sp-3) auto var(--sp-6);
+  max-width: 46ch;
   font-size: var(--fs-body-s);
   color: var(--fg-3);
 }
 
 .empty__suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-2);
   margin: 0;
   padding: 0;
@@ -1047,19 +1105,23 @@ button:disabled {
 }
 
 .chip {
-  padding: var(--sp-2) var(--sp-4);
+  width: 100%;
+  height: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  line-height: var(--lh-base);
   border: 1px solid var(--border-1);
-  border-radius: var(--r-pill);
-  background: var(--bg-1);
+  border-radius: var(--r-md);
+  background: transparent;
   color: var(--fg-2);
   font-size: var(--fs-body-s);
   transition: all var(--dur-base) var(--ease-out);
 }
 
 .chip:hover {
-  border-color: var(--ds-blue-200);
-  background: var(--ds-blue-50);
-  color: var(--ds-blue-700);
+  border-color: var(--border-accent);
+  background: var(--bg-accent-soft);
+  color: var(--fg-link);
 }
 
 /* ---------- Activity ---------- */
@@ -1070,10 +1132,10 @@ button:disabled {
 }
 
 /* The reasoning is context for the answer, not a peer of it. Given the same white card the answer
-   sits on, the two competed for first read; on the page's own ground with a dashed edge, it reads
+   sits on, the two competed for first read; on the page's own ground with a quiet edge, it reads
    as the note it is and the answer wins the eye. */
 .reasoning-card {
-  border: 1px dashed var(--border-2);
+  border: 0;
   border-radius: var(--r-md);
   background: transparent;
 }
@@ -1275,10 +1337,10 @@ button:disabled {
   gap: var(--sp-1) var(--sp-2);
   width: 100%;
   padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--border-1);
-  border-left-width: 3px;
+  border: 0;
+  border-left: 2px solid var(--border-1);
   border-radius: var(--r-md);
-  background: var(--bg-1);
+  background: transparent;
   text-align: left;
   transition: background var(--dur-fast) var(--ease-out);
 }
@@ -1513,29 +1575,36 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  max-width: 780px;
-  width: 100%;
+  max-width: var(--chat-width);
+  width: calc(100% - var(--sp-5) * 2);
   margin: 0 auto;
-  padding: var(--sp-3);
+  padding: var(--sp-4);
   border: 1px solid var(--border-1);
   border-radius: var(--r-lg);
   background: var(--bg-1);
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-2);
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 
 .composer:focus-within {
-  border-color: var(--ds-blue);
+  border-color: var(--fg-focus);
+}
+
+.composer__hint {
+  padding-inline: var(--sp-3);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
 }
 
 .composer__input {
   width: 100%;
   min-width: 0;
-  padding: var(--sp-3);
+  min-height: 80px;
+  padding: var(--sp-2);
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: var(--fs-body-s);
+  font-size: var(--fs-body);
   color: var(--fg-1);
 }
 
@@ -2183,7 +2252,7 @@ button:disabled {
 
 .markdown p,
 .markdown li {
-  font-size: var(--fs-body-s);
+  font-size: var(--fs-body);
   line-height: var(--lh-loose);
   color: var(--fg-1);
 }
@@ -2490,6 +2559,45 @@ button:disabled {
   color: var(--fg-3);
 }
 
+.events__context {
+  color: var(--fg-2);
+  overflow-wrap: anywhere;
+}
+
+.events__navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.events__navigation button {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--fg-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.events__navigation button:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.observation-notice {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-4);
+  color: var(--fg-2);
+  background: var(--bg-2);
+  font-size: var(--fs-caption);
+}
+
+.sidebar__muted {
+  color: var(--fg-3);
+  font-size: var(--fs-caption);
+}
+
 .events__filter {
   display: flex;
   flex-wrap: wrap;
@@ -2654,6 +2762,10 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
+  .empty__suggestions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .app,
   .app[data-traces-open='false'],
   .app[data-traces-open='true']:has(.events),
@@ -2696,12 +2808,16 @@ button:disabled {
 
      The two controls keep their icons and drop their labels — `font-size: 0` collapses the text
      box without touching the accessible name, which `aria-label` carries and AC4 requires. The
-     badge moves to the rail's footer, where the model and the gateway line already live, so spec
+     badge moves to the rail's footer, while build facts live in the info dialog, so spec
      004's "a harness swap is visible on screen" still holds one tap away. The branding pill had
      already truncated to a single meaningless letter. */
   .header {
     padding: 0 var(--sp-3);
-    gap: var(--sp-2);
+    gap: var(--sp-1);
+  }
+
+  .header__agent {
+    min-width: 4ch;
   }
 
   .header__menu {
@@ -3107,8 +3223,20 @@ button:disabled {
   padding: 0 var(--sp-1) var(--sp-1);
 }
 
+.composer__row > .agent-chip {
+  min-width: 0;
+}
+
+.composer__row .agent-chip__button {
+  max-width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-md);
+}
+
 .composer__actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--sp-2);
   margin-left: auto;
@@ -5317,6 +5445,7 @@ button:disabled {
 }
 
 .compare__head {
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -5341,6 +5470,9 @@ button:disabled {
 }
 
 .compare__pick {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -5352,6 +5484,8 @@ button:disabled {
 }
 
 .compare__select {
+  min-width: 0;
+  max-width: 100%;
   padding: var(--sp-1) var(--sp-2);
   border: 1px solid var(--border-1);
   border-radius: var(--r-sm);

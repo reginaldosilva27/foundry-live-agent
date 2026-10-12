@@ -1,11 +1,6 @@
-/**
- * The 60px header: which agent, running where, on which harness — plus the two toggles.
- *
- * `Voice` is enabled only when the BFF reports that it is configured. A server without a Voice Live
- * endpoint says so through `GET /config`, and the button stays disabled with the reason on it —
- * rather than offering a feature that fails on click.
- */
-import { ActivityIcon, MenuIcon, MicIcon } from '../components/Icon'
+import { ActivityIcon, MenuIcon } from '../components/Icon'
+import { BuildInfo } from '../components/BuildInfo'
+import type { DemoState } from '../state/demo'
 import { HarnessBadge } from '../components/HarnessBadge'
 import { useT } from '../i18n/context'
 import type { BffConfig } from '../config'
@@ -19,10 +14,13 @@ interface Props {
   selectedHarness: string | null
   configFailed: boolean
   streaming: boolean
+  agentsLoading?: boolean
+  agentsUnavailable?: boolean
+  eventsOpen?: boolean
+  onToggleEvents?: () => void
   tracesOpen: boolean
-  voiceLive: boolean
+  demo: DemoState | null
   onToggleTraces: () => void
-  onVoice: () => void
   /**
    * Open the navigation (spec 047).
    *
@@ -42,14 +40,16 @@ export function Header({
   configFailed,
   streaming,
   tracesOpen,
-  voiceLive,
+  agentsLoading = false,
+  agentsUnavailable = false,
+  eventsOpen = false,
+  onToggleEvents,
+  demo,
   onToggleTraces,
-  onVoice,
   menuOpen = false,
   onOpenMenu,
 }: Props) {
   const s = useT()
-  const voiceEnabled = config?.voice?.enabled ?? false
 
   return (
     <header className="header">
@@ -68,24 +68,23 @@ export function Header({
       <span className="header__pill">{s('header.foundryPill')}</span>
       <span className="header__status" data-streaming={streaming}>
         <span className="dot" aria-hidden="true" />
-        {streaming ? s('header.statusStreaming') : s('header.status')}
+        {streaming ? s('header.statusStreaming')
+          : configFailed || agentsUnavailable ? s('header.statusUnavailable')
+          : !config || agentsLoading ? s('header.statusLoading') : s('header.status')}
       </span>
 
       <div className="header__spacer" />
 
+      <BuildInfo config={config} configFailed={configFailed} demo={demo} />
+
       <HarnessBadge harness={selectedHarness ?? config?.harness} failed={configFailed} />
 
-      <button
-        type="button"
-        className="pill-button"
-        aria-pressed={voiceLive}
-        disabled={!voiceEnabled}
-        title={voiceEnabled ? undefined : s('header.voiceUnavailable')}
-        onClick={onVoice}
-      >
-        <MicIcon size={14} />
-        {s('header.voice')}
+      <button type="button" className="pill-button" aria-label={s('events.title')}
+        aria-pressed={eventsOpen} aria-controls="event-inspector" onClick={onToggleEvents}>
+        <ActivityIcon size={14} />
+        {s('events.title')}
       </button>
+
       <button
         type="button"
         className="pill-button"

@@ -152,3 +152,19 @@ describe('what it will not do (AC6, AC12)', () => {
     expect(screen.queryByText(t('events.truncated', 'en'))).not.toBeInTheDocument()
   })
 })
+
+describe('spec 056 distinct observation states', () => {
+  it('does not turn absent retention into an empty capture', () => {
+    show({ events: undefined })
+    expect(screen.getByText(t('events.unretained', 'en'))).toBeInTheDocument()
+    expect(screen.queryByText(t('events.empty', 'en'))).not.toBeInTheDocument()
+  })
+
+  it('distinguishes an empty filter and offers the existing All control', async () => {
+    show()
+    await userEvent.click(within(screen.getByTestId('events-filter')).getByRole('button', { name: 'error' }))
+    expect(screen.getByText(t('events.filteredEmpty', 'en'))).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: t('events.all', 'en') }))
+    expect(screen.getByTestId('events-list')).toBeInTheDocument()
+  })
+})

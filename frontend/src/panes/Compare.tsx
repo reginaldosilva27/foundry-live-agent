@@ -54,11 +54,21 @@ export function Compare({ comparison, agents, first, model, pricing, reasoningOp
         <h1 className="compare__title">{s('compare.title')}</h1>
         <p className="compare__lead">{s('compare.lead')}</p>
 
+        <p className="compare__lead">{s('compare.independent')}</p>
+        <p className="compare__lead" id="compare-reset-scope">{s('compare.resetScope')}</p>
+        <button type="button" className="pill-button" disabled={streaming || !asked}
+          aria-describedby="compare-reset-scope" onClick={comparison.reset}>
+          {s('compare.reset')}
+        </button>
+        {streaming && <p className="compare__lead" id="comparison-lock">{s('compare.locked')}</p>}
+
         <label className="compare__pick">
           <span className="compare__pick-label">{s('compare.with')}</span>
           <select
             className="compare__select"
             value={other ?? ''}
+            disabled={streaming}
+            aria-describedby={streaming ? 'comparison-lock' : undefined}
             onChange={(event) => choose(event.target.value || null)}
           >
             <option value="">{s('compare.pick')}</option>

@@ -317,7 +317,9 @@ Não encerre processos de outras pessoas.
 Ele reproduz turnos inteiros **gravados de execuções reais no Foundry** — as mesmas fixtures que os
 testes de contrato usam — então o streaming, a ida e volta do function call, as chamadas MCP, a
 contagem de tokens, a árvore de spans e o inspetor de eventos são todos de verdade, chegando pelo
-normalizador de verdade. Escolha qual turno gravado assistir no banner do topo.
+normalizador de verdade. Escolha qual turno gravado assistir pelo ícone de informação no cabeçalho. Um pequeno indicador
+Replay permanece visível; o painel reúne data e explicação da gravação, modelo, gateway e SSE.
+A entrada de voz fica no compositor do chat, não no cabeçalho (spec 059).
 
 ![Um turno sendo reproduzido: o card de raciocínio se preenche, quatro linhas de ferramenta chegam uma a uma, e então a resposta faz streaming](docs/assets/demo-streaming-turn.gif)
 
@@ -384,8 +386,8 @@ Opcional — o AI Gateway é um fluxo de portal sem caminho de IaC: `just gatewa
 ## 📸 Telas
 
 Todos os prints abaixo saem do `just demo`, nas larguras indicadas — então cada um é algo que você
-coloca na sua própria tela em cerca de um minuto, sem conta no Azure. A faixa de reprodução no topo
-faz parte daquela build; não é mock.
+coloca na sua própria tela em cerca de um minuto, sem conta no Azure. A faixa dessas capturas históricas faz parte daquela build; não é mock.
+A interface atual mantém um pequeno indicador Replay e reúne os detalhes no ícone de informação (spec 059).
 
 | | |
 |---|---|
