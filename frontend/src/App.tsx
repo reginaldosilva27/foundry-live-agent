@@ -55,9 +55,10 @@ import { LogViewer } from './components/LogViewer'
 import { useT } from './i18n/context'
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>(() =>
-    detectLang(typeof navigator === 'undefined' ? [] : navigator.languages),
-  )
+  const prefs = usePreferences()
+  const lang = prefs.lang ?? detectLang(typeof navigator === 'undefined' ? [] : navigator.languages)
+  const { set: setPreference } = prefs
+  const setLang = useCallback((value: Lang) => setPreference('lang', value), [setPreference])
 
   /**
    * The language the PAGE declares follows the language it is showing (spec 040, AC7).
@@ -91,17 +92,28 @@ export default function App() {
   const inspected = useAgentDetail(inspecting)
   // The app's only write (spec 031). Off by default, and the screen renders nothing without it.
   const promotion = usePromote()
-  // What this browser keeps (spec 036). Applied to the document by the hook itself.
-  const prefs = usePreferences()
   /**
    * The rail, open over the conversation (spec 047).
    *
    * Below the narrow breakpoint the rail is not a column, and hiding it — which is what the
    * stylesheet used to do — took the only route to five of the seven screens out of the page, and
    * out of the accessibility tree with it. This is the boolean that opens the same rail as an
-   * overlay instead. Above the breakpoint the stylesheet ignores it entirely.
+   * overlay instead. The media query also gates `inert`, so a closed off-canvas rail cannot
+   * receive keyboard focus while the desktop column stays interactive.
    */
   const [menuOpen, setMenuOpen] = useState(false)
+  const [narrow, setNarrow] = useState(() => window.matchMedia?.('(max-width: 760px)').matches ?? true)
+  useEffect(() => {
+    const media = window.matchMedia?.('(max-width: 760px)')
+    if (!media) return
+    const update = () => {
+      setNarrow(media.matches)
+      if (!media.matches) setMenuOpen(false)
+    }
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
 
   const setView = useCallback(
     (next: NavView) => {
@@ -490,7 +502,7 @@ export default function App() {
         previousTurn: () => tracesOpen && stepTurn(-1),
         nextTurn: () => tracesOpen && stepTurn(1),
         startVoice: startVoiceSession,
-        switchLanguage: () => setLang((current) => (current === 'en' ? 'pt' : 'en')),
+        switchLanguage: () => setLang(lang === 'en' ? 'pt' : 'en'),
         openHistory: () => navigate({ name: 'history' }),
         toggleEvents: () => setEventsOpen((open) => !open),
       }
@@ -501,6 +513,8 @@ export default function App() {
       navigate,
       newConversation,
       startVoiceSession,
+      lang,
+      setLang,
       stepTurn,
       toggleCollapsed,
       toggleTraces,
@@ -567,6 +581,7 @@ export default function App() {
         )}
         <Sidebar
           overlay={menuOpen}
+          inactive={narrow && !menuOpen}
           onCloseOverlay={() => setMenuOpen(false)}
           config={config}
           configFailed={failed}
@@ -603,6 +618,7 @@ export default function App() {
             voiceLive={voice.status === 'live'}
             onToggleTraces={toggleTraces}
             onVoice={startVoiceSession}
+            menuOpen={menuOpen}
             onOpenMenu={() => setMenuOpen(true)}
           />
           {view === 'agent' ? (
@@ -641,6 +657,7 @@ export default function App() {
             // own: each column is the same `Conversation` the chat uses, parameterised.
             <Compare
               comparison={comparison}
+              reasoningOpen={prefs.reasoningOpen}
               agents={agents.agents}
               first={answering}
               model={config?.model}
@@ -665,6 +682,7 @@ export default function App() {
             <>
               <Conversation
                 messages={messages}
+                reasoningOpen={prefs.reasoningOpen}
                 model={config?.model}
                 agent={answering}
                 pricing={config?.pricing}

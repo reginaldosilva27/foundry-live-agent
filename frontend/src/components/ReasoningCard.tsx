@@ -19,11 +19,13 @@ import { Markdown } from './Markdown'
 interface Props {
   text: string
   streaming: boolean
+  reasoningOpen?: boolean
 }
 
-export function ReasoningCard({ text, streaming }: Props) {
+export function ReasoningCard({ text, streaming, reasoningOpen = true }: Props) {
   const s = useT()
-  const [open, setOpen] = useState(true)
+  const [chosenOpen, setChosenOpen] = useState<boolean>()
+  const open = chosenOpen ?? reasoningOpen
 
   if (!text) {
     if (streaming) return null
@@ -41,7 +43,7 @@ export function ReasoningCard({ text, streaming }: Props) {
         className="reasoning-card__toggle"
         aria-expanded={open}
         aria-label={s('reasoning.toggle')}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setChosenOpen(!open)}
       >
         <ChevronIcon size={14} className="reasoning-card__chevron" />
         <span className="reasoning-card__title">{s('reasoning.title')}</span>

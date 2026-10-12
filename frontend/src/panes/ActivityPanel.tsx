@@ -11,16 +11,17 @@ import { isSettled, type Turn } from '../state/turn'
 
 interface Props {
   turn: Turn
+  reasoningOpen?: boolean
   /** Open the trace panel on one call. The chat shows the fact; the panel holds the payload. */
   onOpenCall: (callId: string) => void
 }
 
-export function ActivityPanel({ turn, onOpenCall }: Props) {
+export function ActivityPanel({ turn, onOpenCall, reasoningOpen }: Props) {
   const streaming = !isSettled(turn)
 
   return (
     <div className="activity">
-      <ReasoningCard text={turn.reasoning} streaming={streaming} />
+      <ReasoningCard text={turn.reasoning} streaming={streaming} reasoningOpen={reasoningOpen} />
       {turn.activities.map((activity, i) => {
         const id = activity.kind === 'tool' ? activity.callId : `mcp_${i}`
         return (

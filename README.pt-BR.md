@@ -31,7 +31,7 @@ aparece: todo print desta página você reproduz sem conta no Azure._
 
 ---
 
-> **Status: 48 das 50 specs estão concluídas.** O contrato do harness, **os dois harnesses**, o BFF,
+> **Status: veja o [índice de specs](specs/README.md).** O contrato do harness, **os dois harnesses**, o BFF,
 > a interface, a voz no mesmo agente, o painel de traces, a tela de agentes e tudo que veio em cima
 > disso — escolha e inspeção de agente, lado a lado, traces, o inspetor de eventos, gráficos, temas
 > e a passada de acessibilidade. Duas não: a **045** (*anexos*) está clarificada e **bloqueada** em
@@ -45,7 +45,7 @@ aparece: todo print desta página você reproduz sem conta no Azure._
 ## 📑 Conteúdo
 
 1. [O que é isto](#-o-que-é-isto) · 2. [Arquitetura](#️-arquitetura) · 3. [Veja funcionando primeiro](#️-veja-funcionando-primeiro--sem-azure-nenhum)
-4. [Início rápido](#-início-rápido-10-minutos) · 5. [Telas](#-telas) · 6. [Harnesses](#-harnesses)
+4. [Início rápido](#-início-rápido) · 5. [Telas](#-telas) · 6. [Harnesses](#-harnesses)
 7. [Como construímos aqui](#-como-construímos-aqui) · 8. [Custo](#-custo) · 9. [Limpeza](#-limpeza)
 
 ---
@@ -183,7 +183,7 @@ sequenceDiagram
   `400 — No tool call found for function call output with call_id …`.
 - **Uma chamada sem resposta trava a execução por dez minutos**, e da interface o stream
   simplesmente para. O `check_stream` transforma esse silêncio em falha barulhenta de teste.
-- **Dois `response.completed` num turno só.** O usage é somado entre as pernas e o `done` fica
+- **Uma ida e volta de função tem dois `response.completed`; mais rodadas acrescentam outros.** O usage é somado entre as pernas e o `done` fica
   retido até o turno acabar de verdade — senão o contrato veria dois terminais.
 
 #### Hosted agent — o turno numa perna só
@@ -219,8 +219,9 @@ sequenceDiagram
   chamada é uma tool call comum do grafo.
 - **O `executor` responde a uma pergunta só** — *quem é responsável por executar e responder isto?*
   O container é o lado da plataforma, mesmo sendo código nosso.
-- **Sem checkpointer, de propósito.** Com ele, o estado seria nosso; a aplicação passaria a guardar
-  estado que a plataforma já guarda, que é exatamente o que o §8 proíbe.
+- **Sem checkpointer no grafo atual.** Encaminhar um ponteiro de conversa não prova continuidade
+  hosted multi-turn. Um agente implantado no Foundry pode ter sua orquestração/estado; a §8 proíbe
+  duplicar essa propriedade no BFF/navegador, não autorar um hosted agent.
 
 #### Voz — três canais, e só um passa pelo nosso servidor
 
@@ -284,13 +285,34 @@ Cada um destes tem uma página própria, com os frames gravados por trás:
 
 ## ▶️ Veja funcionando primeiro — sem Azure nenhum
 
-Tudo que vem abaixo precisa de uma assinatura. Isto não:
+Este é um laboratório **educacional, não de produção**. O replay não exige assinatura,
+Azure CLI, login nem `.env`. Instale [Python 3.12](https://www.python.org/downloads/),
+[Node 24 LTS](https://nodejs.org/) (as versões do CI) e [just](https://github.com/casey/just).
+Os comandos abaixo são para macOS/Linux com Bash; no Windows use WSL2.
+A instalação baixa pacotes; depois o replay não chama Azure nem Tavily.
 
 ```bash
 git clone https://github.com/reginaldosilva27/foundry-live-agent
 cd foundry-live-agent
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e "ai[dev]" -e "backend[dev]"
+(cd frontend && npm ci)
 just demo           # o BFF na :8000, a interface na :5173
 ```
+
+Abra **http://localhost:5173**; a API responde em **http://localhost:8000/health**.
+Mantenha o terminal aberto. **Ctrl+C** encerra os dois servidores locais, não recursos Azure.
+Em um terminal novo, rode `source .venv/bin/activate` antes dos comandos Python/just. Siga a
+[trilha de aprendizado](docs/learning-journey.pt-BR.md) ([English](docs/learning-journey.md))
+do replay até tools, harnesses, eventos/traces e voz.
+
+**Problemas comuns:** `uvicorn: command not found` ou `ModuleNotFoundError` → ative a venv e
+repita a instalação dos dois pacotes; Vite ausente → rode `(cd frontend && npm ci)`; erro de
+versão Node → use Node 24; porta ocupada → encerre o servidor que você iniciou naquela porta
+ou use `BACKEND_PORT=8001 VITE_BFF_URL=http://localhost:8001 just demo` (mantenha a interface
+na :5173, conforme as origens CORS configuradas).
+Não encerre processos de outras pessoas.
 
 Ele reproduz turnos inteiros **gravados de execuções reais no Foundry** — as mesmas fixtures que os
 testes de contrato usam — então o streaming, a ida e volta do function call, as chamadas MCP, a
@@ -310,16 +332,23 @@ demonstração é um **entrypoint separado**: o `create_app` nunca ouviu falar d
 variável de ambiente faz um deploy real servir uma gravação como se fosse ao vivo. Veja
 [`specs/050-demo-mode/`](specs/050-demo-mode/).
 
-## 🚀 Início rápido (10 minutos)
+O playground do replay executa relógio e conhecimento local, mas `search_web` sempre retorna
+`search_unavailable`, mesmo com `TAVILY_API_KEY` herdada. Voz/fala e promoção de versões ficam
+desabilitadas. Para a aula opcional com busca **ao vivo e tarifada**, use o caminho separado
+`just backend` abaixo e habilite `FOUNDRY_ALLOW_PLAYGROUND=true` conscientemente; nunca é uma
+opção implícita do replay. Veja [spec 051](specs/051-replay-isolation/spec.md).
+
+## 🚀 Início rápido
 
 **Pré-requisitos:** uma assinatura Azure · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) ·
 [azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) ·
-[just](https://github.com/casey/just) · Python 3.12 · Node 24 (Vite 8 needs ≥ 20.19; CI runs 24).
+[just](https://github.com/casey/just) · Python 3.12 · Node 24 LTS (as versões validadas pelo CI).
+
+Primeiro conclua a instalação da seção anterior. Este caminho usa serviços reais e pode gerar
+custos. O provisionamento é manual; o tempo depende de acesso, cota e configuração de recursos,
+não de uma duração fixa de início rápido. Ative a venv; depois:
 
 ```bash
-git clone https://github.com/reginaldosilva27/foundry-live-agent
-cd foundry-live-agent
-
 just env            # 1. cria o .env a partir do template
 just login          # 2. az login — Entra ID; nenhum serviço Azure usa key
 just infra          # 3. provisiona o Foundry — imprime os passos manuais; ainda não há IaC aqui
@@ -327,6 +356,10 @@ just agent          # 4. aplica a definição do agente de ai/harness/prompt_age
 just backend        # 5. o BFF na :8000
 just frontend       # 6. a interface na :5173
 ```
+
+`just backend` e `just frontend` são servidores bloqueantes: use **dois terminais**, ative
+a mesma venv em ambos e encerre cada um com **Ctrl+C**. Após provisionar, preencha `.env`
+com os endpoints/nomes reais antes de `just agent`; criar o arquivo não configura o Foundry.
 
 **O passo 3 é manual, e o `just infra` diz isso em vez de fingir.** Este repositório não entrega
 Bicep: o recurso Foundry, o projeto, o deployment do modelo e o Application Insights são criados no
@@ -356,8 +389,8 @@ faz parte daquela build; não é mock.
 
 | | |
 |---|---|
-| [![A gaveta de trace: totais da execução, ids de response e conversation, o otel trace id, as linhas de atividade do agente e uma árvore de spans com durações](docs/assets/screenshot-trace.png)](docs/assets/screenshot-trace.png) | [![O inspetor de eventos aberto como quarta coluna ao lado da gaveta de trace, listando todos os eventos crus do turno com um filtro por tipo](docs/assets/screenshot-events.png)](docs/assets/screenshot-events.png) |
-| **A gaveta de trace** (specs 005, 014). `invoke_agent` sobre duas chamadas MCP do Learn e a chamada de modelo, com durações reais — e a linha que importa: *"O Foundry rastreia o que o Foundry executa. Ferramentas que esta aplicação executa não deixam span."* É a §8 aparecendo na telemetria. | **O inspetor de eventos** (spec 038), a 1680px, onde ele ganha uma coluna própria. Todos os eventos crus do turno, filtrados por tipo, com o relatório de honestidade do próprio contrato acima: *21 de 25 nomes de evento do Foundry verificados contra uma execução gravada.* |
+| [![A gaveta de trace: totais da execução, ids de response e conversation, o otel trace id, as linhas de atividade do agente e uma árvore de spans com durações](docs/assets/screenshot-trace.png)](docs/assets/screenshot-trace.png) | [![O inspetor de eventos aberto como quarta coluna ao lado da gaveta de trace, listando todos os eventos SSE normalizados do BFF no turno com um filtro por tipo](docs/assets/screenshot-events.png)](docs/assets/screenshot-events.png) |
+| **A gaveta de trace** (specs 005, 014). `invoke_agent` sobre duas chamadas MCP do Learn e a chamada de modelo, com durações reais — e a linha que importa: *"O Foundry rastreia o que o Foundry executa. Ferramentas que esta aplicação executa não deixam span."* É a §8 aparecendo na telemetria. | **O inspetor de eventos** (spec 038), a 1680px, onde ele ganha uma coluna própria. Todos os eventos SSE normalizados do BFF no turno, filtrados por tipo, com o relatório de honestidade do próprio contrato acima: *21 de 25 nomes de evento do Foundry verificados contra uma execução gravada.* |
 | [![A tela de agentes: dez cards de um projeto real, cada um com tipo, versão, status e harness; o hosted desabilitado](docs/assets/screenshot-agents.png)](docs/assets/screenshot-agents.png) | [![A mesma tela de agentes no tema escuro](docs/assets/screenshot-dark.png)](docs/assets/screenshot-dark.png) |
 | **A tela de agentes** (specs 019, 030). Dez agentes de um projeto Foundry real — oito deles este repositório não escreveu. O card desabilitado não é escondido: ele diz, no idioma de quem lê, *por que* não pode responder. | **Dois temas** (spec 036). Claro é a base, escuro é uma escolha explícita, e `system` remove o atributo em vez de escrever um. Todo literal de cor mora na paleta vendorizada; o `app.css` nomeia tokens e um teste garante isso. |
 | [![Dois quadros em largura de celular lado a lado: um turno a 390px, e a barra de navegação aberta por cima dele](docs/assets/screenshot-narrow.png)](docs/assets/screenshot-narrow.png) | [![Um turno que falhou renderizado como card de erro, dizendo "the BFF answered 502"](docs/assets/screenshot-error.png)](docs/assets/screenshot-error.png) |
@@ -384,13 +417,15 @@ Recapturar exige um deployment.
 | Quem roda o loop | O Foundry | Seu contêiner, hospedado pelo Foundry |
 | Definição do agente | `agent.yaml` → SDK do Agent Service | `azure.yaml` → `azd` |
 | Quem executa as function tools | O BFF — o Foundry pede e para | O próprio contêiner |
-| Quem é o cliente MCP | O Foundry | O contêiner — por isso **nenhum `mcp_call`** |
+| Quem é o cliente MCP | O Foundry | O contêiner — Learn é uma tool call do grafo, não `mcp_call` |
+| Telemetria gravada | Usage e resumos de raciocínio presentes | Usage/raciocínio ausentes no corpus/normalizador atual; lookup de traces por response-id não comprovado |
 | Você mantém | Nada em runtime | Seu grafo, e a imagem dele |
 | Melhor para | Colocar de pé, e a maioria dos agentes em produção | Orquestração customizada |
 
 Os dois rodam o **mesmo modelo, as mesmas instruções e as mesmas quatro ferramentas**, a partir de
-um único arquivo (`ai/harness/_shared/agent_core.yaml`) — então o que difere entre eles é o harness
-e mais nada. Escolha um no painel **Agentes** da barra lateral e a próxima mensagem vai para ele;
+um único arquivo (`ai/harness/_shared/agent_core.yaml`) — a comparação alinha os inputs autorados,
+mas execução, transporte MCP e telemetria diferem. Conhecimento local é retrieval lexical de
+Markdown, **não Foundry IQ**. Escolha um no painel **Agentes** da barra lateral e a próxima mensagem vai para ele;
 uma nova conversa começa, porque uma conversa do Foundry pertence a um agente só. `AGENT_HARNESS` e
 `AGENT_NAME` continuam decidindo quem responde antes de alguém escolher — eles são o padrão, não a
 lei.
@@ -400,7 +435,8 @@ escreveu. Um agente **prompt** que você não escreveu é selecionável, porque 
 dirige qualquer prompt agent pelo nome — escolher um produz uma conversa que funciona com um agente
 diferente, que é exatamente o que a linha diz.
 
-Quanto custa rodar cada um, medido e não documentado:
+Amostras históricas de execução e limites de telemetria — três probes, um turno por harness por
+probe, **não um benchmark nem uma comparação de custo hosted**:
 [`docs/harness-comparison.md`](docs/harness-comparison.md).
 
 ## 🧪 Como construímos aqui
@@ -445,11 +481,14 @@ que um loop descontrolado não gere uma fatura inesperada.
 ## 🧹 Limpeza
 
 ```bash
-just down           # azd down — remove o resource group
+just down           # imprime orientação de limpeza manual e sai com código 1; não exclui nada
 ```
 
-O `azd down` **não** remove a instância do APIM por trás do AI Gateway se você a criou pelo portal.
-Delete separadamente no portal do Azure, ou ela continua cobrando.
+Não há ciclo Bicep/azd raiz neste repositório. Revise e exclua o resource group do Foundry
+**manualmente**, conforme seu plano de propriedade. Revise também APIM/gateway e dependências de
+container hosted criados separadamente; não presuma que pertencem ao mesmo grupo. Pare servidores
+locais com **Ctrl+C** e encerre sessões de voz, mas nenhuma dessas ações remove recursos Azure ou
+seus custos contínuos.
 
 ---
 

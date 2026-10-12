@@ -36,11 +36,12 @@ interface Props {
   first?: string
   model?: string
   pricing?: Pricing
+  reasoningOpen?: boolean
   /** Open the trace panel on a turn of either column (AC7). Ids are prefixed, so they cannot clash. */
   onOpenTrace: (turnId: string, callId?: string) => void
 }
 
-export function Compare({ comparison, agents, first, model, pricing, onOpenTrace }: Props) {
+export function Compare({ comparison, agents, first, model, pricing, reasoningOpen, onOpenTrace }: Props) {
   const s = useT()
   const { left, right, other, choose, streaming, send, stop } = comparison
   const asked = left.messages.length > 0 || right.messages.length > 0
@@ -86,6 +87,7 @@ export function Compare({ comparison, agents, first, model, pricing, onOpenTrace
             harness={harnessOf(first)}
             model={model}
             pricing={pricing}
+            reasoningOpen={reasoningOpen}
             onOpenTrace={onOpenTrace}
           />
           <Column
@@ -94,6 +96,7 @@ export function Compare({ comparison, agents, first, model, pricing, onOpenTrace
             harness={harnessOf(other ?? undefined)}
             model={model}
             pricing={pricing}
+            reasoningOpen={reasoningOpen}
             onOpenTrace={onOpenTrace}
           />
         </div>
@@ -126,6 +129,7 @@ function Column({
   harness,
   model,
   pricing,
+  reasoningOpen,
   onOpenTrace,
 }: {
   stream: AgentStream
@@ -133,6 +137,7 @@ function Column({
   harness?: string
   model?: string
   pricing?: Pricing
+  reasoningOpen?: boolean
   onOpenTrace: (turnId: string, callId?: string) => void
 }) {
   const s = useT()
@@ -154,6 +159,7 @@ function Column({
         model={model}
         agent={agent}
         pricing={pricing}
+        reasoningOpen={reasoningOpen}
         harness={harness}
         // The composer below asks both columns; a per-column send would ask one, which is the
         // sequential comparison this screen replaces. So repeat and edit are **absent**, not

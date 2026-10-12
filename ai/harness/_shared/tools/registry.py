@@ -11,7 +11,9 @@ Foundry chose the name and the arguments.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -48,6 +50,19 @@ def _lookup_knowledge(query: str) -> dict[str, Any]:
     return knowledge_tool.lookup_knowledge(query, source=_knowledge_source())
 
 
+_SEARCH_BACKEND: ContextVar[SearchBackend | None] = ContextVar("search_backend", default=None)
+
+
+@contextmanager
+def use_search_backend(backend: SearchBackend) -> Iterator[None]:
+    """Bind a provider for this request, including its worker threads, never the process."""
+    token = _SEARCH_BACKEND.set(backend)
+    try:
+        yield
+    finally:
+        _SEARCH_BACKEND.reset(token)
+
+
 def _search_backend() -> SearchBackend:
     """The web search provider. Swap this line for another backend; nothing else changes.
 
@@ -55,7 +70,8 @@ def _search_backend() -> SearchBackend:
     tool: the agent definition declares it unconditionally, so a registry that dropped it would
     make `load_agent_spec` reject a perfectly good definition on any machine without a key.
     """
-    return TavilySearch(os.environ.get("TAVILY_API_KEY", ""))
+    backend = _SEARCH_BACKEND.get()
+    return backend if backend is not None else TavilySearch(os.environ.get("TAVILY_API_KEY", ""))
 
 
 def _search_web(query: str) -> dict[str, Any]:

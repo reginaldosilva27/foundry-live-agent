@@ -21,7 +21,8 @@
  * the project again. Whether that connection routes through the gateway is the part worth showing,
  * and the line below already says it.
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { Favourites } from './Favourites'
 import { HistoryList } from './HistoryList'
 import {
@@ -98,6 +99,7 @@ interface Props {
    * navigation would be a second set of handlers to keep in step (§4).
    */
   overlay?: boolean
+  inactive?: boolean
   onCloseOverlay?: () => void
 }
 
@@ -119,9 +121,12 @@ export function Sidebar({
   onOpenConversation,
   onSelectAgent,
   overlay,
+  inactive,
   onCloseOverlay,
 }: Props) {
   const s = useT()
+  const rail = useRef<HTMLElement>(null)
+  useModalFocus(rail, Boolean(overlay))
   /**
    * The query lives here because the field does (spec 027).
    *
@@ -135,7 +140,14 @@ export function Sidebar({
   const answering = agents.selected ?? config?.agent_name
 
   return (
-    <aside className="sidebar" data-collapsed={collapsed} data-overlay={Boolean(overlay)}>
+    <aside
+      ref={rail}
+      id="navigation-rail"
+      className="sidebar"
+      inert={inactive}
+      data-collapsed={overlay ? false : collapsed}
+      data-overlay={Boolean(overlay)}
+    >
       <div className="sidebar__head">
         <div className="sidebar__brand">
           <img src="/icon-foundry-live-agent-branco.svg" alt="" width="20" height="20" />

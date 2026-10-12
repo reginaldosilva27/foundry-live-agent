@@ -155,6 +155,10 @@ describe('app.css', () => {
       expect(narrow).toBeDefined()
     })
 
+    it('restores the backdrop display at the narrow breakpoint', () => {
+      expect(narrow).toMatch(/\.rail-backdrop\s*\{[^}]*display:\s*block/)
+    })
+
     it('never hides the rail — it lifts it over the conversation instead', () => {
       expect(narrow).not.toMatch(/\.sidebar\s*\{[^}]*display:\s*none/)
       expect(narrow).toMatch(/\.sidebar\[data-overlay='true'\]\s*\{[^}]*position:\s*fixed/)
@@ -200,6 +204,14 @@ describe('app.css', () => {
     const banner = css.split('\n.demo-banner {')[1].split('}')[0]
     expect(banner).toMatch(/grid-column:\s*1 \/ -1/)
     expect(banner).toMatch(/grid-row:\s*1/)
+  })
+
+  it('bounds the demo picker to its row so long recording names fit the mobile floor', () => {
+    const pick = css.split('\n.demo-banner__pick {')[1].split('}')[0]
+    const select = css.split('\n.demo-banner__select {')[1].split('}')[0]
+    expect(pick).toMatch(/max-width:\s*100%/)
+    expect(pick).toMatch(/min-width:\s*0/)
+    expect(select).toMatch(/min-width:\s*0/)
   })
 
   /**

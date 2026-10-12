@@ -72,19 +72,9 @@ export function PreferencesScreen({ prefs }: { prefs: PreferencesState }) {
       <fieldset className="prefs__group">
         <legend className="prefs__legend">{s('prefs.behaviour')}</legend>
         <Toggle
-          label={s('prefs.speakAnswers')}
-          on={prefs.speakAnswers}
-          onChange={(v) => prefs.set('speakAnswers', v)}
-        />
-        <Toggle
           label={s('prefs.reasoningOpen')}
           on={prefs.reasoningOpen}
           onChange={(v) => prefs.set('reasoningOpen', v)}
-        />
-        <Toggle
-          label={s('prefs.activityOpen')}
-          on={prefs.activityOpen}
-          onChange={(v) => prefs.set('activityOpen', v)}
         />
       </fieldset>
     </section>

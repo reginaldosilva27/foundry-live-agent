@@ -126,10 +126,22 @@ def create_demo_app(*, pace_ms: int = DEFAULT_PACE_MS) -> FastAPI:
         harness="prompt-agent",
         # Not derived from the project endpoint. See the docstring.
         voice_endpoint="",
+        speech_endpoint="",
+        speech_resource_id="",
+        allow_version_promote=False,
         # The two tools that need nothing run for real; `search_web` answers `search_unavailable`,
         # which is the most instructive output it has (spec 042, AC5).
         allow_playground=True,
     )
+
+    from harness._shared.tools import registry
+    from harness._shared.tools.web_search_tool import TavilySearch
+
+    @app.middleware("http")
+    async def isolate_search(request, call_next):
+        # An inherited key must not turn a replay into a metered live-tool session (spec 051).
+        with registry.use_search_backend(TavilySearch("")):
+            return await call_next(request)
 
     app.state.demo = state
 

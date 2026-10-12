@@ -3,6 +3,19 @@
 > Spec [036](../specs/036-preferences-and-theme/spec.md). What is vendored, what is ours, and why
 > the line is where it is.
 
+## Preferences that affect the screen
+
+[Spec 052](../specs/052-preferences-applied/spec.md) reconciles spec 036's controls. Preferences,
+rail language buttons and the command palette use one browser-kept language for strings and
+`document.lang`; only an absent choice falls back to browser detection. Reasoning defaults apply
+in chat and comparison, while a deliberate card toggle wins for that mounted turn as streaming
+updates arrive. Navigating away unmounts the card; reopening uses the current default.
+
+Reading remains parked (spec 008), so there is no checkbox promising it. Activity remains visible
+inline, with no expansion checkbox; it is not the Traces drawer. The old `speakAnswers` and
+`activityOpen` storage fields are preserved but inert, never authorization to spend speech costs.
+No preference changes the agent or travels to Foundry.
+
 ## Two files, one rule
 
 `frontend/public/ds/colors_and_type.css` is the Dataside design system, **vendored**: it holds the
@@ -159,6 +172,64 @@ specificity, so the same selector declared later in the file wins regardless of 
 bit three times across specs 020, 046 and 047 — stacked columns that refused to stack, a menu
 control invisible at every width — and it is now enforced by `layout.test.ts` rather than
 remembered.
+
+### Mobile rail regression repair (#34, observed 2026-10-09)
+
+The mobile backdrop inherited the base `display: none`: positioning it in the breakpoint did not
+make it visible. The override now explicitly restores `display: block`. The same off-canvas rail
+is `inert` while closed at ≤760px, never on desktop. Opening it expands its content even if the
+stored desktop preference is collapsed, without changing that preference. The header control names
+the rail through `aria-controls` and reports `aria-expanded`. The existing overlay focus hook gives
+the rail initial focus, wraps Tab/Shift+Tab and returns focus on dismissal; Escape, the close
+control, outside click and navigation keep their existing dismissal handlers.
+
+**Observed in Chromium 156.0.8078.4, no Azure calls. Verification correction:** the initial
+18335 UI origin was outside the BFF's CORS allowlist; its layout/keyboard measurements were real,
+but its inspector screenshot did **not** prove replayed chat. Publication checks reran the app on
+the documented, allowed `http://127.0.0.1:5173` origin with the recorded-demo BFF on 18334. The
+observations below now refer to that successful replay run, not the blocked-origin attempt:
+
+- At **320, 390 and 760 CSS px**, in light and dark: backdrop computed `block`; 18 Tab steps
+  skipped the closed rail; 35 forward and 35 reverse steps stayed inside the open rail. Escape,
+  outside click and choosing Agents returned focus to the header opener. Document width equalled
+  viewport width at each size.
+- At **200% native browser zoom** (`chrome.tabs.setZoom`, not CSS zoom or emulated device scale),
+  a 1280px browser window reported `innerWidth: 640`, `devicePixelRatio: 2`, `scrollWidth: 640`.
+  Opening the rail, Tab containment and Escape focus return passed.
+- At **1800px**, the rail was not inert; a collapsed desktop rail expanded in the mobile overlay
+  and retained its collapsed preference after returning to desktop. Trace and event inspectors
+  were both open with `scrollWidth: 1800`. Screenshots and assertion reports remain session
+  artifacts, using only recorded demo content; these checks are not a screen-reader audit.
+
+Regression-first evidence and local gates:
+
+| Exact command | Result |
+|---|---|
+| `cd frontend && npm test -- src/App.narrow.test.tsx src/styles/layout.test.ts` | RED: 3 failed, 42 passed; GREEN: 45 passed |
+| `cd frontend && npm run lint && npm test && npm run build` | Passed: 1040 tests; existing ref-lint and bundle-size warnings |
+| `cd backend && ../.venv/bin/ruff check . && ../.venv/bin/ruff format --check . && ../.venv/bin/pytest -q` | Passed: 299 tests, 45 files formatted |
+| `cd ai && ../.venv/bin/ruff check . && ../.venv/bin/pytest -q` | Passed: 246 tests, 3 skipped |
+| `test -f infra/main.bicep` | Absent: Bicep build/lint skipped |
+
+Python gates used an isolated CPython 3.12.13 environment. Token, contrast and layout gates stayed
+green; neither the palette nor the focus-ring rules changed. No live-service behavior was tested.
+After local integration of #29's preferences commit, the same gate commands passed again:
+**1055 frontend tests**, **299 backend tests**, **246 AI tests / 3 skipped**, with infra still
+absent. Both browser scripts were rerun against that integrated tree: the six mobile/theme cases,
+desktop inspectors and native 200% zoom checks passed. The allowed-origin run also confirmed
+persisted Portuguese and English after reload, a replayed chat with the reasoning summary opened
+by the stored preference, its per-turn collapse control, and no `/speech` request or automatic
+trace opening.
+
+That real listing exposed one tightly coupled demo regression: at 320px the recording picker
+extended to **414px**. Its flex item's intrinsic minimum was wider than the available row. Bounding
+the picker to `max-width: 100%` and allowing both picker and select to shrink (`min-width: 0`)
+keeps the original labelled native control and tokens. Regression command
+`cd frontend && npm test -- src/styles/layout.test.ts`: **RED 1 failed / 35 passed**, then
+**GREEN 36 passed**. All six mobile/theme cases again reported document width equal to viewport
+width; native 200% zoom and both desktop inspectors passed against actual replay. Final publication
+gates, using the exact commands above, passed **1056 frontend tests**, **299 backend tests** and
+**246 AI tests / 3 skipped**; infra remained absent. Existing ref-lint/bundle warnings remain.
 
 ## The focus ring (spec 048)
 

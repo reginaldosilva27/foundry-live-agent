@@ -11,7 +11,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { PreferencesScreen } from './Preferences'
 import { LangContext } from '../i18n/context'
-import { t } from '../i18n/strings'
+import { t, type Lang } from '../i18n/strings'
 import { DEFAULTS, type PreferencesState } from '../state/preferences'
 
 function show(over: Partial<PreferencesState> = {}) {
@@ -43,6 +43,15 @@ describe('what it says (AC8)', () => {
 })
 
 describe('the controls (AC1, AC5)', () => {
+  it.each<Lang>(['en', 'pt'])('does not promise parked reading or unsupported activity expansion in %s', (lang) => {
+    render(
+      <LangContext.Provider value={lang}>
+        <PreferencesScreen prefs={{ ...DEFAULTS, speakAnswers: true, activityOpen: true, set: vi.fn(), stored: true }} />
+      </LangContext.Provider>,
+    )
+    expect(screen.queryByRole('checkbox', { name: t('prefs.speakAnswers', lang) })).toBeNull()
+    expect(screen.queryByRole('checkbox', { name: t('prefs.activityOpen', lang) })).toBeNull()
+  })
   it('offers three theme states and marks the current one', () => {
     show({ theme: 'dark' })
 
@@ -65,9 +74,9 @@ describe('the controls (AC1, AC5)', () => {
   it('sets a behaviour preference', async () => {
     const { set } = show()
 
-    await userEvent.click(screen.getByRole('checkbox', { name: t('prefs.speakAnswers', 'en') }))
+    await userEvent.click(screen.getByRole('checkbox', { name: t('prefs.reasoningOpen', 'en') }))
 
-    expect(set).toHaveBeenCalledWith('speakAnswers', true)
+    expect(set).toHaveBeenCalledWith('reasoningOpen', true)
   })
 
   it('marks no language until one was chosen', () => {
