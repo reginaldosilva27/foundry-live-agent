@@ -1,7 +1,8 @@
 # Trilha de aprendizado — observar antes de estender
 
 [English](learning-journey.md) · [Arquitetura](architecture.md) ·
-[Comparação medida](harness-comparison.md) · [Referências de APIs/evidências](REFERENCES.md)
+[Comparação medida](harness-comparison.md) · [Referências de APIs/evidências](REFERENCES.md) ·
+[Caminhos Copilot: pesquisa e próxima aula proposta](copilot-learning-paths.pt-BR.md)
 
 Este projeto é uma referência educacional, não uma receita de implantação em produção. Conheça a
 stack GenAI do Azure acompanhando uma pergunta pelas fronteiras: modelo, runtime do agente, tools,

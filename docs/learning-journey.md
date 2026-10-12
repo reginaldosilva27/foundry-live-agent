@@ -1,7 +1,8 @@
 # Learning journey — observe before extending
 
 [Português](learning-journey.pt-BR.md) · [Architecture](architecture.md) ·
-[Measured comparison](harness-comparison.md) · [API/evidence references](REFERENCES.md)
+[Measured comparison](harness-comparison.md) · [API/evidence references](REFERENCES.md) ·
+[Copilot paths: research and proposed next lesson](copilot-learning-paths.md)
 
 This is an educational reference, not a production deployment prescription. Learn the Azure
 GenAI stack by following a question across boundaries: model, agent runtime, tools, harness,
