@@ -6,6 +6,10 @@ const css = readFileSync(new URL('./app.css', import.meta.url), 'utf8')
 const rule = (selector: string) => css.split(`\n${selector} {`)[1]?.split('}')[0] ?? ''
 
 describe('spec 058 restrained conversational layout', () => {
+  it('budgets the added info and persistent Replay controls at 320px (spec059)', () => {
+    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.header\s*\{[^}]*gap: var\(--sp-1\)/)
+    expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.header__agent\s*\{[^}]*min-width: 4ch/)
+  })
   it('lets comparison notices shrink instead of widening a 320px viewport', () => {
     expect(rule('.compare__head')).toContain('min-width: 0')
     expect(rule('.compare__pick')).toContain('flex-wrap: wrap')

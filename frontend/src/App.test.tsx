@@ -84,14 +84,16 @@ describe('App', () => {
     )
   })
 
-  it('names the model in the sidebar without printing the Foundry project name', async () => {
+  it('discloses the model without printing the Foundry project name', async () => {
     // The project id is a deployment detail nobody reads from a screenshot, and `model` arrives
     // from the BFF as `<connection>/<model>` — in a real project both carry the project's name.
     fakeBff([])
     render(<App />)
 
     const sidebar = screen.getByRole('complementary')
-    await waitFor(() => expect(within(sidebar).getByTestId('sidebar-model')).toHaveTextContent('gpt-4o'))
+    await userEvent.click(screen.getByRole('button', { name: /build information/i }))
+    await waitFor(() => expect(screen.getByTestId('build-info-model')).toHaveTextContent('gpt-4o'))
+    expect(screen.getByRole('dialog').textContent).not.toContain('proj-default')
     expect(sidebar.textContent).not.toContain('proj-default')
     expect(sidebar.textContent).not.toContain('foundry-analytics-demo')
   })

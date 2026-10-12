@@ -208,6 +208,10 @@ no gateway tool-trace coverage is claimed.
 
 [Spec 050](../specs/050-demo-mode/) adds a separate replay entrypoint. It renders committed
 recordings rather than answering the new question; it does not certify a live deployment.
+[Spec 059](../specs/059-compact-build-info/) revisits its large non-dismissable banner: a compact
+persistent Replay badge labels every screen, while the accessible header information dialog holds
+the unchanged recording explanation/date/chooser and model/gateway/SSE facts. Closing details never
+removes the badge. Voice entry stays in the composer; Events and Traces remain in the header.
 
 ## Facts already established (cited in [REFERENCES.md](REFERENCES.md))
 

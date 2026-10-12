@@ -282,20 +282,26 @@ describe('demo mode (spec 050)', () => {
     })
   }
 
-  it('shows the banner on every screen, and never a way to close it', async () => {
+  it('keeps a compact Replay label on every screen while details open only on demand (spec059)', async () => {
     replayingBff()
     render(<App />)
     const user = userEvent.setup()
-
-    const banner = await screen.findByTestId('demo-banner')
-    expect(banner.textContent).toContain('2026-09-15')
-
+    expect(screen.queryByTestId('demo-banner')).toBeNull()
+    await screen.findByTestId('replay-badge')
+    const header = screen.getByRole('banner')
+    expect(within(header).queryByRole('button', { name: t('header.voice', 'en') })).toBeNull()
+    expect(screen.getByRole('button', { name: t('composer.voiceInput', 'en') })).toBeInTheDocument()
     for (const view of ['nav.agents', 'nav.history', 'nav.compare', 'nav.chat'] as const) {
       await user.click(screen.getByRole('button', { name: t(view, 'en') }))
-      expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
+      expect(screen.getByTestId('replay-badge')).toBeVisible()
+      expect(screen.queryByRole('combobox', { name: t('demo.pick', 'en') })).toBeNull()
     }
-
-    expect(within(screen.getByTestId('demo-banner')).queryAllByRole('button')).toEqual([])
+    const before = vi.mocked(fetch).mock.calls.length
+    await user.click(screen.getByRole('button', { name: t('buildInfo.title', 'en') }))
+    const info = screen.getByRole('dialog')
+    expect(info).toHaveTextContent('2026-09-15')
+    expect(info).toHaveTextContent(t('sidebar.gatewayOn', 'en'))
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(before)
   })
 
   it('asks a live build nothing about recordings', async () => {

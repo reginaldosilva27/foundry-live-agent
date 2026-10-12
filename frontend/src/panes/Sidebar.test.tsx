@@ -136,31 +136,11 @@ describe('the rail', () => {
 
   // --- AC3 ---------------------------------------------------------------
 
-  it('keeps saying what we are connected to', () => {
+  it('keeps technical facts out of the footer and preserves the about entry (spec059)', () => {
     show()
-
-    expect(screen.getByTestId('sidebar-model')).toHaveTextContent('gpt-5.5')
-    expect(screen.getByText(t('sidebar.gatewayOn', 'en'))).toBeInTheDocument()
-    expect(screen.getByText(t('sidebar.transport', 'en'))).toBeInTheDocument()
-  })
-
-  it('says the configuration could not be read rather than printing a blank model', () => {
-    show({ config: null, configFailed: true })
-    expect(screen.getByTestId('sidebar-model')).toHaveTextContent(t('config.unavailable', 'en'))
-  })
-
-  it('says it is still reading the configuration, which is not the same as failing to', () => {
-    show({ config: null })
-    expect(screen.getByTestId('sidebar-model')).toHaveTextContent(t('config.loading', 'en'))
-  })
-
-  // --- Spec 032 AC7: the footer is the glance, and links to the look ------
-
-  it('keeps its two lines and offers the way into the panel', () => {
-    show()
-
-    expect(screen.getByTestId('sidebar-model')).toHaveTextContent('gpt-5.5')
-    expect(screen.getByText(t('sidebar.gatewayOn', 'en'))).toBeInTheDocument()
+    expect(screen.queryByTestId('sidebar-model')).toBeNull()
+    expect(screen.queryByText(t('sidebar.gatewayOn', 'en'))).toBeNull()
+    expect(screen.queryByText(t('sidebar.transport', 'en'))).toBeNull()
     expect(screen.getByRole('button', { name: t('sidebar.about', 'en') })).toBeInTheDocument()
   })
 
@@ -251,7 +231,6 @@ describe('the rail', () => {
     expect(scroll.contains(screen.getByRole('button', { name: /today/ }))).toBe(true)
     expect(scroll.contains(screen.getByTestId('answering-agent'))).toBe(true)
 
-    expect(scroll.contains(screen.getByTestId('sidebar-model'))).toBe(false)
     expect(scroll.contains(screen.getByRole('group', { name: t('sidebar.language', 'en') }))).toBe(
       false,
     )

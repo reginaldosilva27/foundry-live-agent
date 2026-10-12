@@ -177,68 +177,103 @@ button:disabled {
   grid-template-columns: var(--rail) minmax(0, 1fr) var(--events);
 }
 
-/* The replay banner is a ROW of the shell, spanning every column (spec 050).
-
-   Placed, not auto-flowed. A direct child of this grid with no placement takes an implicit track,
-   which is precisely how the event inspector ended up 380px wide inside the 248px rail column — the
-   same mistake twice in one grid would be careless. The row is declared here so the conversation
-   still gets `minmax(0, 1fr)` and stays the thing that scrolls. */
-.app:has(.demo-banner) {
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.demo-banner {
-  grid-column: 1 / -1;
-  grid-row: 1;
-
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2) var(--sp-3);
-  padding: var(--sp-2) var(--sp-4);
-  border-bottom: 1px solid var(--border-accent);
+.replay-badge {
+  flex-shrink: 0;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-sm);
   background: var(--bg-accent-soft);
   font-size: var(--fs-caption);
   color: var(--fg-2);
 }
 
-.demo-banner__tag {
+.build-info__opener,
+.build-info__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  padding: 2px var(--sp-2);
+  width: 32px;
+  height: 32px;
+  border: 0;
   border-radius: var(--r-sm);
-  background: var(--bg-accent-strong);
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--fg-on-accent);
+  background: transparent;
+  color: var(--fg-3);
+  cursor: pointer;
 }
 
-/* The sentence takes the room that is left and wraps; the tag and the picker never shrink, because
-   the first is the label a reader scans for and the second is a control. */
-.demo-banner__body {
-  flex: 1 1 20rem;
-  min-width: 0;
-  margin: 0;
+.build-info__opener:hover,
+.build-info__close:hover {
+  background: var(--bg-2);
+  color: var(--fg-1);
 }
 
-.demo-banner__pick {
+.build-info__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  background: color-mix(in srgb, var(--ds-ink) 55%, transparent);
+}
+
+.build-info {
+  width: 480px;
   max-width: 100%;
   min-width: 0;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--sp-2);
+  max-height: calc(100dvh - var(--sp-4) * 2);
+  overflow-y: auto;
+  padding: var(--sp-4);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-lg);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
-.demo-banner__pick-label {
+.build-info__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.build-info__head h2 {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--fg-1);
+}
+
+.build-info p {
+  margin: 0 0 var(--sp-2);
+}
+
+.demo-details {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border-1);
+}
+
+.demo-details__pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+  margin-top: var(--sp-3);
+}
+
+.demo-details__pick-label {
   color: var(--fg-3);
 }
 
-.demo-banner__select {
+.demo-details__select {
   min-width: 0;
-  max-width: 22rem;
-  padding: 2px var(--sp-2);
+  max-width: 100%;
+  padding: var(--sp-2);
   border: 1px solid var(--border-2);
   border-radius: var(--r-sm);
   background: var(--bg-1);
@@ -710,29 +745,6 @@ button:disabled {
   line-height: var(--lh-base);
   color: var(--ds-n-400);
   overflow-wrap: anywhere;
-}
-
-.sidebar__footer p {
-  margin: 0;
-  font-size: inherit;
-  color: inherit;
-}
-
-/* A 58px rail under `model` bought a column nothing else lined up with, and spent it on a gap. */
-.sidebar__key {
-  margin-right: var(--sp-2);
-  color: var(--ds-n-400);
-}
-
-.sidebar__gateway {
-  color: var(--ds-n-400);
-}
-
-.sidebar__transport {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  margin-top: var(--sp-1) !important;
 }
 
 /* ---------- Header ---------- */
@@ -2796,12 +2808,16 @@ button:disabled {
 
      The two controls keep their icons and drop their labels — `font-size: 0` collapses the text
      box without touching the accessible name, which `aria-label` carries and AC4 requires. The
-     badge moves to the rail's footer, where the model and the gateway line already live, so spec
+     badge moves to the rail's footer, while build facts live in the info dialog, so spec
      004's "a harness swap is visible on screen" still holds one tap away. The branding pill had
      already truncated to a single meaningless letter. */
   .header {
     padding: 0 var(--sp-3);
-    gap: var(--sp-2);
+    gap: var(--sp-1);
+  }
+
+  .header__agent {
+    min-width: 4ch;
   }
 
   .header__menu {

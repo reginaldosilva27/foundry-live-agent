@@ -572,6 +572,8 @@ export const strings = {
   // --- Header --------------------------------------------------------------
   'header.foundryPill': { en: 'Microsoft Foundry', pt: 'Microsoft Foundry' },
   'header.harnessLabel': { en: 'harness', pt: 'harness' },
+  'buildInfo.title': { en: 'Build information', pt: 'Informações desta versão' },
+  'buildInfo.close': { en: 'Close build information', pt: 'Fechar informações desta versão' },
   'header.voice': { en: 'Voice', pt: 'Voz' },
   'header.voiceUnavailable': {
     en: 'Voice is not configured on this server.',

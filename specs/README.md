@@ -110,6 +110,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 055 | [Corporate chat](055-corporate-chat/spec.md) | 4 | ✅ done |
 | 056 | [Contextual inspection and honest comparison](056-contextual-inspection-comparison/spec.md) | 4 | ✅ done |
 | 058 | [Claude-inspired chat](058-claude-inspired-chat/spec.md) | 4 | ✅ done |
+| 059 | [Compact build information](059-compact-build-info/spec.md) | 4 | ✅ done |
 
 054 is reserved by the published bounded-tool-settlement change in PR46 (inherited by PR48).
 Its code is not part of this PR49-based branch; numbering remains global across open branches.
