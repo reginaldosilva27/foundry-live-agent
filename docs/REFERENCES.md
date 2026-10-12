@@ -870,3 +870,37 @@ The recorded listing (`backend/tests/fixtures/agents-listing-20260916.json`, 10 
 `agent_endpoint` key at all** — consistent with nothing ever having been pinned, and not proof that
 the field would be omitted if something were. `test_agent_versions.py` asserts that premise, so a
 future recording that contradicts it fails loudly instead of quietly invalidating the reasoning.
+
+## Local stream resource lifecycle (#33) — checked 2026-10-09
+
+| Source read | What this patch relies on |
+|---|---|
+| [OpenAI Python `Stream`, tag v3.28.0](https://github.com/openai/openai-python/blob/v3.28.0/src/openai/_streaming.py) | `Stream.close()` closes the response and releases its connection. The prompt factory retains the SDK stream itself and closes it when its wrapping generator unwinds; closing only the iterator returned by `iter(stream)` is not an explicit close of that response. |
+| [HTTPX timeout configuration](https://www.python-httpx.org/advanced/timeouts/) | Connect, read, write and pool timeouts bound HTTP operations. A read timeout is the wait for a chunk, not a total stream or multi-leg turn deadline. The existing 300-second hosted HTTP timeout is therefore not advertised as a total-turn budget. |
+
+The SDK tag matches the locally installed `openai 3.28.0` inspected for this fix; it is **not** a
+new dependency pin or a live Foundry compatibility verification. No Foundry cancellation endpoint,
+event or API version was added or verified. Local blocked-read and blocked-tool tests, plus HTTP
+disconnect probes, demonstrate that coroutine cancellation does not stop synchronous worker I/O:
+cleanup waits for that work to return. These are lifecycle stimuli, not recorded Foundry responses
+or evidence that a remote run stopped billing. See
+[the lifecycle limits](how-it-works/streaming-events.md#local-resource-lifecycle-and-its-limits-33).
+
+## Hosted multi-turn continuity (#35) — read 2026-10-10
+
+| Official source read | What the investigation relies on |
+|---|---|
+| [Develop LangChain hosted agents](https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/langchain-hosted-agents) (updated 2026-08-31) | Without a checkpointer, `ResponsesHostServer` replays protocol-managed prior history plus current input; clients can chain `previous_response_id` or use `conversation`. With a checkpointer, current input alone is passed. Sandbox reuse additionally requires a session ID or conversation. |
+| [Hosted agents concepts](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents) (metadata updated 2026-09-29) | Responses supports platform-managed conversation history and conversation threading; the dedicated hosted Responses endpoint is `{project_endpoint}/agents/{name}/endpoint/protocols/openai/responses`. |
+| [Manage hosted agent sessions](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/manage-hosted-sessions) (metadata updated 2026-09-23) | `agent_session_id` reuses sandbox/filesystem state, not message history. `previous_response_id` chains history without implicit sandbox reuse. A conversation created through `POST .../endpoint/protocols/openai/conversations` can bind response history and a stable sandbox. These are distinct pointers, not interchangeable IDs. |
+
+**No live service verification was performed.** Both September 16 committed hosted completion
+recordings return `id: caresp_0000` and `agent_session_id: id_0001`, with `conversation` and
+`previous_response_id` absent. Those anonymized values are not live handles. The BFF's
+`conversation_id` does not reach the hosted request: its factory reads `response_id` instead.
+Two sequential actual **loopback HTTP** requests replaying the recording confirm outgoing bodies
+contain only `input` and `stream`, not continuity. The unresolved expectation is a strict xfail;
+that is not evidence of a repair. Conversation creation payload/returned ID, response binding,
+completion fields, two-turn history replay on the deployed version and cross-agent pointer behavior
+still need permission and recorded service evidence. See
+[the investigation and unblock conditions](how-it-works/hosted-continuity.md).

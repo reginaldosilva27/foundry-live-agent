@@ -45,6 +45,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from harness._shared.contract import AgentEvent
+from harness._shared.event_diagnostics import MAX_TYPE_LENGTH, EventDiagnostics
 
 __all__ = [
     "MAPPINGS",
@@ -135,10 +136,16 @@ class Normaliser:
         #: call_id -> tool name, learned from `function_call`, needed by `function_call_output`.
         self._names: dict[str, str] = {}
 
-    def convert(self, raw: Mapping[str, Any]) -> Iterator[AgentEvent]:
+    def convert(
+        self, raw: Mapping[str, Any], *, diagnostics: EventDiagnostics | None = None
+    ) -> Iterator[AgentEvent]:
         etype = raw.get("type", "")
 
-        if etype in _IGNORED or etype not in _KNOWN:
+        if type(etype) is not str or len(etype) > MAX_TYPE_LENGTH or etype not in _KNOWN:
+            if diagnostics is not None:
+                diagnostics.observe(etype)
+            return
+        if etype in _IGNORED:
             return
 
         if etype == "response.output_text.delta":
@@ -203,8 +210,12 @@ class Normaliser:
 def normalise(raw_events: Iterable[Mapping[str, Any]]) -> Iterator[AgentEvent]:
     """Convert a whole recorded stream. One :class:`Normaliser` for the whole turn."""
     normaliser = Normaliser()
-    for raw in raw_events:
-        yield from normaliser.convert(raw)
+    diagnostics = EventDiagnostics("langgraph")
+    try:
+        for raw in raw_events:
+            yield from normaliser.convert(raw, diagnostics=diagnostics)
+    finally:
+        diagnostics.flush()
 
 
 def _as_text(output: Any) -> str:
