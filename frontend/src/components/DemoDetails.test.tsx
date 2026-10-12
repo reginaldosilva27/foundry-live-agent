@@ -1,16 +1,7 @@
-/**
- * The replay banner (spec 050, AC5).
- *
- * Two of these assertions are about absence, and they are the important ones. There is **no
- * control that dismisses it**: a banner a reader can close is a banner that is not there in the
- * screenshot somebody posts, and the one thing this build must never do is let a recording pass
- * for a live agent. And it says out loud that the answer does not depend on the question, rather
- * than letting the reader discover that by typing twice (AC7).
- */
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { DemoBanner } from './DemoBanner'
+import { DemoDetails } from './DemoDetails'
 import { LangContext } from '../i18n/context'
 import { t, type Lang } from '../i18n/strings'
 import type { DemoState } from '../state/demo'
@@ -30,17 +21,16 @@ function show(demo: Partial<DemoState> = {}, lang: Lang = 'en') {
   const choose = vi.fn()
   const view = render(
     <LangContext.Provider value={lang}>
-      <DemoBanner demo={{ ...DEMO, choose, ...demo }} />
+      <DemoDetails demo={{ ...DEMO, choose, ...demo }} />
     </LangContext.Provider>,
   )
   return { ...view, choose }
 }
 
-describe('the replay banner', () => {
+describe('the replay details', () => {
   it('says the build is a replay and when it was recorded', () => {
     const { container } = show()
 
-    expect(screen.getByTestId('demo-banner')).toBeInTheDocument()
     expect(container.textContent).toContain('2026-09-15')
   })
 
@@ -51,12 +41,10 @@ describe('the replay banner', () => {
     expect(screen.getByText(t('demo.body', 'en').replace('{date}', '2026-09-15'))).toBeInTheDocument()
   })
 
-  it('offers no way to dismiss itself', () => {
+  it('delegates dismissal to its containing disclosure', () => {
     show()
 
-    // `queryAll`, because the assertion IS the empty list. The picker is a combobox; a button here
-    // could only be a close control, and a closable banner is one that is missing from the
-    // screenshot somebody posts.
+    // BuildInfo owns the close control.
     expect(screen.queryAllByRole('button', { hidden: true })).toEqual([])
   })
 
@@ -85,7 +73,6 @@ describe('the replay banner', () => {
   it('speaks Portuguese too (AC14)', () => {
     show({}, 'pt')
 
-    expect(screen.getByText(t('demo.title', 'pt'))).toBeInTheDocument()
     expect(
       screen.getByRole('option', { name: t('demo.recording.round-trip', 'pt') }),
     ).toBeInTheDocument()

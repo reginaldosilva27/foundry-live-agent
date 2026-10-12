@@ -16,10 +16,11 @@ interface Props {
   /** Already resolved against the listing; an empty list renders nothing at all. */
   rows: AgentRow[]
   answering?: string
+  selectionLocked?: boolean
   onSelect: (name: string) => void
 }
 
-export function Favourites({ rows, answering, onSelect }: Props) {
+export function Favourites({ rows, answering, onSelect, selectionLocked = false }: Props) {
   const s = useT()
 
   if (rows.length === 0) return null
@@ -34,7 +35,7 @@ export function Favourites({ rows, answering, onSelect }: Props) {
               type="button"
               className="favourites__row"
               data-agent={agent.name}
-              disabled={!agent.selectable}
+              disabled={!agent.selectable || selectionLocked}
               aria-current={agent.name === answering ? 'true' : undefined}
               onClick={() => onSelect(agent.name)}
             >

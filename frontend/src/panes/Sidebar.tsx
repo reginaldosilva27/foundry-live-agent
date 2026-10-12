@@ -1,9 +1,8 @@
 /**
- * The dark left column: brand, the two views, who is answering, what this browser kept, and a mono
- * footer describing what we are connected to.
+ * The dark left column: brand, the two views, who is answering, what this browser kept, and navigation/preferences in the footer.
  *
  * **Three blocks, and only the middle one moves.** The head (brand, the new session, the views) and
- * the foot (language, what we are connected to) are pinned; everything that grows with use — the
+ * the foot (language and navigation) are pinned; everything that grows with use — the
  * agent, the favourites, the history — lives in `.sidebar__scroll` between them. 021 gave the
  * overflow to the history's own list, which is one list *per age group*: with `Today`, `Last 7 days`
  * and `Older` on screen none of the three could shrink and the rail painted straight over the
@@ -16,10 +15,6 @@
  * is answering. The listing is a screen now (`AgentsScreen`), and `Sidebar.test.tsx` asserts it has
  * not crept back.
  *
- * The footer names the model and nothing else. The Foundry project id is a deployment detail no
- * reader acts on, and `model` arrives as `<connection>/<model>` — where the connection is usually
- * the project again. Whether that connection routes through the gateway is the part worth showing,
- * and the line below already says it.
  */
 import { useRef, useState } from 'react'
 import { useModalFocus } from '../hooks/useModalFocus'
@@ -36,7 +31,6 @@ import {
 } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
 import { HarnessBadge } from '../components/HarnessBadge'
-import { modelName } from '../components/format'
 import { useT } from '../i18n/context'
 import { LANGS, type Lang } from '../i18n/strings'
 import { searchConversations } from '../state/history'
@@ -90,6 +84,7 @@ interface Props {
   onNewSession: () => void
   onView: (view: NavView) => void
   onOpenConversation: (id: string) => void
+  selectionLocked?: boolean
   onSelectAgent: (name: string) => void
   /**
    * The rail is open **over** the conversation (spec 047).
@@ -120,6 +115,7 @@ export function Sidebar({
   onView,
   onOpenConversation,
   onSelectAgent,
+  selectionLocked = false,
   overlay,
   inactive,
   onCloseOverlay,
@@ -228,7 +224,8 @@ export function Sidebar({
           </div>
         )}
 
-        <Favourites rows={favourites} answering={answering} onSelect={onSelectAgent} />
+        {selectionLocked && <p className="sidebar__muted">{s('compare.locked')}</p>}
+        <Favourites rows={favourites} answering={answering} onSelect={onSelectAgent} selectionLocked={selectionLocked} />
 
         {/* The field appears with the second thing worth searching, not before: a search box over
             an empty list is chrome that promises something the rail cannot do yet. */}
@@ -326,19 +323,6 @@ export function Sidebar({
               failed={configFailed}
             />
           )}
-          <p data-testid="sidebar-model">
-            <span className="sidebar__key">{s('sidebar.modelLabel')}</span>
-            {config ? modelName(config.model) : s(configFailed ? 'config.unavailable' : 'config.loading')}
-          </p>
-          {config && (
-            <p className="sidebar__gateway">
-              {config.uses_gateway ? s('sidebar.gatewayOn') : s('sidebar.gatewayOff')}
-            </p>
-          )}
-          <p className="sidebar__transport">
-            <span className="dot" aria-hidden="true" />
-            {s('sidebar.transport')}
-          </p>
         </footer>
       </div>
     </aside>

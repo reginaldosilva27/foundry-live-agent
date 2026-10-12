@@ -166,11 +166,49 @@ awaiting (asyncio.sleep)     0.20s  0.41s  0.61s  0.81s  …
 So each `next()` now runs in a worker thread (`PromptAgentAdapter._stream_events`). The awaits are
 sequential, so ordering is untouched; the loop is free to write each frame as it arrives.
 
-## Unknown-event analysis is offline today
+## Mapping coverage versus runtime diagnostics (spec 057, #39)
 
-`unmapped_types()` counts unknown raw event types in an iterable supplied by a caller, such as
-recording analysis. It is not wired into live BFF diagnostics. `GET /config` reports mapping
-coverage, not a live counter of unexpected upstream events; that diagnostics work belongs to #39.
+`GET /config` reports **offline mapping evidence**, not runtime counts. Each normalizer's
+`MAPPINGS` supplies the known vocabulary: handled types and deliberately ignored lifecycle,
+partial-argument and already-streamed text types all belong to it. An unverified known type is
+not an unknown type. Unknown **nested item kinds** on a known event are outside this diagnostic.
+`unmapped_types()` remains an offline analysis helper for separately reviewed, trusted recordings;
+it exposes spellings and is not the live logging path.
+
+Prompt and hosted adapters now collect unknown **top-level type** occurrences server-side and
+emit at most **one warning per turn**, in `finally` after completion, failure, cancellation or
+explicit generator close. Prompt legs share one budget, including settlement. No unknown types
+means no warning. Whole-stream `normalise()` helpers use the same policy; low-level `convert()`
+without a collector stays silent. Voice uses a different transport and is unchanged.
+
+The logger `harness._shared.event_diagnostics` supplies a `diagnostic` record attribute and the
+same content in its message. Operators use their existing Python logging sink; there is no new
+endpoint, configuration flag, browser event or `AgentEvent`. Example **synthetic** summary:
+
+```json
+{"normalizer":"prompt_agent","types":{"unmapped_type_1":3},"invalid_type":1,"omitted_occurrences":2,"truncated":true,"counts_saturated":false}
+```
+
+The exact policy lives in `ai/harness/_shared/event_diagnostics.py`:
+
+- Retain at most **16 distinct spellings** internally, each **1–96 ASCII characters** matching
+  `[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)*`. Check length before regex/hash. No raw value is stringified.
+- Emit **only opaque, turn-local aliases** and counts. Even a valid spelling could contain a secret;
+  aliases are not globally identifiable types, hashes, or recoverable spellings. Names are cleared
+  on flush. Never log payloads, prompts, arguments, outputs, identifiers or exception representations.
+- Malformed, missing, non-string or oversized types increment one `invalid_type` counter, retaining
+  no name. A seventeenth valid type increments `omitted_occurrences` every time it occurs; that is
+  **not a distinct-type count**. Retained types continue accumulating after the cap.
+- Each counter saturates at **1,000,000**. Further increments set `counts_saturated`; `truncated`
+  means omitted occurrences or saturated counters. Invalid classification alone does not truncate
+  its occurrence count. All counts describe only events this consumer actually read.
+
+These limits bound memory and log volume per turn, not total stream duration or aggregate traffic
+across turns. A hard process kill can lose the summary. A failed logging handler is suppressed so
+it cannot change cleanup or settlement. No upstream cancellation is introduced. These warnings
+are **drift signals, not evidence of a new service shape**: recovering the real type requires
+separately reviewed recordings and §10 evidence before implementing a handler. The boundary tests
+in `ai/tests/test_event_diagnostics.py` are explicitly synthetic, not new Foundry recordings.
 
 ## What a turn looks like on the wire
 
@@ -221,7 +259,8 @@ because nobody has measured what a run does after the browser stops listening (�
 
 **The stream's own invariant is unaffected.** `check_stream` still requires every stream to end in
 `done` or `error`; a stopped turn is not a stream that ended without one, it is a stream the client
-stopped reading. The BFF sees a dropped connection and nothing else.
+stopped reading. The BFF sees a dropped connection and closes its local stream; that is not a
+Foundry run-cancellation request.
 
 Two consequences worth knowing:
 
@@ -229,6 +268,42 @@ Two consequences worth knowing:
   `conversation_id`, because that is Foundry's state and this app does not own it (§8).
 - A stopped turn is **not** read aloud when spoken answers are on. Speaking the half of an answer
   somebody just interrupted is the opposite of what they asked for.
+
+### Local resource lifecycle and its limits (#33)
+
+Both adapters use `harness/_shared/streaming.py` for per-leg synchronous iteration. Factory
+creation and reads run off the event loop. Success, read failure, a terminal error and explicit
+consumer close release an iterator's `close()` where it exists. The prompt factory also closes
+the SDK response stream hidden behind its generator; the hosted factory unwinds its existing
+HTTP response/client contexts. Cleanup failures are logged, not emitted as a second terminal
+event. The SSE router explicitly closes its harness generator and never tries to yield a terminal
+frame during cancellation or `GeneratorExit`.
+
+Cleanup is serialized with reads: closing a Python generator while `next()` runs would itself
+fail. Cancellation stops awaiting the read, not the worker thread. A cleanup worker therefore
+waits until that read returns, then closes the iterator without requesting another event. If the
+read never returns, cleanup cannot finish; a blocked worker still occupies threadpool capacity.
+Cancelling during a function call likewise leaves its synchronous execution running, but does
+not submit its output or start a later leg. Delivery can be interrupted, including on spec 054's
+reserved settlement leg; local cleanup is no claim that Foundry received an answer or stopped
+billing. No upstream cancellation API is called.
+
+The search tool closes each HTTP client it creates, including on transport, status and parsing
+failures. An injected client stays open: its caller owns its lifetime. If a tool is already
+running when the stream is cancelled, its owned client closes when that synchronous call exits.
+
+**Timeout is not a turn deadline.** The hosted factory's `httpx.Client(timeout=300.0)` sets HTTP
+operation timeouts, not a total wall-clock budget. Repeated reads and multiple execution legs
+can exceed 300 seconds; a blocked tool has its own timeout. There is no total-turn deadline in
+this patch, nor a guarantee of immediate socket cleanup, stopped metering, or responsiveness
+under a saturated worker pool. A new deadline would require a clarified spec and a documented
+bound, not relabelling this timeout.
+
+`ai/tests/test_resource_lifecycle.py` and `backend/tests/test_chat_lifecycle.py` are local,
+close-observable probes, not Foundry recordings. They check owned/injected cleanup, normal/error
+termination, explicit close, cancellation during a blocked read/tool and event-loop progress.
+Voice cleanup remains the existing activity-stream reaping path, tested separately by
+`backend/tests/test_voice_reaping.py`; no voice protocol or deployment behavior changes here.
 
 ## What an answer consulted (spec 034)
 

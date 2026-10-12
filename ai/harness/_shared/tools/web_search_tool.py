@@ -29,6 +29,7 @@ API details — endpoint, auth header shape, request fields, response fields, th
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
@@ -129,8 +130,13 @@ class TavilySearch:
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         try:
-            client = self._client or httpx.Client(timeout=self._timeout)
-            response = client.post(TAVILY_SEARCH_URL, json=payload, headers=headers)
+            context = (
+                nullcontext(self._client)
+                if self._client is not None
+                else httpx.Client(timeout=self._timeout)
+            )
+            with context as client:
+                response = client.post(TAVILY_SEARCH_URL, json=payload, headers=headers)
         except httpx.HTTPError as exc:
             raise SearchError(
                 "search_failed", f"could not reach the search provider: {exc}"

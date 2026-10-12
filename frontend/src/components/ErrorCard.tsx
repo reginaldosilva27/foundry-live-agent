@@ -23,6 +23,7 @@ export function ErrorCard({ error }: Props) {
       </header>
       <p className="error-card__message">{error.message}</p>
       <p className="error-card__hint">{s('error.hint')}</p>
+      <p className="error-card__hint">{s('error.next')}</p>
     </aside>
   )
 }

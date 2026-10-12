@@ -1,12 +1,26 @@
 # Learning journey — observe before extending
 
 [Português](learning-journey.pt-BR.md) · [Architecture](architecture.md) ·
-[Measured comparison](harness-comparison.md) · [API/evidence references](REFERENCES.md)
+[Measured comparison](harness-comparison.md) · [API/evidence references](REFERENCES.md) ·
+[Copilot paths: research and proposed next lesson](copilot-learning-paths.md)
 
 This is an educational reference, not a production deployment prescription. Learn the Azure
 GenAI stack by following a question across boundaries: model, agent runtime, tools, harness,
 application, telemetry and voice. Copilot can help navigate code and propose tests; no Copilot
 service integration or product choice is delivered by this outline.
+
+## Runtime drift without revealing content (#39, spec 057)
+
+[Streaming diagnostics](how-it-works/streaming-events.md#mapping-coverage-versus-runtime-diagnostics-spec-057-39)
+separates offline mapping evidence in `GET /config` from unknown types encountered during a
+prompt/hosted turn. Known lifecycle/partial types are deliberately ignored, not drift. Server
+logs emit one bounded summary per turn: 16 turn-local opaque type aliases, an `invalid_type`
+count and **omitted occurrences**, not omitted distinct types. Internal spellings are capped at
+96 ASCII characters and never logged; counters saturate at 1,000,000 with explicit flags.
+Aliases cannot identify a type across turns. Recovering the real shape requires separately
+reviewed recordings; these logs contain no payload, prompt, arguments, outputs, identifiers or
+raw spellings. Tests use clearly synthetic boundaries plus unchanged historical recordings,
+not a newly measured service run. No browser event, endpoint or voice behavior was added.
 
 ## Evidence and prerequisites
 

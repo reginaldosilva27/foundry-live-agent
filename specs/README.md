@@ -106,6 +106,13 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 050 | [Demo mode — the whole app, with no Azure credential](050-demo-mode/spec.md) | 4 | ✅ done |
 | 051 | [Replay isolation](051-replay-isolation/spec.md) | 4 | ✅ done |
 | 052 | [Preferences that reach the application](052-preferences-applied/spec.md) | 4 | ✅ done |
+| 053 | [Playground and proposal integration](053-playground-and-proposal-integration/spec.md) | 4 | ✅ done |
+| 054 | [Bounded tool-output settlement](054-bounded-tool-settlement/spec.md) | 4 | ✅ done |
+| 055 | [Corporate chat](055-corporate-chat/spec.md) | 4 | ✅ done |
+| 056 | [Contextual inspection and honest comparison](056-contextual-inspection-comparison/spec.md) | 4 | ✅ done |
+| 057 | [Unmapped event diagnostics](057-unmapped-event-diagnostics/spec.md) | 4 | ✅ done |
+| 058 | [Claude-inspired chat](058-claude-inspired-chat/spec.md) | 4 | ✅ done |
+| 059 | [Compact build information](059-compact-build-info/spec.md) | 4 | ✅ done |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is

@@ -48,7 +48,6 @@ import { useVoiceSession } from './hooks/useVoiceSession'
 import type { VoiceErrorCode } from './voice/session'
 import { voiceMessages } from './state/voiceLog'
 import { ErrorCard } from './components/ErrorCard'
-import { DemoBanner } from './components/DemoBanner'
 import { useDemo } from './state/demo'
 import { EventInspector } from './components/EventInspector'
 import { LogViewer } from './components/LogViewer'
@@ -164,13 +163,24 @@ export default function App() {
    * registry, and nothing else on any screen needs it.
    */
   const [playgroundTools, setPlaygroundTools] = useState<ToolSpec[]>([])
+  const [toolsStatus, setToolsStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
   useEffect(() => {
     if (route.name !== 'tools' || !config?.playground?.enabled) return
     let live = true
+    setToolsStatus('loading')
     fetch(`${BFF_URL}/tools`)
-      .then((r) => r.json())
-      .then((body: { tools?: ToolSpec[] }) => live && setPlaygroundTools(body.tools ?? []))
-      .catch(() => live && setPlaygroundTools([]))
+      .then((r) => {
+        if (!r.ok) throw new Error('unavailable')
+        return r.json()
+      })
+      .then((body: { tools: ToolSpec[] }) => {
+        if (!Array.isArray(body.tools)) throw new Error('unavailable')
+        if (live) {
+          setPlaygroundTools(body.tools)
+          setToolsStatus('ready')
+        }
+      })
+      .catch(() => live && setToolsStatus('failed'))
     return () => {
       live = false
     }
@@ -239,10 +249,12 @@ export default function App() {
    */
   const selectAgent = useCallback(
     (name: string) => {
+      if (comparison.streaming) return
+      if (name !== answering) comparison.left.reset()
       agents.select(name)
       setView('chat')
     },
-    [agents, setView],
+    [agents, setView, comparison, answering],
   )
 
   const openConversationFromRail = useCallback(
@@ -422,6 +434,10 @@ export default function App() {
   }, [onScreen, trace.turnId])
 
   const shownTurn = shown.message
+  const shownAgent = view === 'compare' && shownTurn
+    ? (comparison.left.messages.some((message) => message.id === shownTurn.id)
+      ? answering : comparison.other ?? undefined)
+    : answering
 
   /** Move to the adjacent turn, pinning the panel to it so the newest one stops pulling it away. */
   const stepTurn = useCallback(
@@ -565,11 +581,6 @@ export default function App() {
         >
           {announcement}
         </p>
-        {/* Above everything, on every screen, and never dismissible (spec 050, AC5). Placed in the
-            shell grid by `app.css` rather than auto-flowed: a direct child of `.app` with no
-            placement lands in an implicit row, which is exactly how the event inspector broke the
-            layout. `layout.test.ts` asserts the placement. */}
-        {demo && <DemoBanner demo={demo} />}
         {menuOpen && (
           <button
             type="button"
@@ -588,6 +599,7 @@ export default function App() {
           agents={agents}
           favourites={favouriteRows(agents.agents, favourites.names)}
           onSelectAgent={selectAgent}
+          selectionLocked={comparison.streaming}
           lang={lang}
           view={view}
           history={history}
@@ -608,25 +620,35 @@ export default function App() {
         />
 
         <main className="main" id="conversation" tabIndex={-1}>
-          <Header
-            config={config}
-            selectedAgent={selectedAgent}
-            selectedHarness={selectedRow?.harness ?? null}
-            configFailed={failed}
-            streaming={streaming}
-            tracesOpen={tracesOpen}
-            voiceLive={voice.status === 'live'}
-            onToggleTraces={toggleTraces}
-            onVoice={startVoiceSession}
-            menuOpen={menuOpen}
-            onOpenMenu={() => setMenuOpen(true)}
-          />
+          <div className="main__head">
+            <Header
+              config={config}
+              selectedAgent={selectedAgent}
+              selectedHarness={selectedRow?.harness ?? null}
+              configFailed={failed}
+              agentsLoading={agents.loading}
+              agentsUnavailable={!!agents.error}
+              eventsOpen={eventsOpen}
+              onToggleEvents={() => setEventsOpen((open) => !open)}
+              streaming={comparison.streaming || streaming}
+              tracesOpen={tracesOpen}
+              demo={demo}
+              onToggleTraces={toggleTraces}
+              menuOpen={menuOpen}
+              onOpenMenu={() => setMenuOpen(true)}
+            />
+            {(failed || agents.error) && <p className="observation-notice">{translate('header.readUnavailable', lang)}</p>}
+            {comparison.streaming && view !== 'compare' && <p className="observation-notice">{translate('compare.locked', lang)}</p>}
+          </div>
           {view === 'agent' ? (
             <AgentDetailScreen
+              key={inspecting}
+              canPropose={config?.agents?.can_propose ?? false}
               agent={inspected.agent}
               error={inspected.error}
               loading={inspected.loading}
               answering={answering}
+              selectionLocked={comparison.streaming}
               onSelect={selectAgent}
               onBack={() => navigate({ name: 'agents' })}
               // Absent reads as no (spec 031, AC9): a control this build cannot honour never
@@ -644,7 +666,9 @@ export default function App() {
             />
           ) : view === 'tools' ? (
             // Outside the conversation, on purpose and visibly (spec 042).
-            <Playground tools={playgroundTools} />
+            config?.playground?.enabled ? (
+              <Playground tools={playgroundTools} status={toolsStatus} />
+            ) : null
           ) : view === 'preferences' ? (
             // The editable counterpart to `/about`: what THIS BROWSER keeps (spec 036).
             <PreferencesScreen prefs={prefs} />
@@ -674,6 +698,7 @@ export default function App() {
               answering={answering}
               configuredAgent={config?.agent_name}
               favourites={favourites.names}
+              selectionLocked={comparison.streaming}
               onSelect={selectAgent}
               onFavourite={favourites.toggle}
               onInspect={(name) => navigate({ name: 'agent', agentName: name })}
@@ -764,11 +789,18 @@ export default function App() {
 
         {eventsOpen && (
           <EventInspector
-            events={(shownTurn?.role === 'agent' ? shownTurn.events : undefined) ?? []}
+            key={shownTurn?.id ?? 'no-turn'}
+            context={{ turn: shown.total ? shown.index + 1 : 0, total: shown.total, agent: shownAgent }}
+            onPrevious={shown.index > 0 ? () => stepTurn(-1) : undefined}
+            onNext={shown.index < shown.total - 1 ? () => stepTurn(1) : undefined}
+            events={shownTurn?.role === 'agent' ? shownTurn.events : undefined}
             truncated={shownTurn?.role === 'agent' ? shownTurn.truncated : undefined}
             types={config?.event_types ?? []}
             mapping={config?.event_mapping}
-            onClose={() => setEventsOpen(false)}
+            onClose={() => {
+              setEventsOpen(false)
+              document.querySelector<HTMLButtonElement>('[aria-controls="event-inspector"]')?.focus()
+            }}
           />
         )}
 

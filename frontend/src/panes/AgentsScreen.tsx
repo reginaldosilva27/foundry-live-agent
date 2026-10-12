@@ -34,6 +34,7 @@ interface Props {
   configuredAgent?: string
   /** The agents this browser keeps to hand (spec 022). Names, resolved here against the listing. */
   favourites: string[]
+  selectionLocked?: boolean
   onSelect: (name: string) => void
   onFavourite: (name: string) => void
   /**
@@ -82,6 +83,7 @@ export function AgentsScreen({
   configuredAgent,
   favourites,
   onSelect,
+  selectionLocked = false,
   onFavourite,
   onInspect,
 }: Props) {
@@ -169,7 +171,7 @@ export function AgentsScreen({
                 type="button"
                 className="agent-card__choose"
                 data-agent={agent.name}
-                disabled={!agent.selectable}
+                disabled={!agent.selectable || selectionLocked}
                 aria-pressed={agent.name === answering}
                 onClick={() => onSelect(agent.name)}
               >

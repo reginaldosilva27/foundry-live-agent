@@ -43,6 +43,7 @@ def adapter(legs, executor=None):
     submitted: list[dict] = []
 
     def stream_factory(_inputs, _state):
+        submitted.append({"inputs": list(_inputs), "state": _state})
         return iter(remaining.pop(0))
 
     def default_executor(name, arguments):
@@ -258,3 +259,94 @@ async def test_the_event_loop_stays_free_while_the_foundry_stream_blocks():
     assert [e["type"] for e in events][-1] == "done"
     # Five 50ms reads: a free loop ticks ~25 times. A blocked one ticks 0.
     assert ticks >= 5, f"the event loop was blocked while the stream was consumed ({ticks} ticks)"
+
+
+@pytest.mark.parametrize("budget", [1, 3])
+@pytest.mark.parametrize("calls_per_leg", [1, 2])
+async def test_final_execution_leg_submits_every_output_on_the_same_conversation(
+    budget, calls_per_leg
+):
+    executed = []
+
+    def executor(name, arguments):
+        executed.append((name, arguments))
+        return f'{{"execution":{len(executed)}}}', 1, None
+
+    batches = [
+        [call(f"leg_{leg}_call_{index}") for index in range(calls_per_leg)] for leg in range(budget)
+    ]
+    a = adapter([*[batch + [COMPLETED] for batch in batches], [COMPLETED]], executor)
+    a.max_turns = budget
+    state = {"conversation_id": "conv_budget"}
+    messages = [{"role": "user", "content": "hi"}]
+    events = [e async for e in a.stream_response(messages, state)]
+
+    assert len(a._submitted) == budget + 1
+    assert a._submitted[0]["inputs"] == messages
+    assert all(request["state"] is state for request in a._submitted)
+    results = {e["call_id"]: e["output"] for e in events if e["type"] == "tool_result"}
+    for batch, request in zip(batches, a._submitted[1:], strict=True):
+        assert request["inputs"] == [
+            {
+                "type": "function_call_output",
+                "call_id": raw["item"]["call_id"],
+                "output": results[raw["item"]["call_id"]],
+            }
+            for raw in batch
+        ]
+    assert len(executed) == budget * calls_per_leg
+    assert [e["type"] for e in events if e["type"] in {"done", "error"}] == ["done"]
+    check_stream(events)
+
+
+@pytest.mark.parametrize("budget", [1, 3])
+async def test_settlement_requests_are_visible_but_not_executed_or_recursively_settled(budget):
+    executed = []
+
+    def executor(name, arguments):
+        executed.append(name)
+        return "{}", 1, None
+
+    a = adapter([[call(f"c{i}"), COMPLETED] for i in range(20)], executor)
+    a.max_turns = budget
+    events = await collect(a)
+
+    assert len(a._submitted) == budget + 1
+    assert len(executed) == budget
+    assert len([e for e in events if e["type"] == "tool_result"]) == budget
+    assert len([e for e in events if e["type"] == "tool_call"]) == budget + 1
+    assert [e["type"] for e in events if e["type"] in {"done", "error"}] == ["error"]
+    assert events[-1]["code"] == "turn_limit_exceeded"
+    assert "not executed or answered" in events[-1]["message"]
+    check_stream(events)
+
+
+@pytest.mark.parametrize("budget", [0, -1])
+async def test_nonpositive_budget_makes_no_upstream_request(budget):
+    a = adapter([[COMPLETED]])
+    a.max_turns = budget
+    events = await collect(a)
+    assert a._submitted == []
+    assert len(events) == 1
+    assert events[0]["code"] == "turn_limit_exceeded"
+    check_stream(events)
+
+
+async def test_failed_settlement_is_not_reported_as_successful_delivery():
+    requests = []
+
+    def factory(inputs, state):
+        requests.append((list(inputs), state))
+        if len(requests) == 2:
+            raise RuntimeError("output submission failed")
+        return iter([CALL, COMPLETED])
+
+    a = PromptAgentAdapter(factory, lambda n, args: ("{}", 0, None), "agent", "project")
+    a.max_turns = 1
+    events = await collect(a)
+    assert len(requests) == 2
+    assert requests[1][0] == [{"type": "function_call_output", "call_id": "call_1", "output": "{}"}]
+    assert events[-1]["code"] == "harness_error"
+    assert "output submission failed" in events[-1]["message"]
+    assert [e["type"] for e in events if e["type"] in {"done", "error"}] == ["error"]
+    check_stream(events)

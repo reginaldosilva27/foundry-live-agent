@@ -23,7 +23,10 @@ import { useT } from '../i18n/context'
 import { runsOf, type EventRun } from '../state/events'
 
 interface Props {
-  events: unknown[]
+  events?: unknown[]
+  context?: { turn: number; total: number; agent?: string }
+  onPrevious?: () => void
+  onNext?: () => void
   /** Whether the turn hit the retention cap, so the panel can say so rather than imply completeness. */
   truncated?: boolean
   /** The contract's own vocabulary and its honesty report, from `GET /config`. */
@@ -32,22 +35,35 @@ interface Props {
   onClose: () => void
 }
 
-export function EventInspector({ events, truncated, types, mapping, onClose }: Props) {
+export function EventInspector({ events, context, onPrevious, onNext, truncated, types, mapping, onClose }: Props) {
   const s = useT()
   const [filter, setFilter] = useState('')
   const [open, setOpen] = useState<EventRun | null>(null)
   const { state, copy } = useCopy()
 
-  const runs = runsOf(events).filter((run) => !filter || run.type === filter)
+  const runs = runsOf(events ?? []).filter((run) => !filter || run.type === filter)
 
   return (
-    <aside className="events" aria-label={s('events.title')}>
+    <aside id="event-inspector" className="events" aria-label={s('events.title')}>
       <header className="events__head">
         <h3 className="events__title">{s('events.title')}</h3>
         <button type="button" className="events__close" onClick={onClose}>
           {s('events.close')}
         </button>
       </header>
+
+      {context && (
+        <section className="events__context">
+          <p>{s('events.context')
+            .replace('{turn}', String(context.turn))
+            .replace('{total}', String(context.total))
+            .replace('{agent}', context.agent ?? s('events.unknownAgent'))}</p>
+          <div className="events__navigation">
+            <button type="button" disabled={!onPrevious} onClick={onPrevious}>{s('events.previous')}</button>
+            <button type="button" disabled={!onNext} onClick={onNext}>{s('events.next')}</button>
+          </div>
+        </section>
+      )}
 
       {mapping && (
         <section className="events__contract">
@@ -90,7 +106,9 @@ export function EventInspector({ events, truncated, types, mapping, onClose }: P
       </div>
 
       {runs.length === 0 ? (
-        <p className="events__empty">{s('events.empty')}</p>
+        <p className="events__empty">{s(events === undefined
+          ? (context?.total === 0 ? 'events.noTurn' : 'events.unretained')
+          : events.length === 0 ? 'events.empty' : 'events.filteredEmpty')}</p>
       ) : (
         <ol className="events__list" data-testid="events-list">
           {runs.map((run) => (

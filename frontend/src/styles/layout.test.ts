@@ -187,31 +187,17 @@ describe('app.css', () => {
     })
   })
 
-  /**
-   * Spec 050 — the replay banner is a row of the shell, and it is **placed**.
-   *
-   * The same trap as the inspector below, one spec later: a direct child of `.app` with no
-   * placement takes an implicit track and lands wherever auto-flow puts it. Declaring the row is
-   * also what keeps the conversation on `minmax(0, 1fr)` and therefore the thing that scrolls —
-   * without it the shell's single explicit row would be shared and the column would grow past the
-   * viewport, which is the failure the second test in this file exists for.
-   */
-  it('places the replay banner as a row of the shell, spanning every column', () => {
-    expect(css).toMatch(
-      /\.app:has\(\.demo-banner\)\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\)/,
-    )
-
-    const banner = css.split('\n.demo-banner {')[1].split('}')[0]
-    expect(banner).toMatch(/grid-column:\s*1 \/ -1/)
-    expect(banner).toMatch(/grid-row:\s*1/)
-  })
-
-  it('bounds the demo picker to its row so long recording names fit the mobile floor', () => {
-    const pick = css.split('\n.demo-banner__pick {')[1].split('}')[0]
-    const select = css.split('\n.demo-banner__select {')[1].split('}')[0]
-    expect(pick).toMatch(/max-width:\s*100%/)
-    expect(pick).toMatch(/min-width:\s*0/)
-    expect(select).toMatch(/min-width:\s*0/)
+  // Spec059 replaces the banner row with a fixed information disclosure.
+  it('keeps build info fixed and bounded instead of adding a shell row (spec059)', () => {
+    expect(css).not.toContain('.demo-banner')
+    const scrim = css.split('\n.build-info__scrim {')[1].split('}')[0]
+    const dialog = css.split('\n.build-info {')[1].split('}')[0]
+    expect(scrim).toMatch(/position:\s*fixed/)
+    expect(dialog).toMatch(/min-width:\s*0/)
+    expect(dialog).toMatch(/max-height:/)
+    expect(dialog).toMatch(/overflow-y:\s*auto/)
+    const select = css.split('\n.demo-details__select {')[1].split('}')[0]
+    expect(select).toMatch(/max-width:\s*100%/)
   })
 
   /**
@@ -655,5 +641,15 @@ describe('the tool row grid', () => {
     // the grid, every one of those would gain its height for nothing.
     const bar = css.split('.tool-row__bar {')[1].split('}')[0]
     expect(bar).toMatch(/grid-(column|area)/)
+  })
+})
+
+// Notices must belong to the header slot, not steal the minmax scrolling row.
+describe('contextual observation header slot', () => {
+  it('contains readiness and offscreen-lock notices in the same grid child as Header', () => {
+    const app = readFileSync(join(import.meta.dirname, '../App.tsx'), 'utf8')
+    expect(app).toMatch(/<div className="main__head">[\s\S]*?<Header[\s\S]*?observation-notice[\s\S]*?<\/div>/)
+    expect(css).toMatch(/\.main\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto/)
+    expect(css).toMatch(/\.header\s*\{[^}]*min-height:\s*60px/)
   })
 })

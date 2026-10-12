@@ -296,8 +296,13 @@ def _foundry_stream_factory(
             "extra_body": {"agent_reference": {"name": agent_name, "type": "agent_reference"}},
         }
 
-        for event in openai.responses.create(**request):
-            yield event.model_dump() if hasattr(event, "model_dump") else dict(event)
+        stream = openai.responses.create(**request)
+        try:
+            for event in stream:
+                yield event.model_dump() if hasattr(event, "model_dump") else dict(event)
+        finally:
+            if close := getattr(stream, "close", None):
+                close()
 
     return factory
 
@@ -315,9 +320,11 @@ def _hosted_stream_factory(
     - **`api-version=v1` is required** and the documented endpoint shape omits it. Without it the
       service answers `400 BadRequest — Missing required query parameter: api-version`. `azd deploy`
       prints the URL with it, which is the accurate source.
-    - **There is no tool round trip**, so unlike the prompt agent's factory there is no conversation
-      to create and bind. The container owns its loop; one request is the whole turn. Continuing a
-      thread is `previous_response_id` or a `conversation` id, which spec 019 will wire up.
+    - **There is no tool round trip**: the container owns its loop; one request is the whole turn.
+      This does NOT establish multi-turn continuity. The BFF supplies `conversation_id`, while
+      this factory reads `response_id`; recorded completions supply no conversation pointer.
+      See `docs/how-it-works/hosted-continuity.md` (issue #35) for the blocked regression and
+      documented alternatives. Response, conversation and sandbox ids are not interchangeable.
     """
     import httpx
 

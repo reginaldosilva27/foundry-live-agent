@@ -3,7 +3,8 @@
 **Foundry emits a function call and then stops.** If nothing answers, the run hangs until it expires
 ten minutes later — and from the browser that looks like the stream simply stopped.
 
-Everything below is shaped by making that impossible.
+The normal path below answers every executed call. A bounded turn can still leave new remote
+requests pending, and a failed transport cannot guarantee delivery; those limits are explicit.
 
 ## The shape of a turn
 
@@ -74,10 +75,30 @@ Implemented across `ai/harness/prompt_agent/adapter.py`, `backend/app/tool_execu
 
 | # | Guarantee | Where |
 |---|---|---|
-| 1 | **Every collected call is answered** — success, exception, unknown name, bad JSON | `tool_executor.execute` never raises; the loop always submits an output |
+| 1 | **Every executed call's output gets a submission leg** — success, exception, unknown name, bad JSON | `tool_executor.execute` never raises; the adapter reserves the final submission |
 | 2 | **A tool that raises produces a result, not a crash** | `execute` catches everything and returns `{"error": …}` |
-| 3 | **The stream always terminates** | the adapter has a terminal `except`; the router has a second one at the transport layer |
-| 4 | **The loop is capped** (8 turns) | a pathological agent ends in `error`, not an infinite stream |
+| 3 | **Stream failures terminate explicitly** | the adapter has a terminal `except`; the router has a second one at the transport layer; neither is a timeout for a stalled upstream |
+| 4 | **The loop is capped** (8 execution legs + at most 1 settlement leg) | new tool requests on settlement end in `turn_limit_exceeded`, without execution |
+
+### The budget includes settling the last outputs (spec 054)
+
+`PromptAgentAdapter.max_turns` counts legs allowed to execute function tools; its default remains
+8. If that last leg asks for tools, their outputs travel together in **one more request**, with the
+same conversation and only `function_call_output` inputs. The adapter consumes that settlement
+leg normally: if it completes without new tool requests, the turn emits its summed usage and one
+`done`. There are at most **N+1 upstream requests** (9 by default); ordinary shorter turns make no
+extra request. A non-positive budget sends no request and emits the limit error.
+
+If settlement requests more tools, those calls are shown but **not executed or answered**; the
+existing `turn_limit_exceeded` error says so. They remain pending in Foundry. This is deliberately
+not a recursive extension, a guessed cancellation API, or a guarantee that a pathological agent
+finishes. A transport failure on submission emits `harness_error`; a local `tool_result` proves
+execution, **not upstream receipt**. Cancellation can likewise interrupt delivery. The budget
+bounds requests, not the duration or event count of an individual leg or tool.
+
+Regressions capture actual factory inputs, not just paired UI events: the final multi-tool leg's
+outputs must be submitted once, together, on the original conversation. The recorded two-tool turn
+also replays at `max_turns=1` through the unchanged normalizer.
 
 Guarantee 2 is the counter-intuitive one. Returning `{"error": "tool_failed", …}` to the model looks
 like swallowing a bug. It is the opposite: the agent receives the failure, can tell the user what
@@ -172,4 +193,9 @@ The most instructive case is the one that looks like a failure and is not: `sear
 verbatim, and it is the state most forks of this repository will be in.
 
 Off by default — see [`SECURITY.md`](../../SECURITY.md).
+
+The rail's **Run a tool** entry opens `/tools` only when configured. The registry arrives
+asynchronously: loading, a failed read and a successful empty list are distinct (spec 053).
+The first available tool supplies the initial schema; a valid user selection survives a refreshed
+list. Selecting a tool never executes it — only **Run** does.
 

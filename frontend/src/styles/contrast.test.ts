@@ -221,8 +221,6 @@ describe('text on the rail', () => {
     // `.sidebar__transport` declares no colour of its own and inherits this one, which is how it
     // reached 2.46:1 while its own rule looked innocent.
     '.sidebar__footer',
-    '.sidebar__gateway',
-    '.sidebar__key',
     '.sidebar__about',
     '.history__note',
   ]

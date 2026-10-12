@@ -268,3 +268,30 @@ def test_the_written_answer_still_cites_its_sources():
     )
 
     assert "https://" in answer, "the written chat lost its citations — spec 013's whole point"
+
+
+async def test_recorded_final_leg_outputs_are_submitted_at_budget_one():
+    remaining = legs(WITH_REASONING)
+    submitted = []
+
+    def factory(inputs, state):
+        submitted.append((list(inputs), state))
+        return iter(remaining.pop(0))
+
+    a = PromptAgentAdapter(factory, lambda n, args: ("{}", 0, None), "agent", "project")
+    a.max_turns = 1
+    state = {"conversation_id": "conv_recorded"}
+    events_ = [e async for e in a.stream_response([{"role": "user", "content": "hi"}], state)]
+    assert len(submitted) == 2
+    assert all(request[1] is state for request in submitted)
+    results = [e for e in events_ if e["type"] == "tool_result"]
+    assert len(results) == 2
+    assert submitted[1][0] == [
+        {"type": "function_call_output", "call_id": result["call_id"], "output": result["output"]}
+        for result in results
+    ]
+    assert [e["type"] for e in events_ if e["type"] in {"done", "error"}] == ["done"]
+    usage = next(e for e in events_ if e["type"] == "usage")
+    assert usage["input_tokens"] == 1091 + 17520
+    assert usage["output_tokens"] == 132 + 754
+    check_stream(events_)

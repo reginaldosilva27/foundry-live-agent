@@ -314,7 +314,9 @@ Do not stop other people's processes.
 It replays whole turns **recorded from real Foundry runs** — the same fixtures the contract tests
 use — so the streaming, the function-call round trip, the MCP calls, the token counts, the span
 tree and the event inspector are all the real thing, arriving through the real normaliser. Pick
-which recorded turn to watch from the banner at the top.
+which recorded turn to watch from the information icon in the header. A compact Replay label
+stays visible; the disclosure holds the recording date and explanation, model, gateway and SSE facts.
+Voice entry remains in the chat composer, not the header (spec 059).
 
 ![A turn replaying: the reasoning card fills in, four tool rows land one by one, then the answer streams in](docs/assets/demo-streaming-turn.gif)
 
@@ -379,8 +381,8 @@ Optional — the AI Gateway is a portal flow with no IaC path: `just gateway` pr
 ## 📸 Screenshots
 
 Every shot below is from `just demo`, at the widths named — so each one is a thing you can put on
-your own screen in about a minute, with no Azure account. The replay banner across the top is part
-of that build and not a mock-up.
+your own screen in about a minute, with no Azure account. The banner shown in these historical captures belongs to that recorded build, not a mock-up.
+The current UI keeps a compact Replay label and puts its details behind the information icon (spec 059).
 
 | | |
 |---|---|

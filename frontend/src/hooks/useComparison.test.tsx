@@ -203,3 +203,40 @@ describe('what the trace panel addresses (AC7)', () => {
     expect(result.current.messages.filter((m) => m.role === 'agent')).toHaveLength(2)
   })
 })
+
+describe('spec 056 local pair reset', () => {
+  it('clears both drawings and pointers, keeps the chosen agent and sends no reset request', async () => {
+    const fetchMock = fakeBff(PAIR)
+    const { result } = renderHook(() => useComparison())
+    act(() => result.current.choose('hosted-two'))
+    act(() => result.current.send('first', 'prompt-one'))
+    await waitFor(() => expect(result.current.streaming).toBe(false))
+    act(() => result.current.reset())
+    expect(result.current.left.messages).toEqual([])
+    expect(result.current.right.messages).toEqual([])
+    expect(result.current.left.conversationId).toBeUndefined()
+    expect(result.current.right.conversationId).toBeUndefined()
+    expect(result.current.other).toBe('hosted-two')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    act(() => result.current.send('next', 'prompt-one'))
+    await waitFor(() => expect(result.current.streaming).toBe(false))
+    expect(bodies(fetchMock).slice(2).every((b) => b.conversation_id === undefined)).toBe(true)
+  })
+
+  it('refuses reset and second-agent changes during either stream', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (_url, init?: RequestInit) => new Response(new ReadableStream({
+      start(controller) {
+        init?.signal?.addEventListener('abort', () => controller.error(new DOMException('aborted', 'AbortError')))
+      },
+    }))))
+    const { result } = renderHook(() => useComparison())
+    act(() => result.current.choose('hosted-two'))
+    act(() => result.current.send('first', 'prompt-one'))
+    act(() => { result.current.reset(); result.current.choose('another-agent') })
+    expect(result.current.other).toBe('hosted-two')
+    expect(result.current.left.messages).toHaveLength(2)
+    expect(result.current.right.messages).toHaveLength(2)
+    act(() => result.current.stop())
+    await waitFor(() => expect(result.current.streaming).toBe(false))
+  })
+})
