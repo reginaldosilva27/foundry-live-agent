@@ -468,6 +468,9 @@ export const strings = {
   },
   // --- Agents screen (spec 021) --------------------------------------------
   'agents.searchLabel': { en: 'Search agents', pt: 'Buscar agentes' },
+  'agents.view': { en: 'Layout', pt: 'Visualização' },
+  'agents.view.grid': { en: 'Cards', pt: 'Cartões' },
+  'agents.view.list': { en: 'List', pt: 'Lista' },
   'agents.noMatches': { en: 'No agent matches that.', pt: 'Nenhum agente corresponde.' },
   'agents.count': { en: '{n} in this project', pt: '{n} neste projeto' },
   'agents.model': { en: 'model', pt: 'modelo' },
@@ -741,12 +744,14 @@ export const strings = {
   'turn.activityTitle': { en: 'Agent activity', pt: 'Atividade do agente' },
   'turn.pending': { en: 'The agent is working', pt: 'O agente está trabalhando' },
   'turn.thinking': { en: 'Thinking', pt: 'Pensando' },
+  'turn.writing': { en: 'Writing', pt: 'Escrevendo' },
   'turn.calling': { en: 'Calling', pt: 'Chamando' },
   'turn.step': { en: 'Step', pt: 'Passo' },
 
   // --- Reasoning card ------------------------------------------------------
   'reasoning.title': { en: 'Reasoning', pt: 'Raciocínio' },
   'reasoning.streaming': { en: 'thinking', pt: 'pensando' },
+  'tools.group': { en: '{n} tool calls', pt: '{n} chamadas de ferramentas' },
   'reasoning.toggle': { en: 'Show or hide the reasoning summary', pt: 'Mostrar ou ocultar o resumo do raciocínio' },
   // The turn, and only the turn. The copy this replaced told the reader their deployment had no
   // reasoning model — which the live service contradicted: `gpt-5.5` with `reasoning.summary` set

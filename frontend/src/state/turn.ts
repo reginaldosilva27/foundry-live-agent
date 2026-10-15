@@ -80,6 +80,11 @@ export interface Turn {
   status: TurnStatus
   /** Event types this build does not render, counted rather than swallowed (AC3). */
   unknownEvents: Record<string, number>
+  /**
+   * What kind of event arrived last, so the live line can say what the agent is doing *now* once
+   * text and tool calls interleave (spec 061). Optional: a turn an older build stored has none.
+   */
+  last?: 'text' | 'reasoning' | 'tool'
 }
 
 /**
@@ -134,14 +139,15 @@ export function reduceTurn(turn: Turn, raw: unknown): Turn {
 
   switch (event.type) {
     case 'reasoning_summary':
-      return { ...turn, reasoning: turn.reasoning + event.text }
+      return { ...turn, reasoning: turn.reasoning + event.text, last: 'reasoning' }
 
     case 'text_delta':
-      return { ...turn, text: turn.text + event.text }
+      return { ...turn, text: turn.text + event.text, last: 'text' }
 
     case 'tool_call':
       return {
         ...turn,
+        last: 'tool',
         activities: [
           ...turn.activities,
           {
@@ -157,11 +163,12 @@ export function reduceTurn(turn: Turn, raw: unknown): Turn {
       }
 
     case 'tool_result':
-      return { ...turn, activities: turn.activities.map((a) => resolve(a, event)) }
+      return { ...turn, last: 'tool', activities: turn.activities.map((a) => resolve(a, event)) }
 
     case 'mcp_call':
       return {
         ...turn,
+        last: 'tool',
         activities: [
           ...turn.activities,
           {
@@ -235,7 +242,7 @@ function typeName(raw: unknown): string {
 
 
 /** What the turn is doing right now, for the line that says so while it streams (spec 011). */
-export type TurnStatusKind = 'idle' | 'thinking' | 'calling' | 'answering' | 'settled'
+export type TurnStatusKind = 'idle' | 'thinking' | 'calling' | 'writing' | 'settled'
 
 export interface LiveStatus {
   kind: TurnStatusKind
@@ -249,20 +256,28 @@ export interface LiveStatus {
  * Derive what is happening, from the events and nothing else (§5, §8).
  *
  * The priority is the interesting part, and it lives here rather than in the component so it is
- * decided once: a call in flight beats reasoning, and an answer beats both. A turn can be true in
- * several of these at the same moment — `reasoning` is still there while a tool runs — and the
- * question the line answers is "what now", not "what so far".
+ * decided once: a call in flight beats everything, and otherwise the event that arrived last says
+ * what is happening now. A turn can be true in several of these at the same moment — `reasoning`
+ * and preamble text are still there while a tool runs — and the question the line answers is
+ * "what now", not "what so far".
  *
- * `answering` and `settled` both mean *say nothing*: the answer with its caret is the status once
- * it starts, and a finished turn has a meta line.
+ * Spec 061 superseded spec 011's silence once text starts: an agent that writes a one-line preamble
+ * before each call used to show a caret and nothing else through every later call. After a tool
+ * result with nothing after it the line says only that the agent is working — the events prove no
+ * more than that (§5). Only `settled` says nothing: a finished turn has a meta line.
  */
 export function turnStatus(turn: Turn): LiveStatus {
   if (turn.status !== 'streaming') return { kind: 'settled' }
-  if (turn.text) return { kind: 'answering' }
 
   const running = turn.activities.find((activity) => activity.status === 'running')
   if (running) return { kind: 'calling', name: running.name, step: running.step }
 
+  if (turn.last === 'text') return { kind: 'writing' }
+  if (turn.last === 'reasoning') return { kind: 'thinking' }
+  if (turn.last === 'tool') return { kind: 'idle' }
+
+  // No record of the order (a turn built without the reducer): what it holds is all there is.
+  if (turn.text) return { kind: 'writing' }
   return turn.reasoning ? { kind: 'thinking' } : { kind: 'idle' }
 }
 

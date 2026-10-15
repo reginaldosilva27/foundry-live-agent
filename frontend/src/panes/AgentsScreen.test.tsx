@@ -13,7 +13,7 @@
 import { render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AgentsScreen } from './AgentsScreen'
 import { LangContext } from '../i18n/context'
 import { t } from '../i18n/strings'
@@ -269,5 +269,83 @@ describe('favouriting from a card', () => {
     await userEvent.click(star('DatabricksGenie'))
 
     expect(onFavourite).toHaveBeenCalledWith('DatabricksGenie')
+  })
+})
+
+/** Spec 061 — the two corner controls, and a second way to look at the listing. */
+describe('cards and a list (spec 061)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => vi.restoreAllMocks())
+
+  it('keeps the favourite and inspect controls in one container (AC1)', () => {
+    show()
+    const star = screen.getByRole('button', {
+      name: t('agents.favourite', 'en').replace('{name}', 'foundry-live-agent'),
+    })
+    const inspect = screen.getByRole('button', {
+      name: `${t('agent.inspect', 'en')}: foundry-live-agent`,
+    })
+    expect(star.parentElement).toBe(inspect.parentElement)
+    expect(star.parentElement).toHaveClass('agent-card__actions')
+  })
+
+  it('offers Cards and List with one pressed, and List marks the listing (AC2)', async () => {
+    show()
+    const cards = screen.getByRole('button', { name: t('agents.view.grid', 'en') })
+    const list = screen.getByRole('button', { name: t('agents.view.list', 'en') })
+    expect(cards).toHaveAttribute('aria-pressed', 'true')
+    expect(list).toHaveAttribute('aria-pressed', 'false')
+    expect(document.querySelector('.agents-grid')).toHaveAttribute('data-view', 'grid')
+
+    await userEvent.click(list)
+    expect(list).toHaveAttribute('aria-pressed', 'true')
+    expect(cards).toHaveAttribute('aria-pressed', 'false')
+    expect(document.querySelector('.agents-grid')).toHaveAttribute('data-view', 'list')
+  })
+
+  it('remembers List across a fresh mount (AC3)', async () => {
+    const first = show()
+    await userEvent.click(screen.getByRole('button', { name: t('agents.view.list', 'en') }))
+    first.unmount()
+
+    show()
+    expect(document.querySelector('.agents-grid')).toHaveAttribute('data-view', 'list')
+  })
+
+  it('keeps the rail collapsed flag when the view is chosen (AC3)', async () => {
+    localStorage.setItem('fla.ui.v1', JSON.stringify({ collapsed: true }))
+    show()
+    await userEvent.click(screen.getByRole('button', { name: t('agents.view.list', 'en') }))
+    expect(JSON.parse(localStorage.getItem('fla.ui.v1')!)).toEqual({
+      collapsed: true,
+      agentsView: 'list',
+    })
+  })
+
+  it('renders Cards when storage refuses (AC3)', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked')
+    })
+    show()
+    expect(document.querySelector('.agents-grid')).toHaveAttribute('data-view', 'grid')
+  })
+
+  it('keeps every fact and control in List, dimmed agents included (AC4)', async () => {
+    show({
+      agents: [...ROWS, row('flow', { kind: 'workflow', selectable: false, reason: 'no_harness', harness: '' })],
+    })
+    await userEvent.click(screen.getByRole('button', { name: t('agents.view.list', 'en') }))
+
+    for (const name of ['foundry-live-agent', 'foundry-live-agent-hosted', 'flow']) {
+      expect(card(name)).toHaveTextContent(name)
+      expect(
+        screen.getByRole('button', { name: t('agents.favourite', 'en').replace('{name}', name) }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: `${t('agent.inspect', 'en')}: ${name}` }),
+      ).toBeInTheDocument()
+    }
+    expect(card('flow')).toBeDisabled()
+    expect(card('flow')).toHaveTextContent(t('agents.reason.no_harness', 'en'))
   })
 })

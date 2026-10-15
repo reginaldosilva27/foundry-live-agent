@@ -21,6 +21,7 @@ import { InfoIcon, SearchIcon, StarIcon } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
 import { useLang, useT } from '../i18n/context'
 import { t as translate, type StringKey } from '../i18n/strings'
+import { useAgentsView, type AgentsView } from '../state/ui'
 import type { AgentRow } from '../types/agents'
 
 interface Props {
@@ -90,6 +91,7 @@ export function AgentsScreen({
   const s = useT()
   const lang = useLang()
   const [query, setQuery] = useState('')
+  const [view, setView] = useAgentsView()
 
   /** A key the service might not have told us about still says something (019 AC5, §5). */
   const label = (map: Record<string, StringKey>, code: string, fallback: StringKey) =>
@@ -107,6 +109,21 @@ export function AgentsScreen({
           <p className="agents-screen__count">
             {s('agents.count').replace('{n}', String(agents.length))}
           </p>
+        </div>
+
+        {/* How the listing is laid out (spec 061). Layout only: the same rows, the same controls,
+            the same reasons — a list is the cards drawn narrower, never a second rendering. */}
+        <div className="agents-screen__view" role="group" aria-label={s('agents.view')}>
+          {(['grid', 'list'] as AgentsView[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={view === option}
+              onClick={() => setView(option)}
+            >
+              {s(option === 'grid' ? 'agents.view.grid' : 'agents.view.list')}
+            </button>
+          ))}
         </div>
 
         <div className="agents-screen__search">
@@ -136,36 +153,40 @@ export function AgentsScreen({
         </div>
       )}
 
-      <ul className="agents-grid">
+      <ul className="agents-grid" data-view={view}>
         {shown.map((agent) => (
           <li key={agent.name}>
             {/* The card is a container, not a control: the star lives inside it and a button cannot
                 hold a button. The selectable region below is what 019's criteria are about — listed,
                 dimmed, inert, reasoned (spec 022 plan). */}
             <div className="agent-card" data-answering={agent.name === answering}>
-              <button
-                type="button"
-                className="agent-card__star"
-                aria-pressed={favourites.includes(agent.name)}
-                aria-label={s(
-                  favourites.includes(agent.name) ? 'agents.unfavourite' : 'agents.favourite',
-                ).replace('{name}', agent.name)}
-                onClick={() => onFavourite(agent.name)}
-              >
-                <StarIcon size={15} filled={favourites.includes(agent.name)} />
-              </button>
+              {/* One container for the two corner controls (spec 061): their spacing is a gap
+                  it declares, not the difference between two absolute offsets. */}
+              <div className="agent-card__actions">
+                {/* Every agent can be inspected, including the ones this build cannot run: what an
+                    agent IS does not depend on whether we can drive it (spec 030). */}
+                <button
+                  type="button"
+                  className="agent-card__inspect"
+                  title={s('agent.inspect')}
+                  aria-label={`${s('agent.inspect')}: ${agent.name}`}
+                  onClick={() => onInspect(agent.name)}
+                >
+                  <InfoIcon size={15} />
+                </button>
 
-              {/* Every agent can be inspected, including the ones this build cannot run: what an
-                  agent IS does not depend on whether we can drive it (spec 030). */}
-              <button
-                type="button"
-                className="agent-card__inspect"
-                title={s('agent.inspect')}
-                aria-label={`${s('agent.inspect')}: ${agent.name}`}
-                onClick={() => onInspect(agent.name)}
-              >
-                <InfoIcon size={15} />
-              </button>
+                <button
+                  type="button"
+                  className="agent-card__star"
+                  aria-pressed={favourites.includes(agent.name)}
+                  aria-label={s(
+                    favourites.includes(agent.name) ? 'agents.unfavourite' : 'agents.favourite',
+                  ).replace('{name}', agent.name)}
+                  onClick={() => onFavourite(agent.name)}
+                >
+                  <StarIcon size={15} filled={favourites.includes(agent.name)} />
+                </button>
+              </div>
 
               <button
                 type="button"

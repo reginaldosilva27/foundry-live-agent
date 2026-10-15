@@ -59,7 +59,7 @@ describe('the conversation column', () => {
     expect(conversation.scrollTop).toBe(200)
   })
 
-  it('names the tool while a call is in flight, and goes quiet when the answer starts (spec 011)', () => {
+  it('names the tool while a call is in flight, and says it is writing once the answer starts (specs 011, 061)', () => {
     const calling: Message = {
       role: 'agent',
       id: 't1',
@@ -87,7 +87,9 @@ describe('the conversation column', () => {
     expect(line).toHaveTextContent('lookup_knowledge')
 
     rerender(<Conversation {...props} messages={[agentTurn('t1', 'It is 13:53')]} />)
-    expect(container.querySelector('[data-testid="turn-pending"]')).toBeNull()
+    expect(container.querySelector('[data-testid="turn-pending"]')).toHaveTextContent(
+      /writing|escrevendo/i,
+    )
   })
 
   it('says it is thinking once the reasoning has started (spec 011)', () => {
@@ -104,7 +106,7 @@ describe('the conversation column', () => {
     )
   })
 
-  it('shows a live indicator while the turn has produced nothing, and drops it at the first token', () => {
+  it('shows a live indicator from the start, and keeps it under the answer until the turn settles (spec 061)', () => {
     const { container, rerender } = render(
       <Conversation {...props} messages={[agentTurn('t1', '')]} />,
     )
@@ -114,7 +116,23 @@ describe('the conversation column', () => {
     expect(pending!.querySelectorAll('.turn__pending-dot')).toHaveLength(3)
 
     rerender(<Conversation {...props} messages={[agentTurn('t1', 'first token')]} />)
+    const line = container.querySelector('[data-testid="turn-pending"]')!
+    const answer = container.querySelector('[data-testid="answer"]')!
+    // AC5: at the foot of the turn, after the text, as the Claude app does.
+    expect(answer.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    rerender(<Conversation {...props} messages={[agentTurn('t1', 'first token', 'done')]} />)
     expect(container.querySelector('[data-testid="turn-pending"]')).toBeNull()
+  })
+
+  it('keeps the clock out of what the live region announces (spec 061, AC8)', () => {
+    vi.useFakeTimers()
+    const { container } = render(<Conversation {...props} messages={[agentTurn('t1', 'x')]} />)
+    act(() => void vi.advanceTimersByTime(3000))
+    const clock = container.querySelector('.turn__pending-elapsed')!
+    expect(clock).toHaveTextContent('3s')
+    expect(clock).toHaveAttribute('aria-hidden', 'true')
+    vi.useRealTimers()
   })
 
   it('never scrolls anything but itself', () => {

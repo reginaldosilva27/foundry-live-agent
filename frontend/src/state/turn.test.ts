@@ -134,7 +134,7 @@ describe('turnStatus', () => {
     ).toEqual({ kind: 'calling', name: 'lookup_knowledge', step: 1 })
   })
 
-  it('goes back to thinking when the result comes back (AC4)', () => {
+  it('goes back to thinking after a result, for a turn with no record of order (AC4; spec 061 fallback)', () => {
     const settled: Activity = { ...running, status: 'ok', output: '{}', durationMs: 4 }
     expect(turnStatus(streaming({ reasoning: 'Considering.', activities: [settled] }))).toEqual({
       kind: 'thinking',
@@ -153,9 +153,10 @@ describe('turnStatus', () => {
     })
   })
 
-  it('says nothing once the answer has started (AC5)', () => {
+  // Spec 061 supersedes AC5: the answer having started is a phase, not a reason to go quiet.
+  it('says it is writing once the answer has started (spec 061, AC5)', () => {
     expect(turnStatus(streaming({ reasoning: 'r', text: 'It is 13:53' }))).toEqual({
-      kind: 'answering',
+      kind: 'writing',
     })
   })
 
@@ -260,5 +261,40 @@ describe('usage carries the prompt cache', () => {
     ])
 
     expect(turn.usage?.cachedInputTokens).toBeUndefined()
+  })
+})
+
+/** Spec 061 — the phase follows what arrived last, and a running call outranks everything. */
+describe('the phase of a streaming turn (spec 061)', () => {
+  const call = { type: 'tool_call', executor: 'app', call_id: 'c1', name: 'lookup_knowledge', arguments: '{}' }
+  const result = { type: 'tool_result', call_id: 'c1', output: '{}', duration_ms: 3 }
+
+  it('is writing when text arrived last (AC5)', () => {
+    expect(turnStatus(reduceEvents([call, result, { type: 'text_delta', text: 'So.' }]))).toEqual({
+      kind: 'writing',
+    })
+  })
+
+  it('is calling when a tool starts after a preamble (AC6)', () => {
+    expect(
+      turnStatus(reduceEvents([{ type: 'text_delta', text: "I'll look it up." }, call])),
+    ).toEqual({ kind: 'calling', name: 'lookup_knowledge', step: 1 })
+  })
+
+  it('is the generic working after a result, thinking after reasoning (AC7)', () => {
+    expect(
+      turnStatus(reduceEvents([{ type: 'text_delta', text: "I'll look it up." }, call, result])),
+    ).toEqual({ kind: 'idle' })
+    expect(
+      turnStatus(
+        reduceEvents([{ type: 'text_delta', text: 'x' }, { type: 'reasoning_summary', text: 'Hm.' }]),
+      ),
+    ).toEqual({ kind: 'thinking' })
+  })
+
+  it('is settled once the turn ends (AC9)', () => {
+    expect(
+      turnStatus(reduceEvents([{ type: 'text_delta', text: 'x' }, { type: 'done', response_id: 'r' }])),
+    ).toEqual({ kind: 'settled' })
   })
 })

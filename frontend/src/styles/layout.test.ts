@@ -425,6 +425,24 @@ describe('app.css', () => {
     expect(card).toContain('max-height')
   })
 
+  it('spaces the agent card corner controls with a gap, not two offsets (spec 061, AC1)', () => {
+    // The star and the inspect button were each positioned on their own, and the space between
+    // them was the difference of two tokens — close enough to overlap in a screenshot.
+    const actions = css.split('.agent-card__actions {')[1]
+    expect(actions, 'missing `.agent-card__actions` rule').toBeDefined()
+    expect(actions.split('}')[0]).toContain('gap:')
+    expect(css).not.toMatch(/\.agent-card__(star|inspect) \{[^}]*position: absolute/)
+  })
+
+  it('never squeezes a voice region below its content, so it cannot overlap the next one', () => {
+    // Inside a scrolling flex column, a child that may shrink is shrunk instead of scrolled: with
+    // six tool calls the transcript was squeezed to its 64px floor and its lines painted over the
+    // AGENT ACTIVITY heading. The body must scroll; its children must keep their height.
+    const children = css.split('.voice-card__body > * {')[1]
+    expect(children, 'missing `.voice-card__body > *` rule').toBeDefined()
+    expect(children.split('}')[0]).toContain('flex-shrink: 0')
+  })
+
   /**
    * Spec 021 AC25 — two regions that must scroll inside themselves.
    *

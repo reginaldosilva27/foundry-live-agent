@@ -434,6 +434,13 @@ violation.
   a recording has one answer. The hosted recording is deferred with its reason: the two harnesses
   normalise different raw streams and one `stream_factory` seam cannot tell which adapter is
   calling, so the listing carries `demo_not_recorded`, which is not `no_harness`.
+- **The live line lasts the whole turn, and its phase is what arrived last (spec 061).** It used
+  to vanish at the first token, so an agent that writes a preamble before each call showed a caret
+  through every later call. `Turn.last` (optional — stored turns predate it) is set by the reducer;
+  `turnStatus` ranks a running call first, then `last`: text → *writing*, reasoning → *thinking*,
+  a tool result → the generic *working*, never an invented "reading results" (§5). The clock is
+  `aria-hidden` so the polite region does not read every second. Three or more calls fold into one
+  line from the start — never at settle, which would move the answer under the reader.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

@@ -134,7 +134,7 @@ describe('App', () => {
     expect(screen.getByTestId('meta-line')).toHaveTextContent('154')
   })
 
-  it('says the agent is working while the turn has produced nothing yet', async () => {
+  it('says the agent is working while the turn has produced nothing yet, then that it is writing', async () => {
     // The gap between POST /chat and the first event is not instant — a reasoning model with a
     // tool round trip can sit there for seconds. Until this, the turn drew an avatar and blank
     // space, which reads as a frozen app rather than as waiting (§5).
@@ -165,7 +165,8 @@ describe('App', () => {
       push({ type: 'text_delta', text: '13:53' })
     })
     await waitFor(() => expect(screen.getByTestId('answer')).toHaveTextContent('13:53'))
-    expect(screen.queryByTestId('turn-pending')).toBeNull()
+    // Spec 061: the line stays, saying the agent is writing, until the turn settles.
+    expect(screen.getByTestId('turn-pending')).toHaveTextContent(/writing|escrevendo/i)
 
     await act(async () => {
       push({ type: 'done', response_id: 'resp_1' })

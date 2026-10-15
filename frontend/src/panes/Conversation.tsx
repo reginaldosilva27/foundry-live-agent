@@ -55,7 +55,8 @@ interface Props {
  * Everything else in the stack renders only once it has content, so without this the turn is an
  * avatar and blank space for as long as the model takes to start — which reads as a frozen app
  * rather than as waiting (§5). `turnStatus` decides *what* is happening; this decides how to say
- * it, and says nothing once the answer is on screen to speak for itself.
+ * it. Since spec 061 it stays for the whole turn, at its foot, and says *writing* while text
+ * arrives — as the Claude app does — and only a settled turn has none.
  *
  * It also carries a clock (spec 015). A turn with seven tool-calling legs answered every call in
  * about a millisecond and spent all its seconds on the model in between, so a line that names the
@@ -66,7 +67,7 @@ interface Props {
 function LiveLine({ turn }: { turn: Turn }) {
   const s = useT()
   const status = turnStatus(turn)
-  const settled = status.kind === 'answering' || status.kind === 'settled'
+  const settled = status.kind === 'settled'
   const elapsed = useElapsed(settled ? null : `${status.kind}:${status.name ?? ''}`)
 
   if (settled) return null
@@ -85,12 +86,19 @@ function LiveLine({ turn }: { turn: Turn }) {
         </>
       ) : status.kind === 'thinking' ? (
         s('turn.thinking')
+      ) : status.kind === 'writing' ? (
+        s('turn.writing')
       ) : (
         s('turn.pending')
       )}
       {/* Seconds, unsuffixed by prose: it is a number, like every other number on this screen, and
-          it needs no translation. */}
-      {elapsed > 0 && <span className="turn__pending-elapsed">{elapsed}s</span>}
+          it needs no translation. Hidden from the live region (spec 061): the line now lasts the
+          whole turn, and a polite region would otherwise read every second into the queue. */}
+      {elapsed > 0 && (
+        <span className="turn__pending-elapsed" aria-hidden="true">
+          {elapsed}s
+        </span>
+      )}
       <span className="turn__pending-dots" aria-hidden="true">
         <span className="turn__pending-dot" />
         <span className="turn__pending-dot" />
@@ -187,8 +195,6 @@ export function Conversation({
                   onOpenCall={(callId) => onOpenTrace(message.id, callId)}
                 />
 
-                <LiveLine turn={message.turn} />
-
                 {message.turn.text && (
                   <div className="turn__answer" data-testid="answer">
                     {/* Controls appear when the TURN settles, not when a fence closes: a button
@@ -201,6 +207,9 @@ export function Conversation({
                 )}
 
                 {message.turn.error && <ErrorCard error={message.turn.error} />}
+
+                {/* At the foot of the turn, under whatever has arrived (spec 061). */}
+                <LiveLine turn={message.turn} />
 
                 {/* The reader stopped listening. We say the two things we can verify: it was
                     interrupted here, and the run was never cancelled — nothing about tokens or

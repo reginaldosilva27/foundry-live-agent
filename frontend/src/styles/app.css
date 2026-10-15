@@ -1226,6 +1226,58 @@ button:disabled {
   transform: rotate(90deg);
 }
 
+/* --- Many calls, one line (spec 061) ----------------------------------------------------
+   The reasoning card's toggle, reused: the same chevron and the same quiet caption, so a folded
+   group reads as the same kind of thing the reasoning already is. */
+
+.tool-group__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-width: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tool-group__chevron {
+  flex: none;
+  color: var(--fg-3);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.tool-group[data-open='true'] .tool-group__chevron {
+  transform: rotate(90deg);
+}
+
+.tool-group__count {
+  flex: none;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.tool-group__names {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-group__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
 .reasoning-card__title {
   font-size: var(--fs-caption);
   font-weight: var(--fw-semibold);
@@ -2463,6 +2515,12 @@ button:disabled {
   overflow-y: auto;
 }
 
+/* A shrinkable child of a scrolling flex column is shrunk rather than scrolled: with many tool
+   calls the transcript was squeezed to its floor and painted over the activity list. */
+.voice-card__body > * {
+  flex-shrink: 0;
+}
+
 .voice-transcript {
   display: flex;
   flex-direction: column;
@@ -3028,8 +3086,8 @@ button:disabled {
   flex-direction: column;
   gap: var(--sp-3);
   padding: var(--sp-4);
-  /* The star sits in this corner; the name stops short of it rather than running underneath. */
-  padding-right: var(--sp-8);
+  /* The two corner controls sit here; the name stops short of them rather than running underneath. */
+  padding-right: calc(var(--sp-8) + var(--sp-6));
   border: 0;
   border-radius: var(--r-lg);
   background: transparent;
@@ -3043,11 +3101,19 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.agent-card__star {
+/* The two corner controls, in one row (spec 061). Each used to be positioned on its own, and the
+   space between them was `--sp-6` minus `--sp-3` minus an icon — near enough to touch. */
+.agent-card__actions {
   position: absolute;
   top: var(--sp-3);
   right: var(--sp-3);
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.agent-card__star {
   display: grid;
   padding: var(--sp-1);
   place-items: center;
@@ -3140,6 +3206,75 @@ button:disabled {
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
   color: var(--fg-3);
+}
+
+/* --- Cards or a list (spec 061) ----------------------------------------------------------
+   The same DOM in both: a list is the cards laid out as rows, never a second rendering, so the
+   controls, the dimming and the reasons cannot differ between them (§4). */
+
+.agents-screen__view {
+  display: flex;
+  margin-left: auto;
+  gap: var(--sp-1);
+  padding: 2px;
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+}
+
+.agents-screen__view button {
+  padding: 2px var(--sp-3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  cursor: pointer;
+}
+
+.agents-screen__view button[aria-pressed='true'] {
+  background: var(--bg-3);
+  color: var(--fg-1);
+}
+
+.agents-grid[data-view='list'] {
+  grid-template-columns: 1fr;
+  gap: var(--sp-2);
+}
+
+/* Wraps rather than splitting into columns: a fixed second column squeezed the name to one letter
+   per line at phone width, and a row that wraps needs no breakpoint of its own. */
+.agents-grid[data-view='list'] .agent-card__choose {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-4);
+  padding: var(--sp-2) var(--sp-4);
+  padding-right: calc(var(--sp-8) + var(--sp-6));
+}
+
+.agents-grid[data-view='list'] .agent-card__head {
+  flex: 1 1 240px;
+  min-width: 0;
+  align-items: center;
+}
+
+.agents-grid[data-view='list'] .agent-card__foot {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0;
+  gap: var(--sp-3);
+}
+
+.agents-grid[data-view='list'] .agent-card__reason {
+  flex-basis: 100%;
+}
+
+.agents-grid[data-view='list'] .agent-card__actions {
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* ---------- The answer's action row (spec 021) ---------------------------- */
@@ -4267,9 +4402,6 @@ button:disabled {
 }
 
 .agent-card__inspect {
-  position: absolute;
-  top: var(--sp-2);
-  right: var(--sp-6);
   display: inline-flex;
   padding: var(--sp-1);
   border: 0;
