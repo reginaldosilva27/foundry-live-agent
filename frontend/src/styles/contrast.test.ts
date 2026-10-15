@@ -109,8 +109,8 @@ const PAIRS: [string, string][] = [
  * that is correct (spec 036: the rail does not invert). This is about the surfaces that must.
  */
 /**
- * The rail does not invert (spec 036): it is `--ds-ink` in both themes, so text on it correctly
- * names a step on the ramp rather than a semantic token. The steps chosen were unreadable.
+ * The rail did not invert until spec 060, which gave it its own tokens. Before that it was
+ * `--ds-ink` in both themes and its text named ramp steps — and the steps chosen were unreadable.
  *
  * Measured in a browser, identically in both themes, because the surface is the same in both:
  * `.sidebar__key` at **1.57:1** and five more at **2.46:1** — the section titles, the transport and
@@ -202,9 +202,9 @@ describe('the focus ring', () => {
     expect(ratio(dark[fg], dark[bg])).toBeGreaterThanOrEqual(3)
   })
 
-  it('separates on the ink of the rail and the trace panel, in both themes', () => {
-    // Those two surfaces redeclare `--fg-focus` to the lighter step precisely because the default
-    // accent does not separate there. This is the assertion that says so in numbers.
+  it('separates on the ink of the trace panel, in both themes', () => {
+    // The trace panel redeclares `--fg-focus` to the lighter step precisely because the default
+    // accent does not separate there. The rail has its own token since spec 060.
     const onInk = base['--ds-blue-500']
     expect(ratio(onInk, base['--ds-ink'])).toBeGreaterThanOrEqual(3)
   })
@@ -212,9 +212,25 @@ describe('the focus ring', () => {
 
 describe('text on the rail', () => {
   const base = ramp()
-  const INK = base['--ds-ink']
+  const light = semantic(lightBlock(), base)
+  const dark = semantic(darkBlock(), light)
 
-  /** Every selector whose text is painted on the rail, with the ramp step it declares. */
+  /**
+   * The rail follows the theme since spec 060: light in light, the deepest surface in dark. So its
+   * text names rail tokens, and each pair is computed in BOTH palettes — the bug spec 036 fixed for
+   * the main column would otherwise come back on the rail.
+   */
+  const PAIRS: [string, string][] = [
+    ['--fg-rail', '--bg-rail'],
+    ['--fg-rail-strong', '--bg-rail'],
+    ['--fg-rail-muted', '--bg-rail'],
+    ['--fg-rail-accent', '--bg-rail'],
+    ['--fg-rail', '--bg-rail-hover'],
+    ['--fg-rail-strong', '--bg-rail-current'],
+    ['--fg-rail-accent', '--bg-rail-current'],
+  ]
+
+  /** Every selector whose text is painted on the rail, with the token it declares. */
   const ON_THE_RAIL = [
     '.sidebar__section-title',
     '.sidebar__note',
@@ -225,20 +241,39 @@ describe('text on the rail', () => {
     '.history__note',
   ]
 
-  it('resolved the ink, so the assertions below are not vacuous', () => {
-    expect(INK).toMatch(/^#[0-9a-fA-F]{3,8}$/)
+  it('resolved the rail tokens in both themes, so the assertions below are not vacuous', () => {
+    for (const [fg, bg] of PAIRS) {
+      expect(light[fg], `${fg} light`).toMatch(/^#[0-9a-fA-F]{3,8}$/)
+      expect(light[bg], `${bg} light`).toMatch(/^#[0-9a-fA-F]{3,8}$/)
+      expect(dark[fg], `${fg} dark`).toMatch(/^#[0-9a-fA-F]{3,8}$/)
+      expect(dark[bg], `${bg} dark`).toMatch(/^#[0-9a-fA-F]{3,8}$/)
+    }
   })
 
-  it.each(ON_THE_RAIL)('%s is readable on the ink', (selector) => {
+  it('is light in light and dark in dark (spec 060, AC1)', () => {
+    expect(luminance(light['--bg-rail'])).toBeGreaterThan(0.8)
+    expect(luminance(dark['--bg-rail'])).toBeLessThan(0.05)
+  })
+
+  it.each(PAIRS)('%s on %s meets 4.5:1 in both themes', (fg, bg) => {
+    expect(ratio(light[fg], light[bg]), 'light').toBeGreaterThanOrEqual(4.5)
+    expect(ratio(dark[fg], dark[bg]), 'dark').toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('draws a focus ring that separates from the rail in both themes', () => {
+    expect(ratio(light['--fg-rail-focus'], light['--bg-rail'])).toBeGreaterThanOrEqual(3)
+    expect(ratio(dark['--fg-rail-focus'], dark['--bg-rail'])).toBeGreaterThanOrEqual(3)
+  })
+
+  it.each(ON_THE_RAIL)('%s names a rail token, readable in both themes', (selector) => {
     const rule = APP.split(`\n${selector} {`)[1]
     expect(rule, `${selector} has no rule in app.css`).toBeDefined()
 
     const declared = /color:\s*var\((--[a-z0-9-]+)\)/.exec(rule.split('}')[0])
     expect(declared, `${selector} declares no colour`).not.toBeNull()
-
-    const hex = base[declared![1]]
-    expect(hex, `${declared![1]} is not a ramp step`).toMatch(/^#[0-9a-fA-F]{3,8}$/)
-    expect(ratio(hex, INK)).toBeGreaterThanOrEqual(4.5)
+    expect(declared![1]).toMatch(/^--fg-rail/)
+    expect(ratio(light[declared![1]], light['--bg-rail'])).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(dark[declared![1]], dark['--bg-rail'])).toBeGreaterThanOrEqual(4.5)
   })
 })
 

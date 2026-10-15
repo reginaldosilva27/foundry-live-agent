@@ -41,12 +41,12 @@ describe('the shortcut handler', () => {
     expect(ran).toEqual(['focusComposer'])
   })
 
-  it('runs the palette on the modifier chord, from either platform', () => {
+  it('runs the rail toggle on the modifier chord, from either platform', () => {
     const ran = listening()
-    press({ key: 'k', metaKey: true })
-    press({ key: 'k', ctrlKey: true })
+    press({ key: 'b', metaKey: true })
+    press({ key: 'b', ctrlKey: true })
 
-    expect(ran).toEqual(['openPalette', 'openPalette'])
+    expect(ran).toEqual(['toggleRail', 'toggleRail'])
   })
 
   it('ignores a key nobody bound', () => {
@@ -93,12 +93,12 @@ describe('while the reader is typing (AC2)', () => {
     expect(press({ key: 'n' }).defaultPrevented).toBe(false)
   })
 
-  it('still opens the palette, which is the one binding that may interrupt typing', () => {
+  it('fires nothing on ⌘K while typing — no binding interrupts typing since spec 060', () => {
     const ran = listening()
     focusA('textarea')
     press({ key: 'k', metaKey: true })
 
-    expect(ran).toEqual(['openPalette'])
+    expect(ran).toEqual([])
   })
 
   it('fires normally once focus is somewhere that is not a field', () => {

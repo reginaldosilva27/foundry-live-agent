@@ -1,15 +1,15 @@
 /**
  * Every keyboard binding the app has, as data (spec 025).
  *
- * This table is the single source of truth (§4). The handler dispatches from it, the palette labels
- * itself from it, and the tooltips say what it says — so a binding changes in one place, and
- * `keys.test.ts` goes looking for key literals that escaped.
+ * This table is the single source of truth (§4). The handler dispatches from it and the tooltips
+ * say what it says — so a binding changes in one place, and `keys.test.ts` goes looking for key
+ * literals that escaped.
  *
  * Two rules the table encodes rather than merely intends:
  *
  * - **No chord the browser captures above the page.** `⌘⇧N` is a new incognito window and cannot be
- *   prevented; a binding the app cannot honour is worse than no binding. `⌘K` is the one contested
- *   chord that stays, because the page wins while it has focus and every comparable app binds it.
+ *   prevented; a binding the app cannot honour is worse than no binding. `⌘K` is free: it opened
+ *   the command palette until spec 060 removed it.
  * - **A bare letter never fires while somebody is typing.** That guard is what makes single letters
  *   usable at all in a chat application, and it is the piece that breaks quietly, so it is one
  *   predicate and it is tested directly.
@@ -17,27 +17,17 @@
  * **`Escape` is deliberately absent.** It already has four owners — the payload reader, the modal
  * focus hook, the agent chip's menu and the history rename — and each closes the thing the reader is
  * actually in. That is component behaviour, not an app-wide command, and a global handler would
- * collide with all four. The palette gets its `Escape` the same way every other overlay does.
+ * collide with all four.
  */
 
-/**
- * What the app can be asked to do. Every one has an on-screen control as well (AC3).
- *
- * Not all of them have a key. `startVoice`, `switchLanguage` and `openHistory` are offered by the
- * palette and bound to nothing — a chord for everything would be a chord nobody remembers, and each
- * already has a visible control. The table below is the subset that earns a key.
- */
+/** What the keyboard can ask the app to do. Every one has an on-screen control as well (AC3). */
 export type Command =
-  | 'openPalette'
   | 'toggleRail'
   | 'focusComposer'
   | 'newConversation'
   | 'toggleTraces'
   | 'previousTurn'
   | 'nextTurn'
-  | 'startVoice'
-  | 'switchLanguage'
-  | 'openHistory'
   | 'toggleEvents'
 
 export interface Binding {
@@ -45,15 +35,14 @@ export interface Binding {
   /** `⌘` on a Mac, `Ctrl` elsewhere. Matched as "either", so one table serves both. */
   modifier?: boolean
   shift?: boolean
-  /** May it fire while a text field has focus? Only `Escape` and the palette chord may. */
+  /** May it fire while a text field has focus? None does since the palette left (spec 060). */
   whenTyping: boolean
   command: Command
-  /** The string key naming it, so the palette and the tooltips read the same label. */
+  /** The string key naming it, so the tooltips read one label. */
   label: string
 }
 
 export const BINDINGS: Binding[] = [
-  { key: 'k', modifier: true, whenTyping: true, command: 'openPalette', label: 'keys.openPalette' },
   { key: 'b', modifier: true, whenTyping: false, command: 'toggleRail', label: 'keys.toggleRail' },
   { key: '/', whenTyping: false, command: 'focusComposer', label: 'keys.focusComposer' },
   { key: 'n', whenTyping: false, command: 'newConversation', label: 'keys.newConversation' },

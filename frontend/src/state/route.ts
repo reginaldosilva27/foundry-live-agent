@@ -1,7 +1,7 @@
 /**
  * The address scheme (spec 024).
  *
- * Four addresses and one reservation, flat rather than nested. This module is their single source
+ * A handful of addresses, flat rather than nested. This module is their single source
  * of truth (§4): every link in the app is built through `buildPath`, so the scheme has one
  * definition and `route.test.ts` proves the two halves round-trip.
  *
@@ -22,18 +22,17 @@ export type Route =
   /** A conversation **this browser** kept (spec 021). The id is local; it is not Foundry's. */
   | { name: 'conversation'; id: string }
   | { name: 'trace'; responseId: string }
-  /** The record this browser kept, and the controls that move it (spec 027). */
-  | { name: 'history' }
   /** One agent's definition, as the service reports it (spec 030). The name is Foundry's. */
   | { name: 'agent'; agentName: string }
-  /** One question, two agents, two streams (spec 020). Reserved here first, then built. */
-  | { name: 'compare' }
+  /**
+   * Try an agent beside its definition, compare it with another, or run one function tool
+   * (spec 060). Absorbed spec 020's `/compare` and spec 042's `/tools`.
+   */
+  | { name: 'playground'; tab: PlaygroundTab }
   /** What this deployment is, as `GET /config` reports it (spec 032). Read-only, and linkable. */
   | { name: 'about' }
   /** What THIS BROWSER prefers (spec 036). The editable counterpart to `/about`. */
   | { name: 'preferences' }
-  /** Run one function tool, outside any conversation (spec 042). */
-  | { name: 'tools' }
 
 /** Every route the app can be at, in the order they are documented. */
 export const ROUTES = [
@@ -41,13 +40,13 @@ export const ROUTES = [
   'agents',
   'conversation',
   'trace',
-  'history',
   'agent',
-  'compare',
+  'playground',
   'about',
   'preferences',
-  'tools',
 ] as const
+
+export type PlaygroundTab = 'agent' | 'tools'
 
 /**
  * What address is this?
@@ -61,16 +60,19 @@ export function parseRoute(pathname: string): Route {
   if (segments.length === 0) return { name: 'chat' }
   if (segments.length === 1) {
     if (segments[0] === 'agents') return { name: 'agents' }
-    if (segments[0] === 'history') return { name: 'history' }
-    if (segments[0] === 'compare') return { name: 'compare' }
+    if (segments[0] === 'playground') return { name: 'playground', tab: 'agent' }
     if (segments[0] === 'about') return { name: 'about' }
     if (segments[0] === 'preferences') return { name: 'preferences' }
-    if (segments[0] === 'tools') return { name: 'tools' }
+    // Retired by spec 060, still read so an old bookmark lands somewhere real. Never built again,
+    // so the address bar settles on the canonical form.
+    if (segments[0] === 'compare') return { name: 'playground', tab: 'agent' }
+    if (segments[0] === 'tools') return { name: 'playground', tab: 'tools' }
   }
   if (segments.length === 2) {
     if (segments[0] === 'agents') return { name: 'agent', agentName: segments[1] }
     if (segments[0] === 'c') return { name: 'conversation', id: segments[1] }
     if (segments[0] === 'trace') return { name: 'trace', responseId: segments[1] }
+    if (segments[0] === 'playground' && segments[1] === 'tools') return { name: 'playground', tab: 'tools' }
   }
 
   return { name: 'chat' }
@@ -81,18 +83,14 @@ export function buildPath(route: Route): string {
   switch (route.name) {
     case 'agents':
       return '/agents'
-    case 'history':
-      return '/history'
     case 'agent':
       return `/agents/${encodeURIComponent(route.agentName)}`
-    case 'compare':
-      return '/compare'
+    case 'playground':
+      return route.tab === 'tools' ? '/playground/tools' : '/playground'
     case 'about':
       return '/about'
     case 'preferences':
       return '/preferences'
-    case 'tools':
-      return '/tools'
     case 'conversation':
       return `/c/${encodeURIComponent(route.id)}`
     case 'trace':

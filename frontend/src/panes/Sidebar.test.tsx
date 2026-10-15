@@ -61,15 +61,14 @@ const props: ComponentProps<typeof Sidebar> = {
   view: 'chat',
   collapsed: false,
   onToggleCollapse: () => {},
-  onOpenPalette: () => {},
+  theme: 'light',
+  onTheme: () => {},
   history: {
     conversations: [],
     storing: true,
     save: () => {},
     rename: () => {},
     remove: () => {},
-    clear: () => {},
-    importFile: () => null,
   },
   activeId: null,
   onLang: () => {},
@@ -90,6 +89,42 @@ function show(overrides: Partial<typeof props> = {}) {
 afterEach(() => localStorage.clear())
 
 describe('the rail', () => {
+  it('offers exactly Chat, Agents and Playground, in that order (spec 060, AC5)', () => {
+    show({ view: 'playground' })
+
+    const nav = screen.getByRole('navigation', { name: t('app.name', 'en') })
+    const names = Array.from(nav.querySelectorAll('button')).map((b) => b.getAttribute('aria-label'))
+    expect(names).toEqual([t('nav.chat', 'en'), t('nav.agents', 'en'), t('nav.playground', 'en')])
+    expect(screen.getByRole('button', { name: t('nav.playground', 'en') })).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByRole('button', { name: /^(commands|history|compare)$/i })).toBeNull()
+  })
+
+  it('switches theme from the footer, naming what it switches to (spec 060, AC2)', async () => {
+    const onTheme = vi.fn()
+    show({ theme: 'light', onTheme })
+
+    await userEvent.click(screen.getByRole('button', { name: t('theme.toDark', 'en') }))
+    expect(onTheme).toHaveBeenCalledWith('dark')
+
+    show({ theme: 'dark', onTheme })
+    await userEvent.click(screen.getByRole('button', { name: t('theme.toLight', 'en') }))
+    expect(onTheme).toHaveBeenLastCalledWith('light')
+  })
+
+  it('from "system", switches to the opposite of what the system shows (spec 060, AC2)', async () => {
+    const onTheme = vi.fn()
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('dark'),
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+    show({ theme: 'system', onTheme })
+
+    await userEvent.click(screen.getByRole('button', { name: t('theme.toLight', 'en') }))
+    expect(onTheme).toHaveBeenCalledWith('light')
+    vi.unstubAllGlobals()
+  })
+
   it('offers the two views and marks the one you are in (AC1)', async () => {
     const onView = vi.fn()
     show({ view: 'chat' })
@@ -157,29 +192,6 @@ describe('the rail', () => {
     // The panel is where a reader goes to find out WHY, so the way in must survive the failure.
     show({ config: null, configFailed: true })
     expect(screen.getByRole('button', { name: t('sidebar.about', 'en') })).toBeInTheDocument()
-  })
-
-  /**
-   * Spec 042's screen had no door.
-   *
-   * `/tools` parses, `App` renders it, and nothing anywhere led to it — not the rail, not the
-   * palette, not the footer. Spec 042's own plan lists `Sidebar.tsx` as an affected file; only the
-   * `View` type arrived. A screen reachable solely by typing a URL is the same defect spec 047
-   * named from the other side: a hidden control is an absent one.
-   *
-   * It belongs in the footer beside `/about` and `/preferences` — the developer shelf — and it
-   * appears only when the deployment enabled it, because a door onto a 403 is worse than no door.
-   */
-  it('offers the playground only where the deployment enabled it (spec 042)', async () => {
-    const onView = vi.fn()
-    show()
-    expect(screen.queryByRole('button', { name: t('tools.title', 'en') })).toBeNull()
-
-    show({ config: { ...CONFIG, playground: { enabled: true } }, onView })
-    const door = screen.getByRole('button', { name: t('tools.title', 'en') })
-
-    await userEvent.click(door)
-    expect(onView).toHaveBeenCalledWith('tools')
   })
 
   // --- AC8 ---------------------------------------------------------------
@@ -256,7 +268,7 @@ describe('the rail', () => {
   })
 })
 
-/** Spec 027 AC1, AC3, AC6 — the rail searches what this browser kept, and links to the screen. */
+/** Spec 027 AC1, AC3 — the rail searches what this browser kept (its screen left in spec 060). */
 describe('the rail searches the record', () => {
   const kept = (id: string, title: string, text: string) => ({
     id,
@@ -286,14 +298,6 @@ describe('the rail searches the record', () => {
     await userEvent.clear(field)
     expect(screen.getByText('Deploying to Container Apps')).toBeInTheDocument()
     expect(screen.getByText('Delta Lake vacuum')).toBeInTheDocument()
-  })
-
-  it('offers the history screen beside the other views (AC6)', async () => {
-    const onView = vi.fn()
-    show({ history: withHistory, onView })
-
-    await userEvent.click(screen.getByRole('button', { name: t('nav.history', 'en') }))
-    expect(onView).toHaveBeenCalledWith('history')
   })
 
   it('hides the field when there is nothing kept to search', () => {

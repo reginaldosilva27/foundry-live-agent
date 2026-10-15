@@ -291,7 +291,7 @@ describe('demo mode (spec 050)', () => {
     const header = screen.getByRole('banner')
     expect(within(header).queryByRole('button', { name: t('header.voice', 'en') })).toBeNull()
     expect(screen.getByRole('button', { name: t('composer.voiceInput', 'en') })).toBeInTheDocument()
-    for (const view of ['nav.agents', 'nav.history', 'nav.compare', 'nav.chat'] as const) {
+    for (const view of ['nav.agents', 'nav.playground', 'nav.chat'] as const) {
       await user.click(screen.getByRole('button', { name: t(view, 'en') }))
       expect(screen.getByTestId('replay-badge')).toBeVisible()
       expect(screen.queryByRole('combobox', { name: t('demo.pick', 'en') })).toBeNull()

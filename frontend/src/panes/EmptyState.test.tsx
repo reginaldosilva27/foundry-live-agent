@@ -12,6 +12,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { EmptyState, type Suggestion } from './EmptyState'
+import { greetingKey } from '../state/greeting'
 import { LangContext } from '../i18n/context'
 import { t } from '../i18n/strings'
 
@@ -21,15 +22,45 @@ const THREE: Suggestion[] = [
   { en: 'What is a hosted agent?', pt: 'O que é um agente hospedado?' },
 ]
 
-function show(suggestions?: Suggestion[], lang: 'en' | 'pt' = 'en') {
+function show(
+  suggestions?: Suggestion[],
+  lang: 'en' | 'pt' = 'en',
+  extra: { agent?: string; now?: Date } = {},
+) {
   const onSuggestion = vi.fn()
   const view = render(
     <LangContext.Provider value={lang}>
-      <EmptyState suggestions={suggestions} onSuggestion={onSuggestion} />
+      <EmptyState suggestions={suggestions} onSuggestion={onSuggestion} {...extra} />
     </LangContext.Provider>,
   )
   return { ...view, onSuggestion }
 }
+
+describe('the greeting (spec 060, AC11)', () => {
+  it('follows the browser clock’s hour', () => {
+    expect(greetingKey(5)).toBe('greeting.morning')
+    expect(greetingKey(11)).toBe('greeting.morning')
+    expect(greetingKey(12)).toBe('greeting.afternoon')
+    expect(greetingKey(17)).toBe('greeting.afternoon')
+    expect(greetingKey(18)).toBe('greeting.evening')
+    expect(greetingKey(0)).toBe('greeting.evening')
+    expect(greetingKey(4)).toBe('greeting.evening')
+  })
+
+  it('greets in the interface language, under a chip naming the agent', () => {
+    show(THREE, 'pt', { agent: 'foundry-live-agent', now: new Date(2026, 9, 15, 9, 0) })
+
+    expect(screen.getByRole('heading', { name: t('greeting.morning', 'pt') })).toBeInTheDocument()
+    expect(screen.getByText(t('greeting.lead', 'pt'))).toBeInTheDocument()
+    expect(screen.getByTestId('empty-agent')).toHaveTextContent('foundry-live-agent')
+  })
+
+  it('shows no chip when nobody is answering yet', () => {
+    show(THREE, 'en', { now: new Date(2026, 9, 15, 20, 0) })
+    expect(screen.queryByTestId('empty-agent')).toBeNull()
+    expect(screen.getByRole('heading', { name: t('greeting.evening', 'en') })).toBeInTheDocument()
+  })
+})
 
 describe('what the agent offers (AC1, AC4)', () => {
   it('renders the agent’s own examples', () => {
@@ -76,11 +107,11 @@ describe('what the agent offers (AC1, AC4)', () => {
 })
 
 describe('an agent we know nothing about (AC2, AC8)', () => {
-  it('renders no list at all, and keeps the headline and subtitle', () => {
+  it('renders no cards at all, and keeps the greeting', () => {
     const { container } = show([])
 
     expect(container.querySelector('.empty__suggestions')).toBeNull()
-    expect(screen.getByText(t('empty.subtitle', 'en'))).toBeInTheDocument()
+    expect(screen.getByText(t('greeting.lead', 'en'))).toBeInTheDocument()
     expect(screen.getByRole('heading')).toBeInTheDocument()
   })
 

@@ -119,19 +119,12 @@ thing the person typed — **never** from asking a model to name it, which would
 inference of its own. The agents listing now lives on its own screen; the rail keeps only the agent
 that is answering.
 
-**That record is searchable and portable, and still never travels (spec 027).** The rail's field and
-the `/history` screen match a title, either role's message text, and the **names** of the tools and
-MCP servers a turn used — not call arguments or outputs, which render as unreadable fragments.
-`/history` exports one conversation as Markdown or the whole record as versioned JSON (the stored
-shape verbatim, trace ids included — they are what tie a transcript to spans in the workspace), and
-imports one back. Three things are easy to get wrong here:
-
-- **`frontend/src/state/history.ts` owns the stored shape and the exported one together** (§4). The
-  file carries a `version`; one this build does not know is refused whole, record untouched.
-- **Import writes the file's `conversation_id` verbatim and asks Foundry nothing.** Checking whether
-  it exists would be the app deriving a decision from its own storage (021's second rule). A pointer
-  from another tenant fails through the turn-error card that already exists — no second failure mode.
-- **Search and import make no request at all**, and a test asserts the absence.
+**That record is searchable, and still never travels (spec 027).** The rail's field matches a
+title, either role's message text, and the **names** of the tools and MCP servers a turn used — not
+call arguments or outputs, which render as unreadable fragments. **Search makes no request at all**,
+and a test asserts the absence. Spec 060 removed the `/history` screen **and its export/import** by
+the owner's decision — the rail is the record's only surface, and an old `/history` bookmark lands
+on the chat. Re-adding export would be a new spec, not a revert.
 
 **Which agent answers is chosen on the screen (spec 019).** The sidebar lists the project's agents
 from `GET {project_endpoint}/agents?api-version=v1` and a turn carries `agent` on `POST /chat`.
@@ -263,8 +256,11 @@ violation.
   explicit choice, and the `prefers-color-scheme` block is guarded by `:not([data-theme='light'])`
   so an explicit light choice survives a dark system; `system` **removes** the attribute rather
   than writing one. The first paint needs a six-line inline script in `index.html` — CSS cannot
-  read storage — which spells the key itself; that duplication is deliberate and tested. The rail
-  does not invert: it becomes the deepest surface in an elevation stack. Syntax highlighting maps
+  read storage — which spells the key itself; that duplication is deliberate and tested. **Light is
+  the default since spec 060** — nothing stored paints light, before first paint too. The rail
+  **follows the theme since spec 060**: its own tokens (`--bg-rail`, `--fg-rail*`, `--border-rail`)
+  are white in light and the deepest surface in dark, every pair computed in both palettes by
+  `contrast.test.ts`; the switch in the rail footer writes the same preference Preferences does. Syntax highlighting maps
   **every** group `github.css` defines, including the unclassified ones, or text renders navy on
   navy. Every storage key lives in `state/storage.ts`'s `KEYS`, asserted.
 - **What an agent is worth being asked lives in its definition (spec 037).** `examples:` in
@@ -305,7 +301,8 @@ violation.
   and it states drift before any editing. Instructions only — not tools, not the model. No PR
   creation: a second third-party secret for a convenience. A test asserts no string in the feature
   says *saved*, *updated* or *applied*, in either language.
-- **One function tool can be run on purpose, outside any conversation (spec 042).** `/tools` posts
+- **One function tool can be run on purpose, outside any conversation (spec 042).** The
+  Playground's Tools tab (`/playground/tools`, spec 060) posts
   to `POST /tools/{name}/run`, which validates with `jsonschema` against the registry's own schema
   and then calls **`tool_executor.execute`** — the same function every adapter gets, asserted by
   patching it rather than by reading the source. **Why this is not §8's forbidden thing: a person
@@ -372,8 +369,9 @@ violation.
   the ramp has no step between `--ds-n-500` and `--ds-n-600`, so a raised `--fg-4` would have been
   `--fg-3` under a second name. Both questions were settled the same way — *split the token by the
   job it does*, never move a colour.
-- **Two agents, one question, and no backend at all (spec 020).** `/compare` sends the same text to
-  two agents at once and draws two columns. The tempting design was a transport — a multiplexed
+- **Two agents, one question, and no backend at all (spec 020).** The Playground's Agent tab
+  (`/playground`, spec 060) sends the same text to two agents at once and draws two columns once a
+  person picks a second agent; until then it asks the one. The tempting design was a transport — a multiplexed
   stream, or an agent id on every event (§9). It needed neither: `POST /chat` already takes `agent`
   per request and resolves the harness per request (spec 019), so a comparison is **two ordinary
   posts**, and the backend diff for the whole spec is empty. Two independent conversations (AC10)
@@ -402,8 +400,8 @@ violation.
   a drawer below **1542px** = 248 + **594** (the header's measured floor) + 320 + 380, and spec
   050's banner is `grid-column: 1 / -1; grid-row: 1` with `grid-template-rows: auto minmax(0, 1fr)`
   on the shell. `layout.test.ts` asserts every one of those. **Anything added as a direct child of
-  `.app` is either placed or `position: fixed`** — the overlays (`.log-scrim`, `.voice-scrim`,
-  `.palette`) take the second route.
+  `.app` is either placed or `position: fixed`** — the overlays (`.log-scrim`, `.voice-scrim`) take
+  the second route.
 - **Two sources can share a label and still be two sources (spec 034).** The Learn MCP answers one
   search with the same page under several `#anchors`; `labelFor` is host + path, so four distinct
   URLs collapse to one label. Deduping on the URL therefore kept all four and the row key
@@ -411,6 +409,15 @@ violation.
   recorded turn. `identify()` in `state/sources.ts` is the one place sameness is decided (a page,
   fragment dropped) and `Source.id` is what the row keys on, so the list and the view cannot
   disagree about what two sources are (§4).
+- **The Playground is one screen, and it absorbed two (spec 060).** `/playground` is the answering
+  agent's definition beside a conversation — `AgentDefinitionBlocks`, the **same** rendering the
+  agent detail screen uses, from the same `GET /agents/{name}` read, read-only because Foundry
+  refuses per-request parameters beside an agent reference and §4 refuses a saved copy.
+  `/playground/tools` is spec 042's runner; with its flag off the tab **says so** rather than
+  vanishing. `/compare` and `/tools` still *parse* to it and are never *built*, so the address bar
+  settles on the canonical form. The command palette (spec 025) is **gone**, chord and button: every
+  binding left has a visible control, and no key interrupts typing. Tabs use no arrow keys, because
+  `keys.ts` is the one place a key is named.
 - **A screen with no door is an absent screen, and a listed action needs one id.** Spec 042's
   `/tools` parsed, rendered, and was reachable only by typing the URL — its own plan named
   `Sidebar.tsx` and only the `View` type arrived. Spec 038's `toggleEvents` sat in `BINDINGS` *and*
@@ -496,7 +503,9 @@ violation.
 - `docs/architecture.md` — what runs in Foundry vs. in this app (kept in sync with the code).
 - `docs/harness-comparison.md` — prompt agent vs. hosted agent, **measured** (spec 018).
 - `docs/how-it-works/` — streaming events · the function-call round trip · tracing and the gateway ·
-  the Voice Live session lifecycle.
+  the Voice Live session lifecycle · hosted continuity · charts in answers.
+- `docs/assets/message-journey/` — the source of the README's "follow one message" GIFs
+  (`journey.html`, bilingual) and `record.mjs`, which regenerates them; move it with the code it cites.
 - `docs/REFERENCES.md` — every Foundry doc URL and API version relied on (§10).
 - `docs/development-workflow.md` — SDD + TDD, the contributor companion to the constitution.
 - `docs/learning-journey.md` ↔ `docs/learning-journey.pt-BR.md` — educational modules, evidence and

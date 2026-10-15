@@ -113,6 +113,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 057 | [Unmapped event diagnostics](057-unmapped-event-diagnostics/spec.md) | 4 | ✅ done |
 | 058 | [Claude-inspired chat](058-claude-inspired-chat/spec.md) | 4 | ✅ done |
 | 059 | [Compact build information](059-compact-build-info/spec.md) | 4 | ✅ done |
+| 060 | [Light shell, theme switch and one Playground](060-light-shell-and-playground/spec.md) | 4 | ✅ done |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is

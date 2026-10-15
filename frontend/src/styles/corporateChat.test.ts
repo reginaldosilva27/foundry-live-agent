@@ -13,11 +13,11 @@ describe('shared chat hierarchy (055, visually superseded by 058)', () => {
     expect(rule('.composer')).toContain('max-width: var(--chat-width)')
     expect(rule('.composer')).toContain('calc(100% - var(--sp-5) * 2)')
   })
-  it('makes examples quiet examples rather than decorative pills', () => {
+  it('makes examples cards rather than decorative pills (spec 060 supersedes the 2-column grid)', () => {
     expect(rule('.empty')).toContain('text-align: center')
-    expect(rule('.empty__suggestions')).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
-    expect(rule('.chip')).toContain('width: 100%')
-    expect(rule('.chip')).toContain('border-radius: var(--r-md)')
+    expect(rule('.empty__suggestions')).toContain('display: grid')
+    expect(rule('.empty__card')).toContain('width: 100%')
+    expect(rule('.empty__card')).toContain('border-radius: var(--r-lg)')
   })
   it('distinguishes the neutral question from unboxed answer prose', () => {
     expect(rule('.bubble')).toContain('background: var(--bg-3)')

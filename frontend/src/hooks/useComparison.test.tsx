@@ -78,13 +78,21 @@ describe('one question, both agents (AC1)', () => {
     await waitFor(() => expect(result.current.streaming).toBe(false))
   })
 
-  it('sends nothing at all until a second agent is chosen', async () => {
+  it('asks only the first agent while no second one is chosen (spec 060, AC8)', async () => {
     const fetchMock = fakeBff(PAIR)
     const { result } = renderHook(() => useComparison())
 
-    act(() => result.current.send('what time is it', 'prompt-one'))
+    await act(async () => {
+      result.current.send('what time is it', 'prompt-one')
+      await waitFor(() => expect(result.current.streaming).toBe(false))
+    })
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    const sent = bodies(fetchMock)
+    expect(sent).toHaveLength(1)
+    // Exactly the three keys POST /chat carries, and no conversation yet.
+    expect(Object.keys(sent[0]).sort()).toEqual(['agent', 'message'])
+    expect(sent[0].agent).toBe('prompt-one')
+    expect(turnsOf(result.current.right)).toEqual([])
   })
 })
 

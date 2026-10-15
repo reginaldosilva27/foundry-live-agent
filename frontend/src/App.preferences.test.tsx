@@ -72,12 +72,13 @@ describe('preferences consumed by App (issue #29)', () => {
     expect(document.documentElement.lang).toBe('en')
   })
 
-  it('persists the palette language command through the same store', async () => {
+  it('persists the rail language switch through the same store', async () => {
     bff()
     const user = userEvent.setup()
     render(<App />)
-    await user.keyboard('{Meta>}k{/Meta}')
-    await user.click(screen.getByRole('option', { name: /switch language/i }))
+    await screen.findAllByRole('group', { name: t('sidebar.language', 'en') })
+    const rail = document.getElementById('navigation-rail')!
+    await user.click(within(rail).getByRole('button', { name: 'pt' }))
     expect(document.documentElement.lang).toBe('pt')
     expect(JSON.parse(localStorage.getItem(KEYS.preferences)!).lang).toBe('pt')
   })

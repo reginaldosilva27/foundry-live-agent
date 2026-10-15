@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import { Playground } from './panes/Playground'
+import { ToolRunner } from './panes/ToolRunner'
 import { LangContext } from './i18n/context'
 import { t } from './i18n/strings'
 
@@ -55,11 +55,11 @@ describe('App playground listing', () => {
 })
 
 it('preserves a valid user selection across refresh and replaces an invalid one', async () => {
-  const view = render(<LangContext.Provider value="en"><Playground tools={TOOLS} /></LangContext.Provider>)
+  const view = render(<LangContext.Provider value="en"><ToolRunner tools={TOOLS} /></LangContext.Provider>)
   await userEvent.click(screen.getByRole('button', { name: 'second' }))
-  view.rerender(<LangContext.Provider value="en"><Playground tools={[...TOOLS]} /></LangContext.Provider>)
+  view.rerender(<LangContext.Provider value="en"><ToolRunner tools={[...TOOLS]} /></LangContext.Provider>)
   expect(screen.getByRole('button', { name: 'second' })).toHaveAttribute('aria-pressed', 'true')
-  view.rerender(<LangContext.Provider value="en"><Playground tools={[TOOLS[0]]} /></LangContext.Provider>)
+  view.rerender(<LangContext.Provider value="en"><ToolRunner tools={[TOOLS[0]]} /></LangContext.Provider>)
   expect(screen.getByRole('button', { name: 'first' })).toHaveAttribute('aria-pressed', 'true')
 })
 

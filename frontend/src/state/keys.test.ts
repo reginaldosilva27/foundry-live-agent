@@ -1,8 +1,7 @@
 /**
  * Spec 025 AC1, AC2 — the bindings, as data.
  *
- * One table is the whole feature: the handler reads it, the palette labels itself from it, and the
- * tooltips say what it says. A second list of keys anywhere is the §4 failure this spec is most
+ * One table is the whole feature: the handler reads it and the tooltips say what it says. A second list of keys anywhere is the §4 failure this spec is most
  * likely to commit, so the last test here goes looking for one.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -58,13 +57,14 @@ describe('matchBinding', () => {
     expect(BINDINGS.some((b) => b.key === 'Escape')).toBe(false)
   })
 
-  it('finds the palette on the modifier chord, on either platform', () => {
-    expect(matchBinding(press({ key: 'k', metaKey: true }))?.command).toBe('openPalette')
-    expect(matchBinding(press({ key: 'k', ctrlKey: true }))?.command).toBe('openPalette')
+  it('binds nothing to ⌘K/Ctrl+K — the palette is gone (spec 060, AC3)', () => {
+    expect(matchBinding(press({ key: 'k', metaKey: true }))).toBeUndefined()
+    expect(matchBinding(press({ key: 'k', ctrlKey: true }))).toBeUndefined()
   })
 
-  it('does not find it without the modifier', () => {
-    expect(matchBinding(press({ key: 'k' }))?.command).not.toBe('openPalette')
+  it('finds the rail toggle on the modifier chord, on either platform', () => {
+    expect(matchBinding(press({ key: 'b', metaKey: true }))?.command).toBe('toggleRail')
+    expect(matchBinding(press({ key: 'b', ctrlKey: true }))?.command).toBe('toggleRail')
   })
 
   it('finds the composer on a bare slash', () => {

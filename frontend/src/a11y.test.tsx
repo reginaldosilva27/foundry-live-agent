@@ -146,11 +146,22 @@ describe('every control says what it does (AC8)', () => {
     expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
   })
 
-  it('on the comparison, with its second-agent picker (spec 020)', async () => {
+  it('on the playground, with its tabs and second-agent picker (specs 020, 060)', async () => {
     fakeBff()
-    window.history.pushState({}, '', '/compare')
+    window.history.pushState({}, '', '/playground')
     const { container } = render(<App />)
     await screen.findByLabelText(t('compare.with', 'en'))
+    expect(screen.getByRole('tablist', { name: t('playground.title', 'en') })).toBeInTheDocument()
+
+    const missing = unnamed(container)
+    expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('on the playground’s tools tab (spec 060)', async () => {
+    fakeBff()
+    window.history.pushState({}, '', '/playground/tools')
+    const { container } = render(<App />)
+    await screen.findByRole('tab', { name: t('playground.tab.tools', 'en'), selected: true })
 
     const missing = unnamed(container)
     expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])

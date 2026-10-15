@@ -118,9 +118,14 @@ button:disabled {
    Declared on the surface rather than on each control that sits there. Sixteen selectors used to
    name them, and they were exactly the descendants of these two — so a control added inside either
    now inherits the right colour by being there, which is one fewer list to keep in step (§4). */
-.sidebar *:focus-visible,
 .trace *:focus-visible {
   --fg-focus: var(--ds-blue-500);
+}
+
+/* The rail follows the theme since spec 060, so its ring is a rail token: the accent on white, the
+   lighter step on ink. */
+.sidebar *:focus-visible {
+  --fg-focus: var(--fg-rail-focus);
 }
 
 /* What legitimately draws no ring, each with its reason. The test asserts this list and nothing
@@ -316,8 +321,9 @@ button:disabled {
   flex-direction: column;
   gap: var(--sp-4);
   padding: var(--sp-4) var(--sp-3);
-  background: var(--ds-ink);
-  color: var(--fg-on-inverse);
+  border-right: 1px solid var(--border-rail);
+  background: var(--bg-rail);
+  color: var(--fg-rail);
   overflow: hidden;
 }
 
@@ -337,7 +343,7 @@ button:disabled {
   overflow-y: auto;
   flex-direction: column;
   scrollbar-width: thin;
-  scrollbar-color: var(--ds-n-700) transparent;
+  scrollbar-color: var(--border-rail) transparent;
 }
 
 .sidebar__foot {
@@ -346,7 +352,7 @@ button:disabled {
   flex-direction: column;
   gap: var(--sp-3);
   padding-top: var(--sp-3);
-  border-top: 1px solid var(--ds-n-800);
+  border-top: 1px solid var(--border-rail);
 }
 
 .sidebar__brand {
@@ -354,6 +360,15 @@ button:disabled {
   align-items: center;
   gap: var(--sp-2);
   padding: 0 var(--sp-2) var(--sp-1);
+}
+
+/* Both cuts are in the markup; the theme's tokens pick one, so no media query is repeated here. */
+.sidebar__logo--light {
+  display: var(--rail-logo-light);
+}
+
+.sidebar__logo--dark {
+  display: var(--rail-logo-dark);
 }
 
 .sidebar__collapse {
@@ -364,12 +379,12 @@ button:disabled {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--ds-n-500);
+  color: var(--fg-rail-muted);
   transition: color var(--dur-fast) var(--ease-out);
 }
 
 .sidebar__collapse:hover {
-  color: var(--ds-n-200);
+  color: var(--fg-rail-strong);
 }
 
 /* --- Navigation (spec 021) -----------------------------------------------
@@ -389,27 +404,26 @@ button:disabled {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--ds-n-300);
+  color: var(--fg-rail);
   font-size: var(--fs-body-s);
   text-align: left;
   transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .sidebar__nav-item:hover {
-  background: var(--ds-ink-2);
-  color: var(--ds-n-100);
+  background: var(--bg-rail-hover);
+  color: var(--fg-rail-strong);
 }
 
 .sidebar__nav-item[aria-current='page'] {
-  background: var(--ds-ink-2);
-  color: var(--ds-white);
+  background: var(--bg-rail-current);
+  color: var(--fg-rail-strong);
   font-weight: var(--fw-semibold);
 }
 
-/* The mark stays blue on the current row — the rail is ink, so the accent is the only thing that
-   reads as "you are here" without adding a second background. */
+/* The mark is the accent on the current row, so "you are here" reads in both themes. */
 .sidebar__nav-item[aria-current='page'] svg {
-  color: var(--ds-blue);
+  color: var(--fg-rail-accent);
 }
 
 /* --- Collapsed, the rail is icons only ------------------------------------
@@ -462,20 +476,20 @@ button:disabled {
 .sidebar__new {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
   border: 0;
-  border-radius: var(--r-md);
-  background: transparent;
-  color: var(--fg-on-inverse);
+  border-radius: var(--r-pill);
+  background: var(--bg-accent-strong);
+  color: var(--fg-on-accent);
   font-size: var(--fs-body-s);
   font-weight: var(--fw-semibold);
-  transition: background var(--dur-fast) var(--ease-out);
+  transition: box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .sidebar__new:hover {
-  background: var(--ds-ink-2);
+  box-shadow: var(--shadow-2);
 }
 
 /* The rail's only label style. It used to have three — an uppercase mono `FAVOURITES`, an uppercase
@@ -488,7 +502,7 @@ button:disabled {
   font-size: var(--fs-caption);
   letter-spacing: var(--ls-wide);
   text-transform: none;
-  color: var(--ds-n-400);
+  color: var(--fg-rail-muted);
 }
 
 .sidebar__note {
@@ -496,7 +510,7 @@ button:disabled {
   padding-inline: var(--sp-2);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
-  color: var(--ds-n-400);
+  color: var(--fg-rail-muted);
 }
 
 /* --- Who is answering, in the rail (spec 021) ----------------------------
@@ -512,13 +526,13 @@ button:disabled {
   padding: var(--sp-2);
   border: 0;
   border-radius: var(--r-sm);
-  background: var(--ds-ink-2);
+  background: var(--bg-rail-hover);
   text-align: left;
   transition: background var(--dur-fast) var(--ease-out);
 }
 
 .answering:hover {
-  background: var(--ds-n-800);
+  background: var(--bg-rail-current);
 }
 
 .answering__naming {
@@ -534,7 +548,7 @@ button:disabled {
   overflow: hidden;
   font-size: var(--fs-body-s);
   line-height: var(--lh-snug);
-  color: var(--ds-n-100);
+  color: var(--fg-rail-strong);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -544,7 +558,7 @@ button:disabled {
   font-size: var(--fs-caption);
   line-height: var(--lh-snug);
   letter-spacing: var(--ls-wide);
-  color: var(--ds-blue-500);
+  color: var(--fg-rail-accent);
 }
 
 /* --- The mark an agent gets (spec 021) ------------------------------------
@@ -609,7 +623,7 @@ button:disabled {
 }
 
 .history__row:hover {
-  background: var(--ds-ink-2);
+  background: var(--bg-rail-hover);
 }
 
 .history__open {
@@ -620,7 +634,7 @@ button:disabled {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--ds-n-300);
+  color: var(--fg-rail);
   font-size: var(--fs-body-s);
   text-align: left;
   text-overflow: ellipsis;
@@ -628,7 +642,7 @@ button:disabled {
 }
 
 .history__open[aria-current='true'] {
-  color: var(--ds-blue-500);
+  color: var(--fg-rail-accent);
   font-weight: var(--fw-semibold);
 }
 
@@ -654,11 +668,11 @@ button:disabled {
   border: 0;
   border-radius: var(--r-xs);
   background: transparent;
-  color: var(--ds-n-500);
+  color: var(--fg-rail-muted);
 }
 
 .history__action:hover {
-  color: var(--ds-n-100);
+  color: var(--fg-rail-strong);
 }
 
 .history__rename {
@@ -671,8 +685,8 @@ button:disabled {
   padding: var(--sp-1) var(--sp-2);
   border: 1px solid var(--ds-blue);
   border-radius: var(--r-sm);
-  background: var(--ds-ink);
-  color: var(--ds-n-100);
+  background: var(--bg-rail);
+  color: var(--fg-rail-strong);
   font-family: var(--font-sans);
   font-size: var(--fs-body-s);
 }
@@ -684,7 +698,7 @@ button:disabled {
   padding-inline: var(--sp-2);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
-  color: var(--ds-n-400);
+  color: var(--fg-rail-muted);
 }
 
 .agents__reason,
@@ -709,9 +723,9 @@ button:disabled {
   gap: var(--sp-2);
   margin: var(--sp-2) var(--sp-2) 0;
   padding-left: var(--sp-2);
-  border-left: 2px solid var(--ds-blue-700);
+  border-left: 2px solid var(--fg-rail-accent);
   font-size: var(--fs-caption);
-  color: var(--ds-n-500);
+  color: var(--fg-rail-muted);
 }
 
 .sidebar__lang {
@@ -720,12 +734,38 @@ button:disabled {
   padding-inline: var(--sp-2);
 }
 
-.sidebar__lang-option {
-  padding: 2px var(--sp-2);
-  border: 1px solid var(--ds-n-700);
+/* Language and theme on one line, the two things this browser chooses about itself (spec 060). */
+.sidebar__prefs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: var(--sp-2);
+}
+
+.sidebar__theme {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-rail);
   border-radius: var(--r-pill);
   background: transparent;
-  color: var(--ds-n-400);
+  color: var(--fg-rail);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.sidebar__theme:hover {
+  background: var(--bg-rail-hover);
+  color: var(--fg-rail-strong);
+}
+
+.sidebar__lang-option {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--border-rail);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg-rail-muted);
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   text-transform: uppercase;
@@ -743,7 +783,7 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: var(--fs-caption);
   line-height: var(--lh-base);
-  color: var(--ds-n-400);
+  color: var(--fg-rail-muted);
   overflow-wrap: anywhere;
 }
 
@@ -1077,51 +1117,70 @@ button:disabled {
 /* ---------- Empty state ---------- */
 .empty {
   width: 100%;
-  max-width: 600px;
+  max-width: 720px;
   text-align: center;
+}
+
+/* Who is answering, as a quiet pill above the greeting (spec 060). */
+.empty__agent {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-5);
+  padding: var(--sp-1) var(--sp-3) var(--sp-1) var(--sp-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  color: var(--fg-link);
+  font-size: var(--fs-body-s);
+  font-weight: var(--fw-semibold);
 }
 
 .empty__headline {
   margin: 0 0 var(--sp-3);
-  font-size: clamp(var(--fs-h3), 3vw, var(--fs-h1));
+  font-size: clamp(var(--fs-h3), 4vw, var(--fs-h1));
+  font-weight: var(--fw-semibold);
   line-height: var(--lh-snug);
   letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
 }
 
 .empty__subtitle {
   margin: var(--sp-3) auto var(--sp-6);
   max-width: 46ch;
-  font-size: var(--fs-body-s);
+  font-size: var(--fs-body);
   color: var(--fg-3);
 }
 
 .empty__suggestions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-2);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: var(--sp-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.chip {
+/* An example the agent declares (spec 037), as a raised card (spec 060). */
+.empty__card {
   width: 100%;
   height: 100%;
-  padding: var(--sp-3) var(--sp-4);
+  min-height: 88px;
+  padding: var(--sp-4);
   text-align: left;
   line-height: var(--lh-base);
   border: 1px solid var(--border-1);
-  border-radius: var(--r-md);
-  background: transparent;
-  color: var(--fg-2);
+  border-radius: var(--r-lg);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-1);
+  color: var(--fg-1);
   font-size: var(--fs-body-s);
-  transition: all var(--dur-base) var(--ease-out);
+  transition: border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
 
-.chip:hover {
+.empty__card:hover {
   border-color: var(--border-accent);
-  background: var(--bg-accent-soft);
-  color: var(--fg-link);
+  box-shadow: var(--shadow-2);
 }
 
 /* ---------- Activity ---------- */
@@ -2594,7 +2653,7 @@ button:disabled {
 }
 
 .sidebar__muted {
-  color: var(--fg-3);
+  color: var(--fg-rail-muted);
   font-size: var(--fs-caption);
 }
 
@@ -3270,18 +3329,18 @@ button:disabled {
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--ds-n-300);
+  color: var(--fg-rail);
   font-size: var(--fs-body-s);
   text-align: left;
   transition: background var(--dur-fast) var(--ease-out);
 }
 
 .favourites__row:hover:not(:disabled) {
-  background: var(--ds-ink-2);
+  background: var(--bg-rail-hover);
 }
 
 .favourites__row[aria-current='true'] {
-  color: var(--ds-blue-500);
+  color: var(--fg-rail-accent);
 }
 
 /* Starred and still not drivable by this build — the rail says so the same way the card does. */
@@ -3733,10 +3792,10 @@ button:disabled {
   gap: var(--sp-2);
   margin: 0 var(--sp-3) var(--sp-2);
   padding: var(--sp-1) var(--sp-3);
-  border: 1px solid var(--ds-n-800);
+  border: 1px solid var(--border-rail);
   border-radius: var(--r-pill);
-  background: var(--ds-ink);
-  color: var(--ds-n-600);
+  background: var(--bg-rail);
+  color: var(--fg-rail-muted);
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 
@@ -3749,7 +3808,7 @@ button:disabled {
   min-width: 0;
   border: 0;
   background: transparent;
-  color: var(--ds-n-100);
+  color: var(--fg-rail-strong);
   font-family: var(--font-sans);
   font-size: var(--fs-caption);
   outline: none;
@@ -3767,14 +3826,14 @@ button:disabled {
   display: block;
   overflow: hidden;
   font-size: var(--fs-caption);
-  color: var(--ds-n-500);
+  color: var(--fg-rail-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .history__fragment-label {
   margin-right: var(--sp-1);
-  color: var(--ds-n-600);
+  color: var(--fg-rail-muted);
   font-family: var(--font-mono);
   text-transform: lowercase;
 }
@@ -4504,7 +4563,7 @@ button:disabled {
   border: 0;
   background: none;
   font-size: var(--fs-caption);
-  color: var(--ds-n-400);
+  color: var(--fg-rail-muted);
   text-align: left;
   cursor: pointer;
 }
@@ -4737,9 +4796,8 @@ button:disabled {
    script and by the preferences store. The media query is "follow the system", and it is guarded
    by `:not([data-theme])` so an explicit LIGHT choice is not overridden by a dark system.
 
-   The rail does not invert. It is already the dark surface against a light column, and in dark it
-   becomes the deepest one — an elevation stack rather than a hue change, so the element a reader
-   navigates by keeps its character in both themes:
+   The rail follows the theme since spec 060: light in light, and in dark the deepest surface — an
+   elevation stack rather than a hue change:
 
        rail    --ds-ink    #11151C   recessed
        ground  --ds-n-900  #121826
@@ -4779,6 +4837,17 @@ button:disabled {
        all-pairs against #1B2230: three hues hold; the fourth is re-stepped because #A21CAF falls
        to 2.52:1 contrast there. All checks pass, contrast >= 3:1. */
     --ds-series-4: var(--ds-series-4-dark);
+    --bg-rail: var(--ds-ink);
+    --bg-rail-hover: var(--ds-ink-2);
+    --bg-rail-current: var(--ds-ink-2);
+    --fg-rail: var(--ds-n-300);
+    --fg-rail-strong: var(--ds-n-100);
+    --fg-rail-muted: var(--ds-n-400);
+    --fg-rail-accent: var(--ds-blue-500);
+    --fg-rail-focus: var(--ds-blue-500);
+    --border-rail: var(--ds-n-800);
+    --rail-logo-light: none;
+    --rail-logo-dark: block;
   }
 }
 
@@ -4802,6 +4871,18 @@ button:disabled {
   --border-accent: var(--ds-blue-500);
 
   --ds-series-4: var(--ds-series-4-dark);
+
+  --bg-rail: var(--ds-ink);
+  --bg-rail-hover: var(--ds-ink-2);
+  --bg-rail-current: var(--ds-ink-2);
+  --fg-rail: var(--ds-n-300);
+  --fg-rail-strong: var(--ds-n-100);
+  --fg-rail-muted: var(--ds-n-400);
+  --fg-rail-accent: var(--ds-blue-500);
+  --fg-rail-focus: var(--ds-blue-500);
+  --border-rail: var(--ds-n-800);
+  --rail-logo-light: none;
+  --rail-logo-dark: block;
 }
 
 /* Syntax highlighting, mapped rather than vendored twice (spec 036, AC14).
@@ -5426,6 +5507,180 @@ button:disabled {
      clears it everywhere at 5.36–5.90. Overridden here rather than in the vendored file, for the
      same reason `--fg-harness` is. Dark already passes on its own mapping (4.65–5.50) and keeps it. */
   --fg-link: var(--ds-blue-700);
+
+  /* The rail (spec 060). It used to be `--ds-ink` in both themes — a dark app with a light column.
+     Now it is a surface of its own that follows the theme: white with a hairline in light, the
+     deepest surface in dark. `contrast.test.ts` computes every pair below in both palettes. */
+  --bg-rail: var(--ds-white);
+  --bg-rail-hover: var(--ds-n-100);
+  --bg-rail-current: var(--ds-blue-50);
+  --fg-rail: var(--ds-n-700);
+  --fg-rail-strong: var(--ds-black);
+  --fg-rail-muted: var(--ds-n-600);
+  --fg-rail-accent: var(--ds-blue-700);
+  --fg-rail-focus: var(--ds-blue);
+  --border-rail: var(--ds-n-200);
+  /* Which cut of the mark the rail shows: blue on light, white on dark (see `brand.test.ts`). */
+  --rail-logo-light: block;
+  --rail-logo-dark: none;
+}
+
+/* --- The Playground (spec 060) -------------------------------------------
+   One screen, two tabs. The Agent tab is the definition beside the conversation, the way the
+   Foundry portal lays its playground out; the Tools tab is spec 042's runner. */
+.playground-screen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
+.playground-screen__head {
+  min-width: 0;
+  padding: var(--sp-5) var(--sp-5) 0;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.playground-screen__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
+  color: var(--fg-1);
+}
+
+.playground-screen__lead {
+  margin: var(--sp-1) 0 var(--sp-3);
+  font-size: var(--fs-body-s);
+  color: var(--fg-3);
+}
+
+.playground-screen__tabs {
+  display: flex;
+  gap: var(--sp-1);
+}
+
+.playground-screen__tab {
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--fg-3);
+  font-size: var(--fs-body-s);
+}
+
+.playground-screen__tab:hover {
+  color: var(--fg-1);
+}
+
+.playground-screen__tab[aria-selected='true'] {
+  border-bottom-color: var(--bg-accent-strong);
+  color: var(--fg-1);
+  font-weight: var(--fw-semibold);
+}
+
+.playground-screen__panel {
+  display: grid;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Spec 042's runner keeps its own layout; the panel only gives it room to scroll. */
+.playground-screen__panel > .playground {
+  overflow-y: auto;
+}
+
+.playground-screen__off {
+  margin: var(--sp-6) var(--sp-5);
+  color: var(--fg-3);
+}
+
+.playground-agent {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
+/* The definition, read-only, on the surface a card sits on. */
+.playground-agent__definition {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+  min-width: 0;
+  padding: var(--sp-5) var(--sp-4);
+  overflow-y: auto;
+  border-right: 1px solid var(--border-1);
+  background: var(--bg-1);
+}
+
+.playground-agent__definition-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.playground-agent__naming {
+  min-width: 0;
+}
+
+.playground-agent__name {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+}
+
+.playground-agent__model {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.playground-agent__note {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.playground-agent__definition .pill-button {
+  align-self: flex-start;
+}
+
+/* The composer always sits in the last row. Before the first question there are no columns, and
+   without this it took the middle row and stretched to fill the screen. */
+.compare > .composer {
+  grid-row: 3;
+  align-self: end;
+}
+
+/* One agent until a second is chosen: the column is the conversation, centred like the chat. */
+.compare__columns[data-columns='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.compare__lead--quiet {
+  flex-basis: 100%;
+}
+
+/* Below the breakpoint the definition stacks above the conversation and gives way to it. */
+@media (max-width: 1100px) {
+  .playground-agent {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .playground-agent__definition {
+    max-height: 30vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-1);
+  }
 }
 
 /* --- Side by side (spec 020) ---------------------------------------------

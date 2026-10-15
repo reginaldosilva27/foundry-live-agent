@@ -11,12 +11,8 @@ import {
   CAP,
   HISTORY_KEY,
   groupByAge,
-  RECORD_VERSION,
   load,
-  mergeImported,
-  parseExportFile,
   searchConversations,
-  toExportFile,
   useHistory,
   titleFrom,
   upsert,
@@ -234,7 +230,7 @@ describe('searchConversations', () => {
     expect(searchConversations(list, 'tangerine')).toEqual([])
   })
 
-  it('folds accents, the way the palette does (§4)', () => {
+  it('folds accents, the way every search here does (§4)', () => {
     const accented = [asked('c3', 'Conversação com o agente', 'Olá')]
     expect(searchConversations(accented, 'conversacao')).toHaveLength(1)
   })
@@ -252,111 +248,7 @@ describe('searchConversations', () => {
 })
 
 /** Spec 027 AC8, AC9, AC10, AC11, AC12 — the file the record leaves in, and comes back from. */
-describe('the export file', () => {
-  const traced = conversation({
-    id: 'c1',
-    agent: 'foundry-live-agent',
-    conversationId: 'conv_abc',
-    messages: [
-      { role: 'user', id: 'u1', text: 'Why?' },
-      {
-        role: 'agent',
-        id: 'a1',
-        startedAt: 0,
-        turn: {
-          reasoning: '',
-          activities: [],
-          text: 'Because.',
-          status: 'done',
-          unknownEvents: {},
-          trace: { responseId: 'resp_1', otelTraceId: 'otel_1' },
-        },
-      },
-    ],
-  })
-
-  it('carries a version, so a later shape can read an older file (AC8)', () => {
-    const file = toExportFile([traced], 1_700_000_000_000)
-    expect(file.version).toBe(RECORD_VERSION)
-    expect(file.exportedAt).toBe(1_700_000_000_000)
-  })
-
-  it('carries the pointer, the agent and the trace ids, stripping nothing (AC8)', () => {
-    const [only] = toExportFile([traced], 0).conversations
-    expect(only.conversationId).toBe('conv_abc')
-    expect(only.agent).toBe('foundry-live-agent')
-    expect(only.messages).toHaveLength(2)
-    const answer = only.messages[1]
-    expect(answer.role === 'agent' && answer.turn.trace).toEqual({
-      responseId: 'resp_1',
-      otelTraceId: 'otel_1',
-    })
-  })
-
-  it('round-trips its own output, pointer included (AC9)', () => {
-    expect(parseExportFile(JSON.stringify(toExportFile([traced], 0)))).toEqual([traced])
-  })
-
-  it('refuses a file it does not understand, whole (AC12)', () => {
-    expect(parseExportFile('not json at all')).toBeNull()
-    expect(parseExportFile(JSON.stringify({ version: 99, conversations: [traced] }))).toBeNull()
-    expect(parseExportFile(JSON.stringify({ version: RECORD_VERSION }))).toBeNull()
-    expect(
-      parseExportFile(JSON.stringify({ version: RECORD_VERSION, conversations: 'nope' })),
-    ).toBeNull()
-    expect(parseExportFile(JSON.stringify([traced]))).toBeNull()
-  })
-
-  it('drops a conversation in a shape it cannot render, and keeps the rest (§5)', () => {
-    const file = { version: RECORD_VERSION, exportedAt: 0, conversations: [{ id: 'bad' }, traced] }
-    expect(parseExportFile(JSON.stringify(file))?.map((c) => c.id)).toEqual(['c1'])
-  })
-})
-
-describe('mergeImported', () => {
-  const at = (id: string, updatedAt: number) => conversation({ id, updatedAt })
-
-  it('does not duplicate a conversation already stored (AC10)', () => {
-    const stored = [at('c1', 10), at('c2', 20)]
-    const result = mergeImported(stored, [at('c1', 99)], CAP)
-    expect(result.conversations.map((c) => c.id).sort()).toEqual(['c1', 'c2'])
-    expect(result.kept).toBe(0)
-    expect(result.dropped).toBe(0)
-  })
-
-  it('merges the new ones, newest first', () => {
-    const result = mergeImported([at('c1', 10)], [at('c2', 30), at('c3', 20)], CAP)
-    expect(result.conversations.map((c) => c.id)).toEqual(['c2', 'c3', 'c1'])
-    expect(result.kept).toBe(2)
-  })
-
-  it('keeps the newest past the cap, and reports what it could not keep (AC11)', () => {
-    const stored = [at('stored', 1_000)]
-    const incoming = [at('new-1', 900), at('new-2', 800), at('new-3', 700)]
-    const result = mergeImported(stored, incoming, 3)
-
-    expect(result.conversations.map((c) => c.id)).toEqual(['stored', 'new-1', 'new-2'])
-    expect(result.kept).toBe(2)
-    expect(result.dropped).toBe(1)
-  })
-})
-
 /** Spec 027 AC13 — clearing is deliberate, and it removes the key rather than storing an empty one. */
-describe('useHistory().clear', () => {
-  afterEach(() => localStorage.clear())
-
-  it('empties the list and takes the stored key with it', () => {
-    writeJson(HISTORY_KEY, [conversation({ id: 'c1' }), conversation({ id: 'c2' })])
-    const { result } = renderHook(() => useHistory())
-    expect(result.current.conversations).toHaveLength(2)
-
-    act(() => result.current.clear())
-
-    expect(result.current.conversations).toEqual([])
-    expect(localStorage.getItem(HISTORY_KEY)).toBeNull()
-  })
-})
-
 /**
  * Spec 027 AC20 — the notice above the list must stay true for the whole session.
  *
@@ -410,36 +302,3 @@ describe('useHistory() when the browser stops accepting writes', () => {
 })
 
 /** Spec 027 AC11, AC12 — the hook reports what it did, at the moment it did it. */
-describe('useHistory().importFile', () => {
-  afterEach(() => localStorage.clear())
-
-  it('reports kept and dropped to its caller, not on the next render', () => {
-    writeJson(HISTORY_KEY, [conversation({ id: 'stored', updatedAt: 1_000 })])
-    const { result } = renderHook(() => useHistory())
-
-    const incoming = Array.from({ length: CAP + 2 }, (_, i) =>
-      conversation({ id: `in-${i}`, updatedAt: 900 - i }),
-    )
-
-    let report: { kept: number; dropped: number } | null = null
-    act(() => {
-      report = result.current.importFile(JSON.stringify(toExportFile(incoming, 0)))
-    })
-
-    expect(report).toEqual({ kept: CAP - 1, dropped: 3 })
-    expect(result.current.conversations).toHaveLength(CAP)
-  })
-
-  it('refuses a file that is not a record and leaves the record untouched (AC12)', () => {
-    writeJson(HISTORY_KEY, [conversation({ id: 'stored' })])
-    const { result } = renderHook(() => useHistory())
-
-    let report: { kept: number; dropped: number } | null = { kept: 0, dropped: 0 }
-    act(() => {
-      report = result.current.importFile('{"nope":true}')
-    })
-
-    expect(report).toBeNull()
-    expect(result.current.conversations.map((c) => c.id)).toEqual(['stored'])
-  })
-})

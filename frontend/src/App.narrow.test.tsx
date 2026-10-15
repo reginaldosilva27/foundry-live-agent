@@ -115,9 +115,9 @@ describe('it is the same navigation, not a second one (AC3)', () => {
     await screen.findByRole('textbox', { name: t('composer.placeholder', 'en') })
     await user.click(openMenu())
 
-    // The four screens, the palette and a new session — what the rail carries, unchanged.
+    // The three screens (spec 060) — what the rail carries, unchanged.
     const nav = within(rail())
-    for (const key of ['nav.chat', 'nav.agents', 'nav.compare', 'nav.history', 'palette.open'] as const) {
+    for (const key of ['nav.chat', 'nav.agents', 'nav.playground'] as const) {
       expect(nav.getByRole('button', { name: t(key, 'en') }), key).toBeInTheDocument()
     }
   })

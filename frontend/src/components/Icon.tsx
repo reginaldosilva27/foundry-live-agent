@@ -162,36 +162,6 @@ export const MenuIcon = (p: IconProps) =>
     p,
   )
 
-/** Side by side (spec 020). Two panes of equal weight — the screen is the comparison. */
-export const ColumnsIcon = (p: IconProps) =>
-  svg(
-    <>
-      <rect x="3" y="4" width="8" height="16" rx="1.5" />
-      <rect x="13" y="4" width="8" height="16" rx="1.5" />
-    </>,
-    p,
-  )
-
-/** The history screen and its nav item (spec 027). A record is a thing with a time on it. */
-export const ClockIcon = (p: IconProps) =>
-  svg(
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <polyline points="12 6.5 12 12 16 14" />
-    </>,
-    p,
-  )
-
-export const UploadIcon = (p: IconProps) =>
-  svg(
-    <>
-      <line x1="12" y1="20.5" x2="12" y2="9" />
-      <polyline points="7.5 13.5 12 9 16.5 13.5" />
-      <path d="M4 6.5V5A1.5 1.5 0 0 1 5.5 3.5h13A1.5 1.5 0 0 1 20 5v1.5" />
-    </>,
-    p,
-  )
-
 export const DownloadIcon = (p: IconProps) =>
   svg(
     <>
@@ -258,5 +228,35 @@ export const StarIcon = ({ filled, ...p }: IconProps & { filled?: boolean }) =>
       points="12 3.6 14.6 9.2 20.7 10 16.3 14.2 17.4 20.3 12 17.3 6.6 20.3 7.7 14.2 3.3 10 9.4 9.2"
       fill={filled ? 'currentColor' : 'none'}
     />,
+    p,
+  )
+
+/** The theme switch (spec 060): the sun offers light, the moon offers dark. */
+export const SunIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <line x1="12" y1="2.5" x2="12" y2="4.5" />
+      <line x1="12" y1="19.5" x2="12" y2="21.5" />
+      <line x1="2.5" y1="12" x2="4.5" y2="12" />
+      <line x1="19.5" y1="12" x2="21.5" y2="12" />
+      <line x1="5.3" y1="5.3" x2="6.7" y2="6.7" />
+      <line x1="17.3" y1="17.3" x2="18.7" y2="18.7" />
+      <line x1="5.3" y1="18.7" x2="6.7" y2="17.3" />
+      <line x1="17.3" y1="6.7" x2="18.7" y2="5.3" />
+    </>,
+    p,
+  )
+
+export const MoonIcon = (p: IconProps) => svg(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />, p)
+
+/** The Playground (spec 060): a flask, for trying things. */
+export const FlaskIcon = (p: IconProps) =>
+  svg(
+    <>
+      <path d="M9 3h6" />
+      <path d="M10 3v6.5L4.8 18.2A1.8 1.8 0 0 0 6.4 21h11.2a1.8 1.8 0 0 0 1.6-2.8L14 9.5V3" />
+      <line x1="7.5" y1="15" x2="16.5" y2="15" />
+    </>,
     p,
   )

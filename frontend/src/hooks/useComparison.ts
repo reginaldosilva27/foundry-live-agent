@@ -1,5 +1,5 @@
 /**
- * Two agents, one question (spec 020).
+ * The Playground's conversation: one agent, or two asked the same question (specs 020, 060).
  *
  * **There is no transport here, because there did not need to be one.** The spec left the choice
  * open — one multiplexed stream, or one stream per agent — and preferred the second "precisely
@@ -40,7 +40,7 @@ export interface Comparison {
    * under different prefixes; without that they would both produce `turn_0`.
    */
   messages: Message[]
-  /** One question to both. `first` is who the left column asks; the right asks `other`. */
+  /** One question to both — or to `first` alone while no second agent is chosen (spec 060). */
   send: (text: string, first?: string) => void
   /** Stop both. Neither Foundry run stops — the browser stops listening (spec 023). */
   stop: () => void
@@ -68,9 +68,13 @@ export function useComparison(): Comparison {
 
   const send = useCallback(
     (text: string, first?: string) => {
-      // Nothing to compare against yet. The composer is disabled in this state; this is the second
-      // line, so a send arriving any other way cannot produce a one-column "comparison".
-      if (!other || left.streaming || right.streaming) return
+      if (left.streaming || right.streaming) return
+      // The Playground (spec 060) is one agent until a person adds a second: then it asks the
+      // left column only, and the right stays untouched rather than half a comparison.
+      if (!other) {
+        void left.send(text, first)
+        return
+      }
       // Both fired before either is awaited — that is the whole of AC1. `void` rather than
       // `await`, because awaiting the first here would make the second column start when the
       // first finished, which is the sequential comparison this spec exists to replace.

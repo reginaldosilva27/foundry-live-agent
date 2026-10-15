@@ -33,7 +33,7 @@ screenshot on this page is one you can reproduce with no Azure account._
 
 > **Status: see the [spec index](specs/README.md).** The harness contract, **both harnesses**, the BFF, the shell,
 > voice on the same agent, the trace panel, the agents screen and everything built on them — agent
-> selection and inspection, side by side, traces, the event inspector, charts, themes and the
+> selection and inspection, a playground with side-by-side comparison, traces, the event inspector, charts, themes and the
 > accessibility pass. Two are not: **045** (*attachments*) is clarified and **blocked** on a
 > retention decision that is the operator's, not a document's; **049** (*Foundry IQ as a knowledge
 > source*) is planned.
@@ -83,28 +83,38 @@ flowchart LR
 
     subgraph app["📦 This repository"]
         BFF["FastAPI BFF<br/>identity · SSE · tool execution<br/><b>no agent loop</b>"]
-        H["Harness<br/>prompt-agent | langgraph"]
+        H["Harness adapter<br/>prompt-agent | langgraph"]
         T["Function tools<br/>get_current_datetime<br/>lookup_knowledge<br/>search_web"]
     end
 
     subgraph foundry["☁️ Microsoft Foundry"]
-        AG["Prompt agent<br/>instructions · model · tools"]
+        AG["Prompt agent<br/>instructions · model · tools<br/>Foundry runs the loop"]
+        HA["Hosted agent<br/>our LangGraph container<br/>runs its own loop and tools"]
         VL["Voice Live"]
         AI["Application Insights<br/>agent tracing"]
     end
 
-    GW["🚪 Your APIM gateway<br/>token limits · policies"]
     MODEL["Model<br/>gpt-5.5"]
+    GW["🚪 Your APIM gateway<br/>only when the model is<br/>named connection/model"]
     MCP["🌍 Microsoft Learn<br/>MCP server"]
+    TAV["🔎 Tavily<br/>web search"]
+    KV["🔑 Key Vault<br/>hosted agent secret"]
 
-    UI -- "SSE: AgentEvent" --> BFF
+    UI -- "POST /chat → SSE: AgentEvent" --> BFF
     BFF --> H
-    H -- "Responses API" --> AG
-    AG -- "inference via BYOM<br/>chat/completions" --> GW --> MODEL
-    AG -- "tool call" --> MCP
+    H -- "Responses API<br/>agent_reference" --> AG
+    H -- "agent endpoint<br/>protocols/openai/responses" --> HA
+    AG --> MODEL
+    AG -. "optional: BYOM" .-> GW -.-> MODEL
+    AG -- "Foundry is the MCP client" --> MCP
     AG -. "function_call<br/>(Foundry asks, stops)" .-> BFF
     BFF -- "function_call_output" --> AG
     BFF --> T
+    T -- "search_web" --> TAV
+    HA --> MODEL
+    HA -- "the container is the MCP client" --> MCP
+    HA --> TAV
+    HA --> KV
     UI -- "WebRTC audio (peer-to-peer)" --> VL
     BFF -- "control channel + tool calls" --> VL
     VL --> AG
@@ -113,16 +123,18 @@ flowchart LR
 
     classDef ours fill:#dbeafe,stroke:#2563eb,stroke-width:2px
     classDef theirs fill:#e0f2fe,stroke:#0284c7
-    classDef gw fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef ext fill:#fef3c7,stroke:#d97706,stroke-width:2px
     class BFF,H,T,UI ours
-    class AG,VL,AI theirs
-    class GW,MODEL gw
+    class AG,HA,VL,AI,MODEL theirs
+    class GW,MCP,TAV,KV ext
 ```
 
-**Blue = we build it. Light blue = Foundry runs it. Amber = your gateway.** Three details worth
-staring at:
+**Blue = we build it. Light blue = Foundry runs it. Amber = third party or optional.** Two agents
+sit behind one adapter seam: the **prompt agent**, whose loop Foundry runs, and the **hosted agent**,
+a LangGraph graph from this repository that Foundry runs as a container and that calls its own
+tools. Four details worth staring at:
 
-- The dotted line: Foundry emits a `function_call` and **stops**. If the BFF doesn't answer, the run
+- The dotted `function_call` edge: Foundry emits it and **stops**. If the BFF doesn't answer, the run
   hangs and expires after 10 minutes. That round trip is the point of the whole design.
 - **The gateway is not where you'd guess.** It does not sit between the app and the agent — it sits
   between the *agent* and the *model*. The project-level "AI Gateway" governs direct model calls and
@@ -131,12 +143,44 @@ staring at:
   **The shipped default does not take that path.** `ai/harness/_shared/agent_core.yaml` names a
   plain deployment on purpose, so inference bypasses the gateway until the APIM API is bound to its
   backend — which is also why `otel_trace_id` and `gateway_request_id` are still pending in the
-  trace panel. The amber box is the design, not today's configuration.
+  trace panel. That is why the gateway edges are dotted: the solid edge is today's path.
+- **Who is the MCP client changes the event.** On the prompt agent Foundry calls Microsoft Learn
+  and the browser sees an `mcp_call`; on the hosted agent the container calls it and the browser
+  sees a `tool_call` with `executor: "foundry"`. The BFF answers neither.
 - Voice audio goes **browser → Voice Live directly**; only the control channel (and the tool calls
   on it) touches our server. No Azure credential ever reaches the browser, and **Voice Live never
   passes through any gateway**.
 
 Full detail: [`docs/architecture.md`](docs/architecture.md) · [`PLAN.md`](PLAN.md).
+
+### 🎞️ Follow one message, layer by layer
+
+One question — *"What time is it in Lisbon, and what does Learn say about Foundry Agent Service?"* —
+uses both kinds of tool: Microsoft Learn, which **Foundry** calls over MCP, and
+`get_current_datetime`, which Foundry asks **the BFF** to run. Here it is, one hop per frame, with the
+file and line where each hop happens:
+
+![One message followed through 13 hops: browser, BFF, adapter, Foundry and back, each with its file and line, the payload at that point and why it is built that way](docs/assets/message-journey-en.gif)
+
+| # | Layer | What happens | Where |
+|---|---|---|---|
+| 1 | Browser | `fetch` POSTs `message · conversation_id · agent` — nothing else | `frontend/src/hooks/useAgentStream.ts` |
+| 2 | BFF | Picks a fresh adapter for **this** request from the agent's kind | `routers/chat.py` → `harness_factory.py` (`HARNESS_FOR_KIND`) |
+| 3 | Adapter | Opens one turn; its loop is the protocol's (≤ 8 legs + 1), deciding nothing | `ai/harness/prompt_agent/adapter.py` |
+| 4 | Foundry | `conversations.create` (turn 1) + `responses.create` with `agent_reference` | `harness_factory.py` |
+| 5 | Foundry | The agent decides; **Foundry** calls Learn MCP | `ai/harness/_shared/agent_core.yaml` |
+| 6 | Adapter | Raw Foundry events → the nine `AgentEvent`s | `prompt_agent/events.py` |
+| 7 | BFF → Browser | Each event validated against the contract, framed as one-line SSE | `backend/app/sse.py` |
+| 8 | Foundry → Adapter | `function_call`, then Foundry **stops**; usage summed, `done` held back | `adapter.py` |
+| 9 | BFF | Runs the requested tool through the registry — executes, never chooses | `backend/app/tool_executor.py` |
+| 10 | Foundry | `function_call_output` on a second leg, **same** conversation | `adapter.py` |
+| 11 | Browser | Summed `usage` · `trace_ids` · `done` | `adapter.py` · `events.py` |
+| 12 | Browser | Frames → turn → drawn; the drawing and Foundry's pointer go to `localStorage` | `state/sse.ts` → `state/turn.ts` → `state/history.ts` |
+| 13 | External | Optional: `/trace/{response_id}`, refused unless it matches `ID_SHAPE`, then KQL | `backend/app/traces.py` |
+
+Payload values in the animation are illustrative; the shapes are the code's. Open
+[`docs/assets/message-journey/journey.html`](docs/assets/message-journey/journey.html) in a browser
+to step through it with ← and → (`?lang=pt` for Portuguese); `record.mjs` beside it regenerates the GIF.
 
 ### 🔬 One turn, hop by hop
 
@@ -389,7 +433,7 @@ The current UI keeps a compact Replay label and puts its details behind the info
 | [![The trace drawer: run totals, response and conversation ids, the otel trace id, the agent activity rows and a span tree with durations](docs/assets/screenshot-trace.png)](docs/assets/screenshot-trace.png) | [![The event inspector open as a fourth column beside the trace drawer, listing every normalized BFF SSE event of the turn with a type filter](docs/assets/screenshot-events.png)](docs/assets/screenshot-events.png) |
 | **The trace drawer** (specs 005, 014). `invoke_agent` over two Learn MCP calls and the model call, with real durations — and the line that matters: *"Foundry traces what Foundry runs. Tools this app executes leave no span."* That is §8 showing up in telemetry. | **The event inspector** (spec 038), at 1680px where it takes a column of its own. Every normalized BFF SSE event of the turn, filtered by type, with the contract's own honesty report above it: *21 of 25 Foundry event names verified against a recorded run.* |
 | [![The agents screen: ten agent cards from a real project, each with kind, version, status and harness; the hosted one dimmed](docs/assets/screenshot-agents.png)](docs/assets/screenshot-agents.png) | [![The same agents screen in the dark theme](docs/assets/screenshot-dark.png)](docs/assets/screenshot-dark.png) |
-| **The agents screen** (specs 019, 030). Ten agents from a real Foundry project — eight of which this repository did not write. The dimmed card is not hidden: it says, in the reader's language, *why* it cannot answer. | **Two themes** (spec 036). Light is the base, dark is an explicit choice, and `system` removes the attribute rather than writing one. Every colour literal lives in the vendored palette; `app.css` names tokens and a test enforces it. |
+| **The agents screen** (specs 019, 030). Ten agents from a real Foundry project — eight of which this repository did not write. The dimmed card is not hidden: it says, in the reader's language, *why* it cannot answer. | **Two themes** (specs 036, 060). Light is the default, a sun/moon switch in the rail flips it, and `system` removes the attribute rather than writing one. Every colour literal lives in the vendored palette; `app.css` names tokens and a test enforces it. |
 | [![Two phone-width frames side by side: a turn at 390px, and the navigation rail open over it](docs/assets/screenshot-narrow.png)](docs/assets/screenshot-narrow.png) | [![A failed turn rendered as an error card reading "the BFF answered 502"](docs/assets/screenshot-error.png)](docs/assets/screenshot-error.png) |
 | **390px** (spec 047). The rail is never hidden — below 760px it comes **over** the conversation, because `display: none` takes a control out of the accessibility tree too, and this one is the only route to five of the seven screens. | **A turn that failed** (spec 003). The BFF was stopped mid-session on purpose. A turn always ends in `done` or `error` and never just goes quiet — §9's promise, rendered. |
 

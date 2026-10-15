@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULTS, applyTheme, readPreferences, usePreferences } from './preferences'
+import { DEFAULTS, applyTheme, oppositeTheme, readPreferences, usePreferences } from './preferences'
 import { KEYS } from './storage'
 
 beforeEach(() => {
@@ -19,9 +19,9 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('the defaults (AC1)', () => {
-  it('follows the system until someone says otherwise', () => {
-    expect(readPreferences().theme).toBe('system')
-    expect(DEFAULTS.theme).toBe('system')
+  it('is light until someone says otherwise (spec 060, AC2)', () => {
+    expect(readPreferences().theme).toBe('light')
+    expect(DEFAULTS.theme).toBe('light')
   })
 
   it('leaves the language unset, so it is still detected (AC6)', () => {
@@ -130,5 +130,40 @@ describe('the key the pre-paint script reads (AC12)', () => {
     expect(script).toMatch(/'light'|"light"/)
     expect(script).toMatch(/'dark'|"dark"/)
     expect(script).not.toMatch(/setAttribute\([^)]*'system'/)
+  })
+})
+
+describe('the switch in the rail (spec 060, AC2)', () => {
+  it('flips an explicit choice', () => {
+    expect(oppositeTheme('light', false)).toBe('dark')
+    expect(oppositeTheme('dark', false)).toBe('light')
+  })
+
+  it('from "system", picks the opposite of what the system shows', () => {
+    expect(oppositeTheme('system', true)).toBe('light')
+    expect(oppositeTheme('system', false)).toBe('dark')
+  })
+})
+
+describe('the pre-paint script, run (spec 060, AC2)', () => {
+  const html = readFileSync(join(import.meta.dirname, '../../index.html'), 'utf8')
+  const script = html.slice(html.indexOf('<script>') + '<script>'.length, html.indexOf('</script>'))
+  const run = () => new Function(script)()
+
+  it('paints light when nothing is stored', () => {
+    run()
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+  })
+
+  it('paints a stored dark choice', () => {
+    localStorage.setItem(KEYS.theme, JSON.stringify('dark'))
+    run()
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  })
+
+  it('leaves "system" to the media query', () => {
+    localStorage.setItem(KEYS.theme, JSON.stringify('system'))
+    run()
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
   })
 })

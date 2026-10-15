@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: foundry-live-agent-ai
+Version: 0.1.0
+Summary: Agent harnesses, agent definitions and client-side tools for foundry-live-agent
+Requires-Python: >=3.12
+Requires-Dist: PyYAML>=6
+Requires-Dist: httpx>=0.27
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.24; extra == "dev"
+Requires-Dist: ruff>=0.6; extra == "dev"
+Provides-Extra: azure
+Requires-Dist: azure-ai-projects>=2.3.0; extra == "azure"
+Requires-Dist: azure-identity>=1.19; extra == "azure"
+Requires-Dist: openai>=1.60; extra == "azure"
+Provides-Extra: hosted
+Requires-Dist: langgraph>=1.0; extra == "hosted"
+Requires-Dist: langchain-core>=0.3; extra == "hosted"
+Requires-Dist: langchain-mcp-adapters>=0.1; extra == "hosted"

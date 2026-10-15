@@ -22,17 +22,8 @@ export const strings = {
   // --- Side by side (spec 020) -------------------------------------------
   // The screen says what it is and, once, that it is not judging. Nothing else here describes an
   // answer: the app draws two columns and the reader does the comparing.
-  'compare.title': { en: 'Side by side', pt: 'Lado a lado' },
-  'compare.lead': {
-    en: 'One question, two agents, two streams. The app shows both and picks no winner.',
-    pt: 'Uma pergunta, dois agentes, dois streams. O app mostra os dois e não escolhe um vencedor.',
-  },
-  'compare.with': { en: 'Compare with', pt: 'Comparar com' },
-  'compare.pick': { en: 'Choose a second agent', pt: 'Escolha um segundo agente' },
-  'compare.needsSecond': {
-    en: 'Choose a second agent to ask them both.',
-    pt: 'Escolha um segundo agente para perguntar aos dois.',
-  },
+  'compare.with': { en: 'Compare with…', pt: 'Comparar com…' },
+  'compare.pick': { en: 'No comparison', pt: 'Sem comparação' },
   'compare.column': { en: 'Answers from {agent}', pt: 'Respostas de {agent}' },
   'compare.voiceUnavailable': {
     en: 'Voice is unavailable while comparing.',
@@ -503,8 +494,39 @@ export const strings = {
   // said here: the browser keeps a render cache, and the note under the list admits exactly that.
   'nav.chat': { en: 'Chat', pt: 'Conversa' },
   'nav.agents': { en: 'Agents', pt: 'Agentes' },
-  'nav.history': { en: 'History', pt: 'Histórico' },
-  'nav.compare': { en: 'Compare', pt: 'Comparar' },
+  'nav.playground': { en: 'Playground', pt: 'Playground' },
+  // The Playground (spec 060): one agent beside its definition, a second to compare with, and the
+  // tool runner (spec 042) as its own tab.
+  'playground.title': { en: 'Playground', pt: 'Playground' },
+  'playground.lead': {
+    en: 'Try an agent, see its definition beside the answers, and compare it with another.',
+    pt: 'Experimente um agente, veja a definição dele ao lado das respostas e compare com outro.',
+  },
+  'playground.tab.agent': { en: 'Agent', pt: 'Agente' },
+  'playground.tab.tools': { en: 'Tools', pt: 'Ferramentas' },
+  'playground.toolsOff': {
+    en: 'The tool runner is off in this deployment.',
+    pt: 'O executor de ferramentas está desligado nesta implantação.',
+  },
+  'playground.definition': { en: 'Definition', pt: 'Definição' },
+  'playground.readOnly': {
+    en: 'Read-only — this is what Foundry reports.',
+    pt: 'Somente leitura — é o que o Foundry informa.',
+  },
+  'playground.openDetail': { en: 'Open agent details', pt: 'Abrir detalhes do agente' },
+  'playground.noAgent': { en: 'No agent is answering yet.', pt: 'Nenhum agente está respondendo ainda.' },
+  // The theme switch in the rail footer (spec 060). Named for what pressing it DOES.
+  'theme.toDark': { en: 'Switch to dark theme', pt: 'Mudar para tema escuro' },
+  'theme.toLight': { en: 'Switch to light theme', pt: 'Mudar para tema claro' },
+  // The empty chat (spec 060). By the browser's clock; the app knows nobody's name.
+  'greeting.morning': { en: 'Good morning.', pt: 'Bom dia.' },
+  'greeting.afternoon': { en: 'Good afternoon.', pt: 'Boa tarde.' },
+  'greeting.evening': { en: 'Good evening.', pt: 'Boa noite.' },
+  'greeting.lead': {
+    en: 'Ask the agent. It answers in Foundry, and this app shows how it got there.',
+    pt: 'Pergunte ao agente. Ele responde no Foundry, e este app mostra como chegou lá.',
+  },
+  'history.conversations': { en: 'Conversations', pt: 'Conversas' },
   // Spec 047: below the narrow breakpoint the rail is an overlay, and this opens it.
   'nav.openMenu': { en: 'Open the menu', pt: 'Abrir o menu' },
   'nav.closeMenu': { en: 'Close the menu', pt: 'Fechar o menu' },
@@ -540,34 +562,6 @@ export const strings = {
   },
   'history.matchTool': { en: 'tool', pt: 'ferramenta' },
   'history.matchServer': { en: 'MCP server', pt: 'servidor MCP' },
-  'history.screenNote': {
-    en: '{count} conversations this browser drew. The conversations themselves live in Foundry.',
-    pt: '{count} conversas que este navegador desenhou. As conversas em si vivem no Foundry.',
-  },
-  'history.turns': { en: 'turns', pt: 'turns' },
-  'history.exportOne': { en: 'Export as Markdown', pt: 'Exportar como Markdown' },
-  'history.exportAll': { en: 'Export everything (.json)', pt: 'Exportar tudo (.json)' },
-  'history.import': { en: 'Import a file…', pt: 'Importar um arquivo…' },
-  'history.clear': { en: 'Clear the record', pt: 'Limpar o registro' },
-  'history.clearConfirmTitle': {
-    en: 'Delete the {count} conversations this browser kept?',
-    pt: 'Apagar as {count} conversas que este navegador guardou?',
-  },
-  'history.clearConfirmBody': {
-    en: 'This removes the drawings and the pointers stored here. The conversations in Foundry are not deleted.',
-    pt: 'Isso remove os desenhos e os ponteiros guardados aqui. As conversas no Foundry não são apagadas.',
-  },
-  'history.clearCancel': { en: 'Cancel', pt: 'Cancelar' },
-  'history.clearConfirm': { en: 'Delete', pt: 'Apagar' },
-  'history.imported': { en: 'Imported {kept} conversations.', pt: '{kept} conversas importadas.' },
-  'history.importedDropped': {
-    en: 'Imported {kept} conversations; {dropped} were dropped — this browser keeps {cap}.',
-    pt: '{kept} conversas importadas; {dropped} foram descartadas — este navegador guarda {cap}.',
-  },
-  'history.importInvalid': {
-    en: 'That file is not a history export. Nothing was changed.',
-    pt: 'Esse arquivo não é uma exportação de histórico. Nada foi alterado.',
-  },
 
   // --- Header --------------------------------------------------------------
   'header.foundryPill': { en: 'Microsoft Foundry', pt: 'Microsoft Foundry' },
@@ -620,12 +614,6 @@ export const strings = {
   'voice.dismissError': { en: 'Dismiss', pt: 'Dispensar' },
 
   // --- Empty state ---------------------------------------------------------
-  'empty.headlineLight': { en: 'Talk to your agent.', pt: 'Converse com o seu agente.' },
-  'empty.headlineStrong': { en: 'See everything.', pt: 'Veja tudo.' },
-  'empty.subtitle': {
-    en: 'Every reasoning fragment, every tool call and every token, as the agent produces them.',
-    pt: 'Cada fragmento de raciocínio, cada chamada de ferramenta e cada token, conforme o agente os produz.',
-  },
   // The three example questions that used to live here now live in the agent's own definition
   // (`ai/harness/_shared/agent_core.yaml`, spec 037). What an agent is worth being asked is a
   // property of the agent, and a copy in TypeScript was free to drift from the one that ships.
@@ -642,26 +630,13 @@ export const strings = {
   // --- The keyboard and the palette (spec 025) ------------------------------
   // Every action's label lives here and is named by `state/keys.ts`, so the palette entry, the
   // tooltip and the binding all say the same thing (§4).
-  'palette.open': { en: 'Commands', pt: 'Comandos' },
-  'palette.placeholder': {
-    en: 'Search agents, conversations and actions',
-    pt: 'Buscar agentes, conversas e ações',
-  },
-  'palette.empty': { en: 'Nothing matches that.', pt: 'Nada corresponde a isso.' },
-  'palette.agents': { en: 'Agents', pt: 'Agentes' },
-  'palette.conversations': { en: 'Conversations', pt: 'Conversas' },
-  'palette.actions': { en: 'Actions', pt: 'Ações' },
 
-  'keys.openPalette': { en: 'Commands', pt: 'Comandos' },
   'keys.focusComposer': { en: 'Write a question', pt: 'Escrever uma pergunta' },
   'keys.newConversation': { en: 'New conversation', pt: 'Nova conversa' },
   'keys.toggleTraces': { en: 'Traces', pt: 'Traces' },
   'keys.toggleRail': { en: 'Collapse the rail', pt: 'Recolher a barra' },
   'keys.previousTurn': { en: 'Previous turn', pt: 'Turn anterior' },
   'keys.nextTurn': { en: 'Next turn', pt: 'Próximo turn' },
-  'keys.startVoice': { en: 'Start a voice session', pt: 'Iniciar sessão de voz' },
-  'keys.language': { en: 'Switch language', pt: 'Trocar idioma' },
-  'keys.openHistory': { en: 'Open history', pt: 'Abrir histórico' },
 
   // Spec 028 — what a turn cost. Every one of these is written so the figure cannot be read as
   // measured: it is an estimate from token counts and declared rates, and it says so.
@@ -908,6 +883,9 @@ export type StringKey = keyof typeof strings
  */
 export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'app.name',
+  // The Foundry portal's own name for the screen (spec 060); Portuguese-language Azure docs keep it.
+  'nav.playground',
+  'playground.title',
   // This repository's own word for a swappable adapter, used as a proper noun throughout the docs,
   // the code and `GET /config`'s `harness` field. "Arn\u00eas" would be a translation of the metaphor
   // rather than of the term, and a reader comparing the panel with the endpoint would lose the
@@ -938,9 +916,6 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   // the word the portal and the docs use, and a reader matching the screen against either wants it
   // to be the same word (spec 025).
   'keys.toggleTraces',
-  // `turn` is the unit this app counts, and pt already keeps the word: `keys.previousTurn` reads
-  // "Turn anterior". A history row saying "3 turns" matches the trace panel beside it (spec 027).
-  'history.turns',
   // `est.` is the abbreviation in both languages, and the whole job of this string is to be short
   // enough to sit inside the figure rather than under it (spec 028).
   'cost.estimate',

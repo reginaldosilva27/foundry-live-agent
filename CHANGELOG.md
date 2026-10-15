@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reading remains parked, activity remains visible inline, and legacy stored values stay inert.
 
 ### Added
+- **Follow one message, layer by layer** (docs): the README (en and pt-BR) gains an animated
+  13-hop walk from the browser through the BFF, the adapter and Foundry and back, with the file of
+  each hop. Its source, `docs/assets/message-journey/journey.html`, opens in a browser and
+  `record.mjs` regenerates both GIFs. The architecture diagram now shows the hosted agent, Tavily and
+  Key Vault, and draws the APIM gateway as the optional path it is. `PLAN.md` §4.2 lists every BFF
+  route (it listed 5 of 17) and the phase map reaches spec 059.
 - **Demo mode — the whole app, with no Azure credential** (spec 050). `just demo` replays turns
   recorded from real Foundry runs: the streaming, the function-call round trip, the MCP calls, the
   usage, the span tree and the event inspector, all arriving through the *same* normaliser the live

@@ -141,7 +141,7 @@ export function Conversation({
     return (
       <div className="conversation conversation--empty" ref={column}>
         {notice && <Notice text={notice} />}
-        <EmptyState suggestions={suggestions} onSuggestion={onSuggestion} />
+        <EmptyState suggestions={suggestions} onSuggestion={onSuggestion} agent={agent} />
       </div>
     )
   }

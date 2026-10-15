@@ -252,6 +252,10 @@ it is generated from the configuration, and this page is written.
 
 ## Addresses (spec 024)
 
+The BFF's own HTTP routes are listed once, in [PLAN §4.2](../PLAN.md#42-backend-fastapi-bff); the
+addresses below are the browser's. The README follows one message through every layer, with the
+file and line of each hop.
+
 The frontend routes below are implemented, not reservations. `frontend/src/state/route.ts` is their single
 source of truth — every link is built through it, and `route.test.ts` proves the parse and the build
 round-trip for **every** route in `ROUTES`, so this table cannot quietly fall behind the code again.

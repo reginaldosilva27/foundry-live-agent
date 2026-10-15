@@ -112,7 +112,10 @@ obvious that swapping the harness does not change the tools.
 
 ---
 
-## 4. Architecture — this pass (prompt-agent harness)
+## 4. Architecture — designed for the prompt agent, kept current
+
+The hosted harness that arrived later is §5.1; [`docs/architecture.md`](docs/architecture.md)
+describes the code as it runs, and [`README.md`](README.md) follows one message through every layer.
 
 ### 4.1 Foundry side, as code
 
@@ -153,10 +156,21 @@ documented as the scaling path.
 | Endpoint | Purpose |
 |---|---|
 | `POST /chat` | Streams via the selected `HarnessAdapter`, executes function tools, re-streams SSE |
-| `GET /trace/{response_id}` | Log Analytics query → span tree (agent run > model calls > tool calls) with recorded attributes; hosted response-id correlation is unavailable |
+| `GET /agents` | The project's agents in one listing, each with whether this build can drive it (spec 019, 030) |
+| `GET /agents/{name}` | One agent: its definition, the served version and the version history (spec 030, 031) |
+| `POST /agents/{name}/versions/{version}/promote` | Make an earlier version the served one — the app's only write; off by default, no body (spec 031) |
+| `GET /agents/{name}/definition` | The definition this build was made from, and whether the service agrees (spec 041) |
+| `POST /agents/{name}/definition/proposal` | Validate a proposed instructions change and answer a diff; writes nothing (spec 041) |
+| `GET /tools` | The function-tool registry, projected (spec 042) |
+| `POST /tools/{name}/run` | Run one tool outside any conversation through `tool_executor.execute`; off by default (spec 042) |
+| `GET /trace/{response_id}` | Log Analytics query → span tree (agent run > model calls > tool calls) with recorded attributes; the id must match `ID_SHAPE`; hosted response-id correlation is unavailable |
 | `POST /voice/session` | Establishes the Voice Live control channel (§4.4) |
-| `GET /config` | Harness, gateway route, model alias, agent version — feeds the settings panel |
+| `GET /voice/session/{id}/events` | The voice session's tool activity as the same SSE `/chat` emits; its end releases the session |
+| `DELETE /voice/session/{id}` | Ends a voice session |
+| `POST /speech` | One piece of text read aloud as MP3, for spoken answers (spec 008) |
+| `GET /config` | Harness, gateway route, model alias, agent version, event-mapping report — feeds `/about` (spec 032) |
 | `GET /health` | Liveness |
+| `GET /demo` · `POST /demo/recording` | **Demo entrypoint only** (`app.demo:create_demo_app`): the recording catalogue and which one replays (spec 050) |
 
 Conversation continuity uses the **`conversation` ID** (`openai.conversations.create()`) — the
 current documented mechanism for multi-turn prompt agents.
@@ -284,6 +298,8 @@ one that does not need approval of the architecture**, since it is the inherited
 | **Later numbered specs** | 3–4 | Subsequent UI/voice/history/comparison work; consult the index for individual done/blocked/deferred criteria | See [`specs/README.md`](specs/README.md) — the live index, one row per spec |
 | **049** 📐 | 4 | **Foundry IQ as a knowledge source** — `planned` 2026-09-20; blocked on one manual setup step (T0). Reading the docs found a **second** route: the GA `/retrieve` REST call, which swaps the `KnowledgeSource` behind `lookup_knowledge` and keeps the round trip, instead of the MCP tool that would have deleted it | — |
 | **050–051** | 4 | Separate local replay entrypoint, visibly labelled and based on recorded fixtures; external search isolated | Baseline #32 integrated; local readiness/shutdown and gates checked; browser captures pending |
+| **052–054** | 4 | Preferences that reach the application · playground and proposal entrances completed · **bounded tool-output settlement** (the last leg's outputs now travel upstream) | See [`specs/README.md`](specs/README.md) |
+| **055–059** | 4 | Reading-first chat, contextual inspection and honest comparison, **unmapped-event diagnostics**, restrained chat presentation, compact build information | See [`specs/README.md`](specs/README.md) |
 | — | 4 | **Still not implemented.** More MCP tools (Databricks Genie, Azure DevOps), publish to M365 Copilot / Teams | — |
 
 **This table preserves the original phase plan with selected later milestones.** After 006 the

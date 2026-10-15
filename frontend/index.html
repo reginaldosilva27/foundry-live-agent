@@ -19,16 +19,17 @@
 
       It necessarily spells the key before any module exists to ask, so `fla.theme.v1` appears here
       and in `state/storage.ts`. That duplication is deliberate and `preferences.test.ts` asserts
-      the two agree. `system` writes no attribute, which lets the stylesheet's
-      `prefers-color-scheme` block take over.
+      the two agree. Nothing stored paints light, the default (spec 060); `system` writes no
+      attribute, which lets the stylesheet's `prefers-color-scheme` block take over.
     -->
     <script>
       try {
         var t = localStorage.getItem('fla.theme.v1')
         if (t) t = JSON.parse(t)
-        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+        if (t !== 'system') document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light')
       } catch (e) {
-        /* A blocked origin or a private window: the system preference is a fine answer. */
+        /* A blocked origin or a private window: light, the default (spec 060). */
+        document.documentElement.setAttribute('data-theme', 'light')
       }
     </script>
   </head>

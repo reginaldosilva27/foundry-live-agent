@@ -35,12 +35,19 @@ describe('spec 058 restrained conversational layout', () => {
     expect(rule('.header .pill-button')).toContain('padding: var(--sp-2)')
     expect(rule('.reasoning-card')).toContain('border: 0')
     expect(rule('.tool-row')).toContain('background: transparent')
-    expect(rule('.sidebar__new')).toContain('background: transparent')
+  })
+  it('makes New conversation the one blue pill in the rail (spec 060)', () => {
+    // Spec 058 quieted it to transparent; spec 060's reference makes it the primary action.
+    expect(rule('.sidebar__new')).toContain('border-radius: var(--r-pill)')
+    expect(rule('.sidebar__new')).toContain('background: var(--bg-accent-strong)')
+    expect(rule('.sidebar__new')).toContain('color: var(--fg-on-accent)')
   })
   it('centers the welcome and lays definition-sourced examples out compactly', () => {
     expect(rule('.empty')).toContain('text-align: center')
     expect(rule('.empty__suggestions')).toContain('display: grid')
-    expect(rule('.empty__suggestions')).toContain('repeat(2, minmax(0, 1fr))')
+    // Spec 060: cards that fit as many across as the column allows, like the reference.
+    expect(rule('.empty__suggestions')).toContain('repeat(auto-fit, minmax(min(100%, 200px), 1fr))')
+    expect(rule('.empty__card')).toContain('background: var(--bg-1)')
     expect(css).toMatch(/@media \(max-width: 760px\)[\s\S]*?\.empty__suggestions\s*\{\s*grid-template-columns: minmax\(0, 1fr\)/)
   })
 })

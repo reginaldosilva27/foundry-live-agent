@@ -23,16 +23,18 @@ import { HistoryList } from './HistoryList'
 import {
   AgentsIcon,
   ChatIcon,
-  ClockIcon,
-  ColumnsIcon,
+  FlaskIcon,
+  MoonIcon,
   PanelIcon,
   PlusIcon,
   SearchIcon,
+  SunIcon,
 } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
 import { HarnessBadge } from '../components/HarnessBadge'
 import { useT } from '../i18n/context'
 import { LANGS, type Lang } from '../i18n/strings'
+import { oppositeTheme, type Theme } from '../state/preferences'
 import { searchConversations } from '../state/history'
 import type { BffConfig } from '../config'
 import type { AgentsState } from '../state/agents'
@@ -45,15 +47,7 @@ import type { AgentRow } from '../types/agents'
  * Derived from the address rather than stored beside it (spec 024) — `App` maps one to the other,
  * and `route.ts` stays the single definition of the scheme (§4).
  */
-export type View =
-  | 'chat'
-  | 'agents'
-  | 'history'
-  | 'agent'
-  | 'about'
-  | 'preferences'
-  | 'tools'
-  | 'compare'
+export type View = 'chat' | 'agents' | 'agent' | 'about' | 'preferences' | 'playground'
 
 /**
  * The views the rail can switch to.
@@ -78,9 +72,10 @@ interface Props {
   /** Lifted to `App` since spec 025: a keyboard command toggles it, so it needs one owner (§4). */
   collapsed: boolean
   onToggleCollapse: () => void
-  /** The palette's visible control — so the keyboard is never the only way in (AC3). */
-  onOpenPalette: () => void
   onLang: (lang: Lang) => void
+  /** The theme preference, and the one way to change it — the same store Preferences writes (spec 060). */
+  theme: Theme
+  onTheme: (theme: 'light' | 'dark') => void
   onNewSession: () => void
   onView: (view: NavView) => void
   onOpenConversation: (id: string) => void
@@ -109,8 +104,9 @@ export function Sidebar({
   activeId,
   collapsed,
   onToggleCollapse,
-  onOpenPalette,
   onLang,
+  theme,
+  onTheme,
   onNewSession,
   onView,
   onOpenConversation,
@@ -146,7 +142,8 @@ export function Sidebar({
     >
       <div className="sidebar__head">
         <div className="sidebar__brand">
-          <img src="/icon-foundry-live-agent-branco.svg" alt="" width="20" height="20" />
+          <img className="sidebar__logo--light" src="/icon-foundry-live-agent-azul.svg" alt="" width="20" height="20" />
+          <img className="sidebar__logo--dark" src="/icon-foundry-live-agent-branco.svg" alt="" width="20" height="20" />
           <span className="sidebar__product">{s('app.name')}</span>
           {/* One control, two jobs, because they are the same job: put the rail away. As a column
               it collapses; as an overlay (spec 047) it closes, and says so — a backdrop dismisses
@@ -167,20 +164,13 @@ export function Sidebar({
           <span className="sidebar__label">{s('sidebar.newSession')}</span>
         </button>
 
-        {/* The palette sits with the two views because that is what it is from here: a way to get
-            somewhere. Keeping it in the same group spares the rail a fourth row metric. */}
         <nav className="sidebar__nav" aria-label={s('app.name')}>
-          <button type="button" className="sidebar__nav-item" onClick={onOpenPalette}>
-            <SearchIcon size={16} />
-            <span className="sidebar__label">{s('palette.open')}</span>
-          </button>
           {(
             [
               ['chat', ChatIcon, 'nav.chat'],
               ['agents', AgentsIcon, 'nav.agents'],
-              // Side by side (spec 020). A mode you go to, not a decoration on the chat.
-              ['compare', ColumnsIcon, 'nav.compare'],
-              ['history', ClockIcon, 'nav.history'],
+              // An agent beside its definition, a comparison, the tool runner (spec 060).
+              ['playground', FlaskIcon, 'nav.playground'],
             ] as const
           ).map(([id, Icon, key]) => (
             <button
@@ -255,18 +245,21 @@ export function Sidebar({
       </div>
 
       <div className="sidebar__foot">
-        <div className="sidebar__lang" role="group" aria-label={s('sidebar.language')}>
-          {LANGS.map((code) => (
-            <button
-              key={code}
-              type="button"
-              className="sidebar__lang-option"
-              aria-pressed={code === lang}
-              onClick={() => onLang(code)}
-            >
-              {code}
-            </button>
-          ))}
+        <div className="sidebar__prefs">
+          <div className="sidebar__lang" role="group" aria-label={s('sidebar.language')}>
+            {LANGS.map((code) => (
+              <button
+                key={code}
+                type="button"
+                className="sidebar__lang-option"
+                aria-pressed={code === lang}
+                onClick={() => onLang(code)}
+              >
+                {code}
+              </button>
+            ))}
+          </div>
+          <ThemeSwitch theme={theme} onTheme={onTheme} />
         </div>
 
         <footer className="sidebar__footer">
@@ -290,24 +283,6 @@ export function Sidebar({
           >
             {s('sidebar.preferences')}
           </button>
-          {/* Spec 042's screen had no way in — not here, not in the palette, not anywhere. It
-              belongs on this shelf, beside the other two surfaces that describe the build rather
-              than talk to the agent.
-
-              Only where the deployment enabled it, and read from `GET /config` rather than from a
-              flag of the frontend's own: the BFF refuses the endpoint when it is off, so a door
-              rendered anyway would open onto a 403. Absent reads as no, like every other
-              capability here. */}
-          {config?.playground?.enabled && (
-            <button
-              type="button"
-              className="sidebar__about"
-              aria-current={view === 'tools' ? 'page' : undefined}
-              onClick={() => onView('tools')}
-            >
-              {s('tools.title')}
-            </button>
-          )}
           {/* Spec 047: at 320px the header has no room for this, so it lives here instead —
               beside the model and the gateway line, which is the same fact about what this build is
               made of. Same component, fed from the same source, so there is no second reading of
@@ -326,5 +301,29 @@ export function Sidebar({
         </footer>
       </div>
     </aside>
+  )
+}
+
+/**
+ * One press, the other theme (spec 060). Named for what pressing it does, and showing the icon of
+ * where it goes. From `system` it asks the browser which scheme is on screen; `matchMedia` is
+ * guarded because not every environment has it, and "not dark" is the honest default there.
+ */
+function ThemeSwitch({ theme, onTheme }: { theme: Theme; onTheme: (theme: 'light' | 'dark') => void }) {
+  const s = useT()
+  const systemDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+  const next = oppositeTheme(theme, systemDark())
+  const label = s(next === 'dark' ? 'theme.toDark' : 'theme.toLight')
+
+  return (
+    <button
+      type="button"
+      className="sidebar__theme"
+      aria-label={label}
+      title={label}
+      onClick={() => onTheme(next)}
+    >
+      {next === 'dark' ? <MoonIcon size={16} /> : <SunIcon size={16} />}
+    </button>
   )
 }

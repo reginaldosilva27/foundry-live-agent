@@ -15,7 +15,7 @@
  * **Instructions are rendered as text, never as Markdown.** They were written by somebody else for
  * eight of these ten agents, and this screen is a viewer, not a renderer of other people's markup.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { BFF_URL } from '../config'
 import { AgentDefinition, type Definition } from './AgentDefinition'
 import { HarnessBadge } from '../components/HarnessBadge'
@@ -131,6 +131,36 @@ export function AgentDetailScreen({
         </button>
       </header>
 
+      <AgentDefinitionBlocks agent={agent}>
+        {canPropose && <DefinitionProposal key={agent.name} agent={agent.name} />}
+      </AgentDefinitionBlocks>
+
+      <Block title={s('versions.title')} testId="agent-versions">
+        <Versions
+          agent={agent}
+          canPromote={canPromote}
+          promoting={promoting}
+          promoteError={promoteError}
+          onPromote={onPromote}
+        />
+      </Block>
+    </section>
+  )
+}
+
+/**
+ * What an agent IS, as the service reports it: instructions, tools, reasoning, or a hosted agent's
+ * container (spec 030). One rendering, shared by this screen and the Playground's definition panel
+ * (spec 060), so the two cannot describe the same agent differently (§4). Read-only by
+ * construction — it holds no field and makes no request.
+ *
+ * `children` sits under the instructions, which is where this screen puts spec 041's proposal.
+ */
+export function AgentDefinitionBlocks({ agent, children }: { agent: AgentDetail; children?: ReactNode }) {
+  const s = useT()
+
+  return (
+    <>
       <Block title={s('agent.instructions')} testId="agent-instructions">
         {agent.instructions === null ? (
           <NotReported />
@@ -142,7 +172,7 @@ export function AgentDetailScreen({
         )}
       </Block>
 
-      {canPropose && <DefinitionProposal key={agent.name} agent={agent.name} />}
+      {children}
 
       <Block title={s('agent.tools')} testId="agent-tools">
         {agent.tools === null ? <NotReported /> : <Tools tools={agent.tools} />}
@@ -162,16 +192,6 @@ export function AgentDetailScreen({
           </dl>
         </Block>
       )}
-
-      <Block title={s('versions.title')} testId="agent-versions">
-        <Versions
-          agent={agent}
-          canPromote={canPromote}
-          promoting={promoting}
-          promoteError={promoteError}
-          onPromote={onPromote}
-        />
-      </Block>
 
       {/* What a hosted agent IS: it has no instructions, tools or model of its own. Its environment
           is not here because it is not sent — see `ContainerInfo` (AC11). */}
@@ -197,7 +217,7 @@ export function AgentDetailScreen({
           </dl>
         </Block>
       )}
-    </section>
+    </>
   )
 }
 

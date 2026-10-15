@@ -36,7 +36,9 @@ export interface Preferences {
 }
 
 export const DEFAULTS: Preferences = {
-  theme: 'system',
+  // Light until someone says otherwise (spec 060): the owner chose it over following the OS.
+  // `system` stays a choice in Preferences.
+  theme: 'light',
   speakAnswers: false,
   reasoningOpen: false,
   activityOpen: false,
@@ -58,6 +60,15 @@ export function applyTheme(theme: Theme): void {
   if (!root) return
   if (theme === 'system') root.removeAttribute('data-theme')
   else root.setAttribute('data-theme', theme)
+}
+
+/**
+ * What the rail's switch sets (spec 060): the opposite of what is on screen. From `system` that
+ * means asking which scheme the system resolves to, and the answer becomes an explicit choice.
+ */
+export function oppositeTheme(theme: Theme, systemDark: boolean): 'light' | 'dark' {
+  const shown = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme
+  return shown === 'dark' ? 'light' : 'dark'
 }
 
 export interface PreferencesState extends Preferences {

@@ -16,7 +16,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { Message } from '../hooks/useAgentStream'
 import { fold } from './fold'
-import { KEYS, available, readJson, remove as removeKey, writeJson } from './storage'
+import { KEYS, available, readJson, writeJson } from './storage'
 
 /** Bump the suffix to invalidate; never migrate a shape in place. */
 export const HISTORY_KEY = KEYS.history
@@ -184,90 +184,6 @@ function isConversation(value: unknown): value is StoredConversation {
   )
 }
 
-/**
- * The version of the **file**, not of the stored key.
- *
- * `HISTORY_KEY`'s suffix invalidates a browser's own storage; this one travels. A file people keep
- * on disk outlives the build that wrote it, so a later record shape must be able to look at an
- * older file and know what it is holding — or refuse it whole (AC12).
- */
-export const RECORD_VERSION = 1
-
-export interface ExportFile {
-  version: number
-  exportedAt: number
-  conversations: StoredConversation[]
-}
-
-/**
- * The whole record, as a file (spec 027 AC8).
- *
- * The stored shape verbatim: the messages, the pointer, the agent, and the trace identifiers each
- * turn already carries. Nothing is stripped, because the identifiers are what tie a transcript back
- * to spans in the workspace — the point of a teaching repository — and a `response_id` is inert
- * without access to that workspace.
- *
- * `exportedAt` is passed in rather than read here: a pure function is one a test can pin.
- */
-export function toExportFile(list: readonly StoredConversation[], exportedAt: number): ExportFile {
-  return { version: RECORD_VERSION, exportedAt, conversations: [...list] }
-}
-
-/**
- * A file, if this build can read it — otherwise `null`, and the caller says so (AC12).
- *
- * Refusing a version it does not know is the honest answer: reading half of an unknown shape is the
- * silent half-draw §5 rules out. Within a version it does know, a single unreadable conversation is
- * dropped and the rest are kept — the same rule `load` already applies to this browser's own key.
- */
-export function parseExportFile(raw: string): StoredConversation[] | null {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
-
-  const file = parsed as Partial<ExportFile> | null
-  if (!file || typeof file !== 'object' || Array.isArray(file)) return null
-  if (file.version !== RECORD_VERSION) return null
-  if (!Array.isArray(file.conversations)) return null
-
-  return file.conversations.filter(isConversation)
-}
-
-export interface MergeResult {
-  conversations: StoredConversation[]
-  /** How many of the file's conversations this browser now holds. */
-  kept: number
-  /** How many it could not, because the record holds `cap` (AC11). */
-  dropped: number
-}
-
-/**
- * Put a file's conversations beside the ones already here (spec 027 AC10, AC11).
- *
- * Merged by **our** id, so importing the same file twice leaves one of each. A stored conversation
- * always wins over its imported twin: what this browser drew is what this browser drew, and
- * overwriting it with an older copy of itself would lose turns.
- *
- * Past the cap the newest survive, and the count of what did not is returned rather than swallowed.
- * Silently discarding somebody's transcripts is exactly what §5 is about.
- */
-export function mergeImported(
-  stored: readonly StoredConversation[],
-  incoming: readonly StoredConversation[],
-  cap = CAP,
-): MergeResult {
-  const known = new Set(stored.map((c) => c.id))
-  const fresh = incoming.filter((c) => !known.has(c.id))
-  const merged = [...stored, ...fresh].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, cap)
-  const survivors = new Set(merged.map((c) => c.id))
-  const kept = fresh.filter((c) => survivors.has(c.id)).length
-
-  return { conversations: merged, kept, dropped: fresh.length - kept }
-}
-
 export interface HistoryState {
   conversations: StoredConversation[]
   /** Whether this browser stores at all. `false` is a supported state, not an error (AC20). */
@@ -275,10 +191,6 @@ export interface HistoryState {
   save: (record: StoredConversation) => void
   rename: (id: string, title: string) => void
   remove: (id: string) => void
-  /** Drop the whole record, key and all (spec 027 AC13). The screen asks first; this does not. */
-  clear: () => void
-  /** Put a file's conversations beside these, reporting what would not fit (spec 027 AC11). */
-  importFile: (raw: string) => { kept: number; dropped: number } | null
 }
 
 export function useHistory(): HistoryState {
@@ -319,39 +231,6 @@ export function useHistory(): HistoryState {
     [persisted],
   )
 
-  /**
-   * Removing the key rather than writing `[]` is the difference between "this browser kept nothing"
-   * and "this browser kept an empty list", and only the first is true after a clear.
-   */
-  const clear = useCallback(() => {
-    removeKey(HISTORY_KEY)
-    // Whatever would not fit is gone, so the browser is not refusing any more. Leaving the latch
-    // set would keep telling the reader nothing is kept while the next write goes through fine.
-    refused.current = false
-    setConversations([])
-  }, [])
-
-  /**
-   * Read a file into the record, or refuse it whole (AC12).
-   *
-   * `null` means the file was not a record and **nothing changed** — the caller says so. The numbers
-   * are returned rather than rendered here: what this owns is the record, not the sentence about it.
-   */
-  const importFile = useCallback(
-    (raw: string) => {
-      const incoming = parseExportFile(raw)
-      if (!incoming) return null
-
-      // Merged against the current list rather than inside a `setState` updater, which React runs
-      // when it renders and not when this is called — a report built in there would be returned
-      // before it was filled in.
-      const merged = mergeImported(conversations, incoming)
-      setConversations(persisted(merged.conversations))
-      return { kept: merged.kept, dropped: merged.dropped }
-    },
-    [conversations, persisted],
-  )
-
   return {
     conversations,
     // Two different facts, and both have to be false for the notice to be true: a browser that
@@ -360,8 +239,6 @@ export function useHistory(): HistoryState {
     save,
     rename,
     remove: drop,
-    clear,
-    importFile,
   }
 }
 

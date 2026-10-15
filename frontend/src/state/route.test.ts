@@ -45,12 +45,15 @@ describe('parseRoute', () => {
     })
   })
 
-  it('reads the history screen (spec 027 AC6)', () => {
-    expect(parseRoute('/history')).toEqual({ name: 'history' })
+  it('reads the playground and its tools tab (spec 060)', () => {
+    expect(parseRoute('/playground')).toEqual({ name: 'playground', tab: 'agent' })
+    expect(parseRoute('/playground/tools')).toEqual({ name: 'playground', tab: 'tools' })
   })
 
-  it('reads the reserved comparison address', () => {
-    expect(parseRoute('/compare')).toEqual({ name: 'compare' })
+  it('lands the retired addresses somewhere real (spec 060, AC10)', () => {
+    expect(parseRoute('/compare')).toEqual({ name: 'playground', tab: 'agent' })
+    expect(parseRoute('/tools')).toEqual({ name: 'playground', tab: 'tools' })
+    expect(parseRoute('/history')).toEqual({ name: 'chat' })
   })
 
   it('falls back to the chat for anything it does not recognise', () => {
@@ -78,12 +81,11 @@ describe('buildPath', () => {
     { name: 'agents' },
     { name: 'conversation', id: 'c_1' },
     { name: 'trace', responseId: 'resp_1' },
-    { name: 'history' },
     { name: 'agent', agentName: 'foundry-live-agent' },
-    { name: 'compare' },
+    { name: 'playground', tab: 'agent' },
+    { name: 'playground', tab: 'tools' },
     { name: 'about' },
     { name: 'preferences' },
-    { name: 'tools' },
   ]
 
   it('round-trips every route, so the two halves cannot drift', () => {
@@ -98,7 +100,7 @@ describe('buildPath', () => {
   })
 
   it('names every route the app can be at', () => {
-    expect(ROUTES).toEqual(every.map((route) => route.name))
+    expect(ROUTES).toEqual([...new Set(every.map((route) => route.name))])
   })
 })
 

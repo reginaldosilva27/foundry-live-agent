@@ -14,7 +14,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AgentChip } from './panes/AgentChip'
 import { AgentsScreen } from './panes/AgentsScreen'
 import { Composer } from './panes/Composer'
-import { Compare } from './panes/Compare'
+import { PlaygroundAgent } from './panes/PlaygroundAgent'
+import { PlaygroundScreen } from './panes/PlaygroundScreen'
 import { Conversation } from './panes/Conversation'
 import { Header } from './panes/Header'
 import { Sidebar, type NavView, type View } from './panes/Sidebar'
@@ -27,14 +28,11 @@ import { useAgentStream, type Message } from './hooks/useAgentStream'
 import { useComparison } from './hooks/useComparison'
 import { useKeys } from './hooks/useKeys'
 import { useRoute } from './hooks/useRoute'
-import { CommandPalette } from './panes/CommandPalette'
 import { AboutScreen } from './panes/About'
-import { Playground, type ToolSpec } from './panes/Playground'
+import { ToolRunner, type ToolSpec } from './panes/ToolRunner'
 import { PreferencesScreen } from './panes/Preferences'
 import { AgentDetailScreen } from './panes/AgentDetail'
-import { HistoryScreen } from './panes/HistoryScreen'
 import { type Command } from './state/keys'
-import { type Entry } from './state/palette'
 import { useAgentDetail, useAgents } from './state/agents'
 import { usePromote } from './state/promote'
 import { usePreferences } from './state/preferences'
@@ -77,12 +75,10 @@ export default function App() {
   const { route, navigate } = useRoute()
   const view: View =
     route.name === 'agents' ||
-    route.name === 'history' ||
     route.name === 'agent' ||
     route.name === 'about' ||
     route.name === 'preferences' ||
-    route.name === 'tools' ||
-    route.name === 'compare'
+    route.name === 'playground'
       ? route.name
       : 'chat'
   // Spec 030. Read only while the detail is on screen: the listing already answers every other
@@ -119,7 +115,7 @@ export default function App() {
       // Behind itself, always: an overlay left sitting over the screen it just opened is worse
       // than no overlay. Every way in goes through here, so there is one place that closes it.
       setMenuOpen(false)
-      navigate({ name: next === 'chat' ? 'chat' : next })
+      navigate(next === 'playground' ? { name: 'playground', tab: 'agent' } : { name: next })
     },
     [navigate],
   )
@@ -137,7 +133,6 @@ export default function App() {
   const routeResponseId = route.name === 'trace' ? route.responseId : undefined
   /** An address pointing at a conversation this browser does not have (AC7). */
   const [missing, setMissing] = useState(false)
-  const [paletteOpen, setPaletteOpen] = useState(false)
   const composer = useRef<HTMLTextAreaElement>(null)
   /** A question put back for editing (spec 026). The composer owns its own text otherwise. */
   const [draft, setDraft] = useState<{ text: string; at: number } | undefined>(undefined)
@@ -165,7 +160,7 @@ export default function App() {
   const [playgroundTools, setPlaygroundTools] = useState<ToolSpec[]>([])
   const [toolsStatus, setToolsStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
   useEffect(() => {
-    if (route.name !== 'tools' || !config?.playground?.enabled) return
+    if (route.name !== 'playground' || route.tab !== 'tools' || !config?.playground?.enabled) return
     let live = true
     setToolsStatus('loading')
     fetch(`${BFF_URL}/tools`)
@@ -184,7 +179,7 @@ export default function App() {
     return () => {
       live = false
     }
-  }, [route.name, config?.playground?.enabled])
+  }, [route, config?.playground?.enabled])
   const { messages, streaming, conversationId, send, stop, append, restore, reset } =
     useAgentStream()
   /**
@@ -233,6 +228,13 @@ export default function App() {
   const configuredRow = agents.agents.find((row) => row.name === config?.agent_name)
   /** Who answers, as the screen says it: the selection, else the agent the BFF is configured with. */
   const answering = selectedAgent ?? config?.agent_name
+  /**
+   * The Playground's definition panel (spec 060): the same per-agent read the detail screen makes,
+   * and only while that tab is on screen.
+   */
+  const playgroundDefinition = useAgentDetail(
+    route.name === 'playground' && route.tab === 'agent' ? (answering ?? null) : null,
+  )
   const sendToSelected = useCallback(
     (text: string) => {
       clearNotice()
@@ -323,17 +325,6 @@ export default function App() {
   }, [streaming])
 
   /**
-   * Reopen a stored conversation: its drawing, its Foundry id, and the agent that held it.
-   *
-   * `adopt` rather than `select` on purpose — restoring a conversation is not switching away from
-   * one, and `select` would reset the very conversation being restored (019 AC7).
-   */
-  const openConversation = useCallback(
-    (id: string) => navigate({ name: 'conversation', id }),
-    [navigate],
-  )
-
-  /**
    * Apply the address to the screen (spec 024).
    *
    * The route is an **input**: it selects what is already in memory or in this browser's storage,
@@ -417,7 +408,7 @@ export default function App() {
    * (spec 020). Without that both columns would produce `turn_0`, and the trace panel would open
    * one column's payload under the other's agent.
    */
-  const onScreen: Message[] = view === 'compare' ? comparison.messages : messages
+  const onScreen: Message[] = view === 'playground' ? comparison.messages : messages
 
   /**
    * The turn the panel is on, and where it sits in the session (spec 014 AC4).
@@ -434,7 +425,7 @@ export default function App() {
   }, [onScreen, trace.turnId])
 
   const shownTurn = shown.message
-  const shownAgent = view === 'compare' && shownTurn
+  const shownAgent = view === 'playground' && shownTurn
     ? (comparison.left.messages.some((message) => message.id === shownTurn.id)
       ? answering : comparison.other ?? undefined)
     : answering
@@ -487,7 +478,7 @@ export default function App() {
     )
   }, [shownTurn, trace.callId])
 
-  /** One place the header, the key and the palette all go through, so the three cannot drift. */
+  /** One place the header and the key both go through, so the two cannot drift. */
   const toggleTraces = useCallback(() => {
     if (tracesOpen) {
       leaveTrace()
@@ -501,13 +492,11 @@ export default function App() {
    * Run a command (spec 025).
    *
    * Every branch calls a handler that already existed — the rail's, the screen's, the header's. A
-   * command is a second *way in*, never a second implementation, which is what stops the palette
-   * becoming a fourth way to choose an agent that behaves slightly differently (§4).
+   * command is a second *way in*, never a second implementation (§4).
    */
   const run = useCallback(
     (command: Command) => {
       const actions: Record<Command, () => void> = {
-        openPalette: () => setPaletteOpen(true),
         toggleRail: toggleCollapsed,
         focusComposer: () => composer.current?.focus(),
         newConversation: () => {
@@ -517,39 +506,14 @@ export default function App() {
         toggleTraces,
         previousTurn: () => tracesOpen && stepTurn(-1),
         nextTurn: () => tracesOpen && stepTurn(1),
-        startVoice: startVoiceSession,
-        switchLanguage: () => setLang(lang === 'en' ? 'pt' : 'en'),
-        openHistory: () => navigate({ name: 'history' }),
         toggleEvents: () => setEventsOpen((open) => !open),
       }
       actions[command]()
     },
-    [
-      clearNotice,
-      navigate,
-      newConversation,
-      startVoiceSession,
-      lang,
-      setLang,
-      stepTurn,
-      toggleCollapsed,
-      toggleTraces,
-      tracesOpen,
-    ],
+    [clearNotice, newConversation, stepTurn, toggleCollapsed, toggleTraces, tracesOpen],
   )
 
   useKeys(run)
-
-  /** What the palette chose. Agents and conversations go where the rail sends them (AC6, AC7). */
-  const runEntry = useCallback(
-    (entry: Entry) => {
-      setPaletteOpen(false)
-      if (entry.target.kind === 'agent') return selectAgent(entry.target.name)
-      if (entry.target.kind === 'conversation') return openConversation(entry.target.id)
-      run(entry.target.command)
-    },
-    [openConversation, run, selectAgent],
-  )
 
   return (
     <LangContext.Provider value={lang}>
@@ -605,6 +569,8 @@ export default function App() {
           history={history}
           activeId={activeId}
           onLang={setLang}
+          theme={prefs.theme}
+          onTheme={(theme) => setPreference('theme', theme)}
           onView={setView}
           onOpenConversation={openConversationFromRail}
           onNewSession={() => {
@@ -613,10 +579,6 @@ export default function App() {
           }}
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
-          onOpenPalette={() => {
-            setMenuOpen(false)
-            setPaletteOpen(true)
-          }}
         />
 
         <main className="main" id="conversation" tabIndex={-1}>
@@ -638,7 +600,7 @@ export default function App() {
               onOpenMenu={() => setMenuOpen(true)}
             />
             {(failed || agents.error) && <p className="observation-notice">{translate('header.readUnavailable', lang)}</p>}
-            {comparison.streaming && view !== 'compare' && <p className="observation-notice">{translate('compare.locked', lang)}</p>}
+            {comparison.streaming && view !== 'playground' && <p className="observation-notice">{translate('compare.locked', lang)}</p>}
           </div>
           {view === 'agent' ? (
             <AgentDetailScreen
@@ -664,11 +626,6 @@ export default function App() {
                 })
               }}
             />
-          ) : view === 'tools' ? (
-            // Outside the conversation, on purpose and visibly (spec 042).
-            config?.playground?.enabled ? (
-              <Playground tools={playgroundTools} status={toolsStatus} />
-            ) : null
           ) : view === 'preferences' ? (
             // The editable counterpart to `/about`: what THIS BROWSER keeps (spec 036).
             <PreferencesScreen prefs={prefs} />
@@ -676,20 +633,32 @@ export default function App() {
             // Handed the config the rail already read (spec 032, AC2): the panel issues no request
             // of its own, which is what makes "read-only" a property rather than a promise.
             <AboutScreen config={config} failed={failed} />
-          ) : view === 'compare' ? (
-            // One question, two agents, two streams (spec 020). The screen renders no turn of its
-            // own: each column is the same `Conversation` the chat uses, parameterised.
-            <Compare
-              comparison={comparison}
-              reasoningOpen={prefs.reasoningOpen}
-              agents={agents.agents}
-              first={answering}
-              model={config?.model}
-              pricing={config?.pricing}
-              onOpenTrace={openTrace}
+          ) : view === 'playground' && route.name === 'playground' ? (
+            // Try an agent beside its definition, compare it, or run one tool (spec 060). Each
+            // column is the same `Conversation` the chat uses, parameterised (spec 020).
+            <PlaygroundScreen
+              tab={route.tab}
+              onTab={(tab) => navigate({ name: 'playground', tab })}
+              agent={
+                <PlaygroundAgent
+                  comparison={comparison}
+                  reasoningOpen={prefs.reasoningOpen}
+                  agents={agents.agents}
+                  first={answering}
+                  model={config?.model}
+                  pricing={config?.pricing}
+                  onOpenTrace={openTrace}
+                  definition={playgroundDefinition.agent}
+                  onOpenDetail={(name) => navigate({ name: 'agent', agentName: name })}
+                />
+              }
+              // Outside the conversation, on purpose and visibly (spec 042).
+              tools={
+                config?.playground?.enabled ? (
+                  <ToolRunner tools={playgroundTools} status={toolsStatus} />
+                ) : null
+              }
             />
-          ) : view === 'history' ? (
-            <HistoryScreen history={history} onOpen={openConversation} />
           ) : view === 'agents' ? (
             <AgentsScreen
               agents={agents.agents}
@@ -776,16 +745,6 @@ export default function App() {
           onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
           onClose={leaveTrace}
         />
-
-        {paletteOpen && (
-          <CommandPalette
-            agents={agents.agents}
-            conversations={history.conversations}
-            voiceEnabled={config?.voice?.enabled ?? false}
-            onRun={runEntry}
-            onClose={() => setPaletteOpen(false)}
-          />
-        )}
 
         {eventsOpen && (
           <EventInspector

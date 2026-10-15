@@ -1,0 +1,370 @@
+<!doctype html>
+<!--
+  The source of docs/assets/message-journey-{en,pt}.gif — one message followed through every layer.
+  Open it in a browser (?lang=pt for Portuguese, ?theme=light for the light palette) or regenerate
+  the GIFs with record.mjs beside it. File:line references were checked against `main` on
+  2026-10-15; payload values marked "illustrative" are examples, not recordings (§5).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Message journey</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f6f8fb; --surface: #ffffff; --sunk: #eef2f7; --fg: #0d1b2e; --fg-2: #3b4a5e; --fg-3: #5b6a7e;
+  --line: #d7dee8; --accent: #0074ff; --accent-ink: #005fd1; --accent-soft: #e3efff;
+  --ours: #0074ff; --ours-soft: #e3efff; --foundry: #0f8f86; --foundry-soft: #dcf3f1;
+  --ext: #b86e00; --ext-soft: #fdf0dc; --code-bg: #0f1a2b; --code-fg: #dbe6f5;
+  --font: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+:root[data-theme="dark"] {
+  --bg: #0b1320; --surface: #121c2c; --sunk: #0e1726; --fg: #e8eef7; --fg-2: #b9c5d6; --fg-3: #92a1b6;
+  --line: #26344a; --accent: #4d9bff; --accent-ink: #7ab4ff; --accent-soft: #13284a;
+  --ours: #4d9bff; --ours-soft: #13284a; --foundry: #3cc4b9; --foundry-soft: #0f2f2e;
+  --ext: #f0a83c; --ext-soft: #33240c; --code-bg: #070d17; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.6 var(--font); }
+#capture { max-width: 1000px; margin: 0 auto; padding: 28px; display: grid; gap: 16px; background: var(--bg); }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
+h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -.01em; }
+.q { margin: 0; color: var(--fg-2); font-size: 15px; }
+.q b { color: var(--fg); font-weight: 600; }
+.journey { display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.track { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.tk { border-radius: 10px; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: 600; color: var(--fg-3); background: var(--sunk); border: 2px solid transparent; position: relative; }
+.tk small { display: block; font-weight: 400; font-size: 11px; }
+.tk.on.ours { border-color: var(--ours); color: var(--ours); background: var(--ours-soft); }
+.tk.on.foundry { border-color: var(--foundry); color: var(--foundry); background: var(--foundry-soft); }
+.tk.on.ext { border-color: var(--ext); color: var(--ext); background: var(--ext-soft); }
+.tk.from { border-style: dashed; border-color: var(--line); color: var(--fg-2); }
+.tk.on::after { content: ''; position: absolute; left: 50%; bottom: -9px; width: 10px; height: 10px; transform: translateX(-50%) rotate(45deg); background: inherit; border-right: 2px solid; border-bottom: 2px solid; border-color: inherit; }
+.dots { display: flex; flex-wrap: wrap; gap: 6px; }
+.dot { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg-3); font: 600 12px var(--font); cursor: pointer; }
+.dot[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.dot.past { color: var(--accent-ink); border-color: var(--accent); }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; min-height: 330px; }
+@media (max-width: 760px) { .stage { grid-template-columns: 1fr; } }
+.txt { display: grid; gap: 10px; align-content: start; min-width: 0; }
+h3 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; }
+.where { font: 12.5px var(--mono); color: var(--accent-ink); overflow-wrap: anywhere; }
+p { margin: 0; color: var(--fg-2); }
+.why { background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--fg); }
+.why b { color: var(--accent-ink); }
+.code-label { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+pre { margin: 0; background: var(--code-bg); color: var(--code-fg); border-radius: 10px; padding: 14px 16px; font: 12.5px/1.6 var(--mono); overflow-x: auto; white-space: pre; }
+.nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.btn { font: 600 14px var(--font); border-radius: 8px; padding: 8px 16px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:disabled { opacity: .45; cursor: default; }
+.count { font-size: 13px; color: var(--fg-3); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--fg-3); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div id="capture">
+  <div class="eyebrow" id="eyebrow"></div>
+  <h1 id="h1"></h1>
+  <p class="q" id="q"></p>
+  <div class="journey" id="journey">
+    <div class="track">
+      <div class="tk ours" data-lane="browser"></div>
+      <div class="tk ours" data-lane="bff"></div>
+      <div class="tk ours" data-lane="ai"></div>
+      <div class="tk foundry" data-lane="foundry"></div>
+      <div class="tk ext" data-lane="ext"></div>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="stage" aria-live="polite">
+      <div class="txt">
+        <div class="eyebrow" id="st-lane"></div>
+        <h3 id="st-title"></h3>
+        <div class="where" id="st-where"></div>
+        <p id="st-body"></p>
+        <div class="why" id="st-why"></div>
+      </div>
+      <div class="txt">
+        <div class="code-label" id="st-codelabel"></div>
+        <pre id="st-code"></pre>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn" id="prev" type="button"></button>
+      <span class="count" id="count"></span>
+      <button class="btn primary" id="next" type="button"></button>
+    </div>
+  </div>
+  <div class="legend" id="legend"></div>
+</div>
+<script>
+const UI = {
+  en: {
+    eyebrow: 'foundry-live-agent · how a message travels',
+    h1: 'Follow one question, layer by layer',
+    q: '<b>“What time is it in Lisbon, and what does Learn say about Foundry Agent Service?”</b> Learn is an MCP tool Foundry runs; the time is a function tool the BFF runs.',
+    lanes: { browser: ['Browser', 'frontend/'], bff: ['BFF', 'backend/'], ai: ['Adapter', 'ai/harness/'], foundry: ['Foundry', 'the agent'], ext: ['External', 'MCP · Tavily · logs'] },
+    prev: '← Previous', next: 'Next →', of: 'of',
+    legend: [['--ours', 'We build it (this repository)'], ['--foundry', 'Foundry runs it'], ['--ext', 'Third party or optional']],
+  },
+  pt: {
+    eyebrow: 'foundry-live-agent · como uma mensagem viaja',
+    h1: 'Siga a pergunta, camada por camada',
+    q: '<b>“Que horas são em Lisboa e o que diz o Learn sobre Foundry Agent Service?”</b> O Learn é uma ferramenta MCP que o Foundry executa; a hora é uma function tool que o BFF executa.',
+    lanes: { browser: ['Navegador', 'frontend/'], bff: ['BFF', 'backend/'], ai: ['Adaptador', 'ai/harness/'], foundry: ['Foundry', 'o agente'], ext: ['Externos', 'MCP · Tavily · logs'] },
+    prev: '← Anterior', next: 'Próximo →', of: 'de',
+    legend: [['--ours', 'Nós construímos (este repositório)'], ['--foundry', 'O Foundry executa'], ['--ext', 'Terceiros ou opcional']],
+  },
+};
+
+// One step = one hop. Code is shared between languages; prose is not.
+const STEPS = [
+  { lane: 'browser', from: null, where: 'frontend/src/hooks/useAgentStream.ts:222',
+    en: { t: 'You send the question',
+      b: 'The composer calls useAgentStream, which POSTs to the BFF. The body has three fields and nothing else: the message, Foundry’s conversation pointer (if any) and the name of the agent chosen on screen.',
+      w: '<b>Why fetch?</b> EventSource is GET-only. This is a POST, so the frontend reads the response body as a stream with ReadableStream.', l: 'Request' },
+    pt: { t: 'Você envia a pergunta',
+      b: 'O composer chama useAgentStream, que faz um fetch POST para o BFF. O corpo tem três campos e nada mais: a mensagem, o ponteiro da conversa no Foundry (se houver) e o nome do agente escolhido na tela.',
+      w: '<b>Por que fetch?</b> EventSource só faz GET. Aqui é POST, então o frontend lê o corpo da resposta em stream com ReadableStream.', l: 'Requisição' },
+    code: `POST /chat
+Content-Type: application/json
+
+{
+  "message": "What time is it in Lisbon…?",
+  "conversation_id": "conv_…",   // null on turn 1
+  "agent": "foundry-live-agent"
+}` },
+  { lane: 'bff', from: 'browser', where: 'backend/app/routers/chat.py:45 → harness_factory.py:50',
+    en: { t: 'The BFF picks the adapter for this turn',
+      b: 'The router lists the project’s agents, reads the chosen agent’s kind and uses HARNESS_FOR_KIND to build a fresh adapter for this request only. The read runs in asyncio.to_thread because the Azure client is synchronous.',
+      w: '<b>Why per request?</b> Swapping app.state.harness would let one browser’s choice change another browser’s turn. Adapters are cheap; the credential and client live in AzureClients, built once per process.', l: 'kind → harness' },
+    pt: { t: 'O BFF escolhe o adaptador para este turno',
+      b: 'O router lista os agentes do projeto, olha o kind do agente pedido e usa HARNESS_FOR_KIND para construir um adaptador novo só para esta requisição. A leitura roda em asyncio.to_thread porque o cliente Azure é síncrono.',
+      w: '<b>Por que por requisição?</b> Trocar app.state.harness faria a escolha de um navegador mudar o turno de outro. O adaptador é barato; credencial e cliente vivem em AzureClients, criados uma vez por processo.', l: 'kind → harness' },
+    code: `HARNESS_FOR_KIND = {
+    "prompt": "prompt-agent",
+    "hosted": "langgraph",
+}
+# unknown kind? listed and disabled
+# with code "no_harness", never hidden` },
+  { lane: 'ai', from: 'bff', where: 'ai/harness/prompt_agent/adapter.py:82',
+    en: { t: 'The adapter opens the turn',
+      b: 'stream_response promises one complete turn that always ends in done or error. It has a loop, but it is the protocol’s loop: at most 8 execution legs plus 1 settlement leg. It chooses no tool and rewrites no prompt.',
+      w: '<b>Agent vs. adapter.</b> The adapter is imported by the BFF and decides nothing. The agent, with its decision loop, lives in Foundry.', l: 'Turn state' },
+    pt: { t: 'O adaptador abre o turno',
+      b: 'stream_response promete um turno completo que sempre termina em done ou error. Ele tem um laço, mas é o laço do protocolo: no máximo 8 pernas de execução e 1 de liquidação. Não escolhe ferramenta e não reescreve prompt.',
+      w: '<b>Agente vs. adaptador.</b> O adaptador é importado pelo BFF e não decide nada. O agente, com seu loop de decisão, vive no Foundry.', l: 'Estado do turno' },
+    code: `inputs    = [{"role": "user", "content": "What time…"}]
+totals    = {}     # usage, summed across legs
+done      = None   # held back until the end
+max_turns = 8      # + 1 settlement leg` },
+  { lane: 'foundry', from: 'ai', where: 'backend/app/harness_factory.py:280–299',
+    en: { t: 'A call to Foundry’s Responses API',
+      b: 'On the first turn it creates a Foundry conversation and stores its id. Then it calls responses.create in stream mode with agent_reference: the app sends no instructions and no tools, only the agent’s name.',
+      w: '<b>Responses API, not Assistants.</b> The Assistants API is gone. The SDK is azure-ai-projects 2.x on api-version=v1, and the token comes from Entra (DefaultAzureCredential). No Azure key.', l: 'What goes to Foundry' },
+    pt: { t: 'Chamada à Responses API do Foundry',
+      b: 'No primeiro turno cria uma conversation no Foundry e grava o id. Depois chama responses.create em modo stream com agent_reference: o app não manda instruções nem ferramentas, só o nome do agente.',
+      w: '<b>Responses API, não Assistants.</b> A Assistants API acabou. O SDK é azure-ai-projects 2.x com api-version=v1, e o token vem do Entra (DefaultAzureCredential). Nenhuma chave Azure.', l: 'O que vai para o Foundry' },
+    code: `openai.conversations.create()   # turn 1 only
+
+openai.responses.create(
+    input=inputs,
+    conversation=conversation_id,
+    stream=True,
+    extra_body={"agent_reference": {
+        "name": "foundry-live-agent",
+        "type": "agent_reference",
+    }},
+)` },
+  { lane: 'foundry', from: 'foundry', where: 'ai/harness/_shared/agent_core.yaml (applied to Foundry)',
+    en: { t: 'The agent thinks and calls Learn MCP',
+      b: 'The decision loop runs inside Foundry: gpt-5.5 with the instructions in agent_core.yaml. For the Learn half, Foundry itself calls the Microsoft Learn MCP server. The BFF only observes.',
+      w: '<b>And the gateway?</b> It sits between the agent and the model, not between the app and the agent, and only when the model is named <code>&lt;connection&gt;/&lt;model&gt;</code>. /about shows uses_gateway.', l: 'Who runs what' },
+    pt: { t: 'O agente pensa e chama o MCP do Learn',
+      b: 'Dentro do Foundry roda o loop de decisão: gpt-5.5 com as instruções do agent_core.yaml. Para a parte do Learn, o próprio Foundry chama o servidor MCP do Microsoft Learn. O BFF só observa.',
+      w: '<b>E o gateway?</b> Ele fica entre o agente e o modelo, não entre o app e o agente, e só quando o modelo é <code>&lt;conexão&gt;/&lt;modelo&gt;</code>. /about mostra uses_gateway.', l: 'Quem executa o quê' },
+    code: `Learn MCP            → Foundry   (we observe)
+get_current_datetime → BFF       (Foundry asks, waits)
+lookup_knowledge     → BFF
+search_web           → BFF → Tavily` },
+  { lane: 'ai', from: 'foundry', where: 'ai/harness/prompt_agent/events.py:150 · _shared/streaming.py:11',
+    en: { t: 'Raw events become AgentEvents',
+      b: 'The SDK stream is synchronous, so each next() runs in a worker thread (stream_items). The normaliser maps dozens of Foundry event types onto the contract’s nine and drops lifecycle noise.',
+      w: '<b>A measured trap.</b> response.mcp_call.completed carries no item, only item_id. The MCP call is built from response.output_item.done instead.', l: 'Before → after' },
+    pt: { t: 'Eventos brutos viram AgentEvents',
+      b: 'O stream do SDK é síncrono, então cada next() roda numa thread (stream_items). O normalizador traduz dezenas de tipos do Foundry nos 9 do contrato e descarta o ruído de ciclo de vida.',
+      w: '<b>Pegadinha medida.</b> response.mcp_call.completed não traz o item, só item_id. A chamada MCP é montada a partir de response.output_item.done.', l: 'Antes → depois' },
+    code: `// raw (Foundry)
+{"type": "response.output_text.delta",
+ "delta": "According to Learn, ", ...}
+
+// normalised (contract §9)
+{"type": "text_delta",
+ "text": "According to Learn, "}` },
+  { lane: 'browser', from: 'bff', where: 'backend/app/sse.py:26 → routers/chat.py:71',
+    en: { t: 'The BFF validates and sends SSE',
+      b: 'format_event validates every event against the contract before framing it. An event outside the contract fails here, on the server, not as a blank card in the browser. Each frame is one line of JSON.',
+      w: '<b>Why one line?</b> SSE splits records on a blank line. Single-line JSON turns any newline in the text into an escape.', l: 'On the wire' },
+    pt: { t: 'O BFF valida e envia como SSE',
+      b: 'format_event valida cada evento contra o contrato antes de enquadrá-lo. Um evento fora do contrato falha aqui, no servidor, e não como um card em branco no navegador. Cada frame é JSON numa linha só.',
+      w: '<b>Por que uma linha?</b> SSE separa registros por linha em branco. JSON numa linha transforma qualquer quebra de linha do texto em escape.', l: 'No fio' },
+    code: `event: reasoning_summary
+data: {"type":"reasoning_summary","text":"…"}
+
+event: mcp_call
+data: {"type":"mcp_call","server_label":"microsoft_learn",…}
+
+event: text_delta
+data: {"type":"text_delta","text":"According to Learn, "}` },
+  { lane: 'ai', from: 'foundry', where: 'ai/harness/prompt_agent/adapter.py:108–121',
+    en: { t: 'Foundry asks for a function, and stops',
+      b: 'To know the time in Lisbon the agent calls get_current_datetime. Foundry emits the function_call and closes the leg with response.completed. The adapter records the call (executor "app"), sums usage and holds done back: the turn is not over.',
+      w: '<b>The danger.</b> Left unanswered, Foundry waits and the run expires after 10 minutes. In the browser the stream just stops. check_stream in the tests turns that into a loud failure.', l: 'Event emitted' },
+    pt: { t: 'O Foundry pede uma função e para',
+      b: 'Para saber a hora em Lisboa, o agente chama get_current_datetime. O Foundry emite a function_call e fecha a perna com response.completed. O adaptador anota o pedido (executor "app"), soma o usage e segura o done: o turno ainda não acabou.',
+      w: '<b>O perigo.</b> Se ninguém responder, o Foundry espera e a execução expira em 10 minutos. No navegador, o stream simplesmente para. check_stream nos testes transforma isso em falha alta.', l: 'Evento emitido' },
+    code: `{"type": "tool_call",
+ "call_id": "call_8f…",
+ "name": "get_current_datetime",
+ "arguments": "{\\"timezone\\": \\"Europe/Lisbon\\"}",
+ "executor": "app"}      // we answer` },
+  { lane: 'bff', from: 'ai', where: 'backend/app/tool_executor.py:49 · adapter.py:166',
+    en: { t: 'The BFF runs the requested tool',
+      b: 'execute(name, arguments) resolves the name through the registry and calls it, in a worker thread. get_current_datetime runs right there; search_web would go out to Tavily. Any failure becomes a JSON error output, never an exception.',
+      w: '<b>Executes, never chooses.</b> There is no branch on a tool name: a test reads the source looking for tool names. Answering with an error beats not answering.', l: 'Event emitted' },
+    pt: { t: 'O BFF executa a ferramenta pedida',
+      b: 'execute(name, arguments) resolve o nome pelo registry e chama a implementação, numa thread. get_current_datetime roda ali mesmo; search_web sairia para a Tavily. Qualquer falha vira uma saída de erro em JSON, nunca uma exceção.',
+      w: '<b>Executa, não escolhe.</b> Não há if por nome de ferramenta: um teste lê o código fonte procurando nomes de tools. Responder com erro é melhor que não responder.', l: 'Evento emitido' },
+    code: `{"type": "tool_result",
+ "call_id": "call_8f…",
+ "name": "get_current_datetime",
+ "output": "{\\"iso\\": \\"2026-10-15T14:32…\\",
+            \\"timezone\\": \\"Europe/Lisbon\\", …}",
+ "duration_ms": 1}      // illustrative values` },
+  { lane: 'foundry', from: 'ai', where: 'ai/harness/prompt_agent/adapter.py:179–185',
+    en: { t: 'Second leg, same conversation',
+      b: 'The output goes back to Foundry as function_call_output, on a new responses.create bound to the same conversation_id. The agent resumes where it stopped and writes the rest of the answer.',
+      w: '<b>Same conversation or 400.</b> The output leg carries only function_call_output items. Unbound, Foundry answers “No tool call found for function call output”.', l: 'Leg 2 input' },
+    pt: { t: 'Segunda perna, na mesma conversa',
+      b: 'A saída volta para o Foundry como function_call_output, numa nova chamada responses.create com o mesmo conversation_id. O agente retoma de onde parou e escreve o resto da resposta.',
+      w: '<b>Mesma conversa ou 400.</b> A perna de saída só leva os itens function_call_output. Sem a conversation, o Foundry responde “No tool call found for function call output”.', l: 'Entrada da perna 2' },
+    code: `inputs = [{
+  "type": "function_call_output",
+  "call_id": "call_8f…",
+  "output": "{\\"iso\\": …, \\"timezone\\": \\"Europe/Lisbon\\"}"
+}]
+# + conversation = the same conv_…` },
+  { lane: 'browser', from: 'ai', where: 'adapter.py:125–130 · events.py:225–251',
+    en: { t: 'End of turn: usage, trace and done',
+      b: 'When a leg ends without asking for tools, the adapter releases what it held: usage summed across both legs, the trace ids and done. The BFF guarantees a terminal event even if the adapter breaks (missing_terminal).',
+      w: '<b>Tokens.</b> reasoning_tokens is part of output_tokens and cached_input_tokens is part of input_tokens. Adding them doubles a cost estimate.', l: 'Last frames' },
+    pt: { t: 'Fim do turno: usage, trace e done',
+      b: 'Quando uma perna termina sem pedir ferramentas, o adaptador libera o que segurou: o usage somado das duas pernas, os trace_ids e o done. O BFF garante um evento terminal mesmo se o adaptador falhar (missing_terminal).',
+      w: '<b>Tokens.</b> reasoning_tokens é parte de output_tokens, e cached_input_tokens é parte de input_tokens. Somar como adição dobra a estimativa de custo.', l: 'Últimos frames' },
+    code: `{"type":"usage","input_tokens":2140,
+ "output_tokens":512,"reasoning_tokens":192}
+{"type":"trace_ids","response_id":"resp_…",
+ "conversation_id":"conv_…"}
+{"type":"done","response_id":"resp_…"}
+// illustrative values` },
+  { lane: 'browser', from: 'browser', where: 'frontend/src/state/sse.ts:21 → state/turn.ts:124 → state/history.ts:30',
+    en: { t: 'The browser draws, and keeps the drawing',
+      b: 'createFrameParser cuts the stream into frames; reduceTurn applies each event to the turn (text, activity, sources, cost). When it settles, the turn and the conversation pointer go to localStorage, up to 25 conversations.',
+      w: '<b>Sources come from events.</b> The Sources strip is built from mcp_call and tool_result, never by reading the answer text. A test asserts it.', l: 'localStorage' },
+    pt: { t: 'O navegador desenha e guarda o desenho',
+      b: 'createFrameParser corta o stream em frames; reduceTurn aplica cada evento ao turno (texto, atividades, fontes, custo). Ao terminar, o turno e o ponteiro da conversa vão para localStorage, até 25 conversas.',
+      w: '<b>Fontes vêm dos eventos.</b> A faixa "Fontes" é montada de mcp_call e tool_result, nunca lendo o texto da resposta. Um teste garante isso.', l: 'localStorage' },
+    code: `// StoredConversation
+fla.history.v1 → [{
+  id: "…",                     // ours
+  conversationId: "conv_…",    // Foundry's pointer
+  agent: "foundry-live-agent",
+  title: "What time is it in Lisbon…",
+  updatedAt: 1792071719000,
+  messages: [ …the drawing… ]  // never sent
+}]` },
+  { lane: 'ext', from: 'bff', where: 'backend/app/traces.py:87 · :152',
+    en: { t: 'Optional: open the trace',
+      b: 'Clicking a tool row opens /trace/{response_id}. The BFF checks the id against ID_SHAPE and only then queries the spans in Log Analytics (App Insights) with its own identity.',
+      w: '<b>Security.</b> The id ends up inside a KQL query. Instead of escaping it, the BFF refuses any id outside the shape. Anything arriving in a URL is untrusted.', l: 'Validation' },
+    pt: { t: 'Opcional: abrir o trace',
+      b: 'Clicar numa ferramenta abre /trace/{response_id}. O BFF confere o formato do id com ID_SHAPE e só então consulta os spans no Log Analytics (App Insights) com a própria identidade.',
+      w: '<b>Segurança.</b> O id vai parar numa consulta KQL. Em vez de escapar, o BFF recusa qualquer id fora do formato. Tudo que chega pela URL é tratado como não confiável.', l: 'Validação' },
+    code: `ID_SHAPE = re.compile(r"[A-Za-z0-9_.\\-]{1,256}")
+
+if not ID_SHAPE.fullmatch(response_id):
+    # refused; nothing reaches KQL
+    ...` },
+];
+
+// The code is shared; only the sample question inside it is translated.
+const PT_CODE = [
+  ['What time is it in Lisbon…', 'Que horas são em Lisboa…'],
+  ['What time…', 'Que horas…'],
+  ['According to Learn, ', 'Segundo o Learn, '],
+];
+
+const params = new URLSearchParams(location.search);
+const lang = params.get('lang') === 'pt' ? 'pt' : 'en';
+if (params.get('theme') !== 'light') document.documentElement.dataset.theme = 'dark';
+document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
+const ui = UI[lang];
+const $ = (id) => document.getElementById(id);
+$('eyebrow').textContent = ui.eyebrow;
+$('h1').textContent = ui.h1;
+$('q').innerHTML = ui.q;
+$('prev').textContent = ui.prev;
+$('next').textContent = ui.next;
+$('legend').innerHTML = ui.legend.map(([c, l]) => `<span><i style="background:var(${c})"></i>${l}</span>`).join('');
+document.querySelectorAll('.tk').forEach((t) => {
+  const [name, sub] = ui.lanes[t.dataset.lane];
+  t.innerHTML = `${name}<small>${sub}</small>`;
+});
+const dots = $('dots');
+STEPS.forEach((s, k) => {
+  const b = document.createElement('button');
+  b.className = 'dot'; b.type = 'button'; b.textContent = k + 1;
+  b.setAttribute('aria-label', `${k + 1}: ${s[lang].t}`);
+  b.addEventListener('click', () => go(k));
+  dots.appendChild(b);
+});
+let i = 0;
+function go(k) {
+  i = Math.max(0, Math.min(STEPS.length - 1, k));
+  const s = STEPS[i], tx = s[lang];
+  document.querySelectorAll('.tk').forEach((t) => {
+    t.classList.toggle('on', t.dataset.lane === s.lane);
+    t.classList.toggle('from', Boolean(s.from && s.from !== s.lane && t.dataset.lane === s.from));
+  });
+  const name = (l) => ui.lanes[l][0];
+  $('st-lane').textContent = (s.from && s.from !== s.lane ? `${name(s.from)} → ` : '') + name(s.lane);
+  $('st-title').textContent = tx.t;
+  $('st-where').textContent = s.where;
+  $('st-body').textContent = tx.b;
+  $('st-why').innerHTML = tx.w;
+  $('st-codelabel').textContent = tx.l;
+  $('st-code').textContent = lang === 'pt'
+    ? PT_CODE.reduce((code, [from, to]) => code.replaceAll(from, to), s.code)
+    : s.code;
+  $('count').textContent = `${i + 1} ${ui.of} ${STEPS.length}`;
+  $('prev').disabled = i === 0;
+  $('next').disabled = i === STEPS.length - 1;
+  [...dots.children].forEach((d, k) => {
+    d.classList.toggle('past', k < i);
+    if (k === i) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current');
+  });
+}
+$('prev').addEventListener('click', () => go(i - 1));
+$('next').addEventListener('click', () => go(i + 1));
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') go(i + 1);
+  if (e.key === 'ArrowLeft') go(i - 1);
+});
+window.journey = { go, count: STEPS.length };
+go(0);
+</script>
+</body>
+</html>
