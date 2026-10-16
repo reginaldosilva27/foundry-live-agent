@@ -4,6 +4,7 @@ Version: 0.1.0
 Summary: The BFF for foundry-live-agent: identity, streaming, tool execution, traces
 Requires-Python: >=3.12
 Requires-Dist: fastapi>=0.115
+Requires-Dist: jsonschema>=4
 Requires-Dist: uvicorn[standard]>=0.32
 Requires-Dist: azure-ai-projects>=2.3.0
 Requires-Dist: azure-identity>=1.19

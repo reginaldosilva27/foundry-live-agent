@@ -168,13 +168,14 @@ class TestEveryFailureIsItsOwnAnswer:
         result = read_trace(query, FUNCTION_TOOL_RUN)
 
         assert result.status == "failed"
-        assert "ThrottledError" in result.message
+        # The kind, not the text: the text is upstream's and goes to the log (2026-10-15).
+        assert result.message == "RuntimeError"
 
     def test_an_unconfigured_bff_has_no_reader_at_all(self):
         """AC4, AC19 — `None`, like `build_synthesizer` and `build_connect` before it."""
         from app.settings import load_settings
 
-        assert build_trace_reader(load_settings(appinsights_resource_id="")) is None
+        assert build_trace_reader(load_settings(appinsights_resource_id=""), None) is None
 
     def test_asking_an_unconfigured_reader_is_a_typed_refusal(self):
         with pytest.raises(TraceUnavailable):

@@ -14,6 +14,12 @@
  * arbitrary URLs on request — so the mitigations are `referrerpolicy` and `loading`, and
  * `docs/architecture.md` says so rather than leaving a reader to find it.
  *
+ * **It loads on request (spec 063).** The agent reads untrusted text — a web page, a document — and
+ * a prompt injection there can make it write an image URL that carries the conversation in its
+ * query string. An `<img>` would send that on render, with nobody pressing anything. So the image
+ * first appears as its host and its description, and the browser fetches it only when the reader
+ * asks for that one image.
+ *
  * **No invented alt text.** An image the answer did not describe is presented as an image with no
  * description available, which is true and useful to a screen-reader user in a way a generated
  * guess is not (§5).
@@ -26,6 +32,7 @@ export function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
   const s = useT()
   const [failed, setFailed] = useState(false)
   const [open, setOpen] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
   /**
    * **Base64 never arrives here, and that is measured rather than assumed.**
@@ -39,6 +46,30 @@ export function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
   if (!src) return null
 
   const described = (alt ?? '').trim()
+  const host = hostOf(src)
+
+  if (!loaded) {
+    return (
+      <span className="answer-image__pending" data-testid="answer-image-pending">
+        <span className="answer-image__pending-text">
+          <span>{described || s('image.noDescription')}</span>
+          {host ? (
+            <span className="answer-image__host">
+              {s('image.from')} <code>{host}</code>
+            </span>
+          ) : (
+            // Nothing a browser could fetch, so nothing to offer: the address, as text (AC6).
+            <code className="answer-image__host">{src}</code>
+          )}
+        </span>
+        {host && (
+          <button type="button" className="answer-image__load" onClick={() => setLoaded(true)}>
+            {s('image.load')}
+          </button>
+        )}
+      </span>
+    )
+  }
 
   if (failed) {
     // Usually an expired link, which is exactly the thing worth being able to read and copy.
@@ -68,6 +99,16 @@ export function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
       {open && <Lightbox src={src} alt={described || s('image.noDescription')} onClose={() => setOpen(false)} />}
     </>
   )
+}
+
+/** The host an image would load from, or null for an address no browser could fetch. */
+function hostOf(src: string): string | null {
+  try {
+    const url = new URL(src)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.host : null
+  } catch {
+    return null
+  }
 }
 
 function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {

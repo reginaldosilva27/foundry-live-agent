@@ -173,7 +173,8 @@ Two things follow, and both are visible rather than hidden:
 
 ## Trying one (spec 042)
 
-`/tools` runs a single function tool with arguments you type, through **the same**
+The Playground's **Tools** tab (`/playground/tools`; `/tools` until spec 060) runs a single function
+tool with arguments you type, through **the same**
 `tool_executor.execute` an adapter uses when Foundry asks — not a copy of the path, the path. The
 schema beside the field is the same document Foundry is given at `create_version` time.
 
@@ -194,7 +195,8 @@ verbatim, and it is the state most forks of this repository will be in.
 
 Off by default — see [`SECURITY.md`](../../SECURITY.md).
 
-The rail's **Run a tool** entry opens `/tools` only when configured. The registry arrives
+The Playground's **Tools** tab says the runner is off when it is not configured, rather than
+vanishing (spec 060). The registry arrives
 asynchronously: loading, a failed read and a successful empty list are distinct (spec 053).
 The first available tool supplies the initial schema; a valid user selection survives a refreshed
 list. Selecting a tool never executes it — only **Run** does.

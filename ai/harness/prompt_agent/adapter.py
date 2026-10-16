@@ -42,14 +42,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 from contextlib import aclosing
 from typing import Any
 
 from harness._shared.contract import AgentEvent, VoiceAttachment
+from harness._shared.errors import client_message
 from harness._shared.event_diagnostics import EventDiagnostics
 from harness._shared.streaming import stream_items
 from harness.prompt_agent.events import convert
+
+_log = logging.getLogger(__name__)
 
 __all__ = ["PromptAgentAdapter"]
 
@@ -187,7 +191,7 @@ class PromptAgentAdapter:
         except Exception as exc:  # noqa: BLE001 - a terminal event is a promise (§9)
             yield {
                 "type": "error",
-                "message": f"{type(exc).__name__}: {exc}",
+                "message": client_message(exc, _log, "prompt agent turn failed"),
                 "code": "harness_error",
             }
 

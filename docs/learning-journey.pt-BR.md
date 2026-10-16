@@ -81,7 +81,7 @@ pagos desligados salvo autorização deliberada do operador. Leia [SECURITY](../
   envia outputs na mesma conversa Foundry. Um round trip tem dois completions upstream; um turno
   pode ter mais legs. O adapter limita rodadas de protocolo e não seleciona tools.
 - **Exercício:** pergunte a hora atual em São Paulo, inspecione argumentos/output e identifique
-  `call_id` nos dois lados. Compare com `/tools`, onde uma pessoa escolhe uma função fora da conversa.
+  `call_id` nos dois lados. Compare com `/playground/tools`, onde uma pessoa escolhe uma função fora da conversa.
 - **Limite:** a escolha é do agente, não consequência garantida da formulação. Não acrescente loop
   de planejamento/retry na aplicação. Controles pagos do playground ficam desligados por padrão e
   exigem consentimento do operador.
@@ -124,7 +124,8 @@ pagos desligados salvo autorização deliberada do operador. Leia [SECURITY](../
 **Objetivo:** distinguir adapter BFF intercambiável de runtime de agente autorado e implantado no Foundry.
 
 - **Comando candidato:** `cd ai && pytest -q tests/test_harness_parity.py tests/test_hosted_graph.py`.
-  Após provisionamento live validado, abra `/compare`; não faça deploy apenas para concluir o roteiro.
+  Após provisionamento live validado, abra `/playground` (aba Agente, *Comparar com…*); não faça
+  deploy apenas para concluir o roteiro.
 - **Código/evidência:** [definição prompt](../ai/harness/prompt_agent/agent.yaml),
   [core compartilhado](../ai/harness/_shared/agent_core.yaml),
   [grafo hosted](../ai/harness/langgraph/agent/graph.py),
@@ -132,8 +133,8 @@ pagos desligados salvo autorização deliberada do operador. Leia [SECURITY](../
   [resumo da comparação](../ai/tests/fixtures/recorded/compare-summary-20260920.json).
 - **Observação esperada:** definições compartilham `gpt-5.5`, instruções e tools; reasoning prompt
   tem configuração própria `detailed`. Foundry roda o loop decisório prompt; o grafo hosted cicla
-  modelo → tools → modelo no container. Chamadas hosted levam `executor: "foundry"`. `/compare`
-  faz dois posts normais com pointers independentes, não uma API nova de orquestração.
+  modelo → tools → modelo no container. Chamadas hosted levam `executor: "foundry"`. Uma comparação
+  no Playground faz dois posts normais com pointers independentes, não uma API nova de orquestração.
 - **Exercício:** desenhe ambos os caminhos e identifique quem seleciona, executa e renderiza cada
   chamada. Recalcule primeira resposta textual/duração total das seis linhas, rotulando amostras datadas.
 - **Limite:** definições compartilhadas reduzem drift, não confundidores de latência. Não se provou

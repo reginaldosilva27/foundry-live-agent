@@ -28,10 +28,15 @@ to put anything that could end a string literal into one. Escaping is what gets 
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
+
+from harness._shared.errors import client_message
+
+_log = logging.getLogger(__name__)
 
 __all__ = [
     "ID_SHAPE",
@@ -39,6 +44,7 @@ __all__ = [
     "Trace",
     "TraceUnavailable",
     "build_trace_reader",
+    "translate_query_errors",
     "read_trace",
     "TRACE_QUERY",
 ]
@@ -109,24 +115,30 @@ dependencies
 """
 
 
-def build_trace_reader(settings: Any) -> QueryClient | None:
+def build_trace_reader(settings: Any, clients: Any) -> QueryClient | None:
     """A query client, or ``None`` when this BFF has no Application Insights.
 
     ``None`` is the same answer `build_synthesizer` and `build_connect` give, and the router turns
     it into *unavailable* rather than into a failure — so a checkout with no tracing configured runs
     the whole app normally (AC4, AC19).
+
+    One `LogsQueryClient` for the process, built on first use from the process's one credential
+    (``clients``). It used to build a fresh credential and client per request and close neither:
+    a token acquisition on every drawer opened, and a connection pool leaked each time.
     """
     resource_id = getattr(settings, "appinsights_resource_id", "")
     if not resource_id:
         return None
 
+    built: list[Any] = []
+
     def query(kql: str) -> list[dict[str, Any]]:
         # Imported here so the dependency is needed only by a deployment that configures tracing.
-        from azure.identity import DefaultAzureCredential
         from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 
-        client = LogsQueryClient(DefaultAzureCredential())
-        response = client.query_resource(resource_id, kql, timespan=timedelta(days=1))
+        if not built:
+            built.append(LogsQueryClient(clients.credential()))
+        response = built[0].query_resource(resource_id, kql, timespan=timedelta(days=1))
         tables = (
             response.tables
             if response.status == LogsQueryStatus.SUCCESS
@@ -136,7 +148,30 @@ def build_trace_reader(settings: Any) -> QueryClient | None:
             dict(zip(table.columns, row, strict=False)) for table in tables for row in table.rows
         ]
 
-    return query
+    return translate_query_errors(query)
+
+
+def translate_query_errors(query: QueryClient) -> QueryClient:
+    """Turn the SDK's refusals into the `PermissionError` that `read_trace` reports as `denied`.
+
+    The SDK raises `HttpResponseError` (401/403) or `ClientAuthenticationError`, never
+    `PermissionError` — so until this existed the `denied` branch, the one that names the role to
+    grant, could not run, and a missing role read as an unexplained failure.
+    """
+
+    def translated(kql: str) -> list[dict[str, Any]]:
+        from azure.core.exceptions import ClientAuthenticationError, HttpResponseError
+
+        try:
+            return query(kql)
+        except ClientAuthenticationError as exc:
+            raise PermissionError("not authenticated") from exc
+        except HttpResponseError as exc:
+            if exc.status_code in (401, 403):
+                raise PermissionError(f"HTTP {exc.status_code}") from exc
+            raise
+
+    return translated
 
 
 def read_trace(query: QueryClient | None, response_id: str) -> Trace:
@@ -158,12 +193,14 @@ def read_trace(query: QueryClient | None, response_id: str) -> Trace:
     try:
         rows = query(TRACE_QUERY.format(response_id=response_id))
     except PermissionError as exc:
+        # The detail is upstream text; the operator acts on the role, which is ours to name.
+        client_message(exc.__cause__ or exc, _log, "trace query refused")
         return Trace(
             status="denied",
-            message=f"{exc}. Log Analytics Reader on the workspace is required.",
+            message="Log Analytics Reader on the workspace is required.",
         )
     except Exception as exc:  # noqa: BLE001 - every failure is reported, never swallowed (§5)
-        return Trace(status="failed", message=f"{type(exc).__name__}: {exc}")
+        return Trace(status="failed", message=client_message(exc, _log, "trace query failed"))
 
     if not rows:
         return Trace(status="pending")

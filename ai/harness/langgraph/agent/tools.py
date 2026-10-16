@@ -51,8 +51,7 @@ def mcp_server_config(spec: AgentSpec) -> dict[str, dict[str, Any]]:
     speaks; the server is public, unauthenticated and read-only, so there is no credential here.
     """
     return {
-        mcp.name: {"url": mcp.server_url, "transport": "streamable_http"}
-        for mcp in spec.mcp_tools
+        mcp.name: {"url": mcp.server_url, "transport": "streamable_http"} for mcp in spec.mcp_tools
     }
 
 

@@ -5572,6 +5572,43 @@ button:disabled {
   object-fit: contain;
 }
 
+/* Spec 063: an answer image is its host and description until the reader asks for it. */
+.answer-image__pending {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--border-1);
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+  gap: var(--sp-3);
+}
+
+.answer-image__pending-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--sp-1);
+}
+
+.answer-image__host {
+  color: var(--fg-3);
+  overflow-wrap: anywhere;
+}
+
+.answer-image__load {
+  flex-shrink: 0;
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  font-size: var(--fs-body-s);
+  color: var(--fg-1);
+  cursor: pointer;
+}
+
 .answer-image__failed {
   display: block;
   font-size: var(--fs-caption);

@@ -9,6 +9,9 @@ harness/__init__.py
 harness/_shared/__init__.py
 harness/_shared/agent_spec.py
 harness/_shared/contract.py
+harness/_shared/errors.py
+harness/_shared/event_diagnostics.py
+harness/_shared/streaming.py
 harness/_shared/voice_events.py
 harness/_shared/tools/__init__.py
 harness/_shared/tools/datetime_tool.py
@@ -29,14 +32,17 @@ tests/test_adapter_concurrency.py
 tests/test_agent_spec.py
 tests/test_conformance.py
 tests/test_contract.py
+tests/test_event_diagnostics.py
 tests/test_events.py
 tests/test_harness_parity.py
 tests/test_hosted_config.py
 tests/test_hosted_graph.py
 tests/test_hosted_host.py
 tests/test_hosted_recorded_turn.py
+tests/test_no_signed_urls.py
 tests/test_prompt_adapter.py
 tests/test_recorded_turn.py
+tests/test_resource_lifecycle.py
 tests/test_tools.py
 tests/test_voice_events.py
 tests/test_web_search_integration.py

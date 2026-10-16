@@ -23,8 +23,9 @@
 
 ## Side by side, in the app
 
-Spec 020 puts the two columns of this table on a screen: `/compare` sends one question to two agents
-at once and each answers into its own column, with its own tool rows, its own executor tags and its
+Spec 020 puts the two columns of this table on a screen — `/compare` when the samples below were
+recorded, the Playground's **Agent** tab (`/playground`, *Compare with…*) since spec 060. It sends one
+question to two agents at once and each answers into its own column, with its own tool rows, its own executor tags and its
 own figures. It is the demonstration of what the table argues.
 
 ### Measured — 2026-09-20

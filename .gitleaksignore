@@ -1,0 +1,5 @@
+# Reviewed false positives (assessment 2026-10-15). Both are the localStorage key name
+# `fla.favourites.v1`, which the generic-api-key rule reads as a token. Ignored by fingerprint, so a
+# real secret on any other line still fails the scan.
+14494a56ada92b91e8c369b8ba251054066d530a:frontend/src/state/favourites.ts:generic-api-key:17
+14494a56ada92b91e8c369b8ba251054066d530a:specs/022-agent-favourites/plan.md:generic-api-key:46

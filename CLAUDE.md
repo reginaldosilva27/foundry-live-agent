@@ -61,11 +61,16 @@ ruff check . && ruff format --check . && pytest -q
 
 # ai/ — Python (harnesses, agent definitions, tools)
 ruff check . && pytest -q
+# ai/ hosted graph — with `pip install -e ".[dev,hosted]"`; must run, not skip
+pytest -q -rs tests/test_hosted_graph.py tests/test_hosted_host.py
 
-# frontend/ — React + TypeScript + Vite
-npm run lint && npm test && npm run build
+# frontend/ — React + TypeScript + Vite (e2e: Playwright vs the demo replay, ports :8100/:5199)
+npm run lint && npm test && npm run build && npm run e2e
 
-# infra/ — Bicep + azd (NOT Terraform)
+# security — cross-layer (reviewed gitleaks false positives live in .gitleaksignore)
+pip-audit --skip-editable && (cd frontend && npm audit --audit-level=high) && gitleaks git --no-banner --redact .
+
+# infra/ — Bicep + azd (NOT Terraform; skips while infra/ has no main.bicep)
 az bicep build --file main.bicep && az bicep lint --file main.bicep
 ```
 

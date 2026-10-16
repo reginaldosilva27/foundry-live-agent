@@ -16,7 +16,6 @@ from pydantic import BaseModel, Field
 
 from app.agents import AgentsUnavailable
 from app.limits import INSTRUCTIONS_CHARS
-from app.settings import ALLOWED_ORIGINS
 
 #: Which HTTP status each refusal deserves. `not_owned` and `write_disabled` are 403 because they
 #: are both "this build will not do that", which is what a reader debugging a deployment needs.
@@ -102,7 +101,7 @@ def promote(name: str, version: str, request: Request, response: Response) -> di
     # other site driving the operator's browser, and CORS would let that request through — it only
     # hides the answer. No `Origin` is not a browser, so it meets the gates below as it always did.
     origin = request.headers.get("origin")
-    if origin is not None and origin not in ALLOWED_ORIGINS:
+    if origin is not None and origin not in request.app.state.settings.allowed_origins:
         response.status_code = 403
         return {"agent": None, "error": "cross_origin"}
 

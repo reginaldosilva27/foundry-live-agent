@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   never stopped the POST.
 - **Request limits** (spec 062): `POST /chat` messages and proposed instructions are bounded, the
   bounds are published in `GET /config`, and the composer says so before sending.
+- **Answer images load on request** (spec 063): an image the agent wrote renders as a placeholder
+  naming its host until the reader asks for it, so a prompt-injected `![](https://…?q=…)` cannot
+  send conversation data anywhere on render. Supersedes spec 044's load-on-render in part.
+- **Upstream error text stays in the BFF's log.** An `error` event's `message` is now the
+  exception's class (`BadRequestError`), never Foundry's or Azure's error body — a forged
+  `conversation_id` used to put a request id on screen, and an unreadable agents listing the
+  project endpoint's URL. One helper, `harness/_shared/errors.py`, used by both adapters, the chat
+  route, the voice session, the trace reader and the listing.
+- **`FRONTEND_ORIGINS`** names the browser origins the BFF answers (CORS and the promote check read
+  the same list); blank keeps the Vite dev server.
 
 ### Fixed
 - **The agent detail screen reads versions and the served pin in production.** `create_app` built
@@ -26,11 +36,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sessions being negotiated (concurrent requests used to exceed it); any negotiation failure closes
   the socket and answers 502, as does a dial that fails; a receive loop that dies marks its session
   closed so the sweep frees the slot.
+- **A conversation left mid-turn no longer leaks into the next one.** "New session" (or opening a
+  past conversation) during a stream left the old fetch running, and its late `trace_ids` wrote the
+  abandoned conversation's id into the new session — which then answered from the old one's memory.
+  Reproduced live, fixed, and re-checked live.
+- **A stream that ends without `done` or `error` settles** as `transport_error` instead of reading
+  "streaming" for ever.
+- **A dropped voice call releases the microphone** and lets a new call start; two quick clicks open
+  one session, and ending a call during negotiation ends it once it is up.
+- **The trace drawer reuses one query client**, built from the process credential, instead of a new
+  credential and client per request; its `denied` answer — the one naming the role to grant — can
+  now actually occur.
+- **`lookup_knowledge` folds accents**, so "configuração" and "configuracao" match. The knowledge
+  base itself is still English, so a Portuguese question mostly misses.
 - **Preferences reach the application** (issue #29, spec 052): language choices from Preferences,
   the rail and the command palette now share browser storage, application strings and document
   language. Reasoning defaults apply to chat and comparison without resetting a deliberately
   toggled card during streaming. Removed the unsupported reading and activity-expansion checkboxes:
   reading remains parked, activity remains visible inline, and legacy stored values stay inert.
+- **The favourite and inspect controls of an agent card no longer overlap** (spec 061): they share
+  one container with a declared gap instead of two absolute offsets.
+
+### Added
+- **One Playground, in the Foundry portal's shape** (spec 060). `/playground` has two tabs: **Agent**
+  shows the answering agent's definition read-only (model, instructions, tools, reasoning, or a
+  hosted agent's container, from the same `GET /agents/{name}` read the detail screen makes) beside
+  a conversation of its own that the rail does not record; *Compare with…* adds a second agent and
+  the same question goes to both (spec 020's behaviour, still no ranking). **Tools**
+  (`/playground/tools`) is spec 042's runner, and says it is off rather than vanishing when its flag
+  is off.
+- **A theme switch in the rail footer** (spec 060), beside `EN | PT`: one press sets the opposite of
+  the theme on screen, through the same preference Preferences writes.
+- **The empty chat greets** (spec 060) by time of day from the browser's clock and offers the
+  answering agent's declared examples as cards — none when it declares none.
+- **Cards or List on the agents screen** (spec 061), remembered across reloads; List keeps every
+  fact and control a card has.
+- **A live line for the whole turn** (spec 061): at the foot of a streaming turn, the phase it is in
+  — working, thinking, calling a named tool (with its step), writing — with an elapsed clock kept out
+  of the polite live region. It used to vanish at the first token.
+- **Three or more tool calls fold into one line** (spec 061) naming the count and the distinct tools,
+  collapsed from the start; two or fewer render as before.
+
+### Changed
+- **Light is the default theme** (spec 060), before first paint too; `system` remains a choice in
+  Preferences. The rail follows the theme instead of staying dark in both.
+- **The rail is reordered** (spec 060): brand · New conversation · Chat, Agents, Playground · the
+  answering agent and Favourites · searchable, grouped conversations · footer.
+
+### Removed
+- **The command palette** (spec 025) — button and ⌘K/Ctrl+K binding (spec 060). Every remaining
+  binding has a visible control.
+- **The `/history` screen and its export/import** (spec 027) — by the owner's decision, not
+  relocated (spec 060). The rail still lists, groups, searches and reopens past conversations; an
+  old `/history` bookmark opens the chat.
+- **`/compare` and `/tools` as separate screens** (specs 020, 042) — merged into the Playground
+  (spec 060). Both addresses still parse and open the matching tab.
 
 ### Added
 - **Follow one message, layer by layer** (docs): the README (en and pt-BR) gains an animated

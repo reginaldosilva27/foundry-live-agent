@@ -44,9 +44,14 @@ English by construction.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Any
+
+from harness._shared.errors import client_message
+
+_log = logging.getLogger(__name__)
 
 __all__ = [
     "AgentDetail",
@@ -613,11 +618,15 @@ def read_listing(endpoint: str, fetch: Callable[[str], dict[str, Any]]) -> dict[
     try:
         return fetch(url)
     except PermissionError as exc:
-        raise AgentsUnavailable("forbidden", str(exc)) from exc
+        raise AgentsUnavailable(
+            "forbidden", client_message(exc, _log, "agents listing refused")
+        ) from exc
     except AgentsUnavailable:
         raise
     except Exception as exc:  # noqa: BLE001 - every other failure renders the same way
-        raise AgentsUnavailable("unavailable", f"{type(exc).__name__}: {exc}") from exc
+        raise AgentsUnavailable(
+            "unavailable", client_message(exc, _log, "agents listing unreadable")
+        ) from exc
 
 
 def promote_version(agents: Any, name: str, version: str, *, owned: bool) -> None:

@@ -6,7 +6,7 @@
 ## Preferences that affect the screen
 
 [Spec 052](../specs/052-preferences-applied/spec.md) reconciles spec 036's controls. Preferences,
-rail language buttons and the command palette use one browser-kept language for strings and
+and the rail language buttons use one browser-kept language for strings and
 `document.lang`; only an absent choice falls back to browser detection. Reasoning defaults apply
 in chat and comparison, while a deliberate card toggle wins for that mounted turn as streaming
 updates arrive. Navigating away unmounts the card; reopening uses the current default.

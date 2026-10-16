@@ -7,6 +7,7 @@
 | **Author** | Reginaldo Silva |
 | **Date** | 2026-09-16 |
 | **Clarified** | 2026-09-19 |
+| **Superseded in part** | by [063](../063-images-load-on-request/spec.md) (2026-10-15): images load on request — an answer image renders as its host and description until the reader asks for it |
 
 ## Problem / motivation
 

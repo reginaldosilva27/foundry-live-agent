@@ -83,7 +83,7 @@ that has users.
 **A page on another site cannot press the button for you.** CORS decides whose page may *read* an
 answer; it never stops a request from being *sent*, and this route takes no body — so a `<form>` or
 a `no-cors` fetch on any site the operator visits could have posted it. The route refuses a request
-whose `Origin` is outside `ALLOWED_ORIGINS` (`backend/app/settings.py`, the same list CORS uses)
+whose `Origin` is outside `FRONTEND_ORIGINS` (default: the Vite dev server; the same list CORS uses)
 with `cross_origin`, before any gate is consulted. A request with no `Origin` is not a browser and
 meets the gates as before.
 
@@ -128,6 +128,13 @@ limit is guesswork and a per-process one is wrong across replicas. Anyone who ca
 spend the model quota, Azure Speech and Log Analytics queries as fast as they can send requests —
 the same reason authentication belongs in front of this app, and the same place this belongs: an
 API gateway or a reverse proxy with throttling.
+
+## What the browser is told about a failure
+
+An `error` event's `message` is the exception's class, not its text: Azure SDK errors carry request
+ids, resource ids and endpoints, and the browser renders the message verbatim. The full text goes to
+the BFF's log (`harness/_shared/errors.py`). Answer images (spec 063) load only when the reader asks,
+because an image URL is a request to a host the agent chose — and a prompt injection can choose it.
 
 ## Credentials in recordings
 

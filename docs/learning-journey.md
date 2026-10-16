@@ -79,7 +79,7 @@ operator deliberately authorizes them. Read [SECURITY](../SECURITY.md).
   outputs on the same Foundry conversation. One round trip has two upstream completions; a turn
   can contain more legs. The adapter bounds protocol rounds and does not select tools.
 - **Exercise:** ask for the current time in São Paulo, inspect arguments/output, then identify
-  `call_id` on both sides. Contrast `/tools`, where a person chooses a function outside a conversation.
+  `call_id` on both sides. Contrast `/playground/tools`, where a person chooses a function outside a conversation.
 - **Limit:** the tool choice is the agent's, not a guaranteed consequence of wording. Do not add an
   app-side retry/planning loop. Paid playground controls are off by default and require operator consent.
 
@@ -121,7 +121,8 @@ operator deliberately authorizes them. Read [SECURITY](../SECURITY.md).
 **Objective:** distinguish a swappable BFF adapter from an authored agent runtime deployed to Foundry.
 
 - **Candidate command:** `cd ai && pytest -q tests/test_harness_parity.py tests/test_hosted_graph.py`.
-  After verified live provisioning, open `/compare`; do not deploy merely to complete the outline.
+  After verified live provisioning, open `/playground` (Agent tab, *Compare with…*); do not deploy
+  merely to complete the outline.
 - **Code/evidence:** [prompt definition](../ai/harness/prompt_agent/agent.yaml),
   [shared core](../ai/harness/_shared/agent_core.yaml),
   [hosted graph](../ai/harness/langgraph/agent/graph.py),
@@ -130,7 +131,8 @@ operator deliberately authorizes them. Read [SECURITY](../SECURITY.md).
 - **Expected observation:** definitions share `gpt-5.5`, instructions and tool declarations; prompt
   reasoning has its own `detailed` setting. Foundry runs the prompt decision loop; the hosted graph
   cycles model → tools → model inside its container. Hosted calls carry `executor: "foundry"`.
-  `/compare` is two normal posts with independent conversation pointers, not a new orchestration API.
+  A comparison in the Playground is two normal posts with independent conversation pointers, not a
+  new orchestration API.
 - **Exercise:** draw both execution paths and identify who selects, executes and renders each call.
   Recalculate first-text/total durations from the six summary rows, labelling them dated samples.
 - **Limit:** shared definitions reduce drift, not latency confounders. No benchmark/cold-start cause

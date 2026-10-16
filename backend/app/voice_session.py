@@ -25,6 +25,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Protocol
 
 from harness._shared.contract import AgentEvent
+from harness._shared.errors import client_message
 from harness._shared.voice_events import (
     is_function_call,
     normalise_voice,
@@ -158,7 +159,7 @@ class VoiceSession:
             await self._events.put(
                 {
                     "type": "error",
-                    "message": f"{type(exc).__name__}: {exc}",
+                    "message": client_message(exc, _log, "voice control channel failed"),
                     "code": "voice_channel_error",
                 }
             )

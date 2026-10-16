@@ -1,7 +1,8 @@
 name: CI
 
 # Mirror of the local quality gates (constitution §3). One job per architecture layer
-# (backend · ai · frontend · infra). Each job auto-skips while its layer has no code yet,
+# (backend · ai · frontend · infra), plus the hosted graph's own job and a cross-layer security
+# job (amended 2026-10-15). Each layer job auto-skips while its layer has no code yet,
 # and activates as soon as the project adds a manifest. Keep this in lockstep with the
 # `verify-gates` skill, `.codex/prompts/verify-gates.md`, the `justfile`, and the
 # constitution's *Quality gates* — those four mirror each other (§4).
@@ -65,6 +66,26 @@ jobs:
           # Contract tests replay recorded fixtures — no Azure credential needed.
           pytest -q
 
+  # ── ai/ hosted graph — the LangGraph container's tests (spec 018) ───────────
+  # The job above keeps its skip honest; this one makes the skipped tests RUN. Separate, so the
+  # `ai` job still proves the contract suite needs no LangGraph, and so a hosted break is named.
+  ai-hosted:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Hosted graph tests (Python)
+        run: |
+          pip install -e ".[dev,hosted]"
+          # Fails here, loudly, rather than letting `importorskip` turn a missing extra into a skip.
+          python -c "import langgraph, langchain_core, langchain_mcp_adapters"
+          pytest -q -rs tests/test_hosted_graph.py tests/test_hosted_host.py
+
   # ── frontend/ — React + TypeScript + Vite ───────────────────────────────────
   frontend:
     runs-on: ubuntu-latest
@@ -86,6 +107,46 @@ jobs:
           npm run lint
           npm test
           npm run build
+      # End-to-end smoke (amended 2026-10-15): the real app in a real browser, against the demo
+      # entrypoint — recorded Foundry turns, no credential. It needs the BFF, hence Python here.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: End-to-end smoke (Playwright, demo replay)
+        run: |
+          pip install -e ../ai -e ../backend
+          npx playwright install --with-deps chromium
+          npm run e2e
+
+  # ── security — dependencies and secrets, across every layer ─────────────────
+  # Amended 2026-10-15: the assessment found a signed URL in a fixture that no gate looked for, and
+  # known-vulnerable dependencies that no gate reported. Dependabot proposes updates; this fails.
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # gitleaks scans the history, not just the tree
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Python dependencies (pip-audit)
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          pip install -e ./ai -e ./backend
+          # The two local packages are not on PyPI; everything they pull in is audited.
+          pip-audit --skip-editable
+      - name: Frontend dependencies (npm audit)
+        working-directory: frontend
+        run: npm audit --audit-level=high
+      - name: Secrets in the history (gitleaks)
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
+          # Reviewed false positives live in .gitleaksignore, by fingerprint.
+          ./gitleaks git --no-banner --redact .
 
   # ── infra/ — Bicep + azd (NOT Terraform — see constitution amendment table) ──
   infra:

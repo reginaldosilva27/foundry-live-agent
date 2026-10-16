@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.agents import build_agent_detail_reader, build_agent_lister, build_version_promoter
 from app.harness_factory import AzureClients, build_harness
 from app.routers import agents, chat, config, health, speech, tools, traces, voice
-from app.settings import ALLOWED_ORIGINS, load_settings
+from app.settings import load_settings
 from app.speech import build_synthesizer
 from app.traces import build_trace_reader
 from app.voice_connect import build_connect
@@ -77,7 +77,7 @@ def create_app(
     app.state.synthesize = synthesize or build_synthesizer(settings)
     # `None` when no Application Insights resource is configured — the trace route turns that into
     # "unavailable", so the app runs complete and normal without tracing (spec 005, AC19).
-    app.state.read_trace = trace_query or build_trace_reader(settings)
+    app.state.read_trace = trace_query or build_trace_reader(settings, clients)
     # Reads the project's agents for the picker (spec 019). Injectable like every other Azure call
     # here, which is what keeps the suite credential-free.
     app.state.list_agents = agent_lister or build_agent_lister(settings, clients.credential)
@@ -101,7 +101,7 @@ def create_app(
     # purpose — a half-real auth layer would be worse than none. See backend/README.md.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=list(ALLOWED_ORIGINS),
+        allow_origins=list(settings.allowed_origins),
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["*"],
     )

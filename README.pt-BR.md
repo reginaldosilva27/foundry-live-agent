@@ -331,7 +331,9 @@ Cada um destes tem uma página própria, com os frames gravados por trás:
 
 Este é um laboratório **educacional, não de produção**. O replay não exige assinatura,
 Azure CLI, login nem `.env`. Instale [Python 3.12](https://www.python.org/downloads/),
-[Node 24 LTS](https://nodejs.org/) (as versões do CI) e [just](https://github.com/casey/just).
+[Node 24 LTS](https://nodejs.org/) (as versões do CI; **22.12 é o mínimo** — Node mais antigo falha
+nos testes do frontend com `ERR_REQUIRE_ESM`, e `nvm use` escolhe a versão do `.nvmrc`) e
+[just](https://github.com/casey/just).
 Os comandos abaixo são para macOS/Linux com Bash; no Windows use WSL2.
 A instalação baixa pacotes; depois o replay não chama Azure nem Tavily.
 
@@ -353,7 +355,7 @@ do replay até tools, harnesses, eventos/traces e voz.
 
 **Problemas comuns:** `uvicorn: command not found` ou `ModuleNotFoundError` → ative a venv e
 repita a instalação dos dois pacotes; Vite ausente → rode `(cd frontend && npm ci)`; erro de
-versão Node → use Node 24; porta ocupada → encerre o servidor que você iniciou naquela porta
+versão Node ou `ERR_REQUIRE_ESM` → use Node 24 (mínimo 22.12, `nvm use`); porta ocupada → encerre o servidor que você iniciou naquela porta
 ou use `BACKEND_PORT=8001 VITE_BFF_URL=http://localhost:8001 just demo` (mantenha a interface
 na :5173, conforme as origens CORS configuradas).
 Não encerre processos de outras pessoas.
@@ -388,7 +390,7 @@ opção implícita do replay. Veja [spec 051](specs/051-replay-isolation/spec.md
 
 **Pré-requisitos:** uma assinatura Azure · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) ·
 [azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) ·
-[just](https://github.com/casey/just) · Python 3.12 · Node 24 LTS (as versões validadas pelo CI).
+[just](https://github.com/casey/just) · Python 3.12 · Node 24 LTS, mínimo 22.12 (as versões validadas pelo CI).
 
 Primeiro conclua a instalação da seção anterior. Este caminho usa serviços reais e pode gerar
 custos. O provisionamento é manual; o tempo depende de acesso, cota e configuração de recursos,

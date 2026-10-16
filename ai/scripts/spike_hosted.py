@@ -101,16 +101,19 @@ def record(probe_name: str, question: str, agent_name: str, endpoint: str) -> di
     calls: dict[str, str] = {}
     answered: set[str] = set()
 
-    with httpx.Client(timeout=300.0) as client, client.stream(
-        "POST",
-        url,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "Accept": "text/event-stream",
-        },
-        json={"input": question, "stream": True},
-    ) as response:
+    with (
+        httpx.Client(timeout=300.0) as client,
+        client.stream(
+            "POST",
+            url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream",
+            },
+            json={"input": question, "stream": True},
+        ) as response,
+    ):
         if response.status_code >= 400:
             body = b"".join(response.iter_bytes()).decode("utf-8", "replace")
             raise SystemExit(f"HTTP {response.status_code} from {url}\n{body[:2000]}")

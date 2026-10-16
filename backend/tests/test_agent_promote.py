@@ -265,3 +265,45 @@ class TestCrossSiteRequests:
             client(allow=False).post(PROMOTE.format(name=OURS, version="3")).json()["error"]
             == "write_disabled"
         )
+
+
+class TestConfiguredOrigins:
+    """`FRONTEND_ORIGINS` moves the allow-list, and both readers of it move together."""
+
+    def test_the_env_names_the_origins(self, monkeypatch):
+        from app.settings import load_settings
+
+        monkeypatch.setenv("FRONTEND_ORIGINS", "http://localhost:5199, https://chat.example ")
+        assert load_settings().allowed_origins == ("http://localhost:5199", "https://chat.example")
+
+    def test_unset_keeps_the_vite_default(self, monkeypatch):
+        from app.settings import DEFAULT_ALLOWED_ORIGINS, load_settings
+
+        monkeypatch.delenv("FRONTEND_ORIGINS", raising=False)
+        assert load_settings().allowed_origins == DEFAULT_ALLOWED_ORIGINS
+
+    def test_cors_and_the_write_check_read_the_same_configured_list(self):
+        app = create_app(
+            stream_factory=lambda *_: iter(()),
+            agent_detail=lambda name: find_detail(LISTING, name),
+            promote_version=lambda name, version: find_detail(LISTING, name),
+            project_endpoint="https://example.services.ai.azure.com/api/projects/p",
+            agent_name=OURS,
+            model="gpt-5.5",
+            harness="prompt-agent",
+            allow_version_promote=True,
+            allowed_origins=("http://localhost:5199",),
+        )
+        c = TestClient(app)
+        moved = {"Origin": "http://localhost:5199"}
+
+        assert (
+            c.get("/config", headers=moved).headers["access-control-allow-origin"]
+            == moved["Origin"]
+        )
+        assert c.post(PROMOTE.format(name=OURS, version="3"), headers=moved).status_code == 200
+        old = {"Origin": "http://localhost:5173"}
+        assert (
+            c.post(PROMOTE.format(name=OURS, version="3"), headers=old).json()["error"]
+            == "cross_origin"
+        )

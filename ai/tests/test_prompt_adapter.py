@@ -102,9 +102,12 @@ async def test_a_failing_tool_still_answers_the_call():
     check_stream(events)  # still conforms: answered, just with an error
 
 
-async def test_a_harness_explosion_becomes_a_terminal_error():
+async def test_a_harness_explosion_becomes_a_terminal_error(caplog):
+    # The exception's text is the upstream's own error body: request ids, resource names, the
+    # endpoint. It goes to the BFF's log; the browser gets the kind of failure (assessment
+    # 2026-10-15 — a forged conversation id rendered Foundry's whole 400 body on screen).
     def exploding(_inputs, _state):
-        raise RuntimeError("connection reset")
+        raise RuntimeError("connection reset [Request ID: abc] x.services.ai.azure.com")
 
     a = PromptAgentAdapter(
         stream_factory=exploding,
@@ -114,7 +117,8 @@ async def test_a_harness_explosion_becomes_a_terminal_error():
     )
     events = [e async for e in a.stream_response([], {})]
     assert events[-1]["type"] == "error"
-    assert "connection reset" in events[-1]["message"]
+    assert events[-1]["message"] == "RuntimeError"
+    assert "Request ID" in caplog.text and "connection reset" in caplog.text
     check_stream(events)
 
 
@@ -347,6 +351,6 @@ async def test_failed_settlement_is_not_reported_as_successful_delivery():
     assert len(requests) == 2
     assert requests[1][0] == [{"type": "function_call_output", "call_id": "call_1", "output": "{}"}]
     assert events[-1]["code"] == "harness_error"
-    assert "output submission failed" in events[-1]["message"]
+    assert events[-1]["message"] == "RuntimeError"
     assert [e["type"] for e in events if e["type"] in {"done", "error"}] == ["error"]
     check_stream(events)

@@ -28,13 +28,37 @@ pytest -q
 Integration tests that hit real Foundry are gated behind `RUN_INTEGRATION_TESTS=1` and skipped by
 default (§5 — marked and skipped when unavailable, never faked).
 
+## `ai/` hosted graph — the LangGraph container's tests (spec 018)
+
+With the extra installed (`pip install -e ".[dev,hosted]"`), from `ai/`:
+
+```bash
+python -c "import langgraph, langchain_core, langchain_mcp_adapters"   # a missing extra fails here
+pytest -q -rs tests/test_hosted_graph.py tests/test_hosted_host.py    # must report no skips
+```
+
 ## `frontend/` — React + TypeScript + Vite
 
 ```bash
 npm run lint
 npm test
 npm run build
+npm run e2e   # Playwright smoke against the demo replay (own ports :8100/:5199)
 ```
+
+First run on a machine: `npx playwright install chromium`. The smoke starts its own demo BFF
+and Vite, so a running `just backend`/`just frontend` is not disturbed.
+
+## security — dependencies and secrets (cross-layer)
+
+```bash
+pip-audit --skip-editable              # from the venv you develop in; local packages are skipped
+cd frontend && npm audit --audit-level=high
+gitleaks git --no-banner --redact .    # from the root; reviewed false positives in .gitleaksignore
+```
+
+A stale local venv can fail `pip-audit` while a fresh install passes — upgrade it (`pip install -U`)
+rather than ignoring the finding.
 
 ## `infra/` — Bicep + azd
 

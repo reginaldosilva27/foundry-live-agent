@@ -1,4 +1,5 @@
 fastapi>=0.115
+jsonschema>=4
 uvicorn[standard]>=0.32
 azure-ai-projects>=2.3.0
 azure-identity>=1.19

@@ -386,3 +386,14 @@ def test_no_tool_module_branches_on_a_tool_name():
         }
         for other in names - defined:
             assert other not in text, f"{module.name} references sibling tool {other!r}"
+
+
+def test_an_accented_word_matches_with_or_without_its_accents(tmp_path):
+    # Regression (assessment 2026-10-15): `[a-z0-9]+` split "configuração" into "configura" and "o",
+    # so a Portuguese query could never match a Portuguese word. Accents fold on both sides.
+    (tmp_path / "notes.md").write_text("# Configuração\n\nA configuração do gateway fica no APIM.")
+    source = LocalMarkdownKnowledge(tmp_path)
+
+    assert lookup_knowledge("configuração", source=source)["passages"]
+    assert lookup_knowledge("configuracao", source=source)["passages"]
+    assert lookup_knowledge("CONFIGURAÇÃO", source=source)["passages"]

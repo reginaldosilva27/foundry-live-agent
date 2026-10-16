@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import aclosing
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+from harness._shared.errors import client_message
 from pydantic import BaseModel, Field
 
 from app.agents import AgentsUnavailable, select_agent
 from app.harness_factory import build_harness
 from app.limits import MESSAGE_CHARS
 from app.sse import format_event
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -76,7 +80,7 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
             yield format_event(
                 {
                     "type": "error",
-                    "message": f"{type(exc).__name__}: {exc}",
+                    "message": client_message(exc, _log, "chat turn failed in the BFF"),
                     "code": "bff_error",
                 }
             )

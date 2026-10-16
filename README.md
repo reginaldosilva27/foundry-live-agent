@@ -328,7 +328,9 @@ Each of these has a page of its own, with the recorded frames behind it:
 
 This is an **educational, non-production** laboratory. Replay needs no subscription, Azure CLI,
 login or `.env`. Install [Python 3.12](https://www.python.org/downloads/),
-[Node 24 LTS](https://nodejs.org/) (the CI versions) and [just](https://github.com/casey/just).
+[Node 24 LTS](https://nodejs.org/) (the CI versions; **22.12 is the minimum** — older Node fails the
+frontend tests with `ERR_REQUIRE_ESM`, and `nvm use` picks the version in `.nvmrc`) and
+[just](https://github.com/casey/just).
 The commands below target macOS/Linux with Bash; use WSL2 on Windows.
 Installation downloads packages; replay itself calls neither Azure nor Tavily.
 
@@ -350,7 +352,7 @@ from replay through tools, harnesses, events/traces and voice.
 
 **Troubleshooting:** `uvicorn: command not found` or `ModuleNotFoundError` → activate the venv
 and repeat installation of both packages; missing Vite → run `(cd frontend && npm ci)`; Node
-version error → use Node 24; port occupied → stop the server you started on that port or use
+version error or `ERR_REQUIRE_ESM` → use Node 24 (minimum 22.12, `nvm use`); port occupied → stop the server you started on that port or use
 `BACKEND_PORT=8001 VITE_BFF_URL=http://localhost:8001 just demo` (keep the UI on :5173
 for the configured CORS origins).
 Do not stop other people's processes.
@@ -384,7 +386,7 @@ option. See [spec 051](specs/051-replay-isolation/spec.md).
 
 **Prerequisites:** an Azure subscription · [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) ·
 [azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) ·
-[just](https://github.com/casey/just) · Python 3.12 · Node 24 LTS (the versions validated by CI).
+[just](https://github.com/casey/just) · Python 3.12 · Node 24 LTS, minimum 22.12 (the versions validated by CI).
 
 First complete the installation above. This path uses real services and can incur costs.
 Provisioning is manual; completion time depends on access, quota and resource setup, not a fixed

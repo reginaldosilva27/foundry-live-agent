@@ -61,6 +61,9 @@ export const strings = {
   'image.noDescription': { en: 'Image with no description', pt: 'Imagem sem descri\u00e7\u00e3o' },
   'image.failed': { en: 'This image could not be loaded:', pt: 'N\u00e3o foi poss\u00edvel carregar esta imagem:' },
   'image.close': { en: 'Close', pt: 'Fechar' },
+  // Spec 063: the browser fetches an answer image only when the reader asks for it.
+  'image.load': { en: 'Load image', pt: 'Carregar imagem' },
+  'image.from': { en: 'from', pt: 'de' },
 
   // --- Choosing the voice on the screen (spec 043) -------------------------
   // The voice IDENTIFIERS are never translated and never described: no "natural", no "expressive",

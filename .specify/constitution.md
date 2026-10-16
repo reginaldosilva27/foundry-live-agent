@@ -149,9 +149,15 @@ These mirror [`.github/workflows/ci.yml`](../.github/workflows/ci.yml), run per 
 
 - **`backend/` (Python)** — `ruff check . && ruff format --check . && pytest -q`
 - **`ai/` (Python)** — `ruff check . && pytest -q`
-- **`frontend/` (React/TS)** — `npm run lint && npm test && npm run build`
+- **`ai/` hosted graph** — `pytest -q -rs tests/test_hosted_graph.py tests/test_hosted_host.py`
+  with the `hosted` extra installed, so the LangGraph tests run instead of skipping
+- **`frontend/` (React/TS)** — `npm run lint && npm test && npm run build && npm run e2e`
+  *(`e2e` is a Playwright smoke against the demo entrypoint: recorded turns, no credential)*
+- **security (cross-layer)** — `pip-audit --skip-editable` · `npm audit --audit-level=high` ·
+  `gitleaks git --no-banner --redact .` *(reviewed false positives in `.gitleaksignore`)*
 - **`infra/` (Bicep)** — `az bicep build --file main.bicep && az bicep lint --file main.bicep`
-  *(this project uses Bicep + azd, not Terraform — amended from the template on purpose)*
+  *(this project uses Bicep + azd, not Terraform — amended from the template on purpose;
+  skips while `infra/` has no `main.bicep`)*
 
 Plus the cross-cutting gates from the principles above: spec exists for the feature (§1),
 a failing test drove the change (§2), docs updated in the same change (§4), agent guidance
@@ -178,6 +184,7 @@ This document changes only by intent, not by accident:
 | Added §8, §9, §10 | The repo's educational value depends on these invariants holding under review |
 | §8 exception: session context for the voice transport (2026-09-16) | The agent cannot perceive that it is being spoken to, and Voice Live's `instructions` field is unsupported with a custom agent — so a fact about the channel had nowhere else to live. Bounded to one static sentence; spec 017 |
 | §8 table: *"may it loop?"* → **"may it run the agent loop?"**, and the adapter's one bounded loop named (2026-09-20) | The table answered **No** flatly while `PromptAgentAdapter` has always looped over the legs of a turn, up to `DEFAULT_MAX_TURNS`. The distinction that makes that legal — a loop over the platform's own round trip, deciding nothing — lived only in the adapter's docstring, and it is the *table* somebody quotes in a review. No rule changed; the rule now says what it always meant |
+| Quality gates: **e2e smoke, hosted-graph job, security scan** added (2026-10-15) | The assessment found no browser test (jsdom lays nothing out, and a layout break had already shipped with every test green), LangGraph tests that skipped in every CI run, and no dependency or secret scanning — a signed URL sat in a fixture and known-vulnerable packages in the lockfile with nothing failing. Gates must mirror `ci.yml` (§4), so the jobs and this list move together |
 | §8 headline: "never in this repo" → **never in the app** (2026-09-16) | A hosted agent is a container this repository authors and Foundry runs, so its loop is *in the repo* by construction. The prohibition on `backend/` and `frontend/` is unchanged; the headline was overreaching. Adapter (in the BFF, no loop) is now distinguished from agent (on Foundry, all loop); spec 018 |
 
 ---

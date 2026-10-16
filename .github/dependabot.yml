@@ -21,12 +21,6 @@ updates:
     schedule:
       interval: "weekly"
 
-  # infra/ — Terraform
-  - package-ecosystem: "terraform"
-    directory: "/infra"
-    schedule:
-      interval: "weekly"
-
   # GitHub Actions workflows (.github/workflows/)
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -146,44 +146,21 @@ in spec 021 rather than a promise:
 A conversation's title is taken from the first thing the person typed. Asking a model to name the
 thread would be this app running inference of its own — the precise thing §8 exists to stop.
 
-### What leaves the browser, and what comes back (spec 027)
+### What the rail searches, and what never leaves the browser (specs 027, 060)
 
-The record is searchable and portable, and both are reads of something this browser already has.
-Nothing here calls the BFF: searching Foundry's conversations would duplicate state the service
-owns, and validating an imported pointer against the service would be this app deriving a decision
-from its own storage.
+The record is searchable, and searching is a read of something this browser already has. Nothing
+here calls the BFF: searching Foundry's conversations would duplicate state the service owns.
 
-**Search** (the rail's field, and the `/history` screen) matches a conversation's title, the text of
-either role's messages, and the **names** of the tools and MCP servers its turns used — because
-"which conversation called `search_web`?" is the question a reader of this repository has. Call
-arguments and outputs are deliberately not searched: a hit inside a JSON blob renders as an
-unreadable fragment.
+**Search** (the rail's field) matches a conversation's title, the text of either role's messages,
+and the **names** of the tools and MCP servers its turns used — because "which conversation called
+`search_web`?" is the question a reader of this repository has. Call arguments and outputs are
+deliberately not searched: a hit inside a JSON blob renders as an unreadable fragment.
 
-**Export** comes in two shapes, and only the second is meant to be read back:
-
-| Shape | Contents |
-|---|---|
-| One conversation, Markdown | Every turn through the same renderer the single-turn download uses: the question, the answer, every call and who ran it, and the numbers underneath |
-| The whole record, JSON | `{ version, exportedAt, conversations }` — the stored shape verbatim, including each turn's trace identifiers |
-
-The trace identifiers are **not** stripped on the way out. They are what ties a transcript back to
-spans in the workspace, which is the point of a teaching repository, and a `response_id` or an OTel
-trace id is inert without access to that workspace.
-
-**Import** merges a file into the record by our own conversation id, so the same file twice leaves
-one of each, and a stored conversation always wins over its imported twin. Past the 25-conversation
-cap the newest survive and the screen says how many were kept and how many were not — discarding
-somebody's transcripts in silence is what §5 is about. A file this build does not recognise, by
-version or by shape, is refused whole and the record is untouched.
-
-Import writes the file's `conversation_id` **verbatim and asks Foundry nothing**. That is the point:
-a pointer that survives the round trip is what makes reopening an imported conversation a
-resumption rather than a screenshot. A pointer from another project or tenant therefore fails the
-way any unusable pointer already fails — the next turn sent into it errors, and the turn-error card
-says so. There is no second failure mode and no "imported" flag on the record.
-
-The export format's single source of truth is `frontend/src/state/history.ts`, which owns the stored
-shape and the exported one together (§4).
+**There is no export or import.** Spec 027 shipped a `/history` screen with Markdown and JSON export
+and a JSON import; spec 060 removed that screen and both controls by the owner's decision, because
+the rail already lists, groups, searches and reopens the same record. An old `/history` bookmark
+lands on the chat. Re-adding export would be a new spec, not a revert. A single settled turn can
+still be copied or downloaded from its own answer actions.
 
 ## Layers, trust and observation
 
@@ -265,13 +242,16 @@ round-trip for **every** route in `ROUTES`, so this table cannot quietly fall be
 | `/` | the chat |
 | `/agents` | the agents screen |
 | `/agents/<name>` | one agent's definition, as the service reports it (spec 030) |
-| `/history` | the record this browser kept, and the controls that move it (spec 027) |
 | `/about` | what this deployment is, from `GET /config` (spec 032) |
 | `/preferences` | what **this browser** prefers, and editable (spec 036) |
-| `/tools` | run one function tool, outside any conversation (spec 042) |
 | `/c/<id>` | a conversation **this browser** kept (spec 021) |
 | `/trace/<response_id>` | the trace panel on that response |
-| `/compare` | one question to two agents, side by side (spec 020) |
+| `/playground` | the Playground's **Agent** tab: the answering agent's definition beside a conversation, and *Compare with…* for a second column (specs 020, 060) |
+| `/playground/tools` | the Playground's **Tools** tab: run one function tool, outside any conversation (spec 042) |
+
+Older addresses still parse and are never built: `/compare` opens the Playground's Agent tab,
+`/tools` its Tools tab, and `/history` the chat (spec 060), so a bookmark never lands on a blank
+screen and the address bar settles on the canonical form.
 
 **Contextual observation (spec 056).** The header's Events control opens the retained capture for
 one turn, naming its answering agent and allowing previous/next turn navigation. No capture, an
@@ -280,8 +260,8 @@ expanded payload. Header status reports loading configuration, unavailable read 
 streaming, or idle — never a service-health guarantee. Error details stay verbatim with manual next
 steps, not a guessed diagnosis.
 
-Comparison uses independent contexts and pointers. Restart clears both local message arrays and
-pointers, keeps the chosen agents, and leaves single chat/history untouched; it sends no delete or
+Comparison (the Playground's Agent tab with a second agent) uses independent contexts and pointers. Restart clears both local message arrays and
+pointers, keeps the chosen agents, and leaves the main chat and the rail's record untouched; it sends no delete or
 memory-reset request. Agent changes and restart are locked while either column streams; stopping
 listening remains available. A settled agent change clears only its column. This local reset is not
 a guarantee of hosted multi-turn continuity: the investigation in issue #35 / PR #50 remains

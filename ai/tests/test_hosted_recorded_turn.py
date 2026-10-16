@@ -117,9 +117,7 @@ def test_the_app_is_never_asked_to_execute_anything():
     reached on the request path.
     """
     for path in (LEARN, FUNCTION):
-        assert not [
-            e for e in events(path) if e["type"] == "tool_call" and e["executor"] == "app"
-        ]
+        assert not [e for e in events(path) if e["type"] == "tool_call" and e["executor"] == "app"]
 
 
 # --- the stream as a whole -------------------------------------------------

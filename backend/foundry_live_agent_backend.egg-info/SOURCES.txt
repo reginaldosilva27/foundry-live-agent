@@ -5,6 +5,7 @@ app/agent_definition.py
 app/agents.py
 app/demo.py
 app/harness_factory.py
+app/limits.py
 app/main.py
 app/settings.py
 app/speech.py
@@ -34,10 +35,14 @@ tests/test_agent_detail_route.py
 tests/test_agent_promote.py
 tests/test_agent_versions.py
 tests/test_agents.py
+tests/test_chat_lifecycle.py
 tests/test_concurrency.py
 tests/test_demo.py
+tests/test_error_disclosure.py
 tests/test_harness_factory.py
+tests/test_hosted_continuity.py
 tests/test_pricing.py
+tests/test_request_limits.py
 tests/test_routes.py
 tests/test_speech.py
 tests/test_sse.py
@@ -47,4 +52,5 @@ tests/test_trace_injection.py
 tests/test_traces.py
 tests/test_voice.py
 tests/test_voice_choice.py
+tests/test_voice_failures.py
 tests/test_voice_reaping.py

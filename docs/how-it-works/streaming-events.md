@@ -328,7 +328,7 @@ are driven by the recorded payloads for exactly that reason.
 ## Watching it happen (spec 038)
 
 The event inspector is the live counterpart to this page: the nine types, arriving in order, with
-the mapping report above them. It is opened from the command palette and is closed by default — a
+the mapping report above them. It is opened from the header's **Events** control and is closed by default — a
 developer surface, out of the way of anyone using the app to talk to an agent.
 
 Three properties are the point:

@@ -13,6 +13,7 @@ not have (constitution §5).
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
@@ -40,6 +41,16 @@ SCHEMA: dict[str, Any] = {
 }
 
 _WORD = re.compile(r"[a-z0-9]+")
+
+
+def _words(text: str) -> list[str]:
+    """Lower-cased words with their accents folded, so "Configuração" and "configuracao" meet.
+
+    `[a-z0-9]+` alone split an accented word at every accent, and a Portuguese query could never
+    match a Portuguese word (assessment 2026-10-15).
+    """
+    folded = unicodedata.normalize("NFKD", text.casefold())
+    return _WORD.findall("".join(c for c in folded if not unicodedata.combining(c)))
 
 
 @dataclass(frozen=True)
@@ -73,7 +84,7 @@ class LocalMarkdownKnowledge:
         self.directory = Path(directory)
 
     def search(self, query: str, limit: int) -> list[Passage]:
-        terms = _WORD.findall(query.lower())
+        terms = _words(query)
         if not terms:
             return []
 
@@ -108,10 +119,10 @@ def _split_sections(markdown: str) -> list[tuple[str, str]]:
 
 
 def _score(terms: list[str], heading: str, body: str) -> float:
-    body_words = _WORD.findall(body.lower())
+    body_words = _words(body)
     if not body_words:
         body_words = []
-    heading_words = set(_WORD.findall(heading.lower()))
+    heading_words = set(_words(heading))
 
     hits = sum(body_words.count(term) for term in terms)
     heading_hits = sum(1 for term in terms if term in heading_words)

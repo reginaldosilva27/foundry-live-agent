@@ -116,6 +116,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 060 | [Light shell, theme switch and one Playground](060-light-shell-and-playground/spec.md) | 4 | ✅ done |
 | 061 | [A turn that says what it is doing, calls that fold, and agents as a list](061-claude-like-turn-and-agents-list/spec.md) | 4 | ✅ done |
 | 062 | [Request limits on the two free-text inputs](062-request-limits/spec.md) | 4 | ✅ done |
+| 063 | [Answer images load on request](063-images-load-on-request/spec.md) | 4 | ✅ done |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is

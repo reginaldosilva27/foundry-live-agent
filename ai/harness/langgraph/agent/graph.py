@@ -41,9 +41,7 @@ def build_graph(model: Any, tools: list[Any], instructions: str = "") -> Any:
 
     def agent(state: MessagesState) -> dict[str, list]:
         messages = list(state["messages"])
-        if instructions and not any(
-            getattr(m, "type", None) == "system" for m in messages
-        ):
+        if instructions and not any(getattr(m, "type", None) == "system" for m in messages):
             messages.insert(0, {"role": "system", "content": instructions})
         return {"messages": [bound.invoke(messages)]}
 

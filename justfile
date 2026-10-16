@@ -115,8 +115,21 @@ gate-backend:
 gate-ai:
     cd ai && ruff check . && pytest -q
 
+# The hosted graph's tests, with the extra installed (`pip install -e "ai[dev,hosted]"`). CI's
+# `ai-hosted` job; here, as there, a missing extra fails instead of skipping.
+gate-ai-hosted:
+    cd ai && python -c "import langgraph, langchain_core, langchain_mcp_adapters" && pytest -q -rs tests/test_hosted_graph.py tests/test_hosted_host.py
+
+# `npm run e2e` starts its own demo BFF (:8100) and Vite (:5199) — your dev servers can keep running.
 gate-frontend:
-    cd frontend && npm run lint && npm test && npm run build
+    cd frontend && npm run lint && npm test && npm run build && npm run e2e
+
+# Dependencies and secrets, across layers (CI's `security` job). pip-audit audits the active
+# environment, so run it from the venv you develop in.
+gate-security:
+    pip-audit --skip-editable
+    cd frontend && npm audit --audit-level=high
+    gitleaks git --no-banner --redact .
 
 # The only gate recipe with a guard, and it is a mirror rather than an exception: ci.yml's infra
 # job skips with a notice while `main.bicep` is absent (`if [ ! -f main.bicep ]`). Without the same
@@ -131,7 +144,7 @@ gate-infra:
     cd infra && az bicep build --file main.bicep && az bicep lint --file main.bicep
 
 # Everything CI runs. A layer with no code yet skips clean — that is green.
-verify: gate-backend gate-ai gate-frontend gate-infra
+verify: gate-backend gate-ai gate-ai-hosted gate-frontend gate-security gate-infra
 
 # Fix what is auto-fixable.
 fmt:

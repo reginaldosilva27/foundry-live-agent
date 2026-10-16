@@ -11,12 +11,13 @@ import json
 import os
 from dataclasses import dataclass, field
 
-__all__ = ["ALLOWED_ORIGINS", "Settings", "SettingsError", "load_settings"]
+__all__ = ["DEFAULT_ALLOWED_ORIGINS", "Settings", "SettingsError", "load_settings"]
 
-# The browser origins this BFF answers. CORS reads it to decide whose page may READ an answer, and
-# the promote route reads it to refuse a cross-site WRITE — CORS alone never stops a request from
-# being sent. One list, so the two cannot disagree (§4).
-ALLOWED_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
+# The browser origins this BFF answers when `FRONTEND_ORIGINS` names none: the Vite dev server.
+# CORS reads the list to decide whose page may READ an answer, and the promote route reads it to
+# refuse a cross-site WRITE — CORS alone never stops a request from being sent. One setting, so the
+# two cannot disagree (§4).
+DEFAULT_ALLOWED_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
 
 
 class SettingsError(RuntimeError):
@@ -92,6 +93,7 @@ class Settings:
     # what already happened and costs nothing; this spends a metered third-party key and makes the
     # BFF fetch arbitrary queries. Different risk, different switch. See SECURITY.md.
     allow_playground: bool = False
+    allowed_origins: tuple[str, ...] = DEFAULT_ALLOWED_ORIGINS
     # What a turn costs (spec 028). **This repository ships no prices.** A rate compiled in here
     # would be a fact with no owner: prices vary by region and by agreement and change without
     # telling us, and a number rendered with a currency symbol reads as measured (§5). So the
@@ -205,6 +207,7 @@ def load_settings(**overrides: object) -> Settings:
         "allow_version_promote": _flag(os.environ.get("FOUNDRY_ALLOW_VERSION_PROMOTE")),
         "allow_proposals": _flag(os.environ.get("FOUNDRY_ALLOW_PROPOSALS")),
         "allow_playground": _flag(os.environ.get("FOUNDRY_ALLOW_PLAYGROUND")),
+        "allowed_origins": _origins(os.environ.get("FRONTEND_ORIGINS", "")),
         "model_rates": _model_rates(os.environ.get("MODEL_RATES", "")),
         "rates_currency": os.environ.get("MODEL_RATES_CURRENCY", "USD"),
         "rates_recorded_at": os.environ.get("MODEL_RATES_RECORDED_AT", ""),
@@ -297,3 +300,9 @@ def require_live_settings(settings: Settings) -> None:
             f"missing required environment variable(s): {', '.join(missing)}. "
             "Copy .env.example to .env and fill it in."
         )
+
+
+def _origins(raw: str) -> tuple[str, ...]:
+    """`FRONTEND_ORIGINS`, comma-separated; blank keeps the Vite dev server's two origins."""
+    named = tuple(origin.strip() for origin in raw.split(",") if origin.strip())
+    return named or DEFAULT_ALLOWED_ORIGINS

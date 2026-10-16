@@ -801,10 +801,11 @@ measurement we did not make (§5).
 
 ### What the comparison measures — answered (spec 020, AC16)
 
-`/compare` puts one question to two agents at once and draws two columns. Everything about **how**
+The comparison puts one question to two agents at once and draws two columns — the `/compare`
+screen when this was answered, the Playground's **Agent** tab since spec 060. Everything about **how**
 it does that is verified: the two requests are two ordinary `POST /chat` calls, each already
 carrying `agent` and its own `conversation_id`, so the feature needed no contract change and none
-was made. `frontend/src/panes/Compare.test.tsx` asserts the two turns share no conversation, that one
+was made. `frontend/src/panes/PlaygroundAgent.test.tsx` (formerly `Compare.test.tsx`) asserts the two turns share no conversation, that one
 column failing leaves the other running, and that stopping settles both.
 
 **Historical initial deferral.** The implementation session initially left AC16 unmeasured rather
