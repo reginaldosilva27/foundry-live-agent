@@ -12,9 +12,11 @@ serves one request at a time.
 from __future__ import annotations
 
 from fastapi import APIRouter, Request, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.agents import AgentsUnavailable
+from app.limits import INSTRUCTIONS_CHARS
+from app.settings import ALLOWED_ORIGINS
 
 #: Which HTTP status each refusal deserves. `not_owned` and `write_disabled` are 403 because they
 #: are both "this build will not do that", which is what a reader debugging a deployment needs.
@@ -96,6 +98,14 @@ def promote(name: str, version: str, request: Request, response: Response) -> di
     from what the service says now (AC7). A failure carries a code and no agent, because nothing on
     screen may claim a version that is not being served.
     """
+    # A browser names the page's origin on every cross-site POST. A foreign one is a page on some
+    # other site driving the operator's browser, and CORS would let that request through — it only
+    # hides the answer. No `Origin` is not a browser, so it meets the gates below as it always did.
+    origin = request.headers.get("origin")
+    if origin is not None and origin not in ALLOWED_ORIGINS:
+        response.status_code = 403
+        return {"agent": None, "error": "cross_origin"}
+
     if not request.app.state.settings.allow_version_promote:
         response.status_code = 403
         return {"agent": None, "error": "write_disabled"}
@@ -149,7 +159,7 @@ class Proposal(BaseModel):
     *shape* decides whether inference routes through the gateway.
     """
 
-    instructions: str
+    instructions: str = Field(max_length=INSTRUCTIONS_CHARS)
 
 
 @router.post("/agents/{name}/definition/proposal")

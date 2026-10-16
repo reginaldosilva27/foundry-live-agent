@@ -135,20 +135,40 @@ export function useAgentStream(idPrefix = 'turn'): AgentStream {
    * flag is what the read loop checks before applying an event, since frames already decoded in the
    * current chunk would otherwise still land after the abort (AC5).
    */
-  const inFlight = useRef<{ controller: AbortController; aborted: boolean } | null>(null)
+  const inFlight = useRef<Flight | null>(null)
 
   const remember = useCallback((id: string | undefined) => {
     conversationId.current = id
     setConversation(id)
   }, [])
 
+  /**
+   * Let go of the turn in flight because the conversation it belongs to is no longer on screen.
+   *
+   * Not `stop`: a stopped turn stays on screen as stopped, while an abandoned one has nowhere to
+   * land. Without this, "New session" pressed mid-turn left the old fetch running, and its late
+   * `trace_ids` wrote the OLD conversation id into the new session — the "new" conversation then
+   * answered with the abandoned one's memory (assessment 2026-10-15, reproduced live).
+   */
+  const abandon = useCallback(() => {
+    const current = inFlight.current
+    if (!current) return
+    current.aborted = true
+    current.orphaned = true
+    current.controller.abort()
+    inFlight.current = null
+    setStreaming(false)
+  }, [])
+
   const reset = useCallback(() => {
+    abandon()
     remember(undefined)
     setMessages([])
-  }, [remember])
+  }, [abandon, remember])
 
   const restore = useCallback(
     (incoming: Message[], id?: string) => {
+      abandon()
       // Turn ids are minted from a counter, and a restored transcript already contains some. Move
       // past the highest one so the next turn cannot collide with a turn already on screen.
       const numbered = incoming.map((message) => turnNumber(message, idPrefix))
@@ -156,7 +176,7 @@ export function useAgentStream(idPrefix = 'turn'): AgentStream {
       remember(id)
       setMessages(incoming)
     },
-    [idPrefix, remember],
+    [abandon, idPrefix, remember],
   )
 
   const stop = useCallback(() => {
@@ -169,7 +189,7 @@ export function useAgentStream(idPrefix = 'turn'): AgentStream {
   const send = useCallback(async (text: string, agent?: string, repeatOf?: string) => {
     const id = `${idPrefix}_${nextId.current++}`
     const startedAt = Date.now()
-    const flight = { controller: new AbortController(), aborted: false }
+    const flight: Flight = { controller: new AbortController(), aborted: false, orphaned: false }
     inFlight.current = flight
 
     setMessages((prev) => [
@@ -194,6 +214,8 @@ export function useAgentStream(idPrefix = 'turn'): AgentStream {
      * the message says so — dropping them silently would make the panel lie about what arrived.
      */
     const apply = (mutate: (turn: Turn) => Turn, ended: boolean, raw?: unknown) => {
+      // An abandoned turn's message is gone, and a restored transcript may reuse its id.
+      if (flight.orphaned) return
       // Read once, out here. The updater below can run more than once for one event — React
       // invokes it again in StrictMode — and a clock read inside it would give two fields of the
       // same turn two different instants for the same arrival.
@@ -237,19 +259,34 @@ export function useAgentStream(idPrefix = 'turn'): AgentStream {
       const parse = createFrameParser()
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
-
-      for (;;) {
-        if (flight.aborted) break
-        const { done, value } = await reader.read()
-        if (done) break
-        for (const event of parse(decoder.decode(value, { stream: true }))) {
+      let settled = false
+      const take = (events: unknown[]) => {
+        for (const event of events) {
           if (flight.aborted) break
           if (isTraceIds(event) && event.conversation_id) {
             remember(event.conversation_id)
           }
           const terminal = isTerminal(event)
+          settled ||= terminal
           apply((turn) => reduceTurn(turn, event), terminal, event)
         }
+      }
+
+      for (;;) {
+        if (flight.aborted) break
+        const { done, value } = await reader.read()
+        if (done) {
+          // A last frame that lost its trailing blank line is still a frame.
+          take(parse(decoder.decode() + '\n\n'))
+          break
+        }
+        take(parse(decoder.decode(value, { stream: true })))
+      }
+
+      // The body ended and nothing said the turn was over — a BFF restart, a proxy cutting the
+      // stream. Left alone, the turn would read `streaming` for ever.
+      if (!settled && !flight.aborted) {
+        throw new Error('the stream ended before the turn finished')
       }
     } catch (cause) {
       // A stop is not a failure. Branching on the flag rather than on the exception, because an
@@ -286,6 +323,13 @@ export function useAgentStream(idPrefix = 'turn'): AgentStream {
   }, [])
 
   return { messages, streaming, conversationId: conversation, send, stop, append, restore, reset }
+}
+
+/** The turn in flight: its fetch, whether the reader stopped it, whether its conversation left. */
+interface Flight {
+  controller: AbortController
+  aborted: boolean
+  orphaned: boolean
 }
 
 /** The counter inside a minted message id (`turn_7`, `left_7_user`), or -1 for anything else. */

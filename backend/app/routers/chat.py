@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.agents import AgentsUnavailable, select_agent
 from app.harness_factory import build_harness
+from app.limits import MESSAGE_CHARS
 from app.sse import format_event
 
 router = APIRouter()
@@ -25,7 +26,8 @@ class ChatRequest(BaseModel):
     already holds, and duplicated state drifts (§8).
     """
 
-    message: str = Field(min_length=1)
+    # Refused before the route runs, so an oversized turn never reaches Foundry (spec 062).
+    message: str = Field(min_length=1, max_length=MESSAGE_CHARS)
     conversation_id: str | None = None
     #: Which agent answers, chosen on the agents screen (spec 019). Absent means the one this BFF
     #: is configured with, which is why an app with no selection behaves exactly as before (AC12).

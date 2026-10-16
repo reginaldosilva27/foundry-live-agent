@@ -377,6 +377,7 @@ const PROMOTE_REASON_KEYS: Record<string, StringKey> = {
 
 const PROMOTE_ERROR_KEYS: Record<string, StringKey> = {
   write_disabled: 'versions.error.write_disabled',
+  cross_origin: 'versions.error.cross_origin',
   not_owned: 'versions.error.not_owned',
   forbidden: 'versions.error.forbidden',
   unknown_version: 'versions.error.unknown_version',

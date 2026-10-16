@@ -48,6 +48,11 @@ interface Props {
    * of the time; this only replaces it when a new draft arrives.
    */
   draft?: { text: string; at: number }
+  /**
+   * The longest message the BFF accepts, from `GET /config` (spec 062). Absent: no bound is known,
+   * and the field behaves as it always did. Never a number of the composer's own (§4).
+   */
+  maxChars?: number
 }
 
 /** Past this the field scrolls itself rather than eating the conversation. Mirrored in the CSS. */
@@ -67,6 +72,7 @@ export function Composer({
   onVoiceChange,
   inputRef,
   draft,
+  maxChars,
 }: Props) {
   const s = useT()
   const [value, setValue] = useState('')
@@ -82,6 +88,7 @@ export function Composer({
     setValue(draft.text)
   }
   const stopped = streaming || Boolean(blocked)
+  const tooLong = maxChars !== undefined && value.trim().length > maxChars
 
   /**
    * Grow with the content.
@@ -99,7 +106,7 @@ export function Composer({
 
   function submit() {
     const text = value.trim()
-    if (!text || stopped) return
+    if (!text || stopped || tooLong) return
     setValue('')
     onSend(text)
   }
@@ -140,6 +147,11 @@ export function Composer({
       <span id="composer-newline-hint" className="composer__hint">
         {s('composer.newline')}
       </span>
+      {tooLong && (
+        <p className="composer__blocked" role="status" data-testid="composer-too-long">
+          {s('composer.tooLong').replace('{n}', String(maxChars))}
+        </p>
+      )}
 
       {/* One row under the question: who answers on the left, what to do with it on the right.
           The controls used to sit beside the input with the chip stranded underneath them, which
@@ -177,7 +189,7 @@ export function Composer({
             <button
               type="submit"
               className="composer__send"
-              disabled={stopped || !value.trim()}
+              disabled={stopped || tooLong || !value.trim()}
               aria-label={s('composer.send')}
             >
               <SendIcon size={17} />

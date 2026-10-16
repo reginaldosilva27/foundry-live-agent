@@ -10,7 +10,10 @@ change here (constitution §5). This rewrites identifiers only:
   a stable, per-file counter that keeps its prefix — the same id maps to the same placeholder, so
   cross-references between events survive;
 - ``encrypted_content`` on reasoning items becomes ``"<redacted>"``: it is an opaque blob of model
-  state, it is the bulk of the file's size, and nothing reads it.
+  state, it is the bulk of the file's size, and nothing reads it;
+- a ``url`` loses its query string: a signed trigger URL carries its credential there, and an
+  agents listing returns other people's OpenAPI tools with theirs in place
+  (``tests/test_no_signed_urls.py``).
 
 Redaction is driven by the key, never by the shape of the value. Matching values would rewrite
 literals that merely look like ids — ``"type": "mcp_call"`` among them — and silently corrupt the
@@ -57,6 +60,10 @@ def redact(value: Any, ids: dict[str, str]) -> Any:
 def _field(key: str, value: Any, ids: dict[str, str]) -> Any:
     if key == "encrypted_content" and isinstance(value, str):
         return "<redacted>"
+    if key == "url" and isinstance(value, str) and "?" in value:
+        # A trigger URL keeps its signature in the query string, and the signature IS the
+        # credential (`sig=` on a Logic App, `code=` on a Function). Origin and path stay.
+        return value.split("?", 1)[0]
     if key in ID_KEYS and isinstance(value, str) and value:
         prefix = value.split("_", 1)[0] if "_" in value else "id"
         return ids.setdefault(value, f"{prefix}_{len(ids):04d}")

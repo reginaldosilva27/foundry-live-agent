@@ -42,6 +42,8 @@ interface Props {
   first?: string
   model?: string
   pricing?: Pricing
+  /** The BFF's bound on a message (spec 062); both columns post the same text. */
+  maxChars?: number
   reasoningOpen?: boolean
   /** Open the trace panel on a turn of either column (AC7). Ids are prefixed, so they cannot clash. */
   onOpenTrace: (turnId: string, callId?: string) => void
@@ -56,6 +58,7 @@ export function PlaygroundAgent({
   first,
   model,
   pricing,
+  maxChars,
   reasoningOpen,
   onOpenTrace,
   definition,
@@ -153,6 +156,7 @@ export function PlaygroundAgent({
           voiceReason={s('compare.voiceUnavailable')}
           onSend={(text) => send(text, first)}
           onVoice={() => {}}
+          maxChars={maxChars}
         />
       </section>
     </div>

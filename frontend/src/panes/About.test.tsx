@@ -221,3 +221,20 @@ describe('both languages (AC9)', () => {
     expect(screen.getByText(t('about.lead', 'pt'))).toBeInTheDocument()
   })
 })
+
+describe('the bounds the BFF enforces (spec 062, AC5)', () => {
+  it('renders both, read from the config rather than kept here', () => {
+    show({ config: { ...CONFIG, limits: { message_chars: 1234, instructions_chars: 567 } } })
+
+    expect(screen.getByTestId('about-field-messageChars')).toHaveTextContent('1234')
+    expect(screen.getByTestId('about-field-instructionsChars')).toHaveTextContent('567')
+  })
+
+  it('says not reported for a BFF older than the spec', () => {
+    show()
+
+    expect(screen.getByTestId('about-field-messageChars')).toHaveTextContent(
+      t('about.notReported', 'en'),
+    )
+  })
+})

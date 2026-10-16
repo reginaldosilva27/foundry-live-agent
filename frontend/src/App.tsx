@@ -213,8 +213,16 @@ export default function App() {
   }, [navigate, reset])
 
   const agents = useAgents({ onSwitch: newConversation })
-  const voice = useVoiceSession()
+  // A call that drops hands its log back the way an ended one does (spec 007); the duration is
+  // read through a ref because the clock is derived from the very status the drop changes.
+  const callSeconds = useRef(0)
+  const voice = useVoiceSession({
+    onDropped: (log) => append(voiceMessages(log, callSeconds.current)),
+  })
   const elapsed = useElapsed(voice.status === 'live')
+  useEffect(() => {
+    callSeconds.current = elapsed
+  }, [elapsed])
 
   /** Every turn names the chosen agent, or nothing at all — which is the configured one (AC12). */
   const { clearNotice, selected: selectedAgent, selectedRow } = agents
@@ -647,6 +655,7 @@ export default function App() {
                   first={answering}
                   model={config?.model}
                   pricing={config?.pricing}
+                  maxChars={config?.limits?.message_chars}
                   onOpenTrace={openTrace}
                   definition={playgroundDefinition.agent}
                   onOpenDetail={(name) => navigate({ name: 'agent', agentName: name })}
@@ -706,6 +715,7 @@ export default function App() {
                 }
                 onSend={sendToSelected}
                 onVoice={startVoiceSession}
+                maxChars={config?.limits?.message_chars}
                 voices={config?.voice?.voices ?? []}
                 voice={prefs.voice}
                 onVoiceChange={(chosen) => prefs.set('voice', chosen)}
@@ -802,6 +812,7 @@ function VoiceFailure({ code }: { code: VoiceErrorCode }) {
     disabled: 'voice.errorDisabled',
     failed: 'voice.errorFailed',
     'audio-blocked': 'voice.errorAudioBlocked',
+    dropped: 'voice.errorDropped',
   } as const
 
   return <ErrorCard error={{ message: s(key[code]) }} />

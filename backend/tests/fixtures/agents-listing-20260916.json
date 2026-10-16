@@ -542,7 +542,7 @@
                     },
                     "servers": [
                       {
-                        "url": "https://prod-16.eastus.logic.azure.com:443/workflows/ff32f8c7c55a44479f41f0f9da5d8290/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=x_T09sWnqHhYF_k-8C12abv0EaTYkxWAAa9iYR7RTzs"
+                        "url": "https://prod-16.eastus.logic.azure.com:443/workflows/ff32f8c7c55a44479f41f0f9da5d8290/triggers/When_an_HTTP_request_is_received/paths/invoke"
                       }
                     ]
                   }

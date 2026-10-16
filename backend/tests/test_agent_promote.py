@@ -229,3 +229,39 @@ class TestTheRoute:
 
         assert response.status_code == 404
         assert response.json() == {"agent": None, "error": "unknown_version"}
+
+
+class TestCrossSiteRequests:
+    """Regression (assessment 2026-10-15): CORS hides the *answer*, not the *request*.
+
+    The route takes no body, so a page on any site could POST to it from the operator's browser —
+    `mode: 'no-cors'` or a plain `<form>` — and the write would run with the BFF's identity. A
+    browser always names the page's origin on a cross-site POST, so the route refuses an origin
+    outside the same allow-list CORS uses. A caller with no `Origin` (curl, a script) is no
+    cross-site request and goes on to the gates it always met.
+    """
+
+    def test_a_foreign_origin_is_refused_before_anything_is_written(self):
+        c = client()
+        response = c.post(
+            PROMOTE.format(name=OURS, version="3"), headers={"Origin": "https://evil.example"}
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {"agent": None, "error": "cross_origin"}
+        assert c.promote_calls == []
+
+    def test_the_frontends_own_origin_still_promotes(self):
+        c = client()
+        response = c.post(
+            PROMOTE.format(name=OURS, version="3"), headers={"Origin": "http://localhost:5173"}
+        )
+
+        assert response.status_code == 200
+        assert c.promote_calls == [(OURS, "3")]
+
+    def test_no_origin_meets_the_same_gates_as_before(self):
+        assert (
+            client(allow=False).post(PROMOTE.format(name=OURS, version="3")).json()["error"]
+            == "write_disabled"
+        )

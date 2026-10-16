@@ -13,7 +13,14 @@
  */
 import { BFF_URL } from '../config'
 
-export type VoiceErrorCode = 'unsupported' | 'mic-denied' | 'disabled' | 'failed' | 'audio-blocked'
+export type VoiceErrorCode =
+  | 'unsupported'
+  | 'mic-denied'
+  | 'disabled'
+  | 'failed'
+  | 'audio-blocked'
+  /** The call was live and the peer connection went away without anyone ending it. */
+  | 'dropped'
 
 export class VoiceError extends Error {
   readonly code: VoiceErrorCode

@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.agents import build_agent_detail_reader, build_agent_lister, build_version_promoter
 from app.harness_factory import AzureClients, build_harness
 from app.routers import agents, chat, config, health, speech, tools, traces, voice
-from app.settings import load_settings
+from app.settings import ALLOWED_ORIGINS, load_settings
 from app.speech import build_synthesizer
 from app.traces import build_trace_reader
 from app.voice_connect import build_connect
@@ -82,7 +82,9 @@ def create_app(
     # here, which is what keeps the suite credential-free.
     app.state.list_agents = agent_lister or build_agent_lister(settings, clients.credential)
     # Spec 030. A second projection of the same listing, not a second call — see `agents.py`.
-    app.state.agent_detail = agent_detail or build_agent_detail_reader(settings, clients.credential)
+    app.state.agent_detail = agent_detail or build_agent_detail_reader(
+        settings, clients.credential, clients
+    )
     # The one write this app makes (spec 031). Built even when the flag is off — the ROUTE is what
     # the flag gates, so that a deployment turning it on needs no restart of anything but itself,
     # and so the seam is identical in tests.
@@ -92,12 +94,14 @@ def create_app(
     # different feature, and pretending otherwise would be the kind of drawing-of-a-feature §5
     # forbids.
     app.state.voice_sessions = {}
+    # Sessions being dialled or negotiated hold a slot too, or concurrent requests outrun the cap.
+    app.state.voice_pending = 0
 
     # Local reference app: the Vite dev server is a different origin. There is no auth here on
     # purpose — a half-real auth layer would be worse than none. See backend/README.md.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_origins=list(ALLOWED_ORIGINS),
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["*"],
     )

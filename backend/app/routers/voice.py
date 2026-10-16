@@ -8,6 +8,7 @@ channel — and therefore the credential, and therefore the tool execution — s
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
 from collections.abc import AsyncIterator
 
@@ -21,6 +22,7 @@ from app.sse import format_event
 from app.voice_session import NegotiationError, VoiceSession
 
 router = APIRouter(prefix="/voice")
+_log = logging.getLogger(__name__)
 
 MAX_SESSIONS = 4
 
@@ -54,10 +56,25 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
     for dead in [key for key, session in sessions.items() if session.closed]:
         sessions.pop(dead, None)
 
-    if len(sessions) >= MAX_SESSIONS:
+    # Sessions still being negotiated count too. The check and the reservation run with no await
+    # between them, so on one event loop no second request can slip in; every await that follows
+    # (the agent lookup, the dial, a negotiation of up to 30s) happens while the slot is held.
+    if len(sessions) + request.app.state.voice_pending >= MAX_SESSIONS:
         # Bounded here rather than trusting the browser to hang up: a closed tab sends no DELETE.
         raise HTTPException(status_code=429, detail="Too many voice sessions are already open.")
 
+    request.app.state.voice_pending += 1
+    try:
+        session = await _open(body, request)
+    finally:
+        request.app.state.voice_pending -= 1
+
+    sessions[session.id] = session
+    return {"session_id": session.id, "sdp_answer": session.answer}
+
+
+async def _open(body: SessionRequest, request: Request) -> VoiceSession:
+    """Dial and negotiate. Any way out of here but success leaves no socket behind."""
     settings = request.app.state.settings
     if body.voice is not None and body.voice not in settings.offered_voices:
         # Refused at the BFF, not merely absent from the UI (AC6). A list the browser could step
@@ -75,25 +92,35 @@ async def create_session(body: SessionRequest, request: Request) -> dict:
         # row's own, so the browser can say the same thing the dimmed row on the screen says.
         raise HTTPException(status_code=400, detail=refused.code) from None
 
-    socket = await connect(
-        attachment_query(
-            agent=attachment["agent_name"],
-            project=attachment.get("project_name") or settings.project_name,
-            version=attachment.get("agent_version"),
+    try:
+        socket = await request.app.state.voice_connect(
+            attachment_query(
+                agent=attachment["agent_name"],
+                project=attachment.get("project_name") or settings.project_name,
+                version=attachment.get("agent_version"),
+            )
         )
-    )
+    except Exception:  # noqa: BLE001 - DNS, TLS, a refused token: all upstream, none ours
+        _log.exception("voice: dialling Voice Live failed")
+        raise HTTPException(status_code=502, detail="voice_connect_failed") from None
+
     session = VoiceSession(
         uuid.uuid4().hex, socket, session_config=settings.session_config_for(body.voice)
     )
-
     try:
-        answer = await session.negotiate(body.sdp)
+        session.answer = await session.negotiate(body.sdp)
     except NegotiationError as exc:
         await session.close()
         raise HTTPException(status_code=502, detail=str(exc)) from None
-
-    sessions[session.id] = session
-    return {"session_id": session.id, "sdp_answer": answer}
+    except BaseException as exc:
+        # Anything else — a frame that is not JSON, a dropped socket, the browser giving up mid-
+        # handshake (cancellation) — would otherwise leave an open, billed channel held by nothing.
+        await asyncio.shield(session.close())
+        if isinstance(exc, Exception):
+            _log.exception("voice: negotiation failed unexpectedly")
+            raise HTTPException(status_code=502, detail="voice_negotiation_failed") from None
+        raise
+    return session
 
 
 @router.get("/session/{session_id}/events")

@@ -308,6 +308,18 @@ export const strings = {
     en: 'Can propose a change to an agent',
     pt: 'Pode propor uma altera\u00e7\u00e3o num agente',
   },
+  'about.field.limits': {
+    en: 'What this build refuses',
+    pt: 'O que esta build recusa',
+  },
+  'about.field.messageChars': {
+    en: 'Longest message, in characters',
+    pt: 'Mensagem mais longa, em caracteres',
+  },
+  'about.field.instructionsChars': {
+    en: 'Longest proposed instructions, in characters',
+    pt: 'Instru\u00e7\u00f5es propostas mais longas, em caracteres',
+  },
   'about.field.playground': {
     en: 'Tool playground enabled',
     pt: 'Playground de ferramentas habilitado',
@@ -403,6 +415,10 @@ export const strings = {
   'versions.error.write_disabled': {
     en: 'Changing versions is turned off in this deployment',
     pt: 'A troca de vers\u00f5es est\u00e1 desligada nesta implanta\u00e7\u00e3o',
+  },
+  'versions.error.cross_origin': {
+    en: 'This page\u2019s origin is not one this BFF accepts writes from',
+    pt: 'A origem desta p\u00e1gina n\u00e3o \u00e9 uma das que este BFF aceita para escrita',
   },
   'versions.error.not_owned': {
     en: 'This agent was not created by this repository',
@@ -613,6 +629,14 @@ export const strings = {
   'voice.errorFailed': {
     en: 'The voice session could not be established. Try again.',
     pt: 'Não foi possível estabelecer a sessão de voz. Tente de novo.',
+  },
+  'composer.tooLong': {
+    en: 'Too long to send \u2014 this deployment accepts up to {n} characters.',
+    pt: 'Longo demais para enviar \u2014 esta implanta\u00e7\u00e3o aceita at\u00e9 {n} caracteres.',
+  },
+  'voice.errorDropped': {
+    en: 'The call dropped. What was said up to then is in the chat.',
+    pt: 'A chamada caiu. O que foi dito até ali está no chat.',
   },
   'voice.dismissError': { en: 'Dismiss', pt: 'Dispensar' },
 

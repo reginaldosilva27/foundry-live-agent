@@ -130,3 +130,55 @@ describe('Escape', () => {
     expect(onStop).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * Spec 062 AC6, AC7 — the bound the BFF publishes, said before sending rather than after.
+ *
+ * The number is whatever the caller passes: the composer keeps none of its own (§4).
+ */
+describe('a question longer than the deployment accepts', () => {
+  it('says so, names the bound, and does not send (AC6)', async () => {
+    const { onSend, field } = show({ maxChars: 10 })
+    await userEvent.type(field, 'eleven chars{Enter}')
+
+    expect(onSend).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: t('composer.send', 'en') })).toBeDisabled()
+    expect(screen.getByTestId('composer-too-long')).toHaveTextContent('10')
+  })
+
+  it('says it in Portuguese too (AC6)', async () => {
+    render(
+      <LangContext.Provider value="pt">
+        <Composer
+          streaming={false}
+          voiceEnabled={false}
+          maxChars={5}
+          onSend={() => {}}
+          onStop={() => {}}
+          onVoice={() => {}}
+        />
+      </LangContext.Provider>,
+    )
+    await userEvent.type(screen.getByLabelText(t('composer.placeholder', 'pt')), 'too long')
+
+    expect(screen.getByTestId('composer-too-long')).toHaveTextContent(
+      t('composer.tooLong', 'pt').replace('{n}', '5'),
+    )
+  })
+
+  it('sends a question exactly at the bound', async () => {
+    const { onSend, field } = show({ maxChars: 5 })
+    await userEvent.type(field, 'hello{Enter}')
+
+    expect(onSend).toHaveBeenCalledWith('hello')
+    expect(screen.queryByTestId('composer-too-long')).not.toBeInTheDocument()
+  })
+
+  it('neither warns nor blocks when the deployment published no bound (AC7)', async () => {
+    const { onSend, field } = show()
+    await userEvent.type(field, 'a'.repeat(200) + '{Enter}')
+
+    expect(onSend).toHaveBeenCalled()
+    expect(screen.queryByTestId('composer-too-long')).not.toBeInTheDocument()
+  })
+})

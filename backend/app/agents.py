@@ -714,7 +714,7 @@ def build_agent_lister(
 
 
 def build_agent_detail_reader(
-    settings, credential: Callable[[], Any] | None = None, clients: Any = None
+    settings, credential: Callable[[], Any] | None, clients: Any
 ) -> Callable[[str], AgentDetail]:
     """One agent, inspected (spec 030), with its versions (spec 031).
 

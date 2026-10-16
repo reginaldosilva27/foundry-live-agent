@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **A signed Logic App URL was removed from a recorded fixture** (assessment 2026-10-15). The agents
+  listing recorded on 2026-09-16 carried another agent's OpenAPI tool with its `sig=` in place.
+  Redacted; `redact_fixture.py` now drops every URL's query string, and `test_no_signed_urls.py`
+  fails on credential-shaped values anywhere in the repository. The key must be rotated by its owner
+  and the history rewritten before the repository is made public.
+- **The promote route refuses a cross-site request** (`cross_origin`): CORS hid the answer but
+  never stopped the POST.
+- **Request limits** (spec 062): `POST /chat` messages and proposed instructions are bounded, the
+  bounds are published in `GET /config`, and the composer says so before sending.
+
 ### Fixed
+- **The agent detail screen reads versions and the served pin in production.** `create_app` built
+  its reader without the Azure clients, so `versions` was always `null` live; every test injected
+  the reader and could not see it.
+- **Voice sessions that fail on the way up release everything.** The `MAX_SESSIONS` cap now counts
+  sessions being negotiated (concurrent requests used to exceed it); any negotiation failure closes
+  the socket and answers 502, as does a dial that fails; a receive loop that dies marks its session
+  closed so the sweep frees the slot.
 - **Preferences reach the application** (issue #29, spec 052): language choices from Preferences,
   the rail and the command palette now share browser storage, application strings and document
   language. Reasoning defaults apply to chat and comparison without resetting a deliberately

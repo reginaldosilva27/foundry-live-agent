@@ -25,6 +25,8 @@ export const COVERED_CONFIG_KEYS = [
   'voice',
   'agents',
   'playground',
+  // Spec 062. What this build refuses before anything reaches Foundry.
+  'limits',
   // Spec 050. Absent on every build but the replay — and `Flag` keeps absent apart from false.
   'demo',
   'pricing',

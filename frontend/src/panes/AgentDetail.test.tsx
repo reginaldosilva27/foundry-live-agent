@@ -389,4 +389,13 @@ describe('the promote control', () => {
     )
     expect(screen.getByTestId('agent-version-8')).toHaveTextContent(t('versions.served', 'en'))
   })
+
+  it('translates a write refused for its origin (assessment 2026-10-15)', () => {
+    show({ agent: WITH_VERSIONS, canPromote: true, promoteError: 'cross_origin' })
+
+    expect(screen.getByTestId('agent-versions')).toHaveTextContent(
+      t('versions.error.cross_origin', 'en'),
+    )
+    expect(screen.getByTestId('agent-versions')).toHaveTextContent('origin')
+  })
 })

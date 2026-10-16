@@ -11,7 +11,12 @@ import json
 import os
 from dataclasses import dataclass, field
 
-__all__ = ["Settings", "SettingsError", "load_settings"]
+__all__ = ["ALLOWED_ORIGINS", "Settings", "SettingsError", "load_settings"]
+
+# The browser origins this BFF answers. CORS reads it to decide whose page may READ an answer, and
+# the promote route reads it to refuse a cross-site WRITE — CORS alone never stops a request from
+# being sent. One list, so the two cannot disagree (§4).
+ALLOWED_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
 
 
 class SettingsError(RuntimeError):

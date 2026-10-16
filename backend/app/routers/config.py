@@ -5,6 +5,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 from harness._shared.contract import EVENT_TYPES
 
+from app.limits import INSTRUCTIONS_CHARS, MESSAGE_CHARS
+
 router = APIRouter()
 
 # Each harness normalises a different raw stream, so each has its own mapping report. Importing one
@@ -78,6 +80,9 @@ async def config(request: Request) -> dict:
         # Its own switch (spec 042): the playground spends a metered key, unlike anything else
         # a reader can turn on here.
         "playground": {"enabled": settings.allow_playground},
+        # What the request models refuse (spec 062). Published so the composer can say "too long"
+        # before sending, from the same constants the routes enforce.
+        "limits": {"message_chars": MESSAGE_CHARS, "instructions_chars": INSTRUCTIONS_CHARS},
         "event_types": sorted(EVENT_TYPES),
         "event_mapping": _mapping_report(settings.harness),
     }

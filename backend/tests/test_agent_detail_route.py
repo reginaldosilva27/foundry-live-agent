@@ -116,3 +116,49 @@ class TestTheVersionFields:
         assert [v["served"] for v in agent["versions"]] == [True, False]
         assert [v["promotable"] for v in agent["versions"]] == [False, True]
         assert [v["promote_reason"] for v in agent["versions"]] == ["served", ""]
+
+
+def test_the_production_wiring_reads_versions_and_the_endpoint(monkeypatch):
+    """Regression (assessment 2026-10-15): `create_app` built the reader without `clients`.
+
+    Every test above injects `agent_detail=`, so none of them saw that the reader production builds
+    could never reach the SDK: `versions` was always None and the pin never resolved, live. This one
+    leaves the reader to `create_app` and fakes only what lies past the network.
+    """
+    import app.agents as agents_module
+    import app.main as main_module
+
+    class FakeAgents:
+        def get(self, name):
+            return {"agent_endpoint": {"version_selector": {"version_selection_rules": []}}}
+
+        def list_versions(self, name):
+            return [{"version": "1", "status": "active"}, {"version": "2", "status": "active"}]
+
+    class FakeClients:
+        def credential(self):
+            return object()
+
+        def project(self, settings):
+            return type("Project", (), {"agents": FakeAgents()})()
+
+    monkeypatch.setattr(main_module, "AzureClients", FakeClients)
+    monkeypatch.setattr(agents_module, "_http_fetch", lambda credential: lambda url: LISTING)
+
+    body = (
+        TestClient(
+            create_app(
+                stream_factory=lambda *_: iter(()),
+                project_endpoint="https://example.services.ai.azure.com/api/projects/p",
+                project_name="p",
+                agent_name="foundry-live-agent",
+                model="gpt-5.5",
+                harness="prompt-agent",
+            )
+        )
+        .get("/agents/foundry-live-agent")
+        .json()
+    )
+
+    assert body["error"] is None
+    assert body["agent"]["versions"] is not None

@@ -35,6 +35,13 @@ export interface BffConfig {
   /** Whether this deployment exposes the tool playground (spec 042). Absent reads as no. */
   playground?: { enabled: boolean }
   /**
+   * The bounds the BFF enforces on free text (spec 062), in characters.
+   *
+   * The BFF is their only source: the composer reads `message_chars` from here and keeps no number
+   * of its own. Absent on an older BFF, which then refuses nothing the composer could know about.
+   */
+  limits?: { message_chars: number; instructions_chars: number }
+  /**
    * Present only when this build is replaying a recording (spec 050).
    *
    * **Absent, never `false`.** A live BFF has never heard of demo mode and says nothing about it;

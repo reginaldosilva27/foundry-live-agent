@@ -18,6 +18,7 @@ failed, because an error the agent can speak is better than silence (§5).
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -79,6 +80,8 @@ class VoiceSession:
         self._events: asyncio.Queue[AgentEvent | None] = asyncio.Queue()
         self._pump: asyncio.Task[None] | None = None
         self._closed = False
+        #: Voice Live's SDP answer, once `negotiate` has it.
+        self.answer: str | None = None
 
     async def negotiate(self, sdp_offer: str) -> str:
         """Relay the browser's offer and return Voice Live's answer.
@@ -159,6 +162,11 @@ class VoiceSession:
                     "code": "voice_channel_error",
                 }
             )
+            # The session is over: say so, or the sweep that frees dead sessions cannot see it and
+            # this one keeps a slot — and the socket — until the process restarts.
+            self._closed = True
+            with contextlib.suppress(Exception):
+                await self._socket.close()
             await self._events.put(None)
 
     async def _handle(self, frame: dict[str, Any]) -> None:

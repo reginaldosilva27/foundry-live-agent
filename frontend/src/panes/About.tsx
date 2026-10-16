@@ -103,6 +103,19 @@ export function AboutScreen({ config, failed }: Props) {
         <Flag label={s('about.field.playground')} value={config.playground?.enabled} field="playground" />
       </Group>
 
+      <Group title={s('about.field.limits')} testId="about-limits">
+        <Text
+          label={s('about.field.messageChars')}
+          value={config.limits ? String(config.limits.message_chars) : undefined}
+          field="messageChars"
+        />
+        <Text
+          label={s('about.field.instructionsChars')}
+          value={config.limits ? String(config.limits.instructions_chars) : undefined}
+          field="instructionsChars"
+        />
+      </Group>
+
       <Contract config={config} />
     </section>
   )

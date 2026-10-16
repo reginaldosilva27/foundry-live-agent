@@ -80,6 +80,13 @@ managed identity, and the durable trail is Azure's. A BFF shared by several peop
 promotion **unattributable by design**; if you need attribution, put something in front of this app
 that has users.
 
+**A page on another site cannot press the button for you.** CORS decides whose page may *read* an
+answer; it never stops a request from being *sent*, and this route takes no body — so a `<form>` or
+a `no-cors` fetch on any site the operator visits could have posted it. The route refuses a request
+whose `Origin` is outside `ALLOWED_ORIGINS` (`backend/app/settings.py`, the same list CORS uses)
+with `cross_origin`, before any gate is consulted. A request with no `Origin` is not a browser and
+meets the gates as before.
+
 **The role assignment is a manual step**, documented rather than shipped: there is no Bicep in this
 repository yet, and shipping unverified IaC would be worse than saying so (constitution §5).
 
@@ -109,6 +116,27 @@ and a checkout that has no Azure credential normally has no `TAVILY_API_KEY` eit
 answering `search_unavailable` is the expected output there, and the most instructive one. If you
 do have a key in your environment, `just demo` will spend it. It binds to localhost like `just
 backend` does; neither is a thing to expose.
+
+## Request limits, and what is not limited
+
+The two free-text inputs are bounded (spec 062): a chat message at 64,000 characters, proposed
+instructions at 32,000, both refused before anything reaches Foundry and both published in
+`GET /config` (`limits`). They are this app's bounds, not Foundry's.
+
+**There is no rate limiting and no cap on concurrent turns.** Without an identity, a per-client
+limit is guesswork and a per-process one is wrong across replicas. Anyone who can reach the BFF can
+spend the model quota, Azure Speech and Log Analytics queries as fast as they can send requests —
+the same reason authentication belongs in front of this app, and the same place this belongs: an
+API gateway or a reverse proxy with throttling.
+
+## Credentials in recordings
+
+An agents listing returns **every** agent in the project, including ones this repository never
+wrote, and an OpenAPI tool carries its server URL — a Logic App or Function trigger keeps its
+signature in that URL's query string. One such signature reached a fixture through a recording
+(2026-10-15 assessment). It was redacted from the tree; rotating the key and rewriting the history are the owner's steps, pending until they say otherwise. `ai/scripts/redact_fixture.py` now drops the query
+string of every `url`, and `ai/tests/test_no_signed_urls.py` fails CI on any credential-shaped value
+in a file this repository publishes.
 
 ## Demo mode
 

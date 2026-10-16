@@ -34,7 +34,17 @@ export interface VoiceState {
   toggleMute: () => void
 }
 
-export function useVoiceSession(): VoiceState {
+export interface VoiceOptions {
+  /**
+   * The call ended without anyone pressing end — the peer connection failed or closed.
+   *
+   * Receives the log, so what was said still lands in the chat the way an ended session's does
+   * (spec 007): the overlay is gone the moment the session is, so this is the only way out.
+   */
+  onDropped?: (log: VoiceLogEntry[]) => void
+}
+
+export function useVoiceSession({ onDropped }: VoiceOptions = {}): VoiceState {
   const [status, setStatus] = useState<VoiceStatus>('idle')
   const [error, setError] = useState<VoiceErrorCode | null>(null)
   const [muted, setMuted] = useState(false)
@@ -55,29 +65,52 @@ export function useVoiceSession(): VoiceState {
   const session = useRef<VoiceSession | null>(null)
   const audio = useRef<HTMLAudioElement | null>(null)
   const activity = useRef<AbortController | null>(null)
+  /**
+   * A start still negotiating, and whether an end arrived during it.
+   *
+   * `session.current` is only set once the start resolves, so before these a second click opened a
+   * second session, and an end pressed while `starting` found nothing to end — then the start
+   * resolved and the call went live with the reader believing it was over (assessment 2026-10-15).
+   */
+  const pending = useRef(false)
+  const cancelled = useRef(false)
+  const dropped = useRef(onDropped)
+  useEffect(() => {
+    dropped.current = onDropped
+  }, [onDropped])
 
-  const stop = useCallback(async () => {
+  /** Everything an end releases: the activity stream, the peer and microphone, the `<audio>`. */
+  const teardown = useCallback(async () => {
     activity.current?.abort()
     activity.current = null
-    await session.current?.stop()
+    const current = session.current
     session.current = null
+    await current?.stop()
     audio.current?.pause()
     audio.current?.remove()
     audio.current = null
-    setStatus('idle')
     setMuted(false)
-    return entries.current
   }, [])
 
+  const stop = useCallback(async () => {
+    if (pending.current) cancelled.current = true
+    await teardown()
+    setStatus('idle')
+    return entries.current
+  }, [teardown])
+
   const start = useCallback(async (agent?: string, voice?: string) => {
-    if (session.current) return
+    if (session.current || pending.current) return
+    pending.current = true
+    cancelled.current = false
     setStatus('starting')
     setError(null)
     entries.current = []
     setLog([])
 
     try {
-      const live = await startVoice({
+      let live: VoiceSession | null = null
+      live = await startVoice({
         agent,
         voice,
         onRemoteStream: (stream) => {
@@ -98,16 +131,36 @@ export function useVoiceSession(): VoiceState {
           if (started?.catch) started.catch(() => setError('audio-blocked'))
         },
         onServerEvent: (event) => appendTranscript(event, record),
-        onClosed: () => setStatus('idle'),
+        // The peer went away by itself. Only the session still on screen is torn down: a close that
+        // follows an end the reader pressed (or a newer session) is not a drop.
+        onClosed: () => {
+          if (!live || session.current !== live) return
+          void teardown().then(() => {
+            setError('dropped')
+            setStatus('error')
+            dropped.current?.(entries.current)
+          })
+        },
       })
+      pending.current = false
+      if (cancelled.current) {
+        await live.stop()
+        setStatus('idle')
+        return
+      }
       session.current = live
       setStatus('live')
       activity.current = followActivity(live.sessionId, record)
     } catch (cause) {
+      pending.current = false
+      if (cancelled.current) {
+        setStatus('idle')
+        return
+      }
       setError(cause instanceof VoiceError ? cause.code : 'failed')
       setStatus('error')
     }
-  }, [record])
+  }, [record, teardown])
 
   const toggleMute = useCallback(() => {
     setMuted((wasMuted) => {
