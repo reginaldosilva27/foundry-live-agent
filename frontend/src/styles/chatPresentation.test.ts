@@ -16,7 +16,7 @@ describe('spec 058 restrained conversational layout', () => {
     expect(rule('.compare__select')).toContain('max-width: 100%')
   })
   it('centers spacious prose without a decorative avatar gutter', () => {
-    expect(rule('.main')).toContain('--chat-width: 760px')
+    expect(rule('.main')).toContain('--chat-width: 800px')
     expect(rule('.turn')).toContain('grid-template-columns: minmax(0, 1fr)')
     expect(rule('.turn__avatar')).toContain('display: none')
     expect(rule('.turn__identity')).toContain('color: var(--fg-3)')

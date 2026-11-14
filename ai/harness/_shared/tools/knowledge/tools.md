@@ -24,5 +24,11 @@ is the only tool here that depends on a third-party service, and therefore the o
 an API key: TAVILY_API_KEY. Every Azure service in this project authenticates with Microsoft Entra
 ID instead, so that key is the single exception and is documented as one.
 
+The agent chooses two things on every call: topic (general, or news for events the press reports)
+and time_range (any, day, week, month or year). Each result carries a published_date, Tavily's
+estimate of when the page was published, which can be empty. A search for something that just
+happened needs the date in the query, news and a narrow window: Tavily's default search ranks
+cached pages by relevance and has no idea what today is.
+
 When the key is absent the tool answers search_unavailable rather than raising. A tool that raised
 would leave a function call unanswered, which is the failure this repository most wants to avoid.

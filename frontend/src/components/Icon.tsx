@@ -284,3 +284,17 @@ export const PauseIcon = (p: IconProps) =>
     </>,
     p,
   )
+
+/** Preferences (spec 068): two sliders, for what this browser chooses about itself. */
+export const SlidersIcon = (p: IconProps) =>
+  svg(
+    <>
+      <line x1="4" y1="8" x2="11" y2="8" />
+      <line x1="15" y1="8" x2="20" y2="8" />
+      <circle cx="13" cy="8" r="2" />
+      <line x1="4" y1="16" x2="7" y2="16" />
+      <line x1="11" y1="16" x2="20" y2="16" />
+      <circle cx="9" cy="16" r="2" />
+    </>,
+    p,
+  )

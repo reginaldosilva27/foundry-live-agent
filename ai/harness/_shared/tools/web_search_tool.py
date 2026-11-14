@@ -24,7 +24,14 @@ response body and passing it off as a real one (constitution §5).
 
 API details — endpoint, auth header shape, request fields, response fields, the 432/433 status codes
 — are taken from the Tavily `POST /search` reference read on 2026-09-15 and recorded in
-`docs/REFERENCES.md`. None of it is written from memory.
+`docs/REFERENCES.md`; `topic`, `time_range` and `include_published_date` come from the same
+reference, read again on 2026-11-14. None of it is written from memory.
+
+**Why the agent chooses `topic` and `time_range`.** Tavily's default is a relevance search over its
+cached pages, which has no idea what "today" means. On 2026-11-14 "the last Brazil game" returned
+pages from September and October and an aggregator's month-old "previous game"; only a dated query
+with `topic: news` and `time_range: day` reached that morning's result. Which search a question
+needs is the agent's call, so they are arguments, not a rule here.
 """
 
 from __future__ import annotations
@@ -44,6 +51,11 @@ __all__ = [
     "search_web",
 ]
 
+TOPICS = ["general", "news"]
+TIME_RANGES = ["any", "day", "week", "month", "year"]
+
+# Every property is required because the definition is applied with `strict=True`; a choice with a
+# neutral value ("general", "any") stands in for an optional field.
 SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -51,11 +63,28 @@ SCHEMA: dict[str, Any] = {
             "type": "string",
             "description": (
                 "What to search the web for, in natural language. Use for current events, "
-                "third-party products and anything that may have changed recently."
+                "third-party products and anything that may have changed recently. When the "
+                "answer depends on when something happened, put the date in the query."
             ),
-        }
+        },
+        "topic": {
+            "type": "string",
+            "enum": TOPICS,
+            "description": (
+                "'news' for recent events reported by the press — sport results, politics, "
+                "announcements; 'general' for everything else."
+            ),
+        },
+        "time_range": {
+            "type": "string",
+            "enum": TIME_RANGES,
+            "description": (
+                "Only return pages published within this window back from today; 'any' for no "
+                "limit. Narrow it for anything asked as today, latest or last."
+            ),
+        },
     },
-    "required": ["query"],
+    "required": ["query", "topic", "time_range"],
     "additionalProperties": False,
 }
 
@@ -79,6 +108,8 @@ class SearchResult:
     url: str
     content: str
     score: float
+    # Tavily's estimate of when the page was published or last updated; None when it found none.
+    published_date: str | None = None
 
 
 class SearchError(Exception):
@@ -98,7 +129,9 @@ class SearchBackend(Protocol):
     returning an empty list means "searched, found nothing", which is not an error.
     """
 
-    def search(self, query: str, limit: int) -> list[SearchResult]: ...
+    def search(
+        self, query: str, limit: int, *, topic: str = "general", time_range: str = "any"
+    ) -> list[SearchResult]: ...
 
 
 class TavilySearch:
@@ -119,14 +152,24 @@ class TavilySearch:
         self._client = client
         self._timeout = timeout
 
-    def search(self, query: str, limit: int) -> list[SearchResult]:
+    def search(
+        self, query: str, limit: int, *, topic: str = "general", time_range: str = "any"
+    ) -> list[SearchResult]:
         if not self.api_key:
             raise SearchError(
                 "search_unavailable",
                 "web search is not configured: set TAVILY_API_KEY to enable it.",
             )
 
-        payload = {"query": query, "max_results": limit, "search_depth": "basic"}
+        payload: dict[str, Any] = {
+            "query": query,
+            "max_results": limit,
+            "search_depth": "basic",
+            "topic": topic,
+            "include_published_date": True,
+        }
+        if time_range != "any":
+            payload["time_range"] = time_range
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         try:
@@ -180,6 +223,9 @@ def _parse(response: httpx.Response) -> list[SearchResult]:
                     url=str(item["url"]),
                     content=str(item["content"]),
                     score=float(item["score"]),
+                    published_date=(
+                        str(item["published_date"]) if item.get("published_date") else None
+                    ),
                 )
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -190,12 +236,20 @@ def _parse(response: httpx.Response) -> list[SearchResult]:
     return results
 
 
-def search_web(query: str, backend: SearchBackend, limit: int = 5) -> dict[str, Any]:
+def search_web(
+    query: str,
+    backend: SearchBackend,
+    limit: int = 5,
+    *,
+    topic: str = "general",
+    time_range: str = "any",
+) -> dict[str, Any]:
     """Search the web for ``query`` and return ranked results.
 
-    On success: ``query`` and ``results``, each carrying ``title``, ``url``, ``content`` and
-    ``score``. No match is an empty list rather than an error — "I found nothing" is an answer the
-    agent can relay, whereas an error invites it to retry a query that will keep finding nothing.
+    On success: ``query`` and ``results``, each carrying ``title``, ``url``, ``content``,
+    ``score`` and ``published_date`` (``None`` when the provider found no date). No match is an
+    empty list rather than an error — "I found nothing" is an answer the agent can relay, whereas
+    an error invites it to retry a query that will keep finding nothing.
 
     On failure: ``error``, ``message`` and an empty ``results``. Never raises; see the module
     docstring for why that is not defensive habit.
@@ -209,7 +263,7 @@ def search_web(query: str, backend: SearchBackend, limit: int = 5) -> dict[str, 
         }
 
     try:
-        found = backend.search(query, limit)
+        found = backend.search(query, limit, topic=topic, time_range=time_range)
     except SearchError as exc:
         return {"query": query, "results": [], "error": exc.code, "message": exc.message}
 
@@ -221,6 +275,7 @@ def search_web(query: str, backend: SearchBackend, limit: int = 5) -> dict[str, 
                 "url": result.url,
                 "content": result.content,
                 "score": round(result.score, 4),
+                "published_date": result.published_date,
             }
             for result in found
         ],

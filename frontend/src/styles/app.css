@@ -293,7 +293,9 @@ button:disabled {
 }
 
 .main {
-  --chat-width: 760px;
+  /* One width for the reading column, the composer and the home block (spec 068 raised it from
+     760px — modestly: a line of prose is already long at this measure, so it is never fluid). */
+  --chat-width: 800px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   /* The horizontal twin of the `min-height: 0` below, and it was missing. Declaring only rows
@@ -435,33 +437,72 @@ button:disabled {
   align-items: center;
 }
 
+/* The search used to stay behind as an empty 32px circle, and the whole foot used to go — theme,
+   About and Preferences with it (spec 068). Now only what has no meaningful mark leaves: the
+   search, the history and the language switch. Every remaining control is named by attribute,
+   because `display: none` takes a label out of the accessibility tree as well as the layout. */
 .sidebar[data-collapsed='true'] .sidebar__label,
 .sidebar[data-collapsed='true'] .sidebar__product,
 .sidebar[data-collapsed='true'] .history,
+.sidebar[data-collapsed='true'] .history__search,
 .sidebar[data-collapsed='true'] .answering__naming,
 .sidebar[data-collapsed='true'] .agents__switched,
 .sidebar[data-collapsed='true'] .sidebar__section-title,
-.sidebar[data-collapsed='true'] .sidebar__foot {
+.sidebar[data-collapsed='true'] .sidebar__lang {
   display: none;
 }
 
 /* 64px of rail is the marks, centred, and nothing else. */
 .sidebar[data-collapsed='true'] .sidebar__head,
-.sidebar[data-collapsed='true'] .sidebar__scroll {
+.sidebar[data-collapsed='true'] .sidebar__scroll,
+.sidebar[data-collapsed='true'] .sidebar__foot {
   width: 100%;
 }
 
-.sidebar[data-collapsed='true'] .sidebar__brand,
-.sidebar[data-collapsed='true'] .sidebar__nav-item,
-.sidebar[data-collapsed='true'] .sidebar__new,
-.sidebar[data-collapsed='true'] .answering {
-  justify-content: center;
-  padding-inline: var(--sp-2);
+/* Mark over control. Side by side, a 20px logo and a 24px button had 48px to share. */
+.sidebar[data-collapsed='true'] .sidebar__brand {
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: 0 0 var(--sp-1);
 }
 
-.sidebar[data-collapsed='true'] .favourites,
-.sidebar[data-collapsed='true'] .sidebar__section {
+/* One square for every mark, so the column reads as one set: New session is a circle (its radius
+   is a pill), the rest are squares with the rows' radius. */
+.sidebar[data-collapsed='true'] .sidebar__nav-item,
+.sidebar[data-collapsed='true'] .sidebar__new,
+.sidebar[data-collapsed='true'] .answering,
+.sidebar[data-collapsed='true'] .favourites__row,
+.sidebar[data-collapsed='true'] .sidebar__about {
+  align-self: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+/* Navigation above, agents below — the line says which is which. */
+.sidebar[data-collapsed='true'] .sidebar__scroll {
+  align-items: center;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border-rail);
+}
+
+.sidebar[data-collapsed='true'] .favourites {
   margin-top: var(--sp-2);
+}
+
+.sidebar[data-collapsed='true'] .sidebar__prefs {
+  justify-content: center;
+  padding: 0;
+}
+
+/* Expanded it is a bordered circle beside the language track; alone in the column it is one more
+   mark, the same square as the rows above it. */
+.sidebar[data-collapsed='true'] .sidebar__theme {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--r-sm);
 }
 
 .sidebar[data-collapsed='true'] .sidebar__collapse {
@@ -616,15 +657,21 @@ button:disabled {
 }
 
 .history__row {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--sp-1);
   border-radius: var(--r-sm);
   transition: background var(--dur-fast) var(--ease-out);
 }
 
-.history__row:hover {
+.history__row:hover,
+.history__row:focus-within {
   background: var(--bg-rail-hover);
+}
+
+/* The conversation on screen reads the way the current view does (spec 068). */
+.history__row:has(> [aria-current='true']) {
+  background: var(--bg-rail-current);
 }
 
 .history__open {
@@ -648,18 +695,31 @@ button:disabled {
 }
 
 /* The two row actions appear on hover or focus. They are destructive-adjacent and permanently
-   visible they would read as the point of the row, which is the conversation. */
+   visible they would read as the point of the row, which is the conversation.
+
+   Since spec 068 they overlay the row's end instead of reserving it: the reserved width cut every
+   title at about 60%. Hidden, they take no pointer — an invisible *delete* over the end of a title
+   is a trap — but `opacity` rather than `visibility` keeps both in the tab order. `inherit` paints
+   the row's own surface under them, whichever state it is in. */
 .history__actions {
+  position: absolute;
+  top: 50%;
+  right: 0;
   display: flex;
   opacity: 0;
   gap: 2px;
-  padding-right: var(--sp-1);
+  padding: 0 var(--sp-1) 0 var(--sp-2);
+  border-radius: var(--r-sm);
+  background: inherit;
+  pointer-events: none;
+  transform: translateY(-50%);
   transition: opacity var(--dur-fast) var(--ease-out);
 }
 
 .history__row:hover .history__actions,
 .history__row:focus-within .history__actions {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .history__action {
@@ -729,10 +789,13 @@ button:disabled {
   color: var(--fg-rail-muted);
 }
 
+/* One segmented track rather than two loose pills (spec 068). */
 .sidebar__lang {
   display: flex;
-  gap: var(--sp-1);
-  padding-inline: var(--sp-2);
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-rail);
+  border-radius: var(--r-pill);
 }
 
 /* Language and theme on one line, the two things this browser chooses about itself (spec 060). */
@@ -740,7 +803,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-right: var(--sp-2);
+  padding-inline: var(--sp-2);
 }
 
 .sidebar__theme {
@@ -762,27 +825,31 @@ button:disabled {
 }
 
 .sidebar__lang-option {
-  padding: 2px var(--sp-2);
-  border: 1px solid var(--border-rail);
+  padding: 2px var(--sp-3);
+  border: 0;
   border-radius: var(--r-pill);
   background: transparent;
   color: var(--fg-rail-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   transition: all var(--dur-fast) var(--ease-out);
 }
 
 .sidebar__lang-option[aria-pressed='true'] {
-  border-color: var(--ds-blue);
   background: var(--bg-accent-strong);
   color: var(--fg-on-accent);
 }
 
+/* Navigation rows, set like the ones at the top of the rail (spec 068). In mono caption they read
+   as a build log rather than two places you can go. */
 .sidebar__footer {
-  padding-inline: var(--sp-2);
-  font-family: var(--font-mono);
-  font-size: var(--fs-caption);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
   line-height: var(--lh-base);
   color: var(--fg-rail-muted);
   overflow-wrap: anywhere;
@@ -950,9 +1017,13 @@ button:disabled {
   padding: var(--sp-6) var(--sp-5) var(--sp-7);
 }
 
+/* A column with auto margins rather than `place-items: center`: centring an overflowing block makes
+   its top unreachable, while auto margins collapse to zero and let it scroll from the start. A
+   notice, when there is one, keeps the top. */
 .conversation--empty {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .conversation__inner {
@@ -1130,8 +1201,46 @@ button:disabled {
 /* ---------- Empty state ---------- */
 .empty {
   width: 100%;
-  max-width: 720px;
+  max-width: var(--chat-width);
+  margin-block: auto;
   text-align: center;
+}
+
+/* Spec 068 — on a desktop window the empty chat is ONE block: greeting, examples and composer,
+   centred in the column. Before, the greeting centred itself in the height the docked composer left
+   it, and the two drifted ~180px apart at 1440x900.
+
+   Grid only; the DOM does not move. The block's row is `minmax(0, auto)` and the spacers are
+   `minmax(0, 1fr)`: a grid grows intrinsic tracks to their content before flexible ones get any
+   space, so the block is sized first and the spacers share what is left. On a short window they
+   fall to zero and the block scrolls on its own — never the composer. `auto 1fr auto 1fr` split the
+   free height in half instead and scrolled the greeting on a 900px window.
+
+   `>` because the Playground nests `Conversation` in columns of its own; a positive query because
+   a phone or a short window keeps the docked composer, so nothing below has to undo this.
+
+   Every direct child is placed. A voice failure is an `.error-card` straight inside `.main`, and
+   left to auto-placement it took the first free track — the spacer above the greeting (measured).
+   It gets its own `auto` track under the composer, zero high while there is no error. */
+@media (min-width: 761px) and (min-height: 640px) {
+  .main:has(> .conversation--empty) {
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, auto) auto auto minmax(0, 1fr);
+  }
+
+  .main:has(> .conversation--empty) > .conversation--empty {
+    grid-row: 3;
+  }
+
+  .main:has(> .conversation--empty) > .composer {
+    grid-row: 4;
+  }
+
+  .main:has(> .conversation--empty) > .error-card {
+    grid-row: 5;
+    width: calc(100% - var(--sp-5) * 2);
+    max-width: var(--chat-width);
+    margin: var(--sp-3) auto 0;
+  }
 }
 
 /* Who is answering, as a quiet pill above the greeting (spec 060). */
@@ -3279,12 +3388,13 @@ button:disabled {
     width: min(300px, 86vw);
     transform: translateX(-100%);
     transition: transform var(--dur-base) var(--ease-out);
-    box-shadow: var(--shadow-4);
   }
 
+  /* The shadow only while open: off-canvas, its 60px blur bled a grey strip down the left edge. */
   .sidebar[data-overlay='true'] {
     position: fixed;
     transform: translateX(0);
+    box-shadow: var(--shadow-4);
   }
 
   .rail-backdrop {
@@ -3889,14 +3999,12 @@ button:disabled {
   white-space: nowrap;
 }
 
-/* Collapsed, the group is marks only — each button keeps its name in the accessibility tree. */
+/* Collapsed, the group is marks only — each button keeps its name as an attribute (spec 068). The
+   favourite that is already answering is the mark right above it, so it is not drawn twice. */
 .sidebar[data-collapsed='true'] .favourites__name,
-.sidebar[data-collapsed='true'] .favourites .sidebar__section-title {
+.sidebar[data-collapsed='true'] .favourites .sidebar__section-title,
+.sidebar[data-collapsed='true'] .favourites li:has(> [aria-current='true']) {
   display: none;
-}
-
-.sidebar[data-collapsed='true'] .favourites__row {
-  justify-content: center;
 }
 
 
@@ -4324,7 +4432,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  margin: 0 var(--sp-3) var(--sp-2);
+  margin: 0 0 var(--sp-2);
   padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--border-rail);
   border-radius: var(--r-pill);
@@ -5093,24 +5201,33 @@ button:disabled {
   color: var(--fg-3);
 }
 
-/* The way in, in the footer that stays two lines (AC7). */
+/* The way in, in the footer (spec 032, AC7) — a row with a mark since spec 068, with the same inset
+   and metrics as `.sidebar__nav-item`, so the rail's two ends read as one list. The footer is a
+   column, so the two never run together as "What this build isPreferences" (spec 047). */
 .sidebar__about {
-  /* Block, so the two of them stack. Inline they fit on one line once the rail is wide enough —
-     which it is as an overlay (spec 047) — and read as one run-on string: "What this build
-     isPreferences". */
-  display: block;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
   border: 0;
-  background: none;
-  font-size: var(--fs-caption);
-  color: var(--fg-rail-muted);
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body-s);
+  color: var(--fg-rail);
   text-align: left;
   cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
-.sidebar__about:hover,
+.sidebar__about:hover {
+  background: var(--bg-rail-hover);
+  color: var(--fg-rail-strong);
+}
+
 .sidebar__about[aria-current='page'] {
-  color: var(--fg-2);
+  background: var(--bg-rail-current);
+  color: var(--fg-rail-strong);
 }
 
 /* --- Charts and diagrams in an answer (spec 033) -----------------------------------------

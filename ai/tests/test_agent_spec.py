@@ -99,7 +99,7 @@ def test_the_shipped_agent_declares_web_search():
     shipped = Path(__file__).resolve().parent.parent / "harness" / "prompt_agent" / "agent.yaml"
     spec = load_agent_spec(shipped)
     tool = next(t for t in spec.function_tools if t.name == "search_web")
-    assert tool.schema["required"] == ["query"]
+    assert tool.schema["required"] == ["query", "topic", "time_range"]
 
 
 # --- reasoning summaries (spec 002, observed 2026-09-15) -------------------

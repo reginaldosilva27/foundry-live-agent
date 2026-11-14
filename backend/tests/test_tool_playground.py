@@ -138,7 +138,14 @@ class TestRunning:
                 error=None,
             ),
         )
-        body = client().post("/tools/search_web/run", json={"arguments": '{"query":"x"}'}).json()
+        body = (
+            client()
+            .post(
+                "/tools/search_web/run",
+                json={"arguments": '{"query":"x","topic":"general","time_range":"any"}'},
+            )
+            .json()
+        )
 
         assert "search_unavailable" in body["output"]
         assert body["error"] == ""

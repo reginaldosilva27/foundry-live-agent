@@ -24,10 +24,12 @@ import {
   AgentsIcon,
   ChatIcon,
   FlaskIcon,
+  InfoIcon,
   MoonIcon,
   PanelIcon,
   PlusIcon,
   SearchIcon,
+  SlidersIcon,
   SunIcon,
 } from '../components/Icon'
 import { Monogram } from '../components/Monogram'
@@ -159,7 +161,15 @@ export function Sidebar({
           </button>
         </div>
 
-        <button type="button" className="sidebar__new" onClick={onNewSession}>
+        {/* Named by attribute (spec 068): collapsed, the label below is `display: none`, which
+            takes its text out of the accessibility tree too. */}
+        <button
+          type="button"
+          className="sidebar__new"
+          aria-label={s('sidebar.newSession')}
+          title={s('sidebar.newSession')}
+          onClick={onNewSession}
+        >
           <PlusIcon size={16} />
           <span className="sidebar__label">{s('sidebar.newSession')}</span>
         </button>
@@ -198,6 +208,8 @@ export function Sidebar({
               type="button"
               className="answering"
               data-testid="answering-agent"
+              aria-label={`${answering}, ${s('agents.answering')}`}
+              title={`${answering}, ${s('agents.answering')}`}
               onClick={() => onView('agents')}
             >
               <Monogram name={answering} size={20} />
@@ -220,17 +232,21 @@ export function Sidebar({
         {/* The field appears with the second thing worth searching, not before: a search box over
             an empty list is chrome that promises something the rail cannot do yet. */}
         {history.conversations.length > 0 && (
-          <div className="history__search">
-            <SearchIcon size={14} />
-            <input
-              type="search"
-              className="history__search-input"
-              value={query}
-              aria-label={s('history.search')}
-              placeholder={s('history.search')}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
+          <>
+            {/* The section's heading (spec 068) — the string spec 060 wrote for it and never used. */}
+            <p className="sidebar__section-title">{s('history.conversations')}</p>
+            <div className="history__search">
+              <SearchIcon size={14} />
+              <input
+                type="search"
+                className="history__search-input"
+                value={query}
+                aria-label={s('history.search')}
+                placeholder={s('history.search')}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+          </>
         )}
 
         <HistoryList
@@ -245,43 +261,35 @@ export function Sidebar({
       </div>
 
       <div className="sidebar__foot">
-        <div className="sidebar__prefs">
-          <div className="sidebar__lang" role="group" aria-label={s('sidebar.language')}>
-            {LANGS.map((code) => (
-              <button
-                key={code}
-                type="button"
-                className="sidebar__lang-option"
-                aria-pressed={code === lang}
-                onClick={() => onLang(code)}
-              >
-                {code}
-              </button>
-            ))}
-          </div>
-          <ThemeSwitch theme={theme} onTheme={onTheme} />
-        </div>
-
         <footer className="sidebar__footer">
           {/* The footer is the glance; `/about` is the look (spec 032, AC7). It links rather than
               growing — the event-mapping report is a list of names and the rail is narrow. Rendered
               unconditionally, including when the config failed, because the panel is exactly where
-              a reader goes to find out why. */}
+              a reader goes to find out why.
+
+              Rows with a mark since spec 068, so the collapsed rail keeps both doors — named by
+              attribute, because collapsed the label is `display: none`. */}
           <button
             type="button"
             className="sidebar__about"
             aria-current={view === 'about' ? 'page' : undefined}
+            aria-label={s('sidebar.about')}
+            title={s('sidebar.about')}
             onClick={() => onView('about')}
           >
-            {s('sidebar.about')}
+            <InfoIcon size={16} />
+            <span className="sidebar__label">{s('sidebar.about')}</span>
           </button>
           <button
             type="button"
             className="sidebar__about"
             aria-current={view === 'preferences' ? 'page' : undefined}
+            aria-label={s('sidebar.preferences')}
+            title={s('sidebar.preferences')}
             onClick={() => onView('preferences')}
           >
-            {s('sidebar.preferences')}
+            <SlidersIcon size={16} />
+            <span className="sidebar__label">{s('sidebar.preferences')}</span>
           </button>
           {/* Spec 047: at 320px the header has no room for this, so it lives here instead —
               beside the model and the gateway line, which is the same fact about what this build is
@@ -299,6 +307,23 @@ export function Sidebar({
             />
           )}
         </footer>
+
+        <div className="sidebar__prefs">
+          <div className="sidebar__lang" role="group" aria-label={s('sidebar.language')}>
+            {LANGS.map((code) => (
+              <button
+                key={code}
+                type="button"
+                className="sidebar__lang-option"
+                aria-pressed={code === lang}
+                onClick={() => onLang(code)}
+              >
+                {code}
+              </button>
+            ))}
+          </div>
+          <ThemeSwitch theme={theme} onTheme={onTheme} />
+        </div>
       </div>
     </aside>
   )

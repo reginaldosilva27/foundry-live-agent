@@ -121,6 +121,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 065 | [Reasoning effort on the agent definition](065-reasoning-effort/spec.md) | 4 | ✅ done |
 | 066 | [A turn's journey, drawn](066-turn-flow/spec.md) | 4 | 🔧 in-progress |
 | 067 | [Every turn knows what day it is](067-current-moment/spec.md) | 4 | 🔧 in-progress |
+| 068 | [A home screen that holds together, and a rail that reads at both widths](068-rail-and-home-polish/spec.md) | 4 | ✅ done |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is

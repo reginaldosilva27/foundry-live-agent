@@ -50,6 +50,14 @@ describe('the favourites group', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('names each row by attribute, with a tooltip, for the collapsed rail (spec 068, AC4)', () => {
+    show([row('foundry-live-agent-hosted')])
+
+    const button = screen.getByRole('button', { name: 'foundry-live-agent-hosted' })
+    expect(button).toHaveAttribute('aria-label', 'foundry-live-agent-hosted')
+    expect(button).toHaveAttribute('title', 'foundry-live-agent-hosted')
+  })
+
   it('chooses the agent that was clicked', async () => {
     const onSelect = vi.fn()
     show([row('foundry-live-agent-hosted')], onSelect)

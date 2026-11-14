@@ -47,3 +47,13 @@ def test_a_bad_key_is_reported_as_an_auth_failure():
     """Proves the 401 mapping against the live service, not against our own mock."""
     result = search_web("anything", backend=TavilySearch("tvly-definitely-not-a-real-key"))
     assert result["error"] == "search_auth_failed"
+
+
+def test_a_news_search_in_a_window_is_accepted_and_dated(backend):
+    """The request a time-sensitive question sends (2026-11-14) is one Tavily accepts."""
+    result = search_web(
+        "Brazil national football team", backend=backend, topic="news", time_range="week"
+    )
+
+    assert "error" not in result, result
+    assert all("published_date" in hit for hit in result["results"])

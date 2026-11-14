@@ -74,8 +74,10 @@ def _search_backend() -> SearchBackend:
     return backend if backend is not None else TavilySearch(os.environ.get("TAVILY_API_KEY", ""))
 
 
-def _search_web(query: str) -> dict[str, Any]:
-    return web_search_tool.search_web(query, backend=_search_backend())
+def _search_web(query: str, topic: str = "general", time_range: str = "any") -> dict[str, Any]:
+    return web_search_tool.search_web(
+        query, backend=_search_backend(), topic=topic, time_range=time_range
+    )
 
 
 _REGISTRY: dict[str, ToolSpec] = {

@@ -16,6 +16,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gateway reads *not known* for any agent but the default. A typed turn's flow has its own address
   (`/trace/{response_id}/flow`); a spoken one has none, because no response id reaches the browser.
 
+### Changed
+- **The home screen holds together, and the rail reads at both widths** (spec 068).
+  - **Home screen.** On a desktop window the empty chat's greeting, examples and composer form one
+    centred block. The composer docks at the bottom again once the conversation starts, and on
+    phones and short windows.
+  - **Width.** The reading column, the composer and the home block share one width, raised from
+    760px to 800px.
+  - **Collapsed rail.** It loses the stray empty search circle and gains a pinned foot with *What
+    this build is*, *Preferences* and the theme switch. Every mark has an accessible name and a
+    tooltip; four buttons were nameless before.
+  - **Expanded rail.** It gets a *Conversations* heading, and the footer is set as navigation rows
+    with icons. Conversation titles use the whole row, with rename and delete appearing over its
+    end only on hover or focus.
+
+### Fixed
+- **No grey strip on the left edge of a phone screen.** The closed narrow rail kept its shadow
+  while off-canvas (found during spec 068).
+- **A web search for something that just happened can find it.** `search_web` now lets the agent
+  choose `topic: news` and a `time_range`, and every result carries its `published_date`. On the
+  day of a Brazil match, the old search answered "the last game" with pages a month old.
+
 ## [0.1.0] — 2026-10-16
 
 First public release. The repository's history starts here: how each piece came to be is told in

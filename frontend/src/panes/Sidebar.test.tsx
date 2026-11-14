@@ -315,3 +315,56 @@ describe('while a comparison streams (assessment 2026-10-15)', () => {
     expect(screen.queryByText(t('compare.locked', 'en'))).toBeNull()
   })
 })
+
+/**
+ * Spec 068 — the rail at both widths.
+ *
+ * Collapsed, the stylesheet hides every label, and `display: none` takes text out of the
+ * accessibility tree with it. Observed in a browser before this spec: New session, the answering
+ * agent and each favourite were nameless buttons. So the name is an attribute, and jsdom — which
+ * applies no stylesheet — can assert it.
+ */
+describe('the rail at both widths (spec 068)', () => {
+  const starred = [row('foundry-live-agent'), row('foundry-live-agent-hosted', { kind: 'hosted' })]
+
+  it('names every collapsed mark by attribute, with a tooltip (AC4)', () => {
+    const { container } = show({ collapsed: true, favourites: starred })
+
+    const marks = [
+      screen.getByRole('button', { name: t('sidebar.newSession', 'en') }),
+      screen.getByTestId('answering-agent'),
+      ...Array.from(container.querySelectorAll<HTMLElement>('.favourites__row')),
+      screen.getByRole('button', { name: t('sidebar.about', 'en') }),
+      screen.getByRole('button', { name: t('sidebar.preferences', 'en') }),
+      screen.getByRole('button', { name: t('theme.toDark', 'en') }),
+    ]
+    expect(marks).toHaveLength(7)
+    for (const mark of marks) {
+      expect(mark.getAttribute('aria-label'), mark.outerHTML).toBeTruthy()
+      expect(mark.getAttribute('title'), mark.outerHTML).toBeTruthy()
+    }
+    expect(screen.getByTestId('answering-agent').getAttribute('aria-label')).toContain('foundry-live-agent')
+  })
+
+  it('heads the kept conversations with a section title (AC8)', () => {
+    show({
+      history: {
+        ...props.history,
+        conversations: [{ id: 'c1', agent: null, title: 'today', updatedAt: Date.now(), messages: [] }],
+      },
+    })
+    expect(screen.getByText(t('history.conversations', 'en'))).toBeInTheDocument()
+  })
+
+  it('draws no heading over nothing (AC8)', () => {
+    show()
+    expect(screen.queryByText(t('history.conversations', 'en'))).toBeNull()
+  })
+
+  it('gives the two footer rows an icon each (AC9)', () => {
+    show()
+    for (const key of ['sidebar.about', 'sidebar.preferences'] as const) {
+      expect(screen.getByRole('button', { name: t(key, 'en') }).querySelector('svg'), key).not.toBeNull()
+    }
+  })
+})

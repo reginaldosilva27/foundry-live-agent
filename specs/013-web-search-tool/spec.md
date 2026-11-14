@@ -153,4 +153,6 @@ _None — all resolved above on 2026-09-15._
 - Moving web search into a Foundry **Toolbox** or an MCP server so Foundry executes it instead of the
   BFF. That is a genuinely interesting comparison and deserves its own spec.
 - Domain allow/deny lists, `topic: news`, date-range filters — all supported by the API, none asked
-  for.
+  for. *(2026-11-14: `topic` and `time_range` added as agent-chosen arguments, plus
+  `include_published_date`, by the owner's decision without a new spec, after a search for that
+  day's match returned month-old pages — see `docs/REFERENCES.md`. Domain lists remain out.)*

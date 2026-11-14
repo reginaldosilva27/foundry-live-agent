@@ -44,6 +44,16 @@ instructions: |
     not. Always cite the URLs it returns; never present a search result as your own knowledge. If
     it answers `search_unavailable`, web search is not configured on this deployment: say so
     plainly and answer from what you have.
+    When the answer depends on when something happened — a score, a result, the news, anything
+    asked as today, latest or last — put today's date in the query, use `topic: news` for events
+    the press reports, and narrow `time_range` (`day` for today), widening it only if nothing
+    relevant comes back. Each result carries a `published_date`, an estimate that can be empty:
+    if what you found is older than what was asked about, say so instead of presenting it as
+    current. A page also carries other events in its headlines and sidebars, so report a score
+    or a result only where a search result states it for the very event you are answering about,
+    and never combine figures from different events. If you found the event but not its result,
+    search once more naming the event; if the result is still missing, say that it is. When the
+    user says an answer is out of date, search again with a different query before you reply.
   - `get_current_datetime` returns the current time in an IANA timezone. Use it whenever the answer
     depends on what time it is now; never guess the time or the date.
 

@@ -229,6 +229,10 @@ def test_the_playground_is_on_and_web_search_says_it_is_unavailable(demo):
     assert json.loads(clock["output"])["timezone"] == "UTC"
 
 
+# `search_web`'s schema requires every property (it is applied with `strict=True`).
+SEARCH_ARGS = '{"query":"Azure","topic":"general","time_range":"any"}'
+
+
 def test_inherited_search_key_never_reaches_a_provider_in_replay(monkeypatch):
     import httpx
 
@@ -241,7 +245,7 @@ def test_inherited_search_key_never_reaches_a_provider_in_replay(monkeypatch):
 
     monkeypatch.setattr(httpx.Client, "post", post)
     with TestClient(create_demo_app(pace_ms=0)) as replay:
-        response = replay.post("/tools/search_web/run", json={"arguments": '{"query":"Azure"}'})
+        response = replay.post("/tools/search_web/run", json={"arguments": SEARCH_ARGS})
         assert json.loads(response.json()["output"])["error"] == "search_unavailable"
         assert check_stream(stream_chat(replay))
     assert requests == []
@@ -268,9 +272,7 @@ def test_live_and_replay_search_are_isolated_concurrently(monkeypatch):
     ):
 
         def search(client):
-            body = client.post(
-                "/tools/search_web/run", json={"arguments": '{"query":"Azure"}'}
-            ).json()
+            body = client.post("/tools/search_web/run", json={"arguments": SEARCH_ARGS}).json()
             assert body["error"] == ""
             return json.loads(body["output"])
 

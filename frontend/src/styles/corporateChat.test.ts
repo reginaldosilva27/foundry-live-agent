@@ -8,7 +8,7 @@ const rule = (selector: string) => css.split(`\n${selector} {`)[1]?.split('}')[0
 // jsdom has no layout: these guard the design declarations; Playwright measures the painted result.
 describe('shared chat hierarchy (055, visually superseded by 058)', () => {
   it('shares one width between the reading column and inset composer', () => {
-    expect(rule('.main')).toContain('--chat-width: 760px')
+    expect(rule('.main')).toContain('--chat-width: 800px')
     expect(rule('.conversation__inner')).toContain('max-width: var(--chat-width)')
     expect(rule('.composer')).toContain('max-width: var(--chat-width)')
     expect(rule('.composer')).toContain('calc(100% - var(--sp-5) * 2)')

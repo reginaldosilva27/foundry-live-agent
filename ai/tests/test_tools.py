@@ -138,10 +138,12 @@ class StubBackend:
     def __init__(self, results: list[SearchResult] | None = None, error: SearchError | None = None):
         self.results = results or []
         self.error = error
-        self.calls: list[tuple[str, int]] = []
+        self.calls: list[tuple[str, int, str, str]] = []
 
-    def search(self, query: str, limit: int) -> list[SearchResult]:
-        self.calls.append((query, limit))
+    def search(
+        self, query: str, limit: int, *, topic: str = "general", time_range: str = "any"
+    ) -> list[SearchResult]:
+        self.calls.append((query, limit, topic, time_range))
         if self.error is not None:
             raise self.error
         return self.results
@@ -164,9 +166,37 @@ def test_returns_results_with_source_and_score():
             "url": HIT.url,
             "content": HIT.content,
             "score": 0.94,
+            "published_date": None,
         }
     ]
     assert "error" not in result
+
+
+def test_a_result_carries_its_published_date_so_the_agent_can_see_how_old_it_is():
+    """A search for "the last game" once got pages weeks old and nothing said so (2026-11-14)."""
+    dated = SearchResult(
+        title=HIT.title,
+        url=HIT.url,
+        content=HIT.content,
+        score=0.5,
+        published_date="Sat, 14 Nov 2026 12:00:00 GMT",
+    )
+    result = search_web("q", backend=StubBackend([dated]))
+    assert result["results"][0]["published_date"] == "Sat, 14 Nov 2026 12:00:00 GMT"
+
+
+def test_topic_and_time_range_reach_the_backend():
+    backend = StubBackend([HIT])
+    search_web("jogo do Brasil hoje", backend=backend, topic="news", time_range="day")
+    assert backend.calls == [("jogo do Brasil hoje", 5, "news", "day")]
+
+
+def test_a_call_naming_only_the_query_searches_everything():
+    """Recorded turns and agent versions before 2026-11-14 send only `query`."""
+    backend = StubBackend([HIT])
+    with reg.use_search_backend(backend):
+        reg.get("search_web").call(query="anything")
+    assert backend.calls == [("anything", 5, "general", "any")]
 
 
 def test_no_results_is_empty_not_an_error():
@@ -188,7 +218,9 @@ def test_swapping_search_backend_needs_no_tool_change():
     """A second provider is another SearchBackend, nothing more."""
 
     class Braveish:
-        def search(self, query: str, limit: int) -> list[SearchResult]:
+        def search(
+            self, query: str, limit: int, *, topic: str = "general", time_range: str = "any"
+        ) -> list[SearchResult]:
             return [SearchResult(title="t", url="https://example.test", content="c", score=1.0)]
 
     assert isinstance(Braveish(), SearchBackend)
@@ -233,7 +265,35 @@ def test_sends_the_documented_request():
 
     assert seen["url"] == "https://api.tavily.com/search"
     assert seen["auth"] == "Bearer tvly-test"
-    assert seen["body"] == {"query": "q", "max_results": 5, "search_depth": "basic"}
+    assert seen["body"] == {
+        "query": "q",
+        "max_results": 5,
+        "search_depth": "basic",
+        "topic": "general",
+        "include_published_date": True,
+    }
+
+
+def _sent_body(**kwargs) -> dict:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"query": "q", "results": []})
+
+    _tavily(handler).search("q", limit=5, **kwargs)
+    return seen["body"]
+
+
+def test_a_news_search_in_a_window_sends_topic_and_time_range():
+    """Only `topic: news` with `time_range: day` found the 2026-11-14 result (probed that day)."""
+    body = _sent_body(topic="news", time_range="day")
+    assert body["topic"] == "news"
+    assert body["time_range"] == "day"
+
+
+def test_any_time_range_sends_no_window():
+    assert "time_range" not in _sent_body(topic="general", time_range="any")
 
 
 def test_parses_the_documented_response_shape():
@@ -249,7 +309,15 @@ def test_parses_the_documented_response_shape():
                         "content": "a snippet",
                         "score": 0.81,
                         "raw_content": None,
-                    }
+                        "published_date": "Sat, 14 Nov 2026 12:00:00 GMT",
+                    },
+                    {
+                        "title": "Undated",
+                        "url": "https://example.test/b",
+                        "content": "no detectable date",
+                        "score": 0.5,
+                        "published_date": None,
+                    },
                 ],
                 "response_time": 1.2,
             },
@@ -257,7 +325,16 @@ def test_parses_the_documented_response_shape():
 
     results = _tavily(handler).search("q", limit=5)
     assert results == [
-        SearchResult(title="Result", url="https://example.test/a", content="a snippet", score=0.81)
+        SearchResult(
+            title="Result",
+            url="https://example.test/a",
+            content="a snippet",
+            score=0.81,
+            published_date="Sat, 14 Nov 2026 12:00:00 GMT",
+        ),
+        SearchResult(
+            title="Undated", url="https://example.test/b", content="no detectable date", score=0.5
+        ),
     ]
 
 
@@ -332,6 +409,15 @@ def test_every_schema_is_a_valid_function_tool_shape():
             assert prop in schema["properties"], f"{name}: required {prop} not declared"
         for prop, body in schema["properties"].items():
             assert "type" in body and "description" in body, f"{name}.{prop}"
+        # Applied with `strict=True` (scripts/apply_agent.py): every property is required, and a
+        # choice is an enum rather than an optional field.
+        assert set(schema["required"]) == set(schema["properties"]), name
+
+
+def test_search_web_lets_the_agent_choose_news_and_a_time_window():
+    props = reg.get("search_web").schema["properties"]
+    assert props["topic"]["enum"] == ["general", "news"]
+    assert props["time_range"]["enum"] == ["any", "day", "week", "month", "year"]
 
 
 # --- AC6: no tool module decides anything (constitution §8) ----------------

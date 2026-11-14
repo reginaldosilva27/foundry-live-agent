@@ -37,6 +37,9 @@ export function Favourites({ rows, answering, onSelect, selectionLocked = false 
               data-agent={agent.name}
               disabled={!agent.selectable || selectionLocked}
               aria-current={agent.name === answering ? 'true' : undefined}
+              // Named by attribute (spec 068): collapsed, the name below is `display: none`.
+              aria-label={agent.name}
+              title={agent.name}
               onClick={() => onSelect(agent.name)}
             >
               <Monogram name={agent.name} size={20} />
