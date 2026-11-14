@@ -120,6 +120,7 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 064 | [Follow the newest version again](064-follow-newest-version/spec.md) | 4 | ✅ done |
 | 065 | [Reasoning effort on the agent definition](065-reasoning-effort/spec.md) | 4 | ✅ done |
 | 066 | [A turn's journey, drawn](066-turn-flow/spec.md) | 4 | 🔧 in-progress |
+| 067 | [Every turn knows what day it is](067-current-moment/spec.md) | 4 | 🔧 in-progress |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is

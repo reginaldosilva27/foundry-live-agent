@@ -589,6 +589,40 @@ Recorded because it is the design `PLAN.md` implied, and because a future spec m
 | **Citation URLs vary by knowledge source** — a blob source returns the document URL; a search-index source falls back to the knowledge base's MCP endpoint. | Applies to **both** routes, and spec 049's AC2 inherits it: spec 034's "one reader per tool, because the shapes really differ". A URL that is really an endpoint must never render as a source the reader can open. |
 | **Per-user filtering exists** via the `x-ms-query-source-authorization` header, supplied per request through `structured_inputs`. | Out of scope for 049: this app has no notion of a user. Recorded because it is the documented answer if that ever changes. |
 
+## The current moment on every turn — spec 067, verified 2026-11-14
+
+No doc settles whether the Responses API takes a non-user item beside `agent_reference` — it refuses
+`instructions` and `reasoning` there. So it was asked, through the app's own adapter and stream
+factory, against `foundry-live-agent` version 10 (`gpt-5.5`):
+
+| Sent as `input` | Result |
+|---|---|
+| `[{"role": "developer", …}, {"role": "user", …}]` — no `type` | **`400 invalid_value`**, `param: input[1]`: *"Invalid value: ''. Supported values are: … 'message' …"* — the second untyped item has type `''` |
+| the same two items, each with **`"type": "message"`** | accepted, both turns, on one conversation |
+
+What the agent did with it, the same day — re-run through the shipped `turn_messages`, each
+question opening its **own** conversation, so the first answer could not prime the second:
+
+| Question | Without the item (voice session, 12:24 UTC) | With the item (12:5x UTC) |
+|---|---|---|
+| *"Que dia é hoje?"* | — | *"Hoje é sábado, 14 de novembro de 2026."* — **no tool call** |
+| *"Consegue pesquisar quanto foi o jogo do Brasil?"* | one call, `"resultado do último jogo do Brasil futebol seleção brasileira"` → reported a 2025 table as the latest | three calls: `"resultado jogo do Brasil hoje …"`, then **`"Japão x Brasil 14 novembro 2026 resultado amistoso"`** and a dated `site:ge.globo.com` query → named the day's match, said its score was not in the results yet, and gave the last confirmed result of 2026 (Índia 0 x 4 Brasil) instead of 2025's |
+
+The definition was not changed: version 10's instructions, unchanged, used the date unprompted.
+
+**A cost, measured the same way:** *"What time is it in Sao Paulo right now?"* and *"Que horas são em
+São Paulo agora?"* are now answered from the stated moment with **no tool call**; *"What time is it
+in Tokyo right now?"* still calls `get_current_datetime("Asia/Tokyo")`. The São Paulo question is
+the agent's first `examples:` entry, chosen to show a tool the app executes (spec 067, open item).
+
+A tool round trip with the item in the conversation completed normally: the output leg carried only
+`function_call_output` items, bound to the same conversation.
+
+**Not yet verified:** the hosted agent's endpoint with an item list as `input` (it has only ever been
+driven with a plain string), and the Voice Live session accepting a second `role: system` item.
+Both are the same shapes as things the services accept; both are confirmed on first use and
+recorded here.
+
 ## Versions this repo pins
 
 | Thing | Value | Source |

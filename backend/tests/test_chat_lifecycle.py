@@ -8,7 +8,7 @@ import pytest
 
 from app.harness_factory import _foundry_stream_factory
 from app.routers.chat import ChatRequest, chat
-from app.settings import Settings
+from app.settings import Settings, load_settings
 
 
 async def test_closing_sse_body_closes_the_harness_without_an_extra_frame():
@@ -22,7 +22,8 @@ async def test_closing_sse_body_closes_the_harness_without_an_extra_frame():
             finally:
                 closed.set()
 
-    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(harness=Harness())))
+    state = SimpleNamespace(harness=Harness(), settings=load_settings())
+    request = SimpleNamespace(app=SimpleNamespace(state=state))
     response = await chat(ChatRequest(message="local"), request)
     body = response.body_iterator
     assert "text_delta" in await anext(body)

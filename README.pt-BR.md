@@ -330,8 +330,12 @@ wss://<recurso>.services.ai.azure.com/voice-live/realtime/calls
   nativamente. STT e TTS são estágios *atrás* daquele único endpoint; a aplicação nunca os chama.
 - **O agente não sabe que está falando.** Perguntado ao vivo, ele responde *"Estou trocando texto
   escrito com você."* Por isso a sessão manda um item de contexto `role: system` dizendo que a
-  conversa é falada — a única exceção limitada ao §8, e o motivo de a resposta falada parar de ler
-  URLs em voz alta.
+  conversa é falada — a primeira das duas exceções limitadas ao §8, e o motivo de a resposta falada
+  parar de ler URLs em voz alta.
+- **O agente não sabe que dia é hoje.** Perguntado sobre "o jogo do Brasil", ele buscou sem data e
+  apresentou os resultados do ano anterior como os mais recentes. Por isso todo turno — e cada
+  sessão de voz, uma vez — começa com uma frase de fato: data, hora e fuso atuais (`AGENT_TIMEZONE`,
+  padrão `America/Sao_Paulo`). É a segunda exceção limitada ao §8, e uma lista fechada (spec 067).
 - **Os nomes dos parâmetros contrariam o quickstart.** Ele documenta `project_name`; o serviço quer
   **`agent_project_name`** e reclama de um *valor* faltando, não de uma *chave* errada.
 - **Duas api-versions, uma por endpoint.** A rota `/voice-live/realtime/calls` existe **só** em

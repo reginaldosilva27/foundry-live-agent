@@ -103,6 +103,10 @@ Browser ──SSE──> FastAPI BFF ──Responses API──> Foundry prompt a
    (amended 2026-09-16, spec 017): a voice session states one static fact about the transport — that
    the conversation is spoken — because the agent cannot perceive it and `instructions` is
    unsupported with a custom agent. One item, one sentence, once; not a licence to prompt.
+   **A second** (amended 2026-11-14, spec 067): every text turn, and each voice session once,
+   states the **current date, time and timezone** — the server clock in the deployment's
+   `AGENT_TIMEZONE` — because the model cannot see a clock. A closed list; one sentence of fact,
+   no instruction. Adding to the list is a new amendment.
 2. **§9 — `ai/harness/_shared/contract.py` is the boundary.** Every harness emits only
    `reasoning_summary · text_delta · tool_call · tool_result · mcp_call · usage · trace_ids · error ·
    done`; the BFF and frontend consume only those. Contract tests are parameterised over adapters, so
@@ -166,8 +170,19 @@ violation.
 - **The agent does not know it is speaking.** Voice Live transcribes before the model and
   synthesizes after it; asked over real audio, `gpt-5.5` answers *"Estou trocando texto escrito com
   você."* So an instruction conditioned on the modality is conditioned on nothing — that is why the
-  voice session sends one `role: system` context item saying so (spec 017), the single **bounded**
-  exception §8 carries.
+  voice session sends one `role: system` context item saying so (spec 017), the first of the two
+  **bounded** exceptions §8 carries.
+- **The agent does not know what day it is, either (spec 067).** On 2026-11-14 it searched "o jogo
+  do Brasil" with no date and reported a 2025 results table as the latest, though its definition
+  already said never to guess the date. So every turn opens with one `developer` item —
+  `current_moment_text` in `ai/harness/_shared/current_moment.py`, the one place the sentence is
+  built — and each voice session states it once on open. Three traps, each a test: the item is
+  built per **turn** in the chat route, never in the stream factory, or it lands on the leg that
+  must carry only `function_call_output`; both input items carry **`"type": "message"`**, because
+  two untyped items are refused (`400 … input[1]`, observed); and LangChain reads `developer` as a
+  `SystemMessage`, which the hosted graph used to take as *"instructions already supplied"* — so it
+  now applies its own unless the history already **opens** with them. Redeploy the hosted agent
+  before a BFF that sends the item serves it.
 - **The agents listing carries the whole definition (spec 030).** `GET {project_endpoint}/agents`
   returns each agent's `instructions`, `model`, `tools` and `reasoning` — for the agents this repo
   never created too — so the inspector needs no per-agent call. A **hosted** agent's definition has
@@ -327,7 +342,8 @@ violation.
   list. Blank declares nothing and no chooser renders, which is 012's behaviour unchanged. The
   choice is this browser's (spec 036's store), read at session **start**, and turn detection and
   noise suppression stay deployment configuration. Nothing here says anything to the model:
-  §8's single bounded exception (spec 017) is spent and stays spent.
+  §8's bounded exceptions (spec 017's transport fact, spec 067's clock) are a closed list, and a
+  voice choice is not on it.
 - **An image is text, and the app renders one but cannot make one (spec 044).** An image arrives as
   a **URL in `text_delta`** — the tempting wrong answer was a tenth `AgentEvent` spent transporting
   a URL that `text_delta` already carries (§9). The **generation half is deferred**: it would mean

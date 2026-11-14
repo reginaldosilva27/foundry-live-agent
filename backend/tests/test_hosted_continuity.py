@@ -58,6 +58,18 @@ def hosted_replay(monkeypatch):
         yield client, requests, completed
 
 
+def said(request: dict) -> str:
+    """The person's message on the hosted wire.
+
+    Every turn opens with the current moment (spec 067), so `input` is the item list
+    `[moment, message]` rather than the bare string the recording was driven with.
+    """
+    moment, message = request["input"]
+    assert moment["role"] == "developer"
+    assert message == {"type": "message", "role": "user", "content": message["content"]}
+    return message["content"]
+
+
 def two_turns(client):
     first = parse_frames(client.post("/chat", json={"message": "First local probe"}).text)
     trace = next(e for e in first if e["type"] == "trace_ids")
@@ -81,7 +93,7 @@ def test_recorded_hosted_response_reports_no_conversation_pointer(hosted_replay)
     assert "conversation_id" not in trace
     assert completed["agent_session_id"] == "id_0001"
     assert "agent_session_id" not in trace
-    assert [r["input"] for r in requests] == ["First local probe", "Second local probe"]
+    assert [said(r) for r in requests] == ["First local probe", "Second local probe"]
     assert all("conversation" not in r and "previous_response_id" not in r for r in requests)
     assert second[-1]["type"] == "done"
 
@@ -94,7 +106,9 @@ def test_bff_conversation_pointer_is_currently_ignored_by_hosted_factory(hosted_
         ).text
     )
     check_stream(events)
-    assert requests == [{"input": "Pointer probe", "stream": True}]
+    (request,) = requests
+    assert said(request) == "Pointer probe"
+    assert request.keys() == {"input", "stream"} and request["stream"] is True
 
 
 @pytest.mark.xfail(
@@ -150,10 +164,8 @@ def test_actual_local_http_two_turn_replay(hosted_replay):
             check_stream(second)
             assert trace["response_id"] == completed["id"]
             assert "conversation_id" not in trace
-            assert requests == [
-                {"input": "First loopback probe", "stream": True},
-                {"input": "Second loopback probe", "stream": True},
-            ]
+            assert [said(r) for r in requests] == ["First loopback probe", "Second loopback probe"]
+            assert all(r.keys() == {"input", "stream"} for r in requests)
         finally:
             server.should_exit = True
             thread.join(timeout=5)

@@ -116,8 +116,25 @@ that the agent cannot observe — concretely, that the conversation is spoken. I
 - it is bounded: **one item, one sentence, sent once**, naming no tool, making no plan, and reading
   nothing the model produced.
 
-It is **not** a licence to prompt the agent from the app. Anything that varies per request, reacts
-to model output, or carries tool or planning content is still a §8 violation.
+**A second narrow exception, added 2026-11-14 (spec 067): the current moment.** Every text turn,
+and every voice session once when it opens, may carry one item stating the **current date, time and
+timezone** — read from the server clock, in a timezone the deployment declares. It is allowed
+because:
+
+- the model cannot see a clock, and the tool that tells it the time does not fix that: deciding to
+  call it depends on noticing what it does not know (observed 2026-11-14 — asked for "o jogo do
+  Brasil", the agent searched with no date and reported last year's results as the latest; with
+  the date stated, it answered "que dia é hoje?" with no tool call and searched with the date);
+  `instructions` is static, and Foundry refuses per-request `instructions` beside an agent;
+- it passes §8's own test — swap the harness and it is still true, because it describes the world
+  and not the agent;
+- it is bounded by a **closed list**: date, time and timezone. **One item, one sentence of fact** —
+  no instruction, no tool name, nothing the person or the model said, nothing about the person.
+  Adding anything to that list is a new amendment, not an edit.
+
+Neither exception is a licence to prompt the agent from the app. Apart from the clock, anything that
+varies per request, reacts to model output, or carries tool or planning content is still a §8
+violation.
 
 ### 9. The `AgentEvent` protocol is the contract
 `ai/harness/_shared/contract.py` is the single boundary between any harness and the rest of the app.
@@ -183,6 +200,7 @@ This document changes only by intent, not by accident:
 | `infra/` gate: Terraform → **Bicep** | The brief specifies Bicep + azd |
 | Added §8, §9, §10 | The repo's educational value depends on these invariants holding under review |
 | §8 exception: session context for the voice transport (2026-09-16) | The agent cannot perceive that it is being spoken to, and Voice Live's `instructions` field is unsupported with a custom agent — so a fact about the channel had nowhere else to live. Bounded to one static sentence; spec 017 |
+| §8 second exception: the current moment (2026-11-14) | The model cannot see a clock, and an instruction to ask for the time is conditioned on the model noticing it does not know — a real turn reported last year's results as the latest. A closed list (date, time, timezone), one sentence of fact per text turn and once per voice session, from the server clock in a deployment-declared timezone; spec 067 |
 | §8 table: *"may it loop?"* → **"may it run the agent loop?"**, and the adapter's one bounded loop named (2026-09-20) | The table answered **No** flatly while `PromptAgentAdapter` has always looped over the legs of a turn, up to `DEFAULT_MAX_TURNS`. The distinction that makes that legal — a loop over the platform's own round trip, deciding nothing — lived only in the adapter's docstring, and it is the *table* somebody quotes in a review. No rule changed; the rule now says what it always meant |
 | Quality gates: **e2e smoke, hosted-graph job, security scan** added (2026-10-15) | The assessment found no browser test (jsdom lays nothing out, and a layout break had already shipped with every test green), LangGraph tests that skipped in every CI run, and no dependency or secret scanning — a signed URL sat in a fixture and known-vulnerable packages in the lockfile with nothing failing. Gates must mirror `ci.yml` (§4), so the jobs and this list move together |
 | §8 headline: "never in this repo" → **never in the app** (2026-09-16) | A hosted agent is a container this repository authors and Foundry runs, so its loop is *in the repo* by construction. The prohibition on `backend/` and `frontend/` is unchanged; the headline was overreaching. Adapter (in the BFF, no loop) is now distinguished from agent (on Foundry, all loop); spec 018 |

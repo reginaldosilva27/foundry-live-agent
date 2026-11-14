@@ -50,10 +50,10 @@ class TestTheSessionConfiguration:
         assert settings.session_config_for("en-US-Nobody")["voice"]["name"] == THALITA
 
     def test_carries_no_instructions_and_no_extra_context(self):
-        """AC7 — §8's single bounded exception (spec 017) is spent and stays spent.
+        """AC7 — §8's bounded exceptions (specs 017, 067) are a closed list; a voice is not on it.
 
         Nothing this spec adds may say anything to the model. `instructions` is unsupported with a
-        custom agent anyway, and a second context item would be a second exception.
+        custom agent anyway, and another context item would be another exception.
         """
         config = load_settings(voicelive_voice=THALITA).session_config_for(THALITA)
 

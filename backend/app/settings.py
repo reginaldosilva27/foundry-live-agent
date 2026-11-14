@@ -10,6 +10,9 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from harness._shared.current_moment import DEFAULT_TIMEZONE
 
 __all__ = ["DEFAULT_ALLOWED_ORIGINS", "Settings", "SettingsError", "load_settings"]
 
@@ -104,6 +107,9 @@ class Settings:
     model_rates: dict[str, dict[str, float]] = field(default_factory=dict)
     rates_currency: str = ""
     rates_recorded_at: str = ""
+    # Whose "today" every turn states (spec 067). The deployment's, not the browser's: the browser's
+    # would add a field to `POST /chat` and send this browser's facts to the server.
+    agent_timezone: str = DEFAULT_TIMEZONE
 
     @property
     def pricing_enabled(self) -> bool:
@@ -211,6 +217,7 @@ def load_settings(**overrides: object) -> Settings:
         "model_rates": _model_rates(os.environ.get("MODEL_RATES", "")),
         "rates_currency": os.environ.get("MODEL_RATES_CURRENCY", "USD"),
         "rates_recorded_at": os.environ.get("MODEL_RATES_RECORDED_AT", ""),
+        "agent_timezone": os.environ.get("AGENT_TIMEZONE") or DEFAULT_TIMEZONE,
     }
     if values["model_rates"] and not values["rates_recorded_at"]:
         raise SettingsError(
@@ -218,7 +225,19 @@ def load_settings(**overrides: object) -> Settings:
             "number nobody can judge the staleness of"
         )
     values.update({k: v for k, v in overrides.items() if v is not None})
+    _require_timezone(str(values["agent_timezone"]))
     return Settings(**values)  # type: ignore[arg-type]
+
+
+def _require_timezone(name: str) -> None:
+    """Refuse an unknown zone at startup — on the first turn it would be a `harness_error`."""
+    try:
+        ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise SettingsError(
+            f"AGENT_TIMEZONE={name!r} is not a recognised IANA timezone, "
+            "for example 'America/Sao_Paulo' or 'UTC'"
+        ) from exc
 
 
 _RATE_KEYS = ("input", "cached_input", "output")

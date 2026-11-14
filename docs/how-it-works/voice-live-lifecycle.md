@@ -208,14 +208,19 @@ So the session says it — one frame, right after the offer:
                           "text": "This conversation is spoken: the person is listening to you, not reading. …" }] } }
 ```
 
-**This is the single bounded exception to §8** (constitution, amended 2026-09-16): a static fact
-about the *transport*, sent once, naming no tool and reading nothing the model said. It exists
+**This is the first of §8's two bounded exceptions** (constitution, amended 2026-09-16): a static
+fact about the *transport*, sent once, naming no tool and reading nothing the model said. It exists
 because `instructions` — the documented field for this — is unsupported with a custom agent, and
 because §8's own test says yes: swap the harness and the conversation is still spoken.
 
 The proof is a pair of recordings on the same agent version, differing only in this frame:
 `voice-live-no-urls-20260916.jsonl` answers and stops; `voice-live-urls-spoken-20260916.jsonl`
 reads the address out loud.
+
+**Right after it, the second** (spec 067, amended 2026-11-14): one more `role: system` item, same
+shape, stating the current date, time and timezone — the sentence every text turn opens with, from
+the same function. Once per session: a call that crosses midnight keeps the date it opened with,
+and `get_current_datetime` is still there for the minute.
 
 ## What the overlay shows, and what it does not
 
@@ -328,7 +333,7 @@ POST /voice/session { sdp, agent, voice }  <─────┘   refused if not 
   the voice it has.
 
 **Nothing here says anything to the model.** `instructions` is unsupported with a custom agent, and
-§8's single bounded exception — one context item stating the conversation is spoken (spec 017) — is
-spent and stays spent. Changing the voice mid-call would be `session.update`, which spec 012 *noted*
+§8's bounded exceptions — the conversation is spoken (spec 017), and what day it is (spec 067) — are
+a closed list, and a voice choice is not on it. Changing the voice mid-call would be `session.update`, which spec 012 *noted*
 as the mechanism and which nobody here has measured; it is deferred rather than guessed.
 

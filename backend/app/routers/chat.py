@@ -6,9 +6,12 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import aclosing
+from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+from harness._shared.current_moment import current_moment_item
 from harness._shared.errors import client_message
 from pydantic import BaseModel, Field
 
@@ -66,7 +69,7 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
 
         terminated = False
         try:
-            messages = [{"role": "user", "content": body.message}]
+            messages = turn_messages(body.message, request.app.state.settings.agent_timezone)
             # Mutable on purpose: the first turn of a session has no conversation yet, and the
             # stream factory writes the one it creates back here so every leg names it.
             state = {"conversation_id": body.conversation_id} if body.conversation_id else {}
@@ -99,6 +102,22 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+def turn_messages(message: str, timezone: str, now: datetime | None = None) -> list[dict[str, Any]]:
+    """What a turn sends: the current moment, then the person's message, unchanged (spec 067).
+
+    Built here, once per turn, and not in the stream factory: the factory runs on every leg, and the
+    leg that answers a tool call must carry only `function_call_output` items. Both items are typed
+    because the service refuses a second untyped one (`docs/REFERENCES.md`).
+
+    The moment is the one thing the app states to the model on a text turn, and it is a fact, not
+    an instruction — constitution §8's second bounded exception.
+    """
+    return [
+        current_moment_item(timezone, now),
+        {"type": "message", "role": "user", "content": message},
+    ]
 
 
 def _harness_for(request: Request, agent: str | None):

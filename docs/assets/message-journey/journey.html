@@ -157,16 +157,18 @@ Content-Type: application/json
     pt: { t: 'O adaptador abre o turno',
       b: 'stream_response promete um turno completo que sempre termina em done ou error. Ele tem um laço, mas é o laço do protocolo: no máximo 8 pernas de execução e 1 de liquidação. Não escolhe ferramenta e não reescreve prompt.',
       w: '<b>Agente vs. adaptador.</b> O adaptador é importado pelo BFF e não decide nada. O agente, com seu loop de decisão, vive no Foundry.', l: 'Estado do turno' },
-    code: `inputs    = [{"role": "user", "content": "What time…"}]
+    code: `inputs    = [{"role": "developer",  # spec 067: the date
+              "content": "Current date and time: …"},
+             {"role": "user", "content": "What time…"}]
 totals    = {}     # usage, summed across legs
 done      = None   # held back until the end
 max_turns = 8      # + 1 settlement leg` },
   { lane: 'foundry', from: 'ai', where: 'backend/app/harness_factory.py:280–299',
     en: { t: 'A call to Foundry’s Responses API',
-      b: 'On the first turn it creates a Foundry conversation and stores its id. Then it calls responses.create in stream mode with agent_reference: the app sends no instructions and no tools, only the agent’s name.',
+      b: 'On the first turn it creates a Foundry conversation and stores its id. Then it calls responses.create in stream mode with agent_reference: the app sends no instructions and no tools, only the agent’s name — and one sentence stating today’s date and time.',
       w: '<b>Responses API, not Assistants.</b> The Assistants API is gone. The SDK is azure-ai-projects 2.x on api-version=v1, and the token comes from Entra (DefaultAzureCredential). No Azure key.', l: 'What goes to Foundry' },
     pt: { t: 'Chamada à Responses API do Foundry',
-      b: 'No primeiro turno cria uma conversation no Foundry e grava o id. Depois chama responses.create em modo stream com agent_reference: o app não manda instruções nem ferramentas, só o nome do agente.',
+      b: 'No primeiro turno cria uma conversation no Foundry e grava o id. Depois chama responses.create em modo stream com agent_reference: o app não manda instruções nem ferramentas, só o nome do agente — e uma frase com a data e a hora de hoje.',
       w: '<b>Responses API, não Assistants.</b> A Assistants API acabou. O SDK é azure-ai-projects 2.x com api-version=v1, e o token vem do Entra (DefaultAzureCredential). Nenhuma chave Azure.', l: 'O que vai para o Foundry' },
     code: `openai.conversations.create()   # turn 1 only
 

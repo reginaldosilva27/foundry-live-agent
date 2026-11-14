@@ -121,3 +121,64 @@ async def test_an_mcp_server_that_never_answers_fails_startup_loudly(monkeypatch
 
     with pytest.raises(RuntimeError, match="learn.microsoft.com"):
         await tools_module.load_mcp_tools(spec)
+
+
+# --- spec 067, AC6: the agent's own instructions survive a developer item ----
+
+
+class _RecordingModel:
+    """Answers once, with no tool call, and keeps what it was given."""
+
+    def __init__(self) -> None:
+        self.seen: list[list] = []
+
+    def bind_tools(self, tools):
+        return self
+
+    def invoke(self, messages, *_args, **_kwargs):
+        from langchain_core.messages import AIMessage
+
+        self.seen.append(list(messages))
+        return AIMessage(content="ok")
+
+
+def _content(message) -> str:
+    return message["content"] if isinstance(message, dict) else message.content
+
+
+def test_a_developer_item_does_not_replace_the_agents_instructions():
+    """AC6 — the BFF now opens every turn with the current moment, as a `developer` message, and
+    LangChain reads `developer` as a `SystemMessage`. The graph used to apply its instructions only
+    when the history held **no** system message — so that one timestamp would have silently stood
+    in for the whole agent definition. Its instructions go first, whatever else arrived."""
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    model = _RecordingModel()
+    graph = graph_module.build_graph(model, [], instructions="AGENT DEFINITION")
+    moment = SystemMessage(
+        content="Current date and time: Saturday, 14 November 2026, 22:30 "
+        "(America/Sao_Paulo, UTC-03:00).",
+        additional_kwargs={"__openai_role__": "developer"},
+    )
+
+    graph.invoke({"messages": [moment, HumanMessage(content="que dia é hoje?")]})
+
+    (given,) = model.seen
+    assert _content(given[0]) == "AGENT DEFINITION"
+    assert [_content(m) for m in given[1:]] == [moment.content, "que dia é hoje?"]
+
+
+def test_the_instructions_are_not_applied_twice():
+    """AC6 — the Responses host replays the history every turn (no checkpointer), and the graph
+    never stores the instructions in it; but a history that already opens with them gets no copy."""
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    model = _RecordingModel()
+    graph = graph_module.build_graph(model, [], instructions="AGENT DEFINITION")
+
+    graph.invoke(
+        {"messages": [SystemMessage(content="AGENT DEFINITION"), HumanMessage(content="oi")]}
+    )
+
+    (given,) = model.seen
+    assert [_content(m) for m in given] == ["AGENT DEFINITION", "oi"]

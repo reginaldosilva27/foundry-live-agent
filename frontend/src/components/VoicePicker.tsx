@@ -9,7 +9,8 @@
  *
  * **Only the voice moved to the screen.** Turn detection and noise suppression stay deployment
  * configuration, because a reader cannot evaluate them in one session. Nothing here says anything
- * to the model: §8's single bounded exception (spec 017) is spent and stays spent.
+ * to the model: §8's bounded exceptions (spec 017's transport fact, spec 067's clock) are a closed
+ * list, and a voice choice is not on it.
  *
  * **The names are the identifiers.** No adjectives — not "natural", not "expressive" — because
  * nobody has measured them (§5). The identifier carries the locale and the tier, which is what a

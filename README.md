@@ -328,8 +328,12 @@ wss://<resource>.services.ai.azure.com/voice-live/realtime/calls
   natively. STT and TTS are stages *behind* that one endpoint; the app never calls them itself.
 - **The agent does not know it is speaking.** Asked over real audio it answers *"Estou trocando
   texto escrito com você."* That is why the session sends one `role: system` context item saying the
-  conversation is spoken — the single bounded exception to §8, and the reason a spoken answer stops
-  reading URLs out loud.
+  conversation is spoken — the first of §8's two bounded exceptions, and the reason a spoken answer
+  stops reading URLs out loud.
+- **The agent does not know what day it is.** Asked for "o jogo do Brasil" it searched with no date
+  and reported last year's results as the latest. So every turn — and each voice session once —
+  opens with one sentence of fact: the current date, time and timezone (`AGENT_TIMEZONE`, default
+  `America/Sao_Paulo`). It is §8's second bounded exception, and a closed list (spec 067).
 - **The parameter names contradict the quickstart.** It documents `project_name`; the service wants
   **`agent_project_name`** and reports a missing *value* rather than a wrong *key*.
 - **Two api-versions, one per endpoint.** `/voice-live/realtime/calls` exists **only** on

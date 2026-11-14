@@ -61,8 +61,12 @@ The assertions record this exchange:
 
 | Request | BFF input | Outgoing hosted body |
 |---|---|---|
-| First | `{"message":"First loopback probe"}` | `{"input":"First loopback probe","stream":true}` |
-| Second | `{"message":"Second loopback probe","conversation_id":null}` | `{"input":"Second loopback probe","stream":true}` |
+| First | `{"message":"First loopback probe"}` | `{"input":[<moment>, {"type":"message","role":"user","content":"First loopback probe"}],"stream":true}` |
+| Second | `{"message":"Second loopback probe","conversation_id":null}` | `{"input":[<moment>, {"type":"message","role":"user","content":"Second loopback probe"}],"stream":true}` |
+
+`<moment>` is the `developer` item stating the current date, time and timezone that opens every turn
+since spec 067. Before it, `input` was the bare message string the recording was driven with; the
+body still carries no `conversation` and no `previous_response_id`.
 
 Both HTTP responses must be 200 and both streams must pass the existing `AgentEvent` stream
 validator. The first stream has `response_id: caresp_0000` and no conversation pointer. **The same

@@ -25,8 +25,10 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Protocol
 
 from harness._shared.contract import AgentEvent
+from harness._shared.current_moment import DEFAULT_TIMEZONE
 from harness._shared.errors import client_message
 from harness._shared.voice_events import (
+    current_moment_frame,
     is_function_call,
     normalise_voice,
     spoken_context_item,
@@ -77,6 +79,7 @@ class VoiceSession:
         socket: VoiceSocket,
         executor: Executor = execute,
         session_config: dict[str, Any] | None = None,
+        timezone: str = DEFAULT_TIMEZONE,
     ) -> None:
         self.id = session_id
         self._socket = socket
@@ -84,6 +87,8 @@ class VoiceSession:
         # The voice, the turn detector and the input audio options, or `{}` for a deployment that
         # configures none of them — see `voice_session_config` (spec 012).
         self._session_config = session_config or {}
+        # Whose "today" the session states when it opens (spec 067) — the deployment's.
+        self._timezone = timezone
         self._events: asyncio.Queue[AgentEvent | None] = asyncio.Queue()
         self._pump: asyncio.Task[None] | None = None
         self._closed = False
@@ -116,6 +121,9 @@ class VoiceSession:
         # context about the transport, not instructions and not an agent loop: see
         # `spoken_context_item` and constitution §8, amended for exactly this case.
         await self._socket.send(json.dumps(spoken_context_item()))
+        # And the one fact the model cannot see on any channel: what day it is (spec 067). Once,
+        # here — constitution §8's second bounded exception, beside the first.
+        await self._socket.send(json.dumps(current_moment_frame(self._timezone)))
 
         try:
             async with asyncio.timeout(NEGOTIATION_TIMEOUT):

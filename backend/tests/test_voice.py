@@ -70,7 +70,7 @@ class FakeSocket:
         self.closed = True
 
 
-def app_with(socket: FakeSocket):
+def app_with(socket: FakeSocket, agent_timezone: str | None = None):
     """An app whose voice sessions talk to `socket` instead of Azure."""
     sockets: list[FakeSocket] = []
 
@@ -83,6 +83,7 @@ def app_with(socket: FakeSocket):
         project_endpoint="https://example.services.ai.azure.com/api/projects/p",
         project_name="p",
         model="gpt-5.5",
+        agent_timezone=agent_timezone,
     )
     return app, sockets
 
@@ -484,9 +485,10 @@ async def test_the_session_tells_the_agent_it_is_being_listened_to():
     assert socket.sent[0]["type"] == "rtc.call.sdp.create"
 
 
-async def test_the_context_item_is_the_only_thing_the_bff_puts_in_the_conversation():
-    """§8, asserted. The BFF may state a fact about the transport; it may not hold a conversation.
-    Anything else this session writes into the conversation is a tool output Foundry asked for."""
+async def test_the_context_items_are_the_only_thing_the_bff_puts_in_the_conversation():
+    """§8, asserted. The BFF may state two facts — that the conversation is spoken (spec 017) and
+    what day it is (spec 067) — and it may not hold a conversation. Anything else this session
+    writes into the conversation is a tool output Foundry asked for."""
     socket = FakeSocket(RECORDED)
     session = VoiceSession("s-quiet", socket)
 
@@ -497,7 +499,7 @@ async def test_the_context_item_is_the_only_thing_the_bff_puts_in_the_conversati
     items = [f for f in socket.sent if f["type"] == "conversation.item.create"]
     roles = [f["item"].get("role") or f["item"]["type"] for f in items]
 
-    assert roles.count("system") == 1
+    assert roles.count("system") == 2
     assert set(roles) <= {"system", "function_call_output"}
 
 

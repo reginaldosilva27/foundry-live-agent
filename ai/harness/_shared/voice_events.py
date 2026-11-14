@@ -26,13 +26,16 @@ is already one of the nine events (§9).
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
+from datetime import datetime
 from typing import Any
 
 from harness._shared.contract import AgentEvent
+from harness._shared.current_moment import current_moment_text
 
 __all__ = [
     "FUNCTION_CALL_FRAME",
     "attachment_query",
+    "current_moment_frame",
     "is_function_call",
     "normalise_voice",
     "spoken_context_item",
@@ -168,12 +171,28 @@ def spoken_context_item() -> dict[str, Any]:
     Verified accepted on the live service the same day: with it, the spoken answer to a
     `search_web` question ends at the answer; without it, it reads the URL slash by slash.
     """
+    return _context_frame(SPOKEN_CONTEXT)
+
+
+def current_moment_frame(timezone: str, now: datetime | None = None) -> dict[str, Any]:
+    """The current moment, stated once when a voice session opens (spec 067).
+
+    The same sentence a text turn carries, from the same function (§4), in the shape the service
+    already accepts for the spoken-conversation item. Once per session: a call that crosses midnight
+    keeps the date it opened with, and `get_current_datetime` is there for the agent that needs the
+    minute. Constitution §8, second bounded exception.
+    """
+    return _context_frame(current_moment_text(timezone, now))
+
+
+def _context_frame(text: str) -> dict[str, Any]:
+    """A `role: system` message, created on the session's conversation."""
     return {
         "type": "conversation.item.create",
         "item": {
             "type": "message",
             "role": "system",
-            "content": [{"type": "input_text", "text": SPOKEN_CONTEXT}],
+            "content": [{"type": "input_text", "text": text}],
         },
     }
 

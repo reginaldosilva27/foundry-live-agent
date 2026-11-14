@@ -105,7 +105,10 @@ async def _open(body: SessionRequest, request: Request) -> VoiceSession:
         raise HTTPException(status_code=502, detail="voice_connect_failed") from None
 
     session = VoiceSession(
-        uuid.uuid4().hex, socket, session_config=settings.session_config_for(body.voice)
+        uuid.uuid4().hex,
+        socket,
+        session_config=settings.session_config_for(body.voice),
+        timezone=settings.agent_timezone,
     )
     try:
         session.answer = await session.negotiate(body.sdp)

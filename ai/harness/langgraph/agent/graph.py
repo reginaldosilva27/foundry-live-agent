@@ -32,16 +32,24 @@ AGENT_YAML = Path(__file__).resolve().parent.parent / "agent.yaml"
 def build_graph(model: Any, tools: list[Any], instructions: str = "") -> Any:
     """Compile `agent` -> `tools` -> `agent`.
 
-    ``instructions`` is prepended as a system message when the incoming history has none. This is
-    not the app prompting the agent (§8): it is the agent's *own* definition, read from the
+    ``instructions`` is prepended as a system message unless the history already opens with them.
+    This is not the app prompting the agent (§8): it is the agent's *own* definition, read from the
     `agent.yaml` this harness ships, applied by the code that **is** the agent. The prompt agent's
     equivalent is Foundry applying `instructions` from its agent version.
+
+    *Opens with them*, not *holds any system message*: every turn now arrives with the current
+    moment as a `developer` item (spec 067), which LangChain reads as a `SystemMessage` — and the
+    old test let that one timestamp stand in for the whole definition.
     """
     bound = model.bind_tools(tools) if tools else model
 
     def agent(state: MessagesState) -> dict[str, list]:
         messages = list(state["messages"])
-        if instructions and not any(getattr(m, "type", None) == "system" for m in messages):
+        first = messages[0] if messages else None
+        applied = getattr(first, "type", None) == "system" and (
+            getattr(first, "content", None) == instructions
+        )
+        if instructions and not applied:
             messages.insert(0, {"role": "system", "content": instructions})
         return {"messages": [bound.invoke(messages)]}
 
