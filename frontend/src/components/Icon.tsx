@@ -260,3 +260,27 @@ export const FlaskIcon = (p: IconProps) =>
     </>,
     p,
   )
+
+/** Three components joined in a line — the flow of a turn (spec 066). */
+export const FlowIcon = (p: IconProps) =>
+  svg(
+    <>
+      <rect x="2.5" y="9" width="5" height="6" rx="1.2" />
+      <rect x="16.5" y="9" width="5" height="6" rx="1.2" />
+      <rect x="9.5" y="16.5" width="5" height="5" rx="1.2" />
+      <line x1="7.5" y1="12" x2="16.5" y2="12" />
+      <line x1="12" y1="12" x2="12" y2="16.5" />
+    </>,
+    p,
+  )
+
+export const PlayIcon = (p: IconProps) => svg(<polygon points="7 4.5 19 12 7 19.5 7 4.5" />, p)
+
+export const PauseIcon = (p: IconProps) =>
+  svg(
+    <>
+      <line x1="8.5" y1="5" x2="8.5" y2="19" />
+      <line x1="15.5" y1="5" x2="15.5" y2="19" />
+    </>,
+    p,
+  )

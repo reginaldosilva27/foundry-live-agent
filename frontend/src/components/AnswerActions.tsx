@@ -7,7 +7,7 @@
  *
  * A turn that failed keeps only **Trace**, which is the one thing there is to do with a failure.
  */
-import { ActivityIcon, CopyIcon, DownloadIcon, RepeatIcon } from './Icon'
+import { ActivityIcon, CopyIcon, DownloadIcon, FlowIcon, RepeatIcon } from './Icon'
 import { useCopy } from '../hooks/useCopy'
 import { useT } from '../i18n/context'
 import { MARKDOWN, saveFile } from '../state/download'
@@ -22,6 +22,8 @@ interface Props {
   model?: string
   latencyMs?: number
   onOpenTrace: () => void
+  /** Draw the path this turn took (spec 066). Offered on every settled turn, spoken ones included. */
+  onOpenFlow?: () => void
   /**
    * Ask the same question again (spec 026).
    *
@@ -43,6 +45,7 @@ export function AnswerActions({
   model,
   latencyMs,
   onOpenTrace,
+  onOpenFlow,
   onRepeat,
   repeatOf,
   blocked,
@@ -110,6 +113,17 @@ export function AnswerActions({
       >
         <ActivityIcon size={14} />
       </button>
+      {onOpenFlow && (
+        <button
+          type="button"
+          className="answer-actions__button"
+          title={s('flow.open')}
+          aria-label={s('flow.open')}
+          onClick={onOpenFlow}
+        >
+          <FlowIcon size={14} />
+        </button>
+      )}
 
       {state !== 'idle' && (
         <span className="answer-actions__feedback" role="status">

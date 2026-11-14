@@ -285,6 +285,20 @@ describe('one agent, beside its definition (spec 060)', () => {
   })
 })
 
+describe('a column turn\u2019s flow (spec 066 AC13)', () => {
+  it('opens over the Playground, with no address, from the column\u2019s own actions', async () => {
+    fakeBff()
+    const user = await compareWith()
+    await ask(user)
+    await waitFor(() => expect(within(columnFor('hosted-two')).getByTestId('answer')).toBeInTheDocument())
+
+    await user.click(within(columnFor('hosted-two')).getByRole('button', { name: t('flow.open', 'en') }))
+
+    expect(await screen.findByTestId('turn-flow')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/playground')
+  })
+})
+
 describe('what lands in which column (AC2, AC3, AC5, AC6)', () => {
   it('keeps each agent’s answer under its own heading', async () => {
     fakeBff()

@@ -31,6 +31,8 @@ interface Props {
   onSuggestion: (text: string) => void
   /** Open the trace panel for a turn, optionally on one of its calls (spec 009). */
   onOpenTrace: (turnId: string, callId?: string) => void
+  /** Draw a settled turn as the path it took (spec 066). */
+  onOpenFlow?: (turnId: string) => void
   /** The answering agent's own examples (spec 037). The frontend holds no list of its own. */
   suggestions?: Suggestion[]
   /**
@@ -121,6 +123,7 @@ export function Conversation({
   notice,
   onSuggestion,
   onOpenTrace,
+  onOpenFlow,
   suggestions,
   onRepeat,
   onEdit,
@@ -245,6 +248,7 @@ export function Conversation({
                         message.endedAt ? message.endedAt - message.startedAt : undefined
                       }
                       onOpenTrace={() => onOpenTrace(message.id)}
+                      onOpenFlow={onOpenFlow ? () => onOpenFlow(message.id) : undefined}
                     />
                     <MetaLine
                       turn={message.turn}

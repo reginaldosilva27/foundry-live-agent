@@ -60,7 +60,22 @@ function agentMessage(turn: Turn, key: string): AgentMessage {
   return { role: 'agent', id: key, turn: { ...turn, status: 'done' }, startedAt: 0, endedAt: 0 }
 }
 
+/** Every id this module mints starts here, and nothing else in the app mints one that does. */
+const SPOKEN_PREFIX = 'voice_'
+
 /** Unique within the appended block, and stable across re-renders. */
 function id(seconds: number, suffix: string): string {
-  return `voice_${seconds}_${suffix}`
+  return `${SPOKEN_PREFIX}${seconds}_${suffix}`
+}
+
+/**
+ * Was this turn spoken? (spec 066)
+ *
+ * Decided by the id this module gave it, so the rule lives beside the code that makes it true (§4).
+ * Stored conversations keep their ids, so it still holds after a reload. A spoken turn is drawn
+ * through Voice Live; whether it can be *addressed* or *measured* is a different question — the
+ * response id — and is not answered here.
+ */
+export function isSpokenTurn(messageId: string): boolean {
+  return messageId.startsWith(SPOKEN_PREFIX)
 }

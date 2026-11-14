@@ -16,14 +16,14 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CopyRow } from '../components/CopyRow'
-import { ChevronIcon, CloseIcon, ExternalIcon } from '../components/Icon'
+import { ChevronIcon, CloseIcon, ExternalIcon, FlowIcon } from '../components/Icon'
 import { ToolRow } from '../components/ToolRow'
 import { SpanTree } from '../components/SpanTree'
 import { Timeline } from '../components/Timeline'
 import { TraceNumbers } from '../components/TraceNumbers'
 import { useT } from '../i18n/context'
 import type { Pricing } from '../state/cost'
-import { longestDuration, type Turn } from '../state/turn'
+import { hadRoundTrip, longestDuration, type Turn } from '../state/turn'
 import type { Trace } from '../types/trace'
 
 interface Props {
@@ -57,6 +57,8 @@ interface Props {
   onStep?: (delta: number) => void
   /** Open one call in the reader. The column lists; the reader reads (spec 010). */
   onOpenCall?: (callId: string) => void
+  /** Draw the turn this panel shows as the path it took (spec 066). */
+  onOpenFlow?: () => void
   onClose: () => void
 }
 
@@ -177,6 +179,7 @@ export function TraceDrawer({
   selectedCall,
   onStep,
   onOpenCall,
+  onOpenFlow,
   onClose,
 }: Props) {
   const s = useT()
@@ -201,6 +204,17 @@ export function TraceDrawer({
       <header className="trace__head">
         <h2 className="trace__title">{s('trace.title')}</h2>
         {position && <TurnStepper position={position} onStep={onStep} />}
+        {turn && onOpenFlow && (
+          <button
+            type="button"
+            className="trace__flow"
+            aria-label={s('flow.open')}
+            title={s('flow.open')}
+            onClick={onOpenFlow}
+          >
+            <FlowIcon size={15} />
+          </button>
+        )}
         <button type="button" className="trace__close" aria-label={s('trace.close')} onClick={onClose}>
           <CloseIcon size={15} />
         </button>
@@ -281,7 +295,7 @@ export function TraceDrawer({
               began a second Foundry response with a trace of its own (spec 029 AC4). */}
           <Spans
             trace={trace}
-            hadRoundTrip={turn.activities.some((a) => a.kind === 'tool' && a.executor === 'app')}
+            hadRoundTrip={hadRoundTrip(turn)}
             onRetryTrace={onRetryTrace}
           />
 

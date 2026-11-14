@@ -93,6 +93,23 @@ describe('the answer actions', () => {
 
     expect(onOpenTrace).toHaveBeenCalled()
   })
+
+  it('opens the flow for this turn, failed or not (spec 066 AC13)', async () => {
+    const onOpenFlow = vi.fn()
+    show({ onOpenFlow })
+
+    await userEvent.click(screen.getByRole('button', { name: t('flow.open', 'en') }))
+    expect(onOpenFlow).toHaveBeenCalled()
+
+    const failed = reduceEvents([{ type: 'error', message: 'PermissionDeniedError', code: 'harness_error' }])
+    show({ turn: failed, onOpenFlow })
+    expect(screen.getAllByRole('button', { name: t('flow.open', 'en') })).toHaveLength(2)
+  })
+
+  it('offers no flow where no one wired one', () => {
+    show()
+    expect(screen.queryByRole('button', { name: t('flow.open', 'en') })).toBeNull()
+  })
 })
 
 /**

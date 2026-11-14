@@ -82,6 +82,7 @@ contêiner roda (*hosted agent* com LangGraph). Os dois ficam atrás de um únic
 | 🧭 **Escolha o agente pela tela** | A barra lateral lista os agentes que estão *de fato no seu projeto Foundry* — tipo, versão publicada, status — e você escolhe quem responde, sem reiniciar nada. Agentes para os quais esta build não tem harness aparecem na lista, desabilitados e com o motivo. |
 | 🛠️ **Quatro ferramentas, dois donos** | O MCP do Microsoft Learn roda *no Foundry*; três function tools — o relógio, a base de conhecimento do próprio projeto e a busca na internet — rodam *no BFF*, porque o Foundry pede e para. Uma linha por chamada no chat, o payload no painel de rastros. |
 | 🔍 **Traces visíveis** | Uma árvore de spans do Application Insights numa gaveta: execução do agente › chamadas de modelo › chamadas de ferramenta, com durações e tokens. |
+| 🗺️ **Seu turno, desenhado** | *Ver fluxo* desenha o caminho que um turno real percorreu — navegador, BFF ou Voice Live, o agente no Foundry, o modelo, cada ferramenta e chamada MCP — e avança salto a salto. Montado com os eventos e spans daquele turno; o que não foi medido não ganha número. |
 | 🗣️ **Voz no mesmo agente** | O Voice Live se conecta à *mesma* definição — um agente, um conjunto de ferramentas, um repositório de traces, duas modalidades.  A voz, o detector de turno e a supressão de ruído são configurados por implantação. |
 | 🔊 **Respostas que dá para ouvir** | Um botão lê as respostas do chat em voz alta, frase a frase conforme elas chegam, sintetizadas pelo BFF — o navegador continua sem credencial. |
 | 🔐 **Zero segredos** | Entra ID via `DefaultAzureCredential` em tudo. O navegador nunca guarda credencial do Azure. |
@@ -175,6 +176,9 @@ dois tipos de ferramenta: o Microsoft Learn, que **o Foundry** chama via MCP, e
 com o arquivo e a linha onde cada hop acontece:
 
 ![Uma mensagem seguida por 13 hops: navegador, BFF, adaptador, Foundry e a volta, cada um com arquivo e linha, o dado naquele ponto e por que é feito assim](docs/assets/message-journey-pt.gif)
+
+A animação é ilustrativa — a mesma para toda mensagem. No app rodando, **Ver fluxo** em qualquer
+resposta desenha o caminho que *aquele* turno percorreu de fato, a partir dos seus eventos e spans (spec 066).
 
 | # | Camada | O que acontece | Onde |
 |---|---|---|---|

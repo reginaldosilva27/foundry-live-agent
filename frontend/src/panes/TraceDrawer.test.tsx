@@ -2,6 +2,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { TraceDrawer } from './TraceDrawer'
+import { t } from '../i18n/strings'
 import { emptyTurn, type Activity, type Turn } from '../state/turn'
 
 const turn: Turn = {
@@ -407,5 +408,20 @@ describe('the turn timeline in the panel', () => {
 
     const row = screen.getByTestId('span-tree').querySelector('[data-span-id="chat"]')
     expect(row).toHaveAttribute('aria-current', 'true')
+  })
+})
+
+describe('the flow door (spec 066 AC13)', () => {
+  it('opens the flow of the turn the panel shows', () => {
+    const onOpenFlow = vi.fn()
+    render(<TraceDrawer turn={turn} open onClose={() => {}} onOpenFlow={onOpenFlow} />)
+
+    screen.getByRole('button', { name: t('flow.open', 'en') }).click()
+    expect(onOpenFlow).toHaveBeenCalled()
+  })
+
+  it('offers no flow when the panel has no turn to draw', () => {
+    render(<TraceDrawer responseId="resp_elsewhere" open onClose={() => {}} onOpenFlow={() => {}} />)
+    expect(screen.queryByRole('button', { name: t('flow.open', 'en') })).toBeNull()
   })
 })

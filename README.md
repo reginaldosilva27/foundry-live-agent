@@ -82,6 +82,7 @@ your container does (a *hosted agent* running LangGraph). Both sit behind one co
 | 🧭 **Pick the agent from the screen** | The sidebar lists the agents that are *actually in your Foundry project* — kind, served version, status — and you choose which one answers, with no restart. Agents this build has no harness for are listed and dimmed, with the reason. |
 | 🛠️ **Four tools, two owners** | Microsoft Learn MCP runs *in Foundry*; three function tools — the clock, the project's own knowledge base and live web search — run *in the BFF*, because Foundry asks and stops. One line per call in the chat, the payload in the trace panel. |
 | 🔍 **Traces you can see** | An Application Insights span tree in a drawer: agent run › model calls › tool calls, with durations and tokens. |
+| 🗺️ **Your turn, drawn** | *View flow* draws the path a real turn took — browser, BFF or Voice Live, the Foundry agent, the model, every tool and MCP call — and steps through it hop by hop. Built from that turn's events and spans; what was not measured carries no number. |
 | 🗣️ **Voice on the same agent** | Voice Live attaches to the *same* definition — one agent, one tool set, one trace store, two modalities.  The voice, the turn detector and noise suppression are configured per deployment. |
 | 🔊 **Answers you can hear** | A toggle reads the chat's answers aloud, sentence by sentence as they stream, synthesised by the BFF so the browser still holds no credential. |
 | 🔐 **Zero secrets** | Entra ID via `DefaultAzureCredential` everywhere. The browser never holds an Azure credential. |
@@ -174,6 +175,9 @@ uses both kinds of tool: Microsoft Learn, which **Foundry** calls over MCP, and
 file and line where each hop happens:
 
 ![One message followed through 13 hops: browser, BFF, adapter, Foundry and back, each with its file and line, the payload at that point and why it is built that way](docs/assets/message-journey-en.gif)
+
+The animation is illustrative — the same for every message. In the running app, **View flow** on any
+answer draws the path *that* turn actually took, from its own events and spans (spec 066).
 
 | # | Layer | What happens | Where |
 |---|---|---|---|

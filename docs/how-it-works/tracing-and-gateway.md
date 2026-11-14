@@ -127,3 +127,20 @@ to show, and a labelled empty box would claim one could. The panel states what i
 that the run went through the gateway and the gateway did not write it down, or that it did not go
 through one at all. Enabling it is `GatewayLogs` (and `GatewayLlmLogs`) to the workspace the
 project's Application Insights already sits on, which bills ingestion — see `REFERENCES.md`.
+
+## The same turn, drawn (spec 066)
+
+*View flow* is the trace drawn as a path rather than as numbers, and it reads exactly what the
+panel reads: the turn's events, the spans above, and `GET /config`'s gateway flag. Two things from
+this page carry straight into it. The spans are **one leg's** — a turn with a tool round trip is two
+traces, and the turn holds the last one's id — so the model node's count is labelled *in this leg*
+and the panel's own sentence about the earlier leg is repeated there. And the gateway records
+nothing, so the gateway node never carries a time; it is *on the path* or *off the path* from the
+deployment's flag, which describes the **default** agent's model, and *not known* for any other.
+
+A spoken turn is drawn through Voice Live, and the gateway is always off that path. It reaches the
+browser with **no response id** — no voice normaliser emits `trace_ids` — so its spans cannot be
+read from here, although Foundry does write them — a voice session's `invoke_agent` and `chat`
+spans were read from Application Insights on 2026-10-16 (`../REFERENCES.md`, the reasoning-effort
+measurement). The view says that, rather than that the turn was not measured.
+

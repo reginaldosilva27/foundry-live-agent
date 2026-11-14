@@ -6,7 +6,7 @@
  * order to be correct lives only in it — Foundry's `conversation_id` still comes from the stored
  * record and the answering agent still comes from the agents state (§8, AC8).
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -248,6 +248,139 @@ describe('a trace by address (AC5, AC6)', () => {
       t('trace.conversationElsewhere', 'en'),
     )
     await waitFor(() => expect(traceRequests.some((p) => p.includes('resp_elsewhere'))).toBe(true))
+  })
+})
+
+/** A spoken turn, as a replayed voice session leaves it: no response id, an id under `voice_`. */
+const SPOKEN: StoredConversation = {
+  id: 'c_v',
+  agent: null,
+  title: 'oi',
+  updatedAt: 2,
+  messages: [
+    { role: 'voice-session', id: 'voice_9_session', seconds: 9 },
+    { role: 'user', id: 'voice_9_u0', text: 'que horas são' },
+    {
+      role: 'agent',
+      id: 'voice_9_a1',
+      startedAt: 0,
+      endedAt: 0,
+      turn: { reasoning: '', activities: [], text: 'São 19h.', status: 'done', unknownEvents: {} },
+    },
+  ],
+} as unknown as StoredConversation
+
+describe('a turn\u2019s flow (spec 066)', () => {
+  it('opens from the turn, takes the turn\u2019s address, and gives it back on close (AC13)', async () => {
+    fakeBff()
+    store(CONVERSATION)
+    at('/c/c_1')
+    render(<App />)
+    await screen.findByText('It is 19:00 in Sao Paulo.')
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: t('flow.open', 'en') }))
+
+    expect(await screen.findByTestId('turn-flow')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/trace/resp_1/flow')
+    await user.click(screen.getByRole('button', { name: t('flow.close', 'en') }))
+    await waitFor(() => expect(window.location.pathname).toBe('/c/c_1'))
+    expect(screen.queryByTestId('turn-flow')).toBeNull()
+  })
+
+  it('reopens the stored conversation that holds the turn its address names (AC15)', async () => {
+    fakeBff()
+    store(CONVERSATION)
+    at('/trace/resp_1/flow')
+    render(<App />)
+
+    expect(await screen.findByTestId('flow-steps')).toBeInTheDocument()
+    expect(screen.getByText('It is 19:00 in Sao Paulo.')).toBeInTheDocument()
+  })
+
+  it('says a turn this browser does not hold cannot be drawn, and reads no spans for it (AC15, AC20)', async () => {
+    fakeBff()
+    at('/trace/resp_elsewhere/flow')
+    render(<App />)
+
+    expect(await screen.findByText(t('flow.notInBrowser', 'en'))).toBeInTheDocument()
+    expect(screen.queryByTestId('flow-steps')).toBeNull()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(traceRequests).toEqual([])
+  })
+
+  it('draws a spoken turn with no address, and reads no spans for it (AC8, AC13, AC20)', async () => {
+    fakeBff()
+    store(SPOKEN)
+    at('/c/c_v')
+    render(<App />)
+    await screen.findByText('São 19h.')
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: t('flow.open', 'en') }))
+
+    expect(await screen.findByTestId('turn-flow')).toBeInTheDocument()
+    expect(screen.getByText(t('flow.noIdSpoken', 'en'), { exact: false })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/c/c_v')
+    expect(traceRequests).toEqual([])
+  })
+
+  it('moves its address with the turn it steps to, and drops it for a turn with none (AC13)', async () => {
+    const second = {
+      role: 'agent',
+      id: 'turn_1',
+      startedAt: 2,
+      endedAt: 3,
+      turn: { reasoning: '', activities: [], text: 'Still 19:00.', status: 'done', unknownEvents: {}, trace: { responseId: 'resp_2' } },
+    }
+    const third = {
+      role: 'agent',
+      id: 'turn_2',
+      startedAt: 4,
+      endedAt: 5,
+      turn: { reasoning: '', activities: [], text: 'Stopped early', status: 'stopped', unknownEvents: {} },
+    }
+    fakeBff()
+    store({
+      ...CONVERSATION,
+      messages: [
+        ...CONVERSATION.messages,
+        { role: 'user', id: 'turn_1_user', text: 'and now?' },
+        second,
+        { role: 'user', id: 'turn_2_user', text: 'and now?' },
+        third,
+      ],
+    } as StoredConversation)
+    at('/trace/resp_1/flow')
+    render(<App />)
+    const flow = await screen.findByTestId('turn-flow')
+    const user = userEvent.setup()
+
+    await user.click(within(flow).getByRole('button', { name: t('trace.nextTurn', 'en') }))
+    await waitFor(() => expect(window.location.pathname).toBe('/trace/resp_2/flow'))
+
+    await user.click(within(screen.getByTestId('turn-flow')).getByRole('button', { name: t('trace.nextTurn', 'en') }))
+    await waitFor(() => expect(window.location.pathname).toBe('/c/c_1'))
+    expect(screen.getByTestId('turn-flow')).toBeInTheDocument()
+    expect(screen.getByText(t('flow.noId', 'en'))).toBeInTheDocument()
+  })
+
+  it('reads the spans once when the panel was already open on the turn (AC20)', async () => {
+    fakeBff()
+    store(CONVERSATION)
+    at('/c/c_1')
+    render(<App />)
+    await screen.findByText('It is 19:00 in Sao Paulo.')
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: t('answer.trace', 'en') }))
+    await waitFor(() => expect(traceRequests).toHaveLength(1))
+    const panel = await screen.findByTestId('trace-panel')
+    await user.click(within(panel).getByRole('button', { name: t('flow.open', 'en') }))
+
+    expect(await screen.findByTestId('turn-flow')).toBeInTheDocument()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(traceRequests).toHaveLength(1)
   })
 })
 

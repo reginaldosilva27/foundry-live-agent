@@ -1,6 +1,6 @@
 /** Spec 007 AC1, AC2, AC4, AC5 — the session log, turned into chat messages. */
 import { describe, expect, it } from 'vitest'
-import { voiceMessages, type VoiceLogEntry } from './voiceLog'
+import { isSpokenTurn, voiceMessages, type VoiceLogEntry } from './voiceLog'
 import type { AgentMessage, Message } from '../hooks/useAgentStream'
 
 const said = (speaker: 'user' | 'agent', text: string): VoiceLogEntry => ({
@@ -106,5 +106,22 @@ describe('voiceMessages', () => {
   it('settles every turn it produces — a replayed session is not still streaming', () => {
     const messages = voiceMessages([said('user', 'oi'), said('agent', 'olá')], 3)
     expect(agentTurns(messages).every((m) => m.turn.status === 'done')).toBe(true)
+  })
+})
+
+describe('isSpokenTurn (spec 066 AC8)', () => {
+  it('recognises every turn a replayed session produced, and nothing typed', () => {
+    const messages = voiceMessages([said('user', 'oi'), call, result, said('agent', 'olá')], 9)
+
+    expect(agentTurns(messages).every((m) => isSpokenTurn(m.id))).toBe(true)
+    expect(isSpokenTurn('turn_0')).toBe(false)
+    expect(isSpokenTurn('left_turn_3')).toBe(false)
+  })
+
+  it('still recognises it after the conversation was stored and restored', () => {
+    const [agent] = agentTurns(voiceMessages([said('agent', 'olá')], 4))
+    const restored = JSON.parse(JSON.stringify(agent)) as AgentMessage
+
+    expect(isSpokenTurn(restored.id)).toBe(true)
   })
 })

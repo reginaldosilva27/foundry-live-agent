@@ -125,6 +125,17 @@ export function isSettled(turn: Turn): boolean {
   return turn.status !== 'streaming'
 }
 
+/**
+ * Did this turn round-trip a function call through the app?
+ *
+ * Such a turn is two legs and two OTel traces, and the turn holds the id of the last one — so every
+ * surface that draws spans has to say the earlier leg is not in them (specs 029, 066). One answer,
+ * so the trace panel and the flow cannot disagree about which turns that is (§4).
+ */
+export function hadRoundTrip(turn: Turn): boolean {
+  return turn.activities.some((activity) => activity.kind === 'tool' && activity.executor === 'app')
+}
+
 /** Apply one event, returning a new turn. Never mutates its argument. */
 export function reduceTurn(turn: Turn, raw: unknown): Turn {
   if (!isKnownEvent(raw)) {

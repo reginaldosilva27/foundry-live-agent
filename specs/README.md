@@ -118,6 +118,8 @@ Legend: ✅ done · 🔧 in-progress · 📋 planned · 🔍 clarified · ✏️
 | 062 | [Request limits on the two free-text inputs](062-request-limits/spec.md) | 4 | ✅ done |
 | 063 | [Answer images load on request](063-images-load-on-request/spec.md) | 4 | ✅ done |
 | 064 | [Follow the newest version again](064-follow-newest-version/spec.md) | 4 | ✅ done |
+| 065 | [Reasoning effort on the agent definition](065-reasoning-effort/spec.md) | 4 | ✅ done |
+| 066 | [A turn's journey, drawn](066-turn-flow/spec.md) | 4 | 🔧 in-progress |
 
 `*` — Spec 020's AC16, the measured run against the live service, was **met on 2026-09-20**; the
 numbers are in [`../docs/harness-comparison.md`](../docs/harness-comparison.md). Spec 045 is

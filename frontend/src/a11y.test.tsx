@@ -192,6 +192,21 @@ describe('every control says what it does (AC8)', () => {
     const missing = unnamed(container)
     expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
   })
+
+  it('with a turn\u2019s flow open, stepped onto a call (spec 066 AC16)', async () => {
+    fakeBff()
+    const { container } = render(<App />)
+    const box = await screen.findByRole('textbox', { name: t('composer.placeholder', 'en') })
+
+    await userEvent.type(box, 'hello{Enter}')
+    await waitFor(() => expect(screen.getByTestId('answer')).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('button', { name: t('flow.open', 'en') }))
+    const flow = await screen.findByTestId('turn-flow')
+    for (let i = 0; i < 5; i++) await userEvent.click(within(flow).getByRole('button', { name: t('flow.next', 'en') }))
+
+    const missing = unnamed(container)
+    expect(missing, `controls with no accessible name: ${missing.join(', ')}`).toEqual([])
+  })
 })
 
 describe('the way in, without a mouse (AC1, AC2)', () => {

@@ -47,6 +47,8 @@ interface Props {
   reasoningOpen?: boolean
   /** Open the trace panel on a turn of either column (AC7). Ids are prefixed, so they cannot clash. */
   onOpenTrace: (turnId: string, callId?: string) => void
+  /** Draw a column turn's path (spec 066). It opens over the Playground and takes no address. */
+  onOpenFlow?: (turnId: string) => void
   /** The answering agent's definition, from the detail read; `null` while it has not arrived. */
   definition: AgentDetail | null
   onOpenDetail: (name: string) => void
@@ -61,6 +63,7 @@ export function PlaygroundAgent({
   maxChars,
   reasoningOpen,
   onOpenTrace,
+  onOpenFlow,
   definition,
   onOpenDetail,
 }: Props) {
@@ -138,6 +141,7 @@ export function PlaygroundAgent({
               pricing={pricing}
               reasoningOpen={reasoningOpen}
               onOpenTrace={onOpenTrace}
+              onOpenFlow={onOpenFlow}
             />
             {other && (
               <Column
@@ -148,6 +152,7 @@ export function PlaygroundAgent({
                 pricing={pricing}
                 reasoningOpen={reasoningOpen}
                 onOpenTrace={onOpenTrace}
+                onOpenFlow={onOpenFlow}
               />
             )}
           </div>
@@ -183,6 +188,7 @@ function Column({
   pricing,
   reasoningOpen,
   onOpenTrace,
+  onOpenFlow,
 }: {
   stream: AgentStream
   agent?: string
@@ -191,6 +197,7 @@ function Column({
   pricing?: Pricing
   reasoningOpen?: boolean
   onOpenTrace: (turnId: string, callId?: string) => void
+  onOpenFlow?: (turnId: string) => void
 }) {
   const s = useT()
 
@@ -219,6 +226,7 @@ function Column({
         // control wired to nothing is worse than a control that is not there.
         onSuggestion={() => {}}
         onOpenTrace={onOpenTrace}
+        onOpenFlow={onOpenFlow}
         streaming={stream.streaming}
       />
     </section>

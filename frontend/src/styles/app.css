@@ -136,6 +136,7 @@ button:disabled {
    around it is a ring around the whole conversation. */
 .log-scrim:focus,
 .voice-scrim:focus,
+.flow-scrim:focus,
 .main:focus {
   outline: none;
 }
@@ -2315,6 +2316,362 @@ button:disabled {
   color: var(--ds-n-500);
 }
 
+/* ---------- The flow of a turn (spec 066) ----------
+   A full-screen modal rather than a column: it needs the width, and a fixed element needs no
+   placement in the shell grid. Under the log reader (z-index 30), which opens over it. Text only
+   in the inks contrast.test.ts pairs in both themes; the drawing's non-text strokes use the
+   border and accent tokens. */
+.flow-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  padding: var(--sp-4);
+  background: color-mix(in srgb, var(--ds-ink) 55%, transparent);
+}
+
+.flow {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - var(--sp-8));
+  border-radius: var(--r-lg);
+  background: var(--bg-1);
+  color: var(--fg-1);
+  box-shadow: var(--shadow-4);
+  overflow: hidden;
+}
+
+.flow__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--border-1);
+}
+
+.flow__icon {
+  flex-shrink: 0;
+  color: var(--fg-link);
+}
+
+.flow__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow__turns {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.flow__turn-step,
+.flow__close,
+.flow__control,
+.flow__step-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+}
+
+.flow__turn-step:hover:not(:disabled),
+.flow__close:hover,
+.flow__control:hover:not(:disabled),
+.flow__step-open:hover {
+  background: var(--bg-2);
+  color: var(--fg-1);
+}
+
+.flow__turn-step:disabled,
+.flow__control:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.flow__back {
+  transform: rotate(180deg);
+}
+
+.flow__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  overflow: auto;
+}
+
+.flow__stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+  padding: var(--sp-4) var(--sp-5);
+}
+
+.flow__diagram {
+  width: 100%;
+  height: auto;
+  max-height: 56vh;
+}
+
+.flow[data-orientation='vertical'] .flow__diagram {
+  max-height: none;
+}
+
+.flow__edge {
+  stroke: var(--border-2);
+  stroke-width: 2.5;
+  transition: stroke var(--dur-base) var(--ease-out);
+}
+
+.flow__edge--active {
+  stroke: var(--bg-accent-strong);
+  stroke-width: 4;
+}
+
+.flow__edge--active[data-mark='failed'] {
+  stroke: var(--ds-danger);
+}
+
+.flow__arrowhead {
+  fill: var(--bg-accent-strong);
+}
+
+.flow__box {
+  fill: var(--bg-2);
+  stroke: var(--border-1);
+  stroke-width: 1.5;
+  transition:
+    fill var(--dur-base) var(--ease-out),
+    stroke var(--dur-base) var(--ease-out);
+}
+
+.flow__label {
+  fill: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  text-anchor: middle;
+}
+
+.flow__sub {
+  fill: var(--fg-3);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.flow[data-orientation='vertical'] .flow__label {
+  font-size: 18px;
+}
+
+.flow[data-orientation='vertical'] .flow__sub {
+  font-size: 14px;
+}
+
+.flow__node[data-state='off'] .flow__box,
+.flow__node[data-state='unknown'] .flow__box {
+  fill: var(--bg-1);
+  stroke-dasharray: 6 5;
+}
+
+.flow__node[data-active] .flow__box {
+  fill: var(--bg-accent-strong);
+  stroke: var(--bg-accent-strong);
+}
+
+.flow__node[data-active] .flow__label,
+.flow__node[data-active] .flow__sub {
+  fill: var(--fg-on-inverse);
+}
+
+.flow__node[data-role='mcp'],
+.flow__node[data-role='tool'] {
+  cursor: pointer;
+}
+
+.flow__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.flow__control--play,
+.flow__control--play:hover {
+  background: var(--bg-accent-strong);
+  color: var(--fg-on-inverse);
+}
+
+.flow__show-all {
+  height: 32px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+  color: var(--fg-2);
+  font: inherit;
+  font-size: var(--fs-body-s);
+  cursor: pointer;
+}
+
+.flow__show-all[aria-pressed='true'] {
+  border-color: var(--border-accent);
+  color: var(--fg-link);
+}
+
+.flow__position {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.flow__caption {
+  min-height: 3em;
+  margin: 0;
+  font-size: var(--fs-body-l);
+  color: var(--fg-1);
+}
+
+.flow__notes {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.flow__note {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}
+
+.flow__note-label {
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+}
+
+.flow__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-link);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.flow__missing {
+  margin: 0;
+  padding: var(--sp-6) var(--sp-5);
+  color: var(--fg-2);
+}
+
+.flow__steps-panel {
+  min-height: 0;
+  padding: var(--sp-4);
+  border-left: 1px solid var(--border-1);
+  background: var(--bg-2);
+  overflow: auto;
+}
+
+.flow__steps-title {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.flow__steps {
+  display: grid;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow__step {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border-left: 3px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-body-s);
+  color: var(--fg-2);
+}
+
+.flow__step[aria-current='step'] {
+  border-left-color: var(--bg-accent-strong);
+  background: var(--bg-1);
+  color: var(--fg-1);
+}
+
+.flow__step[data-mark='failed'] {
+  border-left-color: var(--ds-danger);
+}
+
+.flow__step[data-mark='stopped'] {
+  border-left-color: var(--border-2);
+}
+
+.flow__step-n {
+  padding-top: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+}
+
+.flow__step-ms {
+  margin-left: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+.flow__step-mark {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+}
+
+.flow__step-open {
+  width: 28px;
+  height: 28px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-scrim,
+  .flow-scrim * {
+    transition: none;
+    animation: none;
+  }
+}
+
+
 .trace__portal {
   display: inline-flex;
   align-items: center;
@@ -2975,6 +3332,26 @@ button:disabled {
     font-size: 0;
     padding: var(--sp-2);
     gap: 0;
+  }
+
+  /* Spec 066: the drawing is transposed in JS (the grid is `layoutFlow`'s); the steps go under it
+     instead of beside it, and the modal takes the whole screen. */
+  .flow-scrim {
+    padding: 0;
+  }
+
+  .flow {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .flow__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow__steps-panel {
+    border-top: 1px solid var(--border-1);
+    border-left: 0;
   }
 }
 

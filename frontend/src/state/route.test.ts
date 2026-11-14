@@ -30,6 +30,11 @@ describe('parseRoute', () => {
     expect(parseRoute('/trace/resp_abc123')).toEqual({ name: 'trace', responseId: 'resp_abc123' })
   })
 
+  it('reads a turn\u2019s flow, beside its trace (spec 066 AC13)', () => {
+    expect(parseRoute('/trace/resp_abc123/flow')).toEqual({ name: 'flow', responseId: 'resp_abc123' })
+    expect(parseRoute('/trace/resp_abc123/other')).toEqual({ name: 'chat' })
+  })
+
   it('reads this browser\u2019s preferences (spec 036)', () => {
     expect(parseRoute('/preferences')).toEqual({ name: 'preferences' })
   })
@@ -81,6 +86,7 @@ describe('buildPath', () => {
     { name: 'agents' },
     { name: 'conversation', id: 'c_1' },
     { name: 'trace', responseId: 'resp_1' },
+    { name: 'flow', responseId: 'resp_1' },
     { name: 'agent', agentName: 'foundry-live-agent' },
     { name: 'playground', tab: 'agent' },
     { name: 'playground', tab: 'tools' },

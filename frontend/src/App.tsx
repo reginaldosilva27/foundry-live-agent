@@ -20,6 +20,7 @@ import { Conversation } from './panes/Conversation'
 import { Header } from './panes/Header'
 import { Sidebar, type NavView, type View } from './panes/Sidebar'
 import { TraceDrawer } from './panes/TraceDrawer'
+import { TurnFlow } from './panes/TurnFlow'
 import { VoiceOverlay } from './panes/VoiceOverlay'
 import { BFF_URL } from './config'
 import { LangContext } from './i18n/context'
@@ -44,7 +45,8 @@ import { useConfig } from './hooks/useConfig'
 import { useTrace } from './hooks/useTrace'
 import { useVoiceSession } from './hooks/useVoiceSession'
 import type { VoiceErrorCode } from './voice/session'
-import { voiceMessages } from './state/voiceLog'
+import { isSpokenTurn, voiceMessages } from './state/voiceLog'
+import { buildFlow, gatewayState, harnessOf } from './state/flow'
 import { ErrorCard } from './components/ErrorCard'
 import { useDemo } from './state/demo'
 import { EventInspector } from './components/EventInspector'
@@ -131,6 +133,13 @@ export default function App() {
   const [eventsOpen, setEventsOpen] = useState(false)
   /** The response the address names, for a turn this browser may not have at all (AC6). */
   const routeResponseId = route.name === 'trace' ? route.responseId : undefined
+  /**
+   * The flow view (spec 066). `addressed` says the address names it, so leaving that address closes
+   * it — a turn with no response id has a flow with no address, and no address to leave.
+   */
+  const [flowView, setFlowView] = useState({ open: route.name === 'flow', addressed: route.name === 'flow' })
+  /** A flow address naming a turn this browser does not hold (AC15). */
+  const [flowMissing, setFlowMissing] = useState(false)
   /** An address pointing at a conversation this browser does not have (AC7). */
   const [missing, setMissing] = useState(false)
   const composer = useRef<HTMLTextAreaElement>(null)
@@ -346,6 +355,36 @@ export default function App() {
   useEffect(() => {
     if (route.name === 'trace') setTracesOpen(true)
 
+    // A flow address selects a turn: one on screen, else one in a stored conversation, which is
+    // reopened exactly as its own address would reopen it (spec 066 AC15).
+    if (route.name === 'flow') {
+      setMissing(false)
+      setFlowView({ open: true, addressed: true })
+      const named = (message: Message) =>
+        message.role === 'agent' && message.turn.trace?.responseId === route.responseId
+      const visible = onScreen.find(named)
+      if (visible) {
+        setFlowMissing(false)
+        setTrace({ turnId: visible.id })
+        return
+      }
+      const holder = history.conversations.find((conversation) => conversation.messages.some(named))
+      if (!holder) {
+        setFlowMissing(true)
+        return
+      }
+      setFlowMissing(false)
+      restore(holder.messages, holder.conversationId)
+      agents.adopt(holder.agent)
+      setActiveId(holder.id)
+      setTrace({ turnId: holder.messages.find(named)?.id })
+      return
+    }
+    if (flowView.addressed) {
+      setFlowView({ open: false, addressed: false })
+      setFlowMissing(false)
+    }
+
     if (route.name !== 'conversation') {
       setMissing(false)
       return
@@ -454,7 +493,10 @@ export default function App() {
    * question nobody asked. Named `spanTrace` because `trace` above is the panel's *position*.
    */
   const turnResponseId = shownTurn?.role === 'agent' ? shownTurn.turn.trace?.responseId : undefined
-  const shownResponseId = tracesOpen ? (turnResponseId ?? routeResponseId) : undefined
+  // The flow reads the same spans the panel does (spec 066 AC20): with the panel open on the turn
+  // the id does not change, so nothing is fetched twice. It never reads a turn it cannot draw.
+  const flowResponseId = flowView.open && !flowMissing ? turnResponseId : undefined
+  const shownResponseId = tracesOpen ? (turnResponseId ?? routeResponseId) : flowResponseId
   const { trace: spanTrace, retry: retryTrace } = useTrace(shownResponseId)
 
   /** Where the reader goes when the panel closes: back to what they were reading. */
@@ -478,6 +520,59 @@ export default function App() {
     [navigate, onScreen],
   )
 
+  /**
+   * Open a turn's flow (spec 066 AC13).
+   *
+   * It shares the panel's position, so stepping in either moves both. Only a turn Foundry has
+   * identified gets an address, and only on the chat: a Playground column's turn is not on the
+   * screen the address would open.
+   */
+  const openFlow = useCallback(
+    (turnId?: string) => {
+      setTrace({ turnId })
+      setFlowMissing(false)
+      const target = onScreen.find((message) => message.id === turnId)
+      const responseId = target?.role === 'agent' ? target.turn.trace?.responseId : undefined
+      const addressed = Boolean(responseId) && view === 'chat'
+      setFlowView({ open: true, addressed })
+      if (addressed && responseId) navigate({ name: 'flow', responseId })
+    },
+    [navigate, onScreen, view],
+  )
+
+  /**
+   * Step the flow to an adjacent turn, and keep its address true (spec 066 AC13).
+   *
+   * An addressed flow follows the turn it moves to — replacing the entry, since stepping is reading
+   * rather than navigating — and a turn with no response id has no flow address, so the view stays
+   * open over the conversation's own address instead of under one that names a different turn.
+   */
+  const stepFlow = useCallback(
+    (delta: number) => {
+      const next = shown.agentMessages[shown.index + delta]
+      if (!next) return
+      stepTurn(delta)
+      if (!flowView.addressed) return
+      const responseId = next.role === 'agent' ? next.turn.trace?.responseId : undefined
+      if (responseId) {
+        navigate({ name: 'flow', responseId }, { replace: true })
+        return
+      }
+      setFlowView({ open: true, addressed: false })
+      navigate(activeId ? { name: 'conversation', id: activeId } : { name: 'chat' }, { replace: true })
+    },
+    [activeId, flowView.addressed, navigate, shown, stepTurn],
+  )
+
+  /** Back to where the reader was: the trace they came from, the conversation, or the chat. */
+  const closeFlow = useCallback(() => {
+    setFlowView({ open: false, addressed: false })
+    setFlowMissing(false)
+    if (route.name !== 'flow') return
+    if (tracesOpen && turnResponseId) navigate({ name: 'trace', responseId: turnResponseId })
+    else navigate(activeId ? { name: 'conversation', id: activeId } : { name: 'chat' })
+  }, [activeId, navigate, route.name, tracesOpen, turnResponseId])
+
   /** The call the reader is showing, resolved from the turn the panel is on (spec 010). */
   const openCall = useMemo(() => {
     if (!trace.callId || shownTurn?.role !== 'agent') return undefined
@@ -485,6 +580,34 @@ export default function App() {
       (activity, index) => callKey(activity, index) === trace.callId,
     )
   }, [shownTurn, trace.callId])
+
+  /**
+   * The path the shown turn took (spec 066), built from what it proved and nothing else.
+   *
+   * The harness is the listing's — the header badge's source — falling back to `GET /config` only
+   * for the agent this BFF is configured with; the kind-to-harness rule is never repeated here (§4).
+   */
+  const turnFlow = useMemo(() => {
+    if (!flowView.open || flowMissing || shownTurn?.role !== 'agent') return undefined
+    const spoken = isSpokenTurn(shownTurn.id)
+    const isDefault = !shownAgent || shownAgent === config?.agent_name
+    const row = agents.agents.find((candidate) => candidate.name === shownAgent)
+    const harness = harnessOf(row?.harness || (isDefault ? config?.harness : undefined))
+    return buildFlow({
+      turn: shownTurn.turn,
+      spoken,
+      harness,
+      gateway: gatewayState({
+        spoken,
+        harness,
+        answeringAgent: shownAgent,
+        defaultAgent: config?.agent_name,
+        usesGateway: config?.uses_gateway ?? false,
+      }),
+      model: row?.model || (isDefault ? config?.model : undefined),
+      trace: config?.tracing?.enabled === false ? { status: 'unavailable', spans: [] } : spanTrace,
+    })
+  }, [agents.agents, config, flowMissing, flowView.open, shownAgent, shownTurn, spanTrace])
 
   /** One place the header and the key both go through, so the two cannot drift. */
   const toggleTraces = useCallback(() => {
@@ -657,6 +780,7 @@ export default function App() {
                   pricing={config?.pricing}
                   maxChars={config?.limits?.message_chars}
                   onOpenTrace={openTrace}
+                  onOpenFlow={openFlow}
                   definition={playgroundDefinition.agent}
                   onOpenDetail={(name) => navigate({ name: 'agent', agentName: name })}
                 />
@@ -693,6 +817,7 @@ export default function App() {
                 notice={missing ? translate('route.conversationMissing', lang) : undefined}
                 onSuggestion={sendToSelected}
                 onOpenTrace={openTrace}
+                onOpenFlow={openFlow}
                 // The answering agent's own examples, from its definition (spec 037).
                 suggestions={selectedRow?.suggestions ?? configuredRow?.suggestions}
                 onRepeat={repeatTurn}
@@ -753,6 +878,7 @@ export default function App() {
           onRetryTrace={retryTrace}
           onStep={stepTurn}
           onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
+          onOpenFlow={() => openFlow(shownTurn?.id)}
           onClose={leaveTrace}
         />
 
@@ -770,6 +896,20 @@ export default function App() {
               setEventsOpen(false)
               document.querySelector<HTMLButtonElement>('[aria-controls="event-inspector"]')?.focus()
             }}
+          />
+        )}
+
+        {flowView.open && (
+          <TurnFlow
+            key={shownTurn?.id ?? 'no-turn'}
+            flow={turnFlow}
+            orientation={narrow ? 'vertical' : 'horizontal'}
+            position={shown.total > 1 && !flowMissing ? { index: shown.index, total: shown.total } : undefined}
+            onStep={stepFlow}
+            onRetryTrace={retryTrace}
+            onOpenCall={(callId) => setTrace((current) => ({ ...current, callId }))}
+            covered={Boolean(openCall)}
+            onClose={closeFlow}
           />
         )}
 

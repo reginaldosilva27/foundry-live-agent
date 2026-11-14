@@ -449,6 +449,25 @@ violation.
   a tool result → the generic *working*, never an invented "reading results" (§5). The clock is
   `aria-hidden` so the polite region does not read every second. Three or more calls fold into one
   line from the start — never at settle, which would move the answer under the reader.
+- **A turn's journey is drawn from what it proved, and the picture is not the content (spec 066).**
+  *View flow* (on every settled turn, and in the trace panel) opens a full-screen modal at
+  `/trace/{response_id}/flow`: browser, BFF or Voice Live, the Foundry agent, the model, and what
+  the agent called, stepped hop by hop with fixed bilingual captions. `buildFlow` in
+  `state/flow.ts` decides every hop from the turn's activities (`executor` routes a call to the BFF
+  or keeps it on Foundry's side; `step` orders it) and `layoutFlow` owns the grid; the view decides
+  nothing. Four rules, each a test. **Hops are logical** — how many times the model was called is
+  what the spans say, and the spans cover only the **last leg** (`hadRoundTrip` in `state/turn.ts`,
+  now shared with the trace panel). **Only measured hops carry a number**: an app call's
+  `duration_ms`, the model spans, and a Foundry-side call only when one span *and* one call share
+  its name; network, audio and gateway hops never. **Address and span read key on response-id
+  presence**, not on being spoken: a spoken turn has none today (no voice normaliser emits
+  `trace_ids`), so it has no address and says *this app has no id to read its spans by* — never
+  that nothing measured it. **The gateway is `GET /config`'s flag for the default agent only**;
+  any other agent, and any hosted one, shows *not known*. The SVG is `aria-hidden`, so every fact
+  it states is also text: the ordered list of steps (with the door to the log reader) and the notes
+  (who runs the agent, the model's measured calls, the gateway, the BFF off the audio path) — a
+  test asserts those sit outside the hidden drawing. *Play* keeps a fixed pace (`FLOW_PACE_MS`) and
+  never writes the live region.
 - **Two fields of `usage` are breakdowns, not additions (spec 028).** `reasoning_tokens` is part of
   `output_tokens` — the service bills it as output — and `cached_input_tokens` is part of
   `input_tokens`. Reading either as an addition gives a cost estimate that looks plausible and is

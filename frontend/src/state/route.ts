@@ -22,6 +22,8 @@ export type Route =
   /** A conversation **this browser** kept (spec 021). The id is local; it is not Foundry's. */
   | { name: 'conversation'; id: string }
   | { name: 'trace'; responseId: string }
+  /** The same turn, drawn as the path it took (spec 066). Beside its trace, keyed the same way. */
+  | { name: 'flow'; responseId: string }
   /** One agent's definition, as the service reports it (spec 030). The name is Foundry's. */
   | { name: 'agent'; agentName: string }
   /**
@@ -40,6 +42,7 @@ export const ROUTES = [
   'agents',
   'conversation',
   'trace',
+  'flow',
   'agent',
   'playground',
   'about',
@@ -75,6 +78,10 @@ export function parseRoute(pathname: string): Route {
     if (segments[0] === 'playground' && segments[1] === 'tools') return { name: 'playground', tab: 'tools' }
   }
 
+  if (segments.length === 3 && segments[0] === 'trace' && segments[2] === 'flow') {
+    return { name: 'flow', responseId: segments[1] }
+  }
+
   return { name: 'chat' }
 }
 
@@ -95,6 +102,8 @@ export function buildPath(route: Route): string {
       return `/c/${encodeURIComponent(route.id)}`
     case 'trace':
       return `/trace/${encodeURIComponent(route.responseId)}`
+    case 'flow':
+      return `/trace/${encodeURIComponent(route.responseId)}/flow`
     default:
       return '/'
   }

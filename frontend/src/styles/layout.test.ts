@@ -328,6 +328,7 @@ describe('app.css', () => {
         // Focus targets of last resort: their modal focuses them so focus can be trapped.
         '.log-scrim',
         '.voice-scrim',
+        '.flow-scrim',
         // Where the skip link lands; a ring here rings the whole conversation.
         '.main',
         // Composed fields: the WRAPPER carries `:focus-within`, which is the correct place to
@@ -669,5 +670,46 @@ describe('contextual observation header slot', () => {
     expect(app).toMatch(/<div className="main__head">[\s\S]*?<Header[\s\S]*?observation-notice[\s\S]*?<\/div>/)
     expect(css).toMatch(/\.main\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto/)
     expect(css).toMatch(/\.header\s*\{[^}]*min-height:\s*60px/)
+  })
+})
+
+/** Spec 066 — the flow view, as the stylesheet must keep it. */
+describe('the flow view (spec 066)', () => {
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
+  const rules = [...clean.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(([, selectors, body]) => ({
+    selectors: selectors.trim(),
+    body,
+  }))
+  const flowRules = rules.filter((rule) => /\.flow/.test(rule.selectors))
+
+  it('is an overlay, never a child of the shell grid that would need a placement', () => {
+    const scrim = flowRules.find((rule) => rule.selectors === '.flow-scrim')
+    expect(scrim?.body).toMatch(/position:\s*fixed/)
+    expect(scrim?.body).toMatch(/inset:\s*0/)
+  })
+
+  it('stops every transition and animation when the reader prefers reduced motion (AC12)', () => {
+    const blocks = clean.split('@media (prefers-reduced-motion: reduce)').slice(1)
+    const flowBlock = blocks.find((block) => /\.flow/.test(block.slice(0, block.indexOf('}\n}') + 3)))
+    expect(flowBlock).toBeDefined()
+    const body = flowBlock!.slice(0, flowBlock!.indexOf('}\n}') + 3)
+    expect(body).toMatch(/transition:\s*none/)
+    expect(body).toMatch(/animation:\s*none/)
+  })
+
+  it('stacks the steps under the drawing below the narrow breakpoint (AC17)', () => {
+    const narrow = clean.split('@media (max-width: 760px)').slice(1).join('')
+    expect(narrow).toMatch(/\.flow__body\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/)
+  })
+
+  it('writes text only in the inks the contrast test pairs in both themes (AC18)', () => {
+    const PAIRED = new Set(['--fg-1', '--fg-2', '--fg-3', '--fg-link', '--fg-on-inverse'])
+    const inks = flowRules.flatMap((rule) =>
+      [...rule.body.matchAll(/(?:^|[;\s])(color|fill):\s*var\((--[a-z0-9-]+)\)/g)]
+        .filter(([, property]) => property === 'color' || /flow__(label|sub)/.test(rule.selectors))
+        .map(([, , token]) => token),
+    )
+    expect(inks.length).toBeGreaterThan(0)
+    expect(inks.filter((token) => !PAIRED.has(token))).toEqual([])
   })
 })

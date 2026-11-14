@@ -912,6 +912,144 @@ export const strings = {
   },
   'trace.openPortal': { en: 'Open in the Foundry portal', pt: 'Abrir no portal do Foundry' },
 
+  // Spec 066 — a turn's journey, drawn. Every caption is fixed text filled with the turn's own
+  // names; nothing here is generated, and nothing claims a hop is one model call or was timed.
+  'flow.open': { en: 'View flow', pt: 'Ver fluxo' },
+  'flow.title': { en: 'How this turn travelled', pt: 'Como este turno viajou' },
+  'flow.close': { en: 'Close the flow', pt: 'Fechar o fluxo' },
+  'flow.previous': { en: 'Previous step', pt: 'Passo anterior' },
+  'flow.next': { en: 'Next step', pt: 'Próximo passo' },
+  'flow.play': { en: 'Play', pt: 'Reproduzir' },
+  'flow.pause': { en: 'Pause', pt: 'Pausar' },
+  'flow.showAll': { en: 'Show all', pt: 'Mostrar tudo' },
+  'flow.position': { en: 'Step {n} of {total}', pt: 'Passo {n} de {total}' },
+  'flow.allShown': { en: 'All {total} steps', pt: 'Todos os {total} passos' },
+  'flow.steps': { en: 'Steps', pt: 'Passos' },
+  'flow.openCall': { en: 'Open {name} in the log reader', pt: 'Abrir {name} no leitor de logs' },
+  'flow.notInBrowser': {
+    en: 'This browser has no record of that turn, so there is nothing to draw: the spans alone cannot say what the turn sent or which calls the app made.',
+    pt: 'Este navegador não tem registro desse turno, então não há o que desenhar: os spans sozinhos não dizem o que o turno enviou nem quais chamadas o app fez.',
+  },
+  'flow.noId': {
+    en: 'This turn carries no response id, so this flow has no address and this app has no id to read its spans by.',
+    pt: 'Este turno não traz response id: este fluxo não tem endereço e o app não tem id para ler seus spans.',
+  },
+  'flow.noIdSpoken': {
+    en: 'A spoken turn never carries one, because the voice session sends none. Foundry still traces it.',
+    pt: 'Um turno falado nunca traz, porque a sessão de voz não envia. O Foundry ainda o rastreia.',
+  },
+  'flow.modelCalls': { en: 'model calls in this leg: {n}', pt: 'chamadas ao modelo nesta perna: {n}' },
+  'flow.notMeasured': { en: 'not measured', pt: 'não medido' },
+  'flow.node.browser': { en: 'Browser', pt: 'Navegador' },
+  'flow.node.bff': { en: 'BFF', pt: 'BFF' },
+  'flow.node.voice': { en: 'Voice Live', pt: 'Voice Live' },
+  'flow.node.agent': { en: 'Foundry agent', pt: 'Agente no Foundry' },
+  'flow.node.container': { en: 'Our container', pt: 'Nosso contêiner' },
+  'flow.node.gateway': { en: 'AI Gateway', pt: 'AI Gateway' },
+  'flow.node.model': { en: 'Model', pt: 'Modelo' },
+  'flow.sub.bff': { en: 'this app’s backend', pt: 'o backend deste app' },
+  'flow.sub.voice': { en: 'speech and text', pt: 'fala e texto' },
+  'flow.sub.offAudio': { en: 'not on the audio path', pt: 'fora do caminho do áudio' },
+  'flow.sub.promptRuntime': { en: 'prompt runtime', pt: 'runtime de prompt' },
+  'flow.sub.inFoundry': { en: 'running in Foundry', pt: 'rodando no Foundry' },
+  'flow.sub.mcp': { en: 'MCP server', pt: 'servidor MCP' },
+  'flow.gateway.on': {
+    en: 'On this path. It records nothing, so it has no time.',
+    pt: 'No caminho. Ele não registra nada, então não tem tempo.',
+  },
+  'flow.gateway.off': {
+    en: 'Not on this path: this deployment reaches its model directly.',
+    pt: 'Fora do caminho: esta implantação acessa o modelo diretamente.',
+  },
+  'flow.gateway.unknown': {
+    en: 'Not known for this agent: the deployment says it only for its default agent.',
+    pt: 'Desconhecido para este agente: a implantação só informa isso para o agente padrão.',
+  },
+  'flow.gateway.unknownHosted': {
+    en: 'Not known for this agent: a hosted agent picks its model inside its container.',
+    pt: 'Desconhecido para este agente: um agente hospedado escolhe o modelo dentro do contêiner.',
+  },
+  'flow.gateway.voice': {
+    en: 'Not on this path: Voice Live never passes through the gateway.',
+    pt: 'Fora do caminho: o Voice Live nunca passa pelo gateway.',
+  },
+  'flow.hop.request': {
+    en: 'You sent the message: the browser posts it to the BFF.',
+    pt: 'Você enviou a mensagem: o navegador a envia para a BFF.',
+  },
+  'flow.hop.forward': {
+    en: 'The BFF hands it to the Foundry agent, and decides nothing about what happens next.',
+    pt: 'A BFF entrega ao agente no Foundry, e não decide nada sobre o que vem depois.',
+  },
+  'flow.hop.askModel': { en: 'The agent asks the model, {model}.', pt: 'O agente consulta o modelo, {model}.' },
+  'flow.hop.modelAsks': {
+    en: 'The model asks for tools. It never runs one itself.',
+    pt: 'O modelo pede ferramentas. Ele nunca executa nenhuma.',
+  },
+  'flow.hop.appCall': { en: 'Foundry asks the BFF to run {name}.', pt: 'O Foundry pede à BFF que execute {name}.' },
+  'flow.hop.appResult': {
+    en: 'The BFF runs {name} and sends the result back to Foundry.',
+    pt: 'A BFF executa {name} e devolve o resultado ao Foundry.',
+  },
+  'flow.hop.foundryCall': {
+    en: 'Foundry runs {name} itself; this call never touches the BFF.',
+    pt: 'O Foundry executa {name} por conta própria; esta chamada nunca passa pela BFF.',
+  },
+  'flow.hop.foundryResult': { en: '{name} answers Foundry.', pt: '{name} responde ao Foundry.' },
+  'flow.hop.mcpCall': {
+    en: 'Foundry calls the MCP server {server} for {name}; the BFF is not involved.',
+    pt: 'O Foundry chama o servidor MCP {server} para {name}; a BFF não participa.',
+  },
+  'flow.hop.mcpResult': { en: '{server} answers Foundry.', pt: '{server} responde ao Foundry.' },
+  'flow.hop.results': { en: 'The results go back to the model.', pt: 'Os resultados voltam para o modelo.' },
+  'flow.hop.modelAnswers': { en: 'The model writes the answer.', pt: 'O modelo escreve a resposta.' },
+  'flow.hop.answerToBff': {
+    en: 'Foundry streams the answer to the BFF.',
+    pt: 'O Foundry transmite a resposta para a BFF.',
+  },
+  'flow.hop.answerToBrowser': {
+    en: 'The BFF streams it to the browser as it arrives.',
+    pt: 'A BFF transmite ao navegador conforme chega.',
+  },
+  'flow.hop.speechIn': {
+    en: 'You spoke. The audio goes straight to Voice Live, which turns it into text.',
+    pt: 'Você falou. O áudio vai direto para o Voice Live, que o transforma em texto.',
+  },
+  'flow.hop.voiceToAgent': {
+    en: 'Voice Live hands the text to the Foundry agent.',
+    pt: 'O Voice Live entrega o texto ao agente no Foundry.',
+  },
+  'flow.hop.agentToVoice': {
+    en: 'Foundry returns the answer to Voice Live.',
+    pt: 'O Foundry devolve a resposta ao Voice Live.',
+  },
+  'flow.hop.speechOut': {
+    en: 'Voice Live turns it into speech, played in the browser.',
+    pt: 'O Voice Live a transforma em fala, tocada no navegador.',
+  },
+  'flow.hop.voiceRelay': {
+    en: 'The call for {name} surfaces on the voice session.',
+    pt: 'A chamada de {name} aparece na sessão de voz.',
+  },
+  'flow.hop.voiceCall': {
+    en: 'The BFF picks up {name} on its control connection.',
+    pt: 'A BFF recebe {name} pela sua conexão de controle.',
+  },
+  'flow.hop.voiceResult': {
+    en: 'The BFF runs {name} and answers on the session.',
+    pt: 'A BFF executa {name} e responde na sessão.',
+  },
+  'flow.hop.voiceBack': {
+    en: 'The session hands the result of {name} back to Foundry.',
+    pt: 'A sessão devolve o resultado de {name} ao Foundry.',
+  },
+  'flow.hop.failed': {
+    en: 'The turn failed ({code}); the error came back through the BFF.',
+    pt: 'O turno falhou ({code}); o erro voltou pela BFF.',
+  },
+  'flow.mark.failed': { en: 'failed', pt: 'falhou' },
+  'flow.mark.stopped': { en: 'stopped: you stopped listening', pt: 'interrompido: você parou de ouvir' },
+
   // --- Configuration -------------------------------------------------------
   'config.loading': { en: 'reading configuration', pt: 'lendo configuração' },
   'config.unavailable': { en: 'the BFF is not answering', pt: 'o BFF não está respondendo' },
@@ -971,6 +1109,12 @@ export const INTENTIONALLY_IDENTICAL: readonly StringKey[] = [
   'agent.reasoning',
   'agent.container',
   'agent.cpu',
+  // Spec 066: the names of components, as the architecture docs and the portal spell them. `BFF`
+  // is this repository's own term for its backend throughout both READMEs; `Voice Live` and
+  // `AI Gateway` are the products' names.
+  'flow.node.bff',
+  'flow.node.voice',
+  'flow.node.gateway',
 ]
 
 export function t(key: StringKey, lang: Lang): string {

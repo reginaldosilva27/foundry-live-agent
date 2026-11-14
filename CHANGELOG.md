@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **A turn's journey, drawn** (spec 066): *View flow* on any settled answer, and in the trace
+  panel, opens a full-screen diagram of the path that turn took — browser, BFF or Voice Live, the
+  Foundry agent, the model, and each tool and MCP call — with previous/next, a fixed-pace *play*,
+  and one caption per hop in `en` and `pt`. Built only from the turn's events and spans: a hop
+  nothing measured carries no number, the model count is labelled as the last leg's, and the
+  gateway reads *not known* for any agent but the default. A typed turn's flow has its own address
+  (`/trace/{response_id}/flow`); a spoken one has none, because no response id reaches the browser.
+
 ## [0.1.0] — 2026-10-16
 
 First public release. The repository's history starts here: how each piece came to be is told in
