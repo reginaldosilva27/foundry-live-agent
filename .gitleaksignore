@@ -3,3 +3,6 @@
 # real secret on any other line still fails the scan.
 14494a56ada92b91e8c369b8ba251054066d530a:frontend/src/state/favourites.ts:generic-api-key:17
 14494a56ada92b91e8c369b8ba251054066d530a:specs/022-agent-favourites/plan.md:generic-api-key:46
+# The same line, as the v0.1.0 release commit carries it: the release restarted the history, so the
+# fingerprint above (pre-release) no longer matches and the reviewed false positive came back.
+9a0d956e6976bb91e35b159185373b72e763ee75:specs/022-agent-favourites/plan.md:generic-api-key:46
